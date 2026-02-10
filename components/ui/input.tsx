@@ -1,3 +1,4 @@
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react"
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
 
@@ -17,4 +18,32 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   )
 }
 
-export { Input }
+function PasswordInput({ className, ...props }: React.ComponentProps<"input">) {
+  const [showPassword, setShowPassword] = React.useState(false)
+
+  return (
+    <div className="relative w-full">
+      <Input
+        type={showPassword ? "text" : "password"}
+        className={cn("pr-10", className)}
+        {...props}
+      />
+      <button
+        type="button"
+        className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none"
+        onClick={() => setShowPassword(!showPassword)}
+      >
+        {showPassword ? (
+          <EyeSlashIcon className="size-4" weight="bold" />
+        ) : (
+          <EyeIcon className="size-4" weight="bold" />
+        )}
+        <span className="sr-only">
+          {showPassword ? "Hide password" : "Show password"}
+        </span>
+      </button>
+    </div>
+  )
+}
+
+export { Input, PasswordInput }
