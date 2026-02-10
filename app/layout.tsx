@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
+import { QueryProvider } from "~/components/providers/query-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -20,9 +21,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className={`${inter.variable} ${geistMono.variable} antialiased`}>
-        {children}
+    <html lang="en" className={`${inter.variable} ${geistMono.variable}`}>
+      <body className="antialiased">
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
