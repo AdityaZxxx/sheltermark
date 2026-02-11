@@ -14,7 +14,7 @@ interface DeleteWorkspaceDialogProps {
   isOpen: boolean;
   isDeleting: boolean;
   workspaceName?: string;
-  error: string | null;
+  error?: string | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
   isDefault?: boolean;
