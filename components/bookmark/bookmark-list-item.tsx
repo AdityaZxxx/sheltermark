@@ -1,60 +1,143 @@
-"use client";
-
 import { GlobeIcon } from "@phosphor-icons/react";
-import { Kbd, KbdGroup } from "../ui/kbd";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import { cn } from "~/lib/utils";
+import { BookmarkContextMenu } from "./bookmark-context-menu";
 
 interface BookmarkListItemProps {
+  id: string;
   title: string;
   url: string;
   favicon_url?: string;
   domain: string;
   created_at: string;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
+  workspaces?: { id: string; name: string }[];
+  currentWorkspaceId?: string | null;
+  onSelect?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onRename?: (id: string) => void;
+  onMove?: (id: string) => void;
+  onMoveToWorkspace?: (id: string, workspaceId: string) => void;
+  onCopyUrl?: (url: string) => void;
+  onSelectionModeToggle?: () => void;
+  tabIndex?: number;
 }
 
 export function BookmarkListItem({
+  id,
   title,
   url,
   favicon_url,
   domain,
   created_at,
+  isSelected,
+  isSelectionMode,
+  workspaces = [],
+  currentWorkspaceId,
+  onSelect,
+  onDelete,
+  onRename,
+  onMove,
+  onMoveToWorkspace,
+  onCopyUrl,
+  onSelectionModeToggle,
+  tabIndex,
 }: BookmarkListItemProps) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      window.open(url, "_blank");
+    }
+  };
+
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all"
+    <BookmarkContextMenu
+      id={id}
+      url={url}
+      isSelectionMode={isSelectionMode}
+      workspaces={workspaces}
+      currentWorkspaceId={currentWorkspaceId}
+      onSelect={onSelect}
+      onDelete={onDelete}
+      onRename={onRename}
+      onMove={onMove}
+      onMoveToWorkspace={onMoveToWorkspace}
+      onCopyUrl={onCopyUrl}
+      onSelectionModeToggle={onSelectionModeToggle}
     >
-      <div className="shrink-0 w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
-        {favicon_url ? (
-          <img src={favicon_url} alt="" className="w-4 h-4 object-contain" />
-        ) : (
-          <GlobeIcon className="w-4 h-4 text-muted-foreground" />
-        )}
-      </div>
+      {(triggerProps) => (
+        <button
+          {...triggerProps}
+          type="button"
+          tabIndex={tabIndex}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-all text-left w-full relative",
+            isSelected && "bg-primary/5",
+            triggerProps.className,
+          )}
+          onClick={(e) => {
+            if (isSelectionMode) {
+              e.preventDefault();
+              onSelect?.(id);
+            } else {
+              window.open(url, "_blank");
+            }
+          }}
+        >
+          {isSelectionMode && (
+            <div className="shrink-0 flex items-center justify-center mr-1 z-10">
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onSelect?.(id)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
 
-      <div className="flex-1 flex items-center justify-between min-w-0">
-        <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
-          <p className="text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors min-w-0">
-            {title}
-          </p>
-          <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
-            {domain}
-          </p>
-        </div>
+          <div className="shrink-0 w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
+            {favicon_url ? (
+              // biome-ignore lint/performance/noImgElement: nothing to optimize
+              <img
+                src={favicon_url}
+                alt=""
+                className="w-4 h-4 object-contain"
+              />
+            ) : (
+              <GlobeIcon className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
 
-        <div className="relative shrink-0 ml-10 text-xs text-muted-foreground">
-          <span className="transition-opacity group-hover:opacity-0">
-            {new Date(created_at).toLocaleDateString()}
-          </span>
+          <div className="flex-1 flex items-center justify-between min-w-0">
+            <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
+              <p
+                className={cn(
+                  "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors min-w-0",
+                  isSelected && "text-primary",
+                )}
+              >
+                {title}
+              </p>
+              <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+                {domain}
+              </p>
+            </div>
 
-          <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            <Kbd>Ctrl</Kbd>
-            <span>+</span>
-            <Kbd>B</Kbd>
-          </KbdGroup>
-        </div>
-      </div>
-    </a>
+            <div className="relative shrink-0 ml-10 text-xs text-muted-foreground">
+              <span className="transition-opacity group-hover:opacity-0">
+                {new Date(created_at).toLocaleDateString()}
+              </span>
+
+              <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <Kbd>⌘</Kbd>
+                <Kbd>↵</Kbd>
+              </KbdGroup>
+            </div>
+          </div>
+        </button>
+      )}
+    </BookmarkContextMenu>
   );
 }
