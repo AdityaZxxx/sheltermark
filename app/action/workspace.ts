@@ -65,17 +65,26 @@ export async function createWorkspace(formData: FormData) {
 
 export async function deleteWorkspace(id: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   // Check if it's default
   const { data: ws } = await supabase
     .from("workspaces")
     .select("is_default")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (ws?.is_default) return { error: "Cannot delete default workspace" };
 
-  const { error } = await supabase.from("workspaces").delete().eq("id", id);
+  const { error } = await supabase
+    .from("workspaces")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) return { error: error.message };
 
@@ -85,11 +94,16 @@ export async function deleteWorkspace(id: string) {
 
 export async function togglePublicStatus(id: string, isPublic: boolean) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
     .from("workspaces")
     .update({ is_public: isPublic })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) return { error: error.message };
 
