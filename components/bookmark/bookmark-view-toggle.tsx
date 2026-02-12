@@ -1,5 +1,3 @@
-"use client";
-
 import { ListIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
