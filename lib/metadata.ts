@@ -152,19 +152,19 @@ async function fetchMetadataViaMicrolink(
 
 export async function fetchMetadata(url: string): Promise<Metadata> {
   try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+
     // 1. SSRF Check
     const isSafe = await isSafeUrl(url);
     if (!isSafe) {
       return {
         title: url,
         og_image_url: null,
-        favicon_url: `https://www.google.com/s2/favicons?domain=${url}&sz=128`,
+        favicon_url: `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
         description: null,
       };
     }
-
-    const urlObj = new URL(url);
-    const hostname = urlObj.hostname;
 
     // 2. Special handling for Twitter/X using fxtwitter (Unlimited & Fast)
     if (hostname.endsWith("twitter.com") || hostname.endsWith("x.com")) {
@@ -270,7 +270,7 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
       return {
         title: url,
         og_image_url: null,
-        favicon_url: `https://www.google.com/s2/favicons?domain=${url}&sz=128`,
+        favicon_url: `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
         description: null,
       };
     }
@@ -366,10 +366,17 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
     const microResult = await fetchMetadataViaMicrolink(url);
     if (microResult) return microResult;
 
+    let fallbackHostname = url;
+    try {
+      fallbackHostname = new URL(url).hostname;
+    } catch {
+      // invalid url, keep original
+    }
+
     return {
       title: url,
       og_image_url: null,
-      favicon_url: `https://www.google.com/s2/favicons?domain=${url}&sz=128`,
+      favicon_url: `https://www.google.com/s2/favicons?domain=${fallbackHostname}&sz=128`,
       description: null,
     };
   }
