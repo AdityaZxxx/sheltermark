@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "~/utils/supabase/server";
+import { requireAuth } from "~/lib/auth";
 
 const workspaceSchema = z.object({
   name: z
@@ -12,7 +11,8 @@ const workspaceSchema = z.object({
 });
 
 export async function getWorkspaces() {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
+
   const { data, error } = await supabase
     .from("workspaces")
     .select(`
@@ -33,7 +33,6 @@ export async function getWorkspaces() {
 }
 
 export async function createWorkspace(formData: FormData) {
-  const supabase = await createClient();
   const rawData = Object.fromEntries(formData.entries());
   const validated = workspaceSchema.safeParse(rawData);
 
@@ -41,15 +40,15 @@ export async function createWorkspace(formData: FormData) {
     return { error: validated.error.issues[0].message };
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return { error: "Not authenticated" };
+  const { user, supabase } = await requireAuth();
+  if (!user) return { error: "Not authenticated" };
 
   const { data, error } = await supabase
     .from("workspaces")
     .insert([
       {
         name: validated.data.name,
-        user_id: userData.user.id,
+        user_id: user.id,
         is_default: false,
         is_public: false,
       },
@@ -59,16 +58,11 @@ export async function createWorkspace(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/dashboard");
   return { success: true, data };
 }
 
 export async function deleteWorkspace(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { user, supabase } = await requireAuth();
 
   // Check if it's default
   const { data: ws } = await supabase
@@ -88,16 +82,11 @@ export async function deleteWorkspace(id: string) {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/dashboard");
   return { success: true };
 }
 
 export async function togglePublicStatus(id: string, isPublic: boolean) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { user, supabase } = await requireAuth();
 
   const { error } = await supabase
     .from("workspaces")
@@ -107,6 +96,5 @@ export async function togglePublicStatus(id: string, isPublic: boolean) {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/dashboard");
   return { success: true };
 }

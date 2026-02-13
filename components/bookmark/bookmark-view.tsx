@@ -14,6 +14,14 @@ import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
 
+function safeDomain(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url || "";
+  }
+}
+
 export function BookmarkView() {
   const [view, setView] = useState<"list" | "card">("list");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,7 +39,7 @@ export function BookmarkView() {
 
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
-    filteredBookmarks,
+    bookmarks: filteredBookmarks,
     searchQuery,
     setSearchQuery,
     invalidate,
@@ -177,7 +185,11 @@ export function BookmarkView() {
     if (e.key === "Enter" && focusedIndex >= 0) {
       const bookmark = filteredBookmarks[focusedIndex];
       if (bookmark) {
-        window.open(bookmark.url, "_blank");
+        if (isSelectionMode) {
+          toggleSelect(bookmark.id);
+        } else {
+          window.open(bookmark.url, "_blank");
+        }
       }
     }
   };
@@ -220,7 +232,7 @@ export function BookmarkView() {
                 url={bookmark.url}
                 og_image_url={bookmark.og_image_url || undefined}
                 favicon_url={bookmark.favicon_url || undefined}
-                domain={bookmark.domain || new URL(bookmark.url).hostname}
+                domain={bookmark.domain || safeDomain(bookmark.url)}
                 created_at={bookmark.created_at}
                 isSelected={
                   selectedIds.includes(bookmark.id) ||
@@ -250,7 +262,7 @@ export function BookmarkView() {
                 title={bookmark.title || ""}
                 url={bookmark.url}
                 favicon_url={bookmark.favicon_url || undefined}
-                domain={bookmark.domain || new URL(bookmark.url).hostname}
+                domain={bookmark.domain || safeDomain(bookmark.url)}
                 created_at={bookmark.created_at}
                 isSelected={
                   selectedIds.includes(bookmark.id) ||

@@ -28,14 +28,39 @@ export function useBookmarks(workspaceId?: string | null) {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: bookmarks = [], isLoading } = useQuery<Bookmark[]>({
-    queryKey: ["bookmarks", workspaceId],
+  const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>({
+    queryKey: ["bookmarks"],
     queryFn: async () => {
-      const { data, error } = await getBookmarks(workspaceId);
+      const { data, error } = await getBookmarks();
       if (error) throw new Error(error);
       return data as Bookmark[];
     },
+    staleTime: 30000,
   });
+
+  const filteredBookmarks = useMemo(() => {
+    let result = allBookmarks;
+
+    // Filter by workspace
+    if (!workspaceId) {
+      result = result.filter((b) => !b.workspace_id);
+    } else {
+      result = result.filter((b) => b.workspace_id === workspaceId);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (b: Bookmark) =>
+          b.title?.toLowerCase().includes(query) ||
+          b.url.toLowerCase().includes(query) ||
+          b.domain?.toLowerCase().includes(query),
+      );
+    }
+
+    return result;
+  }, [allBookmarks, workspaceId, searchQuery]);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
@@ -44,10 +69,22 @@ export function useBookmarks(workspaceId?: string | null) {
 
   const deleteMutation = useMutation({
     mutationFn: deleteBookmarksAction,
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
+      const previous = queryClient.getQueryData<Bookmark[]>(["bookmarks"]);
+      queryClient.setQueryData<Bookmark[]>(["bookmarks"], (old) =>
+        old ? old.filter((b) => !ids.includes(b.id)) : [],
+      );
+      return { previous };
+    },
+    onError: (_err, _ids, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["bookmarks"], context.previous);
+      }
+    },
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Bookmarks deleted");
-        invalidate();
       } else {
         toast.error(res.error || "Failed to delete bookmarks");
       }
@@ -62,10 +99,28 @@ export function useBookmarks(workspaceId?: string | null) {
       ids: string[];
       targetWorkspaceId: string;
     }) => moveBookmarksAction(ids, targetWorkspaceId),
+    onMutate: async ({ ids, targetWorkspaceId }) => {
+      await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
+      const previous = queryClient.getQueryData<Bookmark[]>(["bookmarks"]);
+      queryClient.setQueryData<Bookmark[]>(["bookmarks"], (old) =>
+        old
+          ? old.map((b) =>
+              ids.includes(b.id)
+                ? { ...b, workspace_id: targetWorkspaceId }
+                : b,
+            )
+          : [],
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["bookmarks"], context.previous);
+      }
+    },
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Bookmarks moved");
-        invalidate();
       } else {
         toast.error(res.error || "Failed to move bookmarks");
       }
@@ -75,30 +130,31 @@ export function useBookmarks(workspaceId?: string | null) {
   const renameMutation = useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) =>
       renameBookmarkAction(id, title),
+    onMutate: async ({ id, title }) => {
+      await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
+      const previous = queryClient.getQueryData<Bookmark[]>(["bookmarks"]);
+      queryClient.setQueryData<Bookmark[]>(["bookmarks"], (old) =>
+        old ? old.map((b) => (b.id === id ? { ...b, title } : b)) : [],
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["bookmarks"], context.previous);
+      }
+    },
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Bookmark renamed");
-        invalidate();
       } else {
         toast.error(res.error || "Failed to rename bookmark");
       }
     },
   });
 
-  const filteredBookmarks = useMemo(() => {
-    if (!searchQuery) return bookmarks;
-    const query = searchQuery.toLowerCase();
-    return bookmarks.filter(
-      (b: Bookmark) =>
-        b.title?.toLowerCase().includes(query) ||
-        b.url.toLowerCase().includes(query) ||
-        b.domain?.toLowerCase().includes(query),
-    );
-  }, [bookmarks, searchQuery]);
-
   return {
-    bookmarks,
-    filteredBookmarks,
+    bookmarks: filteredBookmarks,
+    allBookmarks,
     isLoading,
     searchQuery,
     setSearchQuery,

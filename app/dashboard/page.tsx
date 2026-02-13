@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
 import { Header } from "~/components/header";
-import { requireAuth } from "~/lib/auth";
+import { requireAuthSafe } from "~/lib/auth";
 
 export default async function DashboardPage() {
-  const { user } = await requireAuth();
+  const { user } = await requireAuthSafe();
 
   if (!user) {
     return redirect("/login");
