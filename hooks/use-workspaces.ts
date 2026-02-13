@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useQueryState } from "nuqs";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import {
   createWorkspace,
@@ -12,11 +12,8 @@ import {
 } from "~/app/action/workspace";
 
 export function useWorkspaces() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-
-  const activeWorkspaceId = searchParams.get("workspace");
+  const [activeWorkspaceId, setActiveWorkspaceId] = useQueryState("workspace");
 
   const { data: workspaces = [], isLoading } = useQuery({
     queryKey: ["workspaces"],
@@ -34,14 +31,9 @@ export function useWorkspaces() {
     );
   }, [workspaces, activeWorkspaceId]);
 
-  const setActiveWorkspace = useCallback(
-    (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("workspace", id);
-      router.push(`?${params.toString()}`);
-    },
-    [router, searchParams],
-  );
+  const setActiveWorkspace = (id: string) => {
+    setActiveWorkspaceId(id);
+  };
 
   const createMutation = useMutation({
     mutationFn: (formData: FormData) => createWorkspace(formData),
