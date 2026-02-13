@@ -167,7 +167,12 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
     }
 
     // 2. Special handling for Twitter/X using fxtwitter (Unlimited & Fast)
-    if (hostname.endsWith("twitter.com") || hostname.endsWith("x.com")) {
+    if (
+      hostname === "twitter.com" ||
+      hostname.endsWith(".twitter.com") ||
+      hostname === "x.com" ||
+      hostname.endsWith(".x.com")
+    ) {
       try {
         // Construct fxtwitter URL
         // e.g. https://x.com/user/status/123 -> https://api.fxtwitter.com/user/status/123
@@ -219,8 +224,10 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
     // 3. JS-Heavy Check (Instagram, Facebook) -> Use Microlink immediately
     // These sites are notoriously hard to scrape without headless browsers/APIs
     if (
-      hostname.endsWith("instagram.com") ||
-      hostname.endsWith("facebook.com")
+      hostname === "instagram.com" ||
+      hostname.endsWith(".instagram.com") ||
+      hostname === "facebook.com" ||
+      hostname.endsWith(".facebook.com")
     ) {
       const microResult = await fetchMetadataViaMicrolink(url);
       if (microResult) return microResult;
