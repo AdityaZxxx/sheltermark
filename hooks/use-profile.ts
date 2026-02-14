@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "~/app/action/setting";
 
 export interface Profile {
-  username: string;
+  username: string | null;
   bio: string | null;
   github_url: string | null;
   x_url: string | null;
