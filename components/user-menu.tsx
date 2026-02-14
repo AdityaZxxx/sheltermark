@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useTheme } from "next-themes";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { SettingsDialog } from "./settings-dialog";
 import { Button } from "./ui/button";
 
 interface UserMenuProps {
@@ -29,61 +30,73 @@ interface UserMenuProps {
 
 export function UserMenu({ user }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const fullName = user.user_metadata.full_name || "User";
   const avatarUrl = user.user_metadata.avatar_url;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" className="gap-2 px-2">
-            <Avatar className="h-6 w-6 shrink-0">
-              <AvatarImage src={avatarUrl} alt={fullName} />
-              <AvatarFallback>
-                {fullName.charAt(0).toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <h1 className="text-sm font-medium leading-none hidden md:block">
-              {fullName}
-            </h1>
-            <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent className="rounded-xl" align="end" sideOffset={8}>
-        <ThemeTabs />
-
-        <DropdownMenuSeparator className="my-1" />
-
-        <DropdownMenuItem>
-          <span className="w-full flex items-center gap-2">
-            <GearIcon className="h-4 w-4" /> Settings
-          </span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          variant="destructive"
-          className="w-full"
-          disabled={isPending}
-          nativeButton
-          render={(props) => (
-            <button
-              {...props}
-              disabled={isPending}
-              onClick={(e) => {
-                props.onClick?.(e);
-                startTransition(async () => {
-                  await logout();
-                });
-              }}
-            >
-              <SignOutIcon className="h-4 w-4" />
-              {isPending ? "Logging out..." : "Log out"}
-            </button>
-          )}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" className="gap-2 px-2">
+              <Avatar className="h-6 w-6 shrink-0">
+                <AvatarImage src={avatarUrl} alt={fullName} />
+                <AvatarFallback>
+                  {fullName.charAt(0).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <h1 className="text-sm font-medium leading-none hidden md:block">
+                {fullName}
+              </h1>
+              <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
+            </Button>
+          }
         />
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <DropdownMenuContent className="rounded-xl" align="end" sideOffset={8}>
+          <ThemeTabs />
+
+          <DropdownMenuSeparator className="my-1" />
+
+          <DropdownMenuItem
+            onClick={() => setSettingsOpen(true)}
+            className="w-full"
+          >
+            <span className="w-full flex items-center gap-2">
+              <GearIcon className="h-4 w-4" /> Settings
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            className="w-full"
+            disabled={isPending}
+            nativeButton
+            render={(props) => (
+              <button
+                {...props}
+                disabled={isPending}
+                onClick={(e) => {
+                  props.onClick?.(e);
+                  startTransition(async () => {
+                    await logout();
+                  });
+                }}
+              >
+                <SignOutIcon className="h-4 w-4" />
+                {isPending ? "Logging out..." : "Log out"}
+              </button>
+            )}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        user={user}
+      />
+    </>
   );
 }
 
