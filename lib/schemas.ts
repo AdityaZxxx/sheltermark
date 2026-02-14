@@ -23,9 +23,16 @@ export const socialUsernameSchema = z
 
 export const websiteSchema = z
   .string()
-  .regex(
-    /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
-    "Invalid website domain",
+  .refine(
+    (val) => {
+      try {
+        new URL(val.startsWith("http") ? val : `https://${val}`);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "Invalid website domain" },
   )
   .optional()
   .or(z.literal(""));
