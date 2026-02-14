@@ -192,12 +192,12 @@ export function SettingsProfileTab({
         form.handleSubmit();
       }}
     >
-      <FieldGroup className="gap-0 space-y-4">
+      <FieldGroup>
         <form.Field name="is_public">
           {(field) => (
-            <Field className="" orientation="horizontal">
+            <Field orientation="horizontal">
               <FieldContent>
-                <FieldLabel className="font-medium">Public Profile</FieldLabel>
+                <FieldLabel>Public Profile</FieldLabel>
               </FieldContent>
               <Switch
                 checked={field.state.value}
@@ -270,7 +270,9 @@ export function SettingsProfileTab({
                   }}
                   disabled={isSubmitting}
                   placeholder="Short bio about you"
-                  className="min-h-20 w-full max-w-full resize-y overflow-x-hidden"
+                  rows={2}
+                  maxLength={160}
+                  className="resize-none"
                 />
                 {hasError && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -337,7 +339,7 @@ export function SettingsProfileTab({
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     disabled={isSubmitting}
-                    placeholder="Website (domain or URL)"
+                    placeholder="Domain or URL"
                     className="rounded-l-none"
                   />
                 </div>

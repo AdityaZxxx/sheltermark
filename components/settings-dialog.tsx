@@ -29,32 +29,31 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Manage your account settings.</DialogDescription>
         </DialogHeader>
-
-        <Tabs defaultValue="general" className="mt-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="general" className="gap-2">
+        <Tabs defaultValue="general">
+          <TabsList className="w-full">
+            <TabsTrigger value="general" className="flex-1">
               <GearIcon className="size-4" />
               General
             </TabsTrigger>
-            <TabsTrigger value="profile" className="gap-2">
+            <TabsTrigger value="profile" className="flex-1">
               <UserIcon className="size-4" />
-              Public Profile
+              Profile
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="mt-4">
+          <TabsContent value="general" className="pt-2">
             <SettingsGeneralTab
               user={user}
               onCancel={() => onOpenChange(false)}
             />
           </TabsContent>
 
-          <TabsContent value="profile" className="mt-4">
+          <TabsContent value="profile" className="pt-2">
             {isLoading ? (
               <div className="py-8 text-center text-muted-foreground">
                 Loading profile...
