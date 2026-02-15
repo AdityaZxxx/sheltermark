@@ -175,3 +175,147 @@ export async function checkUsernameAvailability(data: {
 
   return { available: true, message: "Username is available" };
 }
+
+export async function uploadAvatar(formData: FormData) {
+  const { user, supabase } = await requireAuth();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  const file = formData.get("file") as File;
+
+  if (!file) {
+    return { error: "No file provided" };
+  }
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowedTypes.includes(file.type)) {
+    return {
+      error: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed",
+    };
+  }
+
+  const maxSize = 2 * 1024 * 1024; // 2MB
+  if (file.size > maxSize) {
+    return { error: "File too large. Maximum size is 2MB" };
+  }
+
+  try {
+    // Convert file to buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Process image with sharp
+    const sharp = (await import("sharp")).default;
+    const processedBuffer = await sharp(buffer)
+      .rotate() // Auto-rotate based on EXIF
+      .resize({ width: 512, height: 512, fit: "inside" })
+      .webp({ quality: 85 })
+      .toBuffer();
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const fileName = `${user.id}/${timestamp}.webp`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, processedBuffer, {
+        contentType: "image/webp",
+        cacheControl: "3600",
+      });
+
+    if (uploadError) {
+      return { error: uploadError.message };
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    const avatarUrl = publicUrlData.publicUrl;
+
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { avatar_url: avatarUrl },
+    });
+
+    if (authError) {
+      return { error: authError.message };
+    }
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (profileError) {
+      return { error: profileError.message };
+    }
+
+    return { success: true, avatarUrl };
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    return { error: "Failed to upload avatar" };
+  }
+}
+
+export async function deleteAvatar() {
+  const { user, supabase } = await requireAuth();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.avatar_url) {
+      const url = new URL(profile.avatar_url);
+      const pathParts = url.pathname.split("/");
+      const fileName = pathParts
+        .slice(pathParts.indexOf("avatars") + 1)
+        .join("/");
+
+      const { error: deleteError } = await supabase.storage
+        .from("avatars")
+        .remove([fileName]);
+
+      if (deleteError) {
+        console.error("Failed to delete avatar from storage:", deleteError);
+        // Continue anyway to update database
+      }
+    }
+
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { avatar_url: null },
+    });
+
+    if (authError) {
+      return { error: authError.message };
+    }
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        avatar_url: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (profileError) {
+      return { error: profileError.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Avatar delete error:", error);
+    return { error: "Failed to delete avatar" };
+  }
+}
