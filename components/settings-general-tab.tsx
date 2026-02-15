@@ -54,9 +54,6 @@ export function SettingsGeneralTab({
         setAvatarUrl(result.avatarUrl);
         toast.success("Avatar uploaded successfully");
       }
-    } catch {
-      toast.error("Failed to upload avatar");
-      throw new Error("Upload failed");
     } finally {
       setIsUploading(false);
     }
@@ -69,13 +66,14 @@ export function SettingsGeneralTab({
 
       if (result.error) {
         toast.error(result.error);
-        return;
+        throw new Error(result.error);
       }
 
       setAvatarUrl(null);
       toast.success("Avatar removed successfully");
-    } catch {
-      toast.error("Failed to remove avatar");
+    } catch (error) {
+      // biome-ignore lint/complexity/noUselessCatch: Error already toasted, re-throw to propagate to caller
+      throw error;
     } finally {
       setIsUploading(false);
     }
