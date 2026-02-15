@@ -95,12 +95,8 @@ export function SettingsGeneralTab({
     },
   });
 
-  const fullName = useStore(
-    form.store,
-    (state) => state.values.full_name,
-  ) as string;
-  const isDirty = fullName !== defaultFullName;
-  const isSubmitting = form.state.isSubmitting;
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const isDirty = useStore(form.store, (state) => state.isDirty);
 
   return (
     <form
@@ -111,13 +107,17 @@ export function SettingsGeneralTab({
     >
       <FieldGroup>
         <div className="flex justify-center pb-4 border-b border-border">
-          <AvatarUpload
-            currentAvatarUrl={avatarUrl}
-            fullName={fullName}
-            onUpload={handleAvatarUpload}
-            onRemove={handleAvatarRemove}
-            isUploading={isUploading}
-          />
+          <form.Field name="full_name">
+            {(field) => (
+              <AvatarUpload
+                currentAvatarUrl={avatarUrl}
+                fullName={field.state.value}
+                onUpload={handleAvatarUpload}
+                onRemove={handleAvatarRemove}
+                isUploading={isUploading}
+              />
+            )}
+          </form.Field>
         </div>
 
         <form.Field
@@ -140,7 +140,7 @@ export function SettingsGeneralTab({
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasError}
-                  disabled={isSubmitting}
+                  disabled={field.form.state.isSubmitting}
                   placeholder="Enter your full name"
                 />
                 {hasError && <FieldError errors={field.state.meta.errors} />}

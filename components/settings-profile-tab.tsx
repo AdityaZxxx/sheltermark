@@ -2,7 +2,7 @@
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { checkUsernameAvailability } from "~/app/action/setting";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
@@ -111,21 +111,9 @@ export function SettingsProfileTab({
     },
   });
 
-  // Reactive dirty check using useStore
-  const formValues = useStore(form.store, (state) => state.values);
-  const isDirty = useMemo(() => {
-    if (!profile) return false;
-    return (
-      formValues.username !== initialValues.username ||
-      formValues.bio !== initialValues.bio ||
-      formValues.github_username !== initialValues.github_username ||
-      formValues.x_username !== initialValues.x_username ||
-      formValues.website !== initialValues.website ||
-      formValues.is_public !== initialValues.is_public
-    );
-  }, [formValues, initialValues, profile]);
-
-  const isSubmitting = form.state.isSubmitting;
+  // Reactive form states
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const isDirty = useStore(form.store, (state) => state.isDirty);
 
   // Get current username for debounced checking - use useStore for reactivity
   const usernameValue =
