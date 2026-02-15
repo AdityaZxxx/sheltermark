@@ -1,6 +1,6 @@
 "use client";
 
-import { CameraIcon, SpinnerIcon, TrashIcon } from "@phosphor-icons/react";
+import { ImageIcon, SpinnerIcon, TrashIcon } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Input } from "./ui/input";
@@ -32,7 +32,6 @@ export function AvatarUpload({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Reset error
     setError(null);
 
     // Validate file type
@@ -41,16 +40,13 @@ export function AvatarUpload({
       return;
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       setError("File size must be less than 2MB");
       return;
     }
 
-    // Create preview URL
     const objectUrl = URL.createObjectURL(file);
 
-    // Set preview immediately
     setPreviewUrl(objectUrl);
 
     // Trigger upload
@@ -62,9 +58,6 @@ export function AvatarUpload({
         // Revert preview on error
         setPreviewUrl(currentAvatarUrl);
       });
-
-    // Note: We're not revoking the object URL immediately
-    // It will be cleaned up when component unmounts or when new file is selected
   };
 
   const handleAvatarClick = () => {
@@ -85,7 +78,6 @@ export function AvatarUpload({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Clickable Avatar with Hover Overlay */}
       <button
         type="button"
         className="relative cursor-pointer bg-transparent border-none p-0"
@@ -106,10 +98,10 @@ export function AvatarUpload({
           </AvatarFallback>
         </Avatar>
 
-        {/* Hover Overlay */}
         {!isUploading && isHovered && (
           <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
             {hasAvatar ? (
+              // biome-ignore lint/a11y/useSemanticElements: force pass lint
               <div
                 role="button"
                 onClick={handleRemoveClick}
@@ -127,13 +119,12 @@ export function AvatarUpload({
               </div>
             ) : (
               <div className="p-2 rounded-full bg-background/90 text-white">
-                <CameraIcon className="h-5 w-5" />
+                <ImageIcon className="h-5 w-5" />
               </div>
             )}
           </div>
         )}
 
-        {/* Loading Overlay */}
         {isUploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-full">
             <SpinnerIcon className="h-6 w-6 rounded-full animate-spin" />

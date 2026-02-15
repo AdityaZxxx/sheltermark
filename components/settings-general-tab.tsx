@@ -4,7 +4,11 @@ import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
-import { updateProfile } from "~/app/action/setting";
+import {
+  deleteAvatar,
+  updateProfile,
+  uploadAvatar,
+} from "~/app/action/setting";
 import { AvatarUpload } from "~/components/avatar-upload";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
@@ -28,7 +32,6 @@ export function SettingsGeneralTab({
 }: SettingsGeneralTabProps) {
   const defaultFullName = (user.user_metadata.full_name as string) || "";
 
-  // Avatar upload state (mock for now - UI only)
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     (user.user_metadata.avatar_url as string) || null,
@@ -37,9 +40,20 @@ export function SettingsGeneralTab({
   const handleAvatarUpload = async (file: File) => {
     setIsUploading(true);
     try {
-      // Mock upload - will be replaced with actual implementation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      toast.success("Avatar uploaded successfully (mock)");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await uploadAvatar(formData);
+
+      if (result.error) {
+        toast.error(result.error);
+        throw new Error(result.error);
+      }
+
+      if (result.avatarUrl) {
+        setAvatarUrl(result.avatarUrl);
+        toast.success("Avatar uploaded successfully");
+      }
     } catch {
       toast.error("Failed to upload avatar");
       throw new Error("Upload failed");
@@ -51,10 +65,15 @@ export function SettingsGeneralTab({
   const handleAvatarRemove = async () => {
     setIsUploading(true);
     try {
-      // Mock removal - will be replaced with actual implementation
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const result = await deleteAvatar();
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
       setAvatarUrl(null);
-      toast.success("Avatar removed successfully (mock)");
+      toast.success("Avatar removed successfully");
     } catch {
       toast.error("Failed to remove avatar");
     } finally {
@@ -95,7 +114,6 @@ export function SettingsGeneralTab({
       }}
     >
       <FieldGroup>
-        {/* Avatar Upload Section */}
         <div className="flex justify-center pb-4 border-b border-border">
           <AvatarUpload
             currentAvatarUrl={avatarUrl}
