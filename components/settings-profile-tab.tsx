@@ -171,6 +171,10 @@ export function SettingsProfileTab({
 
   // Helper to render username status icon
   const renderUsernameStatusIcon = () => {
+    if (!usernameValue || usernameValue.length < 3) {
+      return null;
+    }
+
     switch (usernameStatus) {
       case "checking":
         return (
@@ -181,7 +185,7 @@ export function SettingsProfileTab({
       case "taken":
         return <XIcon className="h-4 w-4 text-destructive" weight="bold" />;
       default:
-        return <CheckIcon className="h-4 w-4 text-green-500" weight="bold" />;
+        return null;
     }
   };
 
@@ -211,6 +215,7 @@ export function SettingsProfileTab({
         <form.Field
           name="username"
           validators={{
+            onChange: usernameSchema,
             onBlur: usernameSchema,
           }}
         >
@@ -337,9 +342,13 @@ export function SettingsProfileTab({
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => {
+                      // Auto-strip https:// prefix when user types or pastes
+                      const value = e.target.value.replace(/^https?:\/\//, "");
+                      field.handleChange(value);
+                    }}
                     disabled={isSubmitting}
-                    placeholder="Domain or URL"
+                    placeholder="example.com"
                     className="rounded-l-none"
                   />
                 </div>
