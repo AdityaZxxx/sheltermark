@@ -2,8 +2,14 @@
 
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
+import { useState } from "react";
 import { toast } from "sonner";
-import { updateProfile } from "~/app/action/setting";
+import {
+  deleteAvatar,
+  updateProfile,
+  uploadAvatar,
+} from "~/app/action/setting";
+import { AvatarUpload } from "~/components/avatar-upload";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
   Field,
@@ -25,6 +31,53 @@ export function SettingsGeneralTab({
   onCancel,
 }: SettingsGeneralTabProps) {
   const defaultFullName = (user.user_metadata.full_name as string) || "";
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    (user.user_metadata.avatar_url as string) || null,
+  );
+
+  const handleAvatarUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await uploadAvatar(formData);
+
+      if (result.error) {
+        toast.error(result.error);
+        throw new Error(result.error);
+      }
+
+      if (result.avatarUrl) {
+        setAvatarUrl(result.avatarUrl);
+        toast.success("Avatar uploaded successfully");
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setIsUploading(true);
+    try {
+      const result = await deleteAvatar();
+
+      if (result.error) {
+        toast.error(result.error);
+        throw new Error(result.error);
+      }
+
+      setAvatarUrl(null);
+      toast.success("Avatar removed successfully");
+    } catch (error) {
+      // biome-ignore lint/complexity/noUselessCatch: Error already toasted, re-throw to propagate to caller
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const form = useForm({
     defaultValues: {
@@ -59,6 +112,16 @@ export function SettingsGeneralTab({
       }}
     >
       <FieldGroup>
+        <div className="flex justify-center pb-4 border-b border-border">
+          <AvatarUpload
+            currentAvatarUrl={avatarUrl}
+            fullName={fullName}
+            onUpload={handleAvatarUpload}
+            onRemove={handleAvatarRemove}
+            isUploading={isUploading}
+          />
+        </div>
+
         <form.Field
           name="full_name"
           validators={{
