@@ -1,11 +1,10 @@
 "use client";
 
-import { SpinnerIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { toast } from "sonner";
 import { updateProfile } from "~/app/action/setting";
-import { Button } from "~/components/ui/button";
+import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
   Field,
   FieldDescription,
@@ -59,7 +58,7 @@ export function SettingsGeneralTab({
         form.handleSubmit();
       }}
     >
-      <FieldGroup className="gap-0 space-y-4">
+      <FieldGroup>
         <form.Field
           name="full_name"
           validators={{
@@ -101,26 +100,11 @@ export function SettingsGeneralTab({
           <FieldDescription>Email cannot be changed.</FieldDescription>
         </Field>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? (
-              <>
-                <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
-        </div>
+        <SettingsDialogFooter
+          isSubmitting={isSubmitting}
+          isDirty={isDirty}
+          onCancel={onCancel}
+        />
       </FieldGroup>
     </form>
   );

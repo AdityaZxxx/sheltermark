@@ -53,7 +53,10 @@ export function SettingsDialog({
             />
           </TabsContent>
 
-          <TabsContent value="profile" className="pt-2">
+          <TabsContent
+            value="profile"
+            className="pt-2 -mx-2 px-2 max-h-[60vh] overflow-y-auto"
+          >
             {isLoading ? (
               <div className="py-8 text-center text-muted-foreground">
                 Loading profile...

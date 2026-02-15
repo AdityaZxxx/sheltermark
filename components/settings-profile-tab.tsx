@@ -8,7 +8,7 @@ import {
   checkUsernameAvailability,
   updatePublicProfile,
 } from "~/app/action/setting";
-import { Button } from "~/components/ui/button";
+import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
   Field,
   FieldContent,
@@ -192,7 +192,7 @@ export function SettingsProfileTab({
         form.handleSubmit();
       }}
     >
-      <FieldGroup>
+      <FieldGroup className="overflow-y-auto max-h-[calc(60vh-80px)]">
         <form.Field name="is_public">
           {(field) => (
             <Field orientation="horizontal">
@@ -348,36 +348,14 @@ export function SettingsProfileTab({
             );
           }}
         </form.Field>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={
-              isSubmitting ||
-              !isDirty ||
-              usernameStatus === "taken" ||
-              usernameStatus === "checking"
-            }
-          >
-            {isSubmitting ? (
-              <>
-                <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Profile"
-            )}
-          </Button>
-        </div>
       </FieldGroup>
+
+      <SettingsDialogFooter
+        isSubmitting={isSubmitting}
+        isDirty={isDirty}
+        isDisabled={usernameStatus === "taken" || usernameStatus === "checking"}
+        onCancel={onCancel}
+      />
     </form>
   );
 }
