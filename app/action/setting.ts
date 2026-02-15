@@ -3,6 +3,36 @@
 import { requireAuth } from "~/lib/auth";
 import { updateProfileSchema, updatePublicProfileSchema } from "~/lib/schemas";
 
+// Helper to delete avatar file from storage
+async function deleteAvatarFromStorage(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  avatarUrl: string | null,
+): Promise<{ error?: string }> {
+  if (!avatarUrl) return {};
+
+  try {
+    const url = new URL(avatarUrl);
+    const pathParts = url.pathname.split("/");
+    const fileName = pathParts
+      .slice(pathParts.indexOf("avatars") + 1)
+      .join("/");
+
+    const { error: deleteError } = await supabase.storage
+      .from("avatars")
+      .remove([fileName]);
+
+    if (deleteError) {
+      console.error("Failed to delete avatar from storage:", deleteError);
+      return { error: deleteError.message };
+    }
+
+    return {};
+  } catch (error) {
+    console.error("Error parsing avatar URL:", error);
+    return { error: "Failed to parse avatar URL" };
+  }
+}
+
 export async function updateProfile(data: { full_name: string }) {
   const { user, supabase } = await requireAuth();
 
@@ -202,6 +232,13 @@ export async function uploadAvatar(formData: FormData) {
   }
 
   try {
+    // Get current avatar to delete it later
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single();
+
     // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -227,6 +264,18 @@ export async function uploadAvatar(formData: FormData) {
 
     if (uploadError) {
       return { error: uploadError.message };
+    }
+
+    // Delete old avatar after successful upload
+    if (currentProfile?.avatar_url) {
+      const deleteResult = await deleteAvatarFromStorage(
+        supabase,
+        currentProfile.avatar_url,
+      );
+      if (deleteResult.error) {
+        // Log error but don't fail the upload - old file can be cleaned up later
+        console.error("Failed to delete old avatar:", deleteResult.error);
+      }
     }
 
     const { data: publicUrlData } = supabase.storage
@@ -277,18 +326,15 @@ export async function deleteAvatar() {
       .single();
 
     if (profile?.avatar_url) {
-      const url = new URL(profile.avatar_url);
-      const pathParts = url.pathname.split("/");
-      const fileName = pathParts
-        .slice(pathParts.indexOf("avatars") + 1)
-        .join("/");
-
-      const { error: deleteError } = await supabase.storage
-        .from("avatars")
-        .remove([fileName]);
-
-      if (deleteError) {
-        console.error("Failed to delete avatar from storage:", deleteError);
+      const deleteResult = await deleteAvatarFromStorage(
+        supabase,
+        profile.avatar_url,
+      );
+      if (deleteResult.error) {
+        console.error(
+          "Failed to delete avatar from storage:",
+          deleteResult.error,
+        );
         // Continue anyway to update database
       }
     }
