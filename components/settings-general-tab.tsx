@@ -4,11 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  deleteAvatar,
-  updateProfile,
-  uploadAvatar,
-} from "~/app/action/setting";
+import { deleteAvatar, uploadAvatar } from "~/app/action/setting";
 import { AvatarUpload } from "~/components/avatar-upload";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
@@ -19,6 +15,7 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { useUpdateProfile } from "~/hooks/use-profile";
 import { updateProfileSchema } from "~/lib/schemas";
 
 interface SettingsGeneralTabProps {
@@ -31,6 +28,7 @@ export function SettingsGeneralTab({
   onCancel,
 }: SettingsGeneralTabProps) {
   const defaultFullName = (user.user_metadata.full_name as string) || "";
+  const updateProfile = useUpdateProfile();
 
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(

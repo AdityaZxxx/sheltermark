@@ -4,10 +4,7 @@ import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  checkUsernameAvailability,
-  updatePublicProfile,
-} from "~/app/action/setting";
+import { checkUsernameAvailability } from "~/app/action/setting";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
   Field,
@@ -19,6 +16,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
+import { useUpdatePublicProfile } from "~/hooks/use-profile";
 import { usernameSchema } from "~/lib/schemas";
 import { Textarea } from "./ui/textarea";
 
@@ -61,6 +59,8 @@ export function SettingsProfileTab({
   profile,
   onCancel,
 }: SettingsProfileTabProps) {
+  const updatePublicProfile = useUpdatePublicProfile();
+
   const initialValues = profile
     ? {
         username: profile.username || "",
