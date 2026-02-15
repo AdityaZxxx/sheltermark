@@ -8,6 +8,8 @@ import {
 } from "~/app/action/setting";
 
 export interface Profile {
+  full_name: string | null;
+  avatar_url: string | null;
   username: string | null;
   bio: string | null;
   github_url: string | null;

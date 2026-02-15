@@ -47,10 +47,17 @@ export function SettingsDialog({
           </TabsList>
 
           <TabsContent value="general" className="pt-2">
-            <SettingsGeneralTab
-              user={user}
-              onCancel={() => onOpenChange(false)}
-            />
+            {isLoading ? (
+              <div className="py-8 text-center text-muted-foreground">
+                Loading profile...
+              </div>
+            ) : (
+              <SettingsGeneralTab
+                user={user}
+                profile={profile ?? null}
+                onCancel={() => onOpenChange(false)}
+              />
+            )}
           </TabsContent>
 
           <TabsContent

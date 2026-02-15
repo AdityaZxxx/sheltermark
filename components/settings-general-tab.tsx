@@ -15,24 +15,27 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import type { Profile } from "~/hooks/use-profile";
 import { useUpdateProfile } from "~/hooks/use-profile";
 import { updateProfileSchema } from "~/lib/schemas";
 
 interface SettingsGeneralTabProps {
   user: User;
+  profile: Profile | null;
   onCancel: () => void;
 }
 
 export function SettingsGeneralTab({
   user,
+  profile,
   onCancel,
 }: SettingsGeneralTabProps) {
-  const defaultFullName = (user.user_metadata.full_name as string) || "";
+  const defaultFullName = profile?.full_name || "";
   const updateProfile = useUpdateProfile();
 
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    (user.user_metadata.avatar_url as string) || null,
+    profile?.avatar_url || null,
   );
 
   const handleAvatarUpload = async (file: File) => {

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { useProfile } from "~/hooks/use-profile";
 import { SettingsDialog } from "./settings-dialog";
 import { Button } from "./ui/button";
 
@@ -31,9 +32,10 @@ interface UserMenuProps {
 export function UserMenu({ user }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { profile } = useProfile();
 
-  const fullName = user.user_metadata.full_name || "User";
-  const avatarUrl = user.user_metadata.avatar_url;
+  const fullName = profile?.full_name || user.user_metadata.full_name;
+  const avatarUrl = profile?.avatar_url || user.user_metadata.avatar_url;
 
   return (
     <>
