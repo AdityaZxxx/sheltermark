@@ -2,8 +2,10 @@
 
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
+import { useState } from "react";
 import { toast } from "sonner";
 import { updateProfile } from "~/app/action/setting";
+import { AvatarUpload } from "~/components/avatar-upload";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
   Field,
@@ -25,6 +27,40 @@ export function SettingsGeneralTab({
   onCancel,
 }: SettingsGeneralTabProps) {
   const defaultFullName = (user.user_metadata.full_name as string) || "";
+
+  // Avatar upload state (mock for now - UI only)
+  const [isUploading, setIsUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    (user.user_metadata.avatar_url as string) || null,
+  );
+
+  const handleAvatarUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      // Mock upload - will be replaced with actual implementation
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      toast.success("Avatar uploaded successfully (mock)");
+    } catch {
+      toast.error("Failed to upload avatar");
+      throw new Error("Upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setIsUploading(true);
+    try {
+      // Mock removal - will be replaced with actual implementation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setAvatarUrl(null);
+      toast.success("Avatar removed successfully (mock)");
+    } catch {
+      toast.error("Failed to remove avatar");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const form = useForm({
     defaultValues: {
@@ -59,6 +95,17 @@ export function SettingsGeneralTab({
       }}
     >
       <FieldGroup>
+        {/* Avatar Upload Section */}
+        <div className="flex justify-center pb-4 border-b border-border">
+          <AvatarUpload
+            currentAvatarUrl={avatarUrl}
+            fullName={fullName}
+            onUpload={handleAvatarUpload}
+            onRemove={handleAvatarRemove}
+            isUploading={isUploading}
+          />
+        </div>
+
         <form.Field
           name="full_name"
           validators={{
