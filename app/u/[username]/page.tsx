@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getPublicProfile } from "~/app/action/profile";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
@@ -6,6 +7,28 @@ interface PublicProfilePageProps {
   params: Promise<{
     username: string;
   }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PublicProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  const result = await getPublicProfile(username);
+
+  if (result.error || !result.profile) {
+    return {
+      title: "Profile not found — Sheltermark",
+    };
+  }
+
+  const { profile } = result;
+  const displayName = profile.full_name || profile.username;
+
+  return {
+    title: `${displayName} (@${profile.username}) — Sheltermark`,
+    description:
+      profile.bio || `Check out ${profile.username}'s bookmarks on Sheltermark`,
+  };
 }
 
 export default async function PublicProfilePage({
