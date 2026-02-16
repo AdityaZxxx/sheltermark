@@ -33,7 +33,7 @@ export async function getPublicProfile(username: string): Promise<{
   workspaces: WorkspaceWithBookmarks[];
   error?: string;
 }> {
-  const {supabase} = await requireAuthSafe();
+  const { supabase } = await requireAuthSafe();
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
