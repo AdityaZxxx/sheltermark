@@ -119,6 +119,7 @@ export function BookmarkViewReadOnly({
               isSelected={false}
               isSelectionMode={false}
               tabIndex={index === 0 ? 0 : -1}
+              disableContextMenu={true}
             />
           ))}
         </div>
@@ -136,6 +137,7 @@ export function BookmarkViewReadOnly({
               isSelected={false}
               isSelectionMode={false}
               tabIndex={index === 0 ? 0 : -1}
+              disableContextMenu={true}
             />
           ))}
         </div>
