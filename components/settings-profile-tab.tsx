@@ -3,7 +3,6 @@
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { checkUsernameAvailability } from "~/app/action/setting";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
 import {
@@ -16,21 +15,11 @@ import {
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
-import { useUpdatePublicProfile } from "~/hooks/use-profile";
+import { useProfile } from "~/hooks/use-profile";
 import { usernameSchema } from "~/lib/schemas";
 import { Textarea } from "./ui/textarea";
 
-interface ProfileData {
-  username: string | null;
-  bio: string | null;
-  github_url: string | null;
-  x_url: string | null;
-  website_url: string | null;
-  is_public: boolean;
-}
-
 interface SettingsProfileTabProps {
-  profile: ProfileData | null;
   onCancel: () => void;
 }
 
@@ -55,11 +44,8 @@ function extractWebsite(url: string | null | undefined): string {
   }
 }
 
-export function SettingsProfileTab({
-  profile,
-  onCancel,
-}: SettingsProfileTabProps) {
-  const updatePublicProfile = useUpdatePublicProfile();
+export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
+  const { profile, updatePublicProfile } = useProfile();
 
   const initialValues = profile
     ? {
@@ -88,7 +74,7 @@ export function SettingsProfileTab({
   const form = useForm({
     defaultValues: initialValues,
     onSubmit: async ({ value }) => {
-      const result = await updatePublicProfile({
+      updatePublicProfile({
         username: value.username,
         is_public: value.is_public,
         bio: value.bio,
@@ -98,16 +84,7 @@ export function SettingsProfileTab({
         current_username: originalUsername,
       });
 
-      if (result?.error) {
-        if (result.error.includes("unique constraint")) {
-          toast.error("This username is already taken. Please choose another.");
-        } else {
-          toast.error(result.error);
-        }
-      } else {
-        toast.success("Profile updated successfully");
-        onCancel();
-      }
+      onCancel();
     },
   });
 

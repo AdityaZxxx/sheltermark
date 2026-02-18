@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { useProfile } from "~/hooks/use-profile";
 import { SettingsGeneralTab } from "./settings-general-tab";
 import { SettingsProfileTab } from "./settings-profile-tab";
 
@@ -25,8 +24,6 @@ export function SettingsDialog({
   onOpenChange,
   user,
 }: SettingsDialogProps) {
-  const { profile, isLoading } = useProfile();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -47,33 +44,17 @@ export function SettingsDialog({
           </TabsList>
 
           <TabsContent value="general" className="pt-2">
-            {isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Loading profile...
-              </div>
-            ) : (
-              <SettingsGeneralTab
-                user={user}
-                profile={profile ?? null}
-                onCancel={() => onOpenChange(false)}
-              />
-            )}
+            <SettingsGeneralTab
+              user={user}
+              onCancel={() => onOpenChange(false)}
+            />
           </TabsContent>
 
           <TabsContent
             value="profile"
             className="pt-2 -mx-2 px-2 max-h-[60vh] overflow-y-auto"
           >
-            {isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Loading profile...
-              </div>
-            ) : (
-              <SettingsProfileTab
-                profile={profile ?? null}
-                onCancel={() => onOpenChange(false)}
-              />
-            )}
+            <SettingsProfileTab onCancel={() => onOpenChange(false)} />
           </TabsContent>
         </Tabs>
       </DialogContent>

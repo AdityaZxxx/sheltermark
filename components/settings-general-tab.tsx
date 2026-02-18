@@ -15,23 +15,20 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import type { Profile } from "~/hooks/use-profile";
-import { useUpdateProfile } from "~/hooks/use-profile";
+import { useProfile } from "~/hooks/use-profile";
 import { updateProfileSchema } from "~/lib/schemas";
 
 interface SettingsGeneralTabProps {
   user: User;
-  profile: Profile | null;
   onCancel: () => void;
 }
 
 export function SettingsGeneralTab({
   user,
-  profile,
   onCancel,
 }: SettingsGeneralTabProps) {
+  const { profile, updateProfile } = useProfile();
   const defaultFullName = profile?.full_name || "";
-  const updateProfile = useUpdateProfile();
 
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -88,13 +85,8 @@ export function SettingsGeneralTab({
       onSubmit: updateProfileSchema,
     },
     onSubmit: async ({ value }) => {
-      const result = await updateProfile({ full_name: value.full_name });
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Profile updated successfully");
-        onCancel();
-      }
+      updateProfile({ full_name: value.full_name });
+      onCancel();
     },
   });
 
