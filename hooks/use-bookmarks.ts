@@ -10,161 +10,100 @@ import {
   moveBookmarks as moveBookmarksAction,
   renameBookmark as renameBookmarkAction,
 } from "~/app/action/bookmark";
+import { useSupabase } from "~/components/providers/supabase-provider";
+import type { Bookmark } from "~/types/bookmark.types";
 
-export interface Bookmark {
-  id: string;
-  user_id: string;
-  workspace_id: string | null;
-  url: string;
-  title: string | null;
-  favicon_url: string | null;
-  og_image_url: string | null;
-  domain?: string;
-  created_at: string;
-  updated_at: string | null;
-}
-
-export function useBookmarks(workspaceId?: string | null) {
+export function useBookmarks(workspaceId?: string) {
   const queryClient = useQueryClient();
+  const { user, isLoading: isAuthLoading } = useSupabase();
   const [searchQuery, setSearchQuery] = useState("");
 
+  const queryKey = useMemo(
+    () => ["bookmarks", workspaceId, user?.id] as const,
+    [workspaceId, user?.id],
+  );
+
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>({
-    queryKey: ["bookmarks"],
+    queryKey,
     queryFn: async () => {
       const { data, error } = await getBookmarks();
       if (error) throw new Error(error);
-      return data as Bookmark[];
+      return data || [];
     },
-    staleTime: 30000,
+    enabled: !!user?.id && !isAuthLoading,
   });
 
-  const filteredBookmarks = useMemo(() => {
-    let result = allBookmarks;
+  const bookmarks = useMemo(() => {
+    if (!workspaceId) return allBookmarks;
+    return allBookmarks.filter((b) => b.workspace_id === workspaceId);
+  }, [allBookmarks, workspaceId]);
 
-    // Filter by workspace
-    if (!workspaceId) {
-      result = result.filter((b) => !b.workspace_id);
-    } else {
-      result = result.filter((b) => b.workspace_id === workspaceId);
-    }
+  const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (b: Bookmark) =>
-          b.title?.toLowerCase().includes(query) ||
-          b.url.toLowerCase().includes(query) ||
-          b.domain?.toLowerCase().includes(query),
-      );
-    }
-
-    return result;
-  }, [allBookmarks, workspaceId, searchQuery]);
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-    queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-  };
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteBookmarksAction,
-    onMutate: async (ids) => {
-      await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
-      const previous = queryClient.getQueryData<Bookmark[]>(["bookmarks"]);
-      queryClient.setQueryData<Bookmark[]>(["bookmarks"], (old) =>
-        old ? old.filter((b) => !ids.includes(b.id)) : [],
-      );
-      return { previous };
-    },
-    onError: (_err, _ids, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["bookmarks"], context.previous);
-      }
-    },
-    onSuccess: (res) => {
-      if (res.success) {
-        toast.success("Bookmarks deleted");
+  const addBookmark = useMutation({
+    mutationFn: addBookmarkAction,
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
       } else {
-        toast.error(res.error || "Failed to delete bookmarks");
+        invalidate();
       }
     },
   });
 
-  const moveMutation = useMutation({
-    mutationFn: ({
+  const deleteBookmarks = useMutation({
+    mutationFn: deleteBookmarksAction,
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        invalidate();
+      }
+    },
+  });
+
+  const renameBookmark = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      return renameBookmarkAction(id, title);
+    },
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        invalidate();
+      }
+    },
+  });
+
+  const moveBookmarks = useMutation({
+    mutationFn: async ({
       ids,
       targetWorkspaceId,
     }: {
       ids: string[];
       targetWorkspaceId: string;
-    }) => moveBookmarksAction(ids, targetWorkspaceId),
-    onMutate: async ({ ids, targetWorkspaceId }) => {
-      await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
-      const previous = queryClient.getQueryData<Bookmark[]>(["bookmarks"]);
-      queryClient.setQueryData<Bookmark[]>(["bookmarks"], (old) =>
-        old
-          ? old.map((b) =>
-              ids.includes(b.id)
-                ? { ...b, workspace_id: targetWorkspaceId }
-                : b,
-            )
-          : [],
-      );
-      return { previous };
+    }) => {
+      return moveBookmarksAction(ids, targetWorkspaceId);
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["bookmarks"], context.previous);
-      }
-    },
-    onSuccess: (res) => {
-      if (res.success) {
-        toast.success("Bookmarks moved");
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
       } else {
-        toast.error(res.error || "Failed to move bookmarks");
-      }
-    },
-  });
-
-  const renameMutation = useMutation({
-    mutationFn: ({ id, title }: { id: string; title: string }) =>
-      renameBookmarkAction(id, title),
-    onMutate: async ({ id, title }) => {
-      await queryClient.cancelQueries({ queryKey: ["bookmarks"] });
-      const previous = queryClient.getQueryData<Bookmark[]>(["bookmarks"]);
-      queryClient.setQueryData<Bookmark[]>(["bookmarks"], (old) =>
-        old ? old.map((b) => (b.id === id ? { ...b, title } : b)) : [],
-      );
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["bookmarks"], context.previous);
-      }
-    },
-    onSuccess: (res) => {
-      if (res.success) {
-        toast.success("Bookmark renamed");
-      } else {
-        toast.error(res.error || "Failed to rename bookmark");
+        invalidate();
       }
     },
   });
 
   return {
-    bookmarks: filteredBookmarks,
+    bookmarks,
     allBookmarks,
-    isLoading,
+    isLoading: isAuthLoading || isLoading,
     searchQuery,
     setSearchQuery,
     invalidate,
-    addBookmark: addBookmarkAction,
-    deleteBookmarks: deleteMutation.mutateAsync,
-    moveBookmarks: moveMutation.mutateAsync,
-    renameBookmark: renameMutation.mutateAsync,
-    isDeleting: deleteMutation.isPending,
-    isMoving: moveMutation.isPending,
-    isRenaming: renameMutation.isPending,
+    addBookmark: addBookmark.mutate,
+    deleteBookmarks: deleteBookmarks.mutate,
+    renameBookmark: renameBookmark.mutate,
+    moveBookmarks: moveBookmarks.mutate,
   };
 }
