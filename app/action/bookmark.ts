@@ -1,19 +1,14 @@
 "use server";
 
-import { z } from "zod";
 import { requireAuth } from "~/lib/auth";
 import { fetchMetadata } from "~/lib/metadata";
-
-const bookmarkSchema = z.object({
-  url: z.url("invalid URL"),
-  workspaceId: z.uuid().nullable(),
-});
+import { bookmarkCreateSchema } from "~/lib/schemas";
 
 export async function addBookmark(formData: FormData) {
   const rawUrl = formData.get("url") as string;
   const workspaceId = formData.get("workspaceId") as string;
 
-  const validated = bookmarkSchema.safeParse({
+  const validated = bookmarkCreateSchema.safeParse({
     url: rawUrl,
     workspaceId: workspaceId === "null" || !workspaceId ? null : workspaceId,
   });

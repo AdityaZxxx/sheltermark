@@ -1,14 +1,7 @@
 "use server";
 
-import { z } from "zod";
 import { requireAuth } from "~/lib/auth";
-
-const workspaceSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Workspace name is required")
-    .max(50, "Name too long"),
-});
+import { workspaceCreateSchema } from "~/lib/schemas";
 
 export async function getWorkspaces() {
   const { supabase } = await requireAuth();
@@ -34,7 +27,7 @@ export async function getWorkspaces() {
 
 export async function createWorkspace(formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
-  const validated = workspaceSchema.safeParse(rawData);
+  const validated = workspaceCreateSchema.safeParse(rawData);
 
   if (!validated.success) {
     return { error: validated.error.issues[0].message };
