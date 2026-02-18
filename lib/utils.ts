@@ -34,3 +34,11 @@ export function getPastelColor(id: string) {
   const index = Math.abs(hash) % PASTEL_COLORS.length;
   return PASTEL_COLORS[index];
 }
+
+export function safeDomain(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url || "";
+  }
+}
