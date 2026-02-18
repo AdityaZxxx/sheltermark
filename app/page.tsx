@@ -1,5 +1,6 @@
 import { TentIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { Footer } from "~/components/footer";
 import { Button } from "~/components/ui/button";
 
 export default function Page() {
@@ -27,6 +28,7 @@ export default function Page() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
