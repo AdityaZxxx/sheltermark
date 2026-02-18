@@ -24,8 +24,7 @@ import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog";
-import { WorkspacePrivateDialog } from "./workspace-private-dialog";
-import { WorkspacePublicDialog } from "./workspace-public-dialog";
+import { WorkspaceVisibilityDialog } from "./workspace-visibility-dialog";
 
 export function WorkspaceMenu() {
   const {
@@ -41,8 +40,7 @@ export function WorkspaceMenu() {
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isPublicDialogOpen, setIsPublicDialogOpen] = useState(false);
-  const [isPrivateDialogOpen, setIsPrivateDialogOpen] = useState(false);
+  const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -63,13 +61,7 @@ export function WorkspaceMenu() {
   const activeWorkspaceName = currentWorkspace?.name || "";
 
   const handleTogglePublic = () => {
-    if (currentWorkspace) {
-      if (currentWorkspace.is_public) {
-        setIsPrivateDialogOpen(true);
-      } else {
-        setIsPublicDialogOpen(true);
-      }
-    }
+    setIsVisibilityDialogOpen(true);
   };
 
   const handleAddWorkspace = (name: string) => {
@@ -198,24 +190,17 @@ export function WorkspaceMenu() {
         isDefault={currentWorkspace?.is_default}
       />
 
-      <WorkspacePublicDialog
-        isOpen={isPublicDialogOpen}
-        onOpenChange={setIsPublicDialogOpen}
+      <WorkspaceVisibilityDialog
+        isOpen={isVisibilityDialogOpen}
+        onOpenChange={setIsVisibilityDialogOpen}
+        mode={currentWorkspace?.is_public ? "private" : "public"}
         onConfirm={() => {
           if (currentWorkspace) {
-            togglePublicStatus({ id: currentWorkspace.id, isPublic: true });
-            setIsPublicDialogOpen(false);
-          }
-        }}
-      />
-
-      <WorkspacePrivateDialog
-        isOpen={isPrivateDialogOpen}
-        onOpenChange={setIsPrivateDialogOpen}
-        onConfirm={() => {
-          if (currentWorkspace) {
-            togglePublicStatus({ id: currentWorkspace.id, isPublic: false });
-            setIsPrivateDialogOpen(false);
+            togglePublicStatus({
+              id: currentWorkspace.id,
+              isPublic: !currentWorkspace.is_public,
+            });
+            setIsVisibilityDialogOpen(false);
           }
         }}
       />
