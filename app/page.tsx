@@ -9,7 +9,7 @@ export default function Page() {
       <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-24">
         <div className="flex flex-col items-center mt-8">
           <TentIcon className="h-12 w-12 text-primary mb-4" />
-          <h1 className="text-4xl font-bold mb-8">ShelterMark</h1>
+          <h1 className="text-4xl font-bold mb-8">Sheltermark</h1>
           <p className="text-base md:text-xl mb-8 text-center text-muted-foreground max-w-2xl">
             A clean, minimalist bookmark manager. Sync across devices and share
             your collections.

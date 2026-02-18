@@ -2,7 +2,7 @@
 
 Last updated: February 18, 2026
 
-Sheltermark is a personal, open-source bookmark manager maintained by a solo developer. These terms govern your use of this free tool.
+Sheltermark is a personal, open-source bookmark manager. Organize and access your bookmarks from anywhere.
 
 ## Agreement to Terms
 

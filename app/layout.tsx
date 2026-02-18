@@ -12,9 +12,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShelterMark — Save place for your bookmarks",
+  title: "Sheltermark — Safe place for your bookmarks",
   description:
-    "A clean, minimalist bookmark manager. Sync across devices and share your collections.",
+    "A clean, minimalist bookmark manager. Organize and access your bookmarks from anywhere.",
 };
 
 export default function RootLayout({

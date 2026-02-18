@@ -15,7 +15,7 @@ export async function Header() {
   return (
     <header className="flex items-center justify-between px-4 md:px-6 py-4 mx-auto w-full">
       <div className="flex items-center gap-4">
-        <span className="text-xl font-bold hidden md:block">ShelterMark</span>
+        <span className="text-xl font-bold hidden md:block">Sheltermark</span>
         <WorkspaceMenu />
       </div>
       <div className="flex items-center gap-4">

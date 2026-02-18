@@ -13,7 +13,7 @@ export function Footer() {
         </Link>
       </div>
       <p>
-        © {new Date().getFullYear()} sheltermark - Safe place for your bookmarks
+        © {new Date().getFullYear()} Sheltermark - Safe place for your bookmarks
       </p>
     </footer>
   );
