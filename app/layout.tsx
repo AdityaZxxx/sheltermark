@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { QueryProvider } from "~/components/providers/query-provider";
+import { SupabaseProvider } from "~/components/providers/supabase-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -30,7 +31,9 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <NuqsAdapter>
-          <QueryProvider>{children}</QueryProvider>
+          <SupabaseProvider>
+            <QueryProvider>{children}</QueryProvider>
+          </SupabaseProvider>
         </NuqsAdapter>
       </body>
     </html>
