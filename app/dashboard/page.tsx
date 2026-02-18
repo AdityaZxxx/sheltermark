@@ -18,11 +18,11 @@ export default async function DashboardPage() {
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: ["workspaces"],
+      queryKey: ["workspaces", user?.id],
       queryFn: () => getWorkspaces(),
     }),
     queryClient.prefetchQuery({
-      queryKey: ["bookmarks"],
+      queryKey: ["bookmarks", user?.id],
       queryFn: async () => {
         const { data, error } = await getBookmarks();
         if (error) throw new Error(error);
