@@ -2,7 +2,6 @@
 
 import { GithubLogoIcon, GlobeIcon, XLogoIcon } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import { Button } from "~/components/ui/button";
 
 interface PublicProfileSidebarProps {
   profile: {
@@ -34,8 +33,8 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
       </div>
 
       <div className="text-left">
-        <h1 className="text-2xl font-bold">{displayName}</h1>
-        <p className="text-muted-foreground">@{profile.username}</p>
+        <h1 className="text-2xl font-semibold">{displayName}</h1>
+        <p className="text-muted-foreground text-sm">@{profile.username}</p>
       </div>
 
       {profile.bio && (
@@ -44,7 +43,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
         </p>
       )}
 
-      <div className="flex justify-start">
+      <div className="flex justify-start gap-4">
         {profile.website_url && (
           <a
             href={profile.website_url}
@@ -52,9 +51,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
             rel="noopener noreferrer"
             aria-label="Website"
           >
-            <Button variant="ghost" size="icon">
-              <GlobeIcon className="h-4 w-4" />
-            </Button>
+            <GlobeIcon className="h-4 w-4" />
           </a>
         )}
         {profile.github_url && (
@@ -64,9 +61,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
             rel="noopener noreferrer"
             aria-label="GitHub"
           >
-            <Button variant="ghost" size="icon">
-              <GithubLogoIcon className="h-4 w-4" />
-            </Button>
+            <GithubLogoIcon className="h-4 w-4" />
           </a>
         )}
         {profile.x_url && (
@@ -76,9 +71,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
             rel="noopener noreferrer"
             aria-label="X (Twitter)"
           >
-            <Button variant="ghost" size="icon">
-              <XLogoIcon className="h-4 w-4" />
-            </Button>
+            <XLogoIcon className="h-4 w-4" />
           </a>
         )}
       </div>

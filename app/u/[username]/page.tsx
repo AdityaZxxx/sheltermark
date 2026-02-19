@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { getPublicProfile } from "~/app/action/profile";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
+import { PublicHeader } from "../../../components/profile/public-header";
+import { requireAuthSafe } from "../../../lib/auth";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -36,6 +38,7 @@ export default async function PublicProfilePage({
 }: PublicProfilePageProps) {
   const { username } = await params;
   const result = await getPublicProfile(username);
+  const { user } = await requireAuthSafe();
 
   if (result.error || !result.profile) {
     return (
@@ -52,8 +55,9 @@ export default async function PublicProfilePage({
 
   return (
     <div className="min-h-screen bg-background pb-12">
-      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <PublicHeader user={user} />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
           <div className="lg:col-span-1">
             <div className="flex flex-col items-start text-left gap-4 sticky top-8">
               <PublicProfileSidebar profile={profile} />
