@@ -16,7 +16,16 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { useProfile } from "~/hooks/use-profile";
+import { useWorkspaces } from "~/hooks/use-workspaces";
 import { updateProfileSchema } from "~/lib/schemas";
+import { getPastelColor } from "../lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface SettingsGeneralTabProps {
   user: User;
@@ -28,6 +37,7 @@ export function SettingsGeneralTab({
   onCancel,
 }: SettingsGeneralTabProps) {
   const { profile, updateProfile } = useProfile();
+  const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
   const defaultFullName = profile?.full_name || "";
 
   const [isUploading, setIsUploading] = useState(false);
@@ -99,6 +109,7 @@ export function SettingsGeneralTab({
         e.preventDefault();
         form.handleSubmit();
       }}
+      className="flex flex-col"
     >
       <FieldGroup>
         <div className="flex justify-center pb-4 border-b border-border">
@@ -156,12 +167,49 @@ export function SettingsGeneralTab({
           <FieldDescription>Email cannot be changed.</FieldDescription>
         </Field>
 
-        <SettingsDialogFooter
-          isSubmitting={isSubmitting}
-          isDirty={isDirty}
-          onCancel={onCancel}
-        />
+        <Field>
+          <FieldLabel>Default Workspace</FieldLabel>
+          <Select
+            value={
+              workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id
+            }
+            onValueChange={(value) => setDefaultWorkspace(value)}
+            disabled={isSettingDefault}
+          >
+            <SelectTrigger>
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${getPastelColor(workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id)}`}
+                  />
+                  <span className="truncate">
+                    {workspaces.find((ws) => ws.is_default)?.name ||
+                      workspaces[0]?.name}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {workspaces.map((ws) => (
+                <SelectItem key={ws.id} value={ws.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
+                    />
+                    <span className="truncate">{ws.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       </FieldGroup>
+
+      <SettingsDialogFooter
+        isSubmitting={isSubmitting}
+        isDirty={isDirty}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

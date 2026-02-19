@@ -91,3 +91,26 @@ export async function togglePublicStatus(id: string, isPublic: boolean) {
 
   return { success: true };
 }
+
+export async function setDefaultWorkspace(id: string) {
+  const { user, supabase } = await requireAuth();
+
+  // First, unset all defaults
+  const { error: unsetError } = await supabase
+    .from("workspaces")
+    .update({ is_default: false })
+    .eq("user_id", user.id);
+
+  if (unsetError) return { error: unsetError.message };
+
+  // Then set the new default
+  const { error } = await supabase
+    .from("workspaces")
+    .update({ is_default: true })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
