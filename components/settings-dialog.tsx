@@ -26,12 +26,12 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex flex-col max-h-[95vh]">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Manage your account settings.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="general">
+        <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
           <TabsList className="w-full">
             <TabsTrigger value="general" className="flex-1">
               <GearIcon className="size-4" />
@@ -43,7 +43,10 @@ export function SettingsDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="pt-2">
+          <TabsContent
+            value="general"
+            className="flex-1 overflow-y-auto -mx-2 px-2 my-6"
+          >
             <SettingsGeneralTab
               user={user}
               onCancel={() => onOpenChange(false)}
@@ -52,7 +55,7 @@ export function SettingsDialog({
 
           <TabsContent
             value="profile"
-            className="pt-2 -mx-2 px-2 max-h-[60vh] overflow-y-auto"
+            className="flex-1 overflow-y-auto -mx-2 px-2 my-6"
           >
             <SettingsProfileTab onCancel={() => onOpenChange(false)} />
           </TabsContent>

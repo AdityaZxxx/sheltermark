@@ -8,6 +8,7 @@ import {
   createWorkspace,
   deleteWorkspace,
   getWorkspaces,
+  setDefaultWorkspace,
   togglePublicStatus,
 } from "~/app/action/workspace";
 import { useSupabase } from "~/components/providers/supabase-provider";
@@ -93,6 +94,18 @@ export function useWorkspaces() {
     },
   });
 
+  const setDefaultMutation = useMutation({
+    mutationFn: setDefaultWorkspace,
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success("Default workspace updated");
+        queryClient.invalidateQueries({ queryKey: ["workspaces", user?.id] });
+      }
+    },
+  });
+
   return {
     workspaces,
     currentWorkspace,
@@ -104,5 +117,7 @@ export function useWorkspaces() {
     isDeleting: deleteMutation.isPending,
     togglePublicStatus: publicToggleMutation.mutate,
     isTogglingPublic: publicToggleMutation.isPending,
+    setDefaultWorkspace: setDefaultMutation.mutate,
+    isSettingDefault: setDefaultMutation.isPending,
   };
 }

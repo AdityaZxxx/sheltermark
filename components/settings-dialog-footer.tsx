@@ -1,5 +1,6 @@
 import { SpinnerIcon } from "@phosphor-icons/react";
 import { Button } from "~/components/ui/button";
+import { DialogFooter } from "~/components/ui/dialog";
 
 interface SettingsDialogFooterProps {
   isSubmitting: boolean;
@@ -15,7 +16,7 @@ export function SettingsDialogFooter({
   onCancel,
 }: SettingsDialogFooterProps) {
   return (
-    <div className="flex justify-end gap-2 mt-4">
+    <DialogFooter className="mt-6 pt-4 border-t shrink-0 sticky bottom-0 bg-background">
       <Button
         type="button"
         variant="outline"
@@ -34,6 +35,6 @@ export function SettingsDialogFooter({
           "Save"
         )}
       </Button>
-    </div>
+    </DialogFooter>
   );
 }

@@ -160,8 +160,9 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
         e.preventDefault();
         form.handleSubmit();
       }}
+      className="flex flex-col"
     >
-      <FieldGroup className="overflow-y-auto max-h-[calc(60vh-80px)]">
+      <FieldGroup>
         <form.Field name="is_public">
           {(field) => (
             <Field orientation="horizontal">

@@ -31,6 +31,10 @@ export const workspaceRenameSchema = z.object({
   name: z.string().min(1, "Name is required").max(50, "Name too long"),
 });
 
+export const workspaceSetDefaultSchema = z.object({
+  id: z.uuid(),
+});
+
 export const usernameSchema = z
   .string()
   .min(3, { message: "Username must be at least 3 characters" })
