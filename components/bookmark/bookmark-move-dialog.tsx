@@ -30,6 +30,11 @@ interface BookmarkMoveDialogProps {
   workspaces: { id: string; name: string }[];
   currentWorkspaceId?: string | null;
   onSuccess: () => void;
+  onConfirm?: (
+    ids: string[],
+    targetWorkspaceId: string,
+  ) => void | Promise<void>;
+  silent?: boolean;
 }
 
 export function BookmarkMoveDialog({
@@ -39,6 +44,8 @@ export function BookmarkMoveDialog({
   workspaces,
   currentWorkspaceId,
   onSuccess,
+  onConfirm,
+  silent = false,
 }: BookmarkMoveDialogProps) {
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
     null,
@@ -65,17 +72,29 @@ export function BookmarkMoveDialog({
     if (ids.length === 0 || !targetWorkspaceId) return;
 
     setIsPending(true);
-    const res = await moveBookmarks(ids, targetWorkspaceId);
-    setIsPending(false);
 
-    if (res.success) {
-      toast.success(
-        ids.length === 1 ? "Bookmark moved" : `${ids.length} bookmarks moved`,
-      );
+    if (onConfirm) {
+      await onConfirm(ids, targetWorkspaceId);
+      setIsPending(false);
       onSuccess();
       onOpenChange(false);
     } else {
-      toast.error(res.error || "Failed to move bookmarks");
+      const res = await moveBookmarks(ids, targetWorkspaceId);
+      setIsPending(false);
+
+      if (res.success) {
+        if (!silent) {
+          toast.success(
+            ids.length === 1
+              ? "Bookmark moved"
+              : `${ids.length} bookmarks moved`,
+          );
+        }
+        onSuccess();
+        onOpenChange(false);
+      } else {
+        toast.error(res.error || "Failed to move bookmarks");
+      }
     }
   };
 

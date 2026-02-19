@@ -4,13 +4,13 @@ import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import { cn } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 
-interface BookmarkCardItemProps {
+interface BookmarkItemProps {
   id: string;
   title: string;
   url: string;
-  og_image_url?: string;
-  favicon_url?: string;
   domain: string;
+  favicon_url?: string;
+  og_image_url?: string;
   created_at: string;
   isSelected?: boolean;
   isSelectionMode?: boolean;
@@ -25,6 +25,10 @@ interface BookmarkCardItemProps {
   onSelectionModeToggle?: () => void;
   tabIndex?: number;
   disableContextMenu?: boolean;
+}
+
+interface BookmarkCardItemProps extends BookmarkItemProps {
+  og_image_url?: string;
 }
 
 export function BookmarkCardItem({

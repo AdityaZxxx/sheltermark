@@ -3,37 +3,14 @@
 import { useQueryState } from "nuqs";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { getPastelColor } from "~/lib/utils";
+import { getPastelColor, safeDomain } from "~/lib/utils";
+import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkListItem } from "./bookmark-list-item";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
 
-interface Bookmark {
-  id: string;
-  title: string;
-  url: string;
-  description: string | null;
-  favicon_url: string | null;
-  og_image_url: string | null;
-  created_at: string;
-}
-
-interface Workspace {
-  id: string;
-  name: string;
-  bookmarks: Bookmark[];
-}
-
 interface BookmarkViewReadOnlyProps {
-  workspaces: Workspace[];
-}
-
-function safeDomain(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url || "";
-  }
+  workspaces: WorkspaceWithBookmarks[];
 }
 
 function slugify(str: string): string {

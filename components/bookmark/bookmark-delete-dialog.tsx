@@ -19,6 +19,8 @@ interface BookmarkDeleteDialogProps {
   onOpenChange: (open: boolean) => void;
   ids: string[];
   onSuccess: () => void;
+  onConfirm?: (ids: string[]) => void | Promise<void>;
+  silent?: boolean;
 }
 
 export function BookmarkDeleteDialog({
@@ -26,6 +28,8 @@ export function BookmarkDeleteDialog({
   onOpenChange,
   ids,
   onSuccess,
+  onConfirm,
+  silent = false,
 }: BookmarkDeleteDialogProps) {
   const [isPending, setIsPending] = useState(false);
 
@@ -33,19 +37,29 @@ export function BookmarkDeleteDialog({
     if (ids.length === 0) return;
 
     setIsPending(true);
-    const res = await deleteBookmarks(ids);
-    setIsPending(false);
 
-    if (res.success) {
-      toast.success(
-        ids.length === 1
-          ? "Bookmark deleted"
-          : `${ids.length} bookmarks deleted`,
-      );
+    if (onConfirm) {
+      await onConfirm(ids);
+      setIsPending(false);
       onSuccess();
       onOpenChange(false);
     } else {
-      toast.error(res.error || "Failed to delete bookmarks");
+      const res = await deleteBookmarks(ids);
+      setIsPending(false);
+
+      if (res.success) {
+        if (!silent) {
+          toast.success(
+            ids.length === 1
+              ? "Bookmark deleted"
+              : `${ids.length} bookmarks deleted`,
+          );
+        }
+        onSuccess();
+        onOpenChange(false);
+      } else {
+        toast.error(res.error || "Failed to delete bookmarks");
+      }
     }
   };
 

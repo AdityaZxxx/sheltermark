@@ -4,12 +4,13 @@ import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import { cn } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 
-interface BookmarkListItemProps {
+interface BookmarkItemProps {
   id: string;
   title: string;
   url: string;
-  favicon_url?: string;
   domain: string;
+  favicon_url?: string;
+  og_image_url?: string;
   created_at: string;
   isSelected?: boolean;
   isSelectionMode?: boolean;
@@ -25,6 +26,8 @@ interface BookmarkListItemProps {
   tabIndex?: number;
   disableContextMenu?: boolean;
 }
+
+interface BookmarkListItemProps extends BookmarkItemProps {}
 
 export function BookmarkListItem({
   id,

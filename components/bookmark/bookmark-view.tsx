@@ -3,8 +3,10 @@
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
-import { type Bookmark, useBookmarks } from "~/hooks/use-bookmarks";
+import { useBookmarks } from "~/hooks/use-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import { safeDomain } from "~/lib/utils";
+import type { Bookmark } from "~/types/bookmark.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
 import { BookmarkInput } from "./bookmark-input";
@@ -13,14 +15,6 @@ import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
-
-function safeDomain(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url || "";
-  }
-}
 
 export function BookmarkView() {
   const [view, setView] = useState<"list" | "card">("list");
@@ -98,16 +92,13 @@ export function BookmarkView() {
   }, []);
 
   const handleMoveToWorkspace = useCallback(
-    async (id: string, workspaceId: string) => {
-      const res = await moveBookmarks({
+    (id: string, workspaceId: string) => {
+      moveBookmarks({
         ids: [id],
         targetWorkspaceId: workspaceId,
       });
-      if (res.success) {
-        invalidate();
-      }
     },
-    [moveBookmarks, invalidate],
+    [moveBookmarks],
   );
 
   const handleBulkMoveTrigger = useCallback(() => {
@@ -130,9 +121,8 @@ export function BookmarkView() {
       setSearchQuery("");
       toast.promise(
         async () => {
-          const res = await addBookmark(formData);
-          if (res.error) throw new Error(res.error);
-          return res;
+          await addBookmark(formData);
+          return "Bookmark added!";
         },
         {
           loading: "Fetching metadata and saving...",
