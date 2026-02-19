@@ -9,11 +9,8 @@ interface PublicHeaderProps {
 
 export async function PublicHeader({ user }: PublicHeaderProps) {
   return (
-    <header
-      className="
-        w-full bg-background"
-    >
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between">
+    <header className="w-full bg-background">
+      <div className="mx-auto flex items-center py-4 justify-between">
         <Link
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
