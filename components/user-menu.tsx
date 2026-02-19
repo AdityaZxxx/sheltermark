@@ -7,9 +7,11 @@ import {
   MoonIcon,
   SignOutIcon,
   SunIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -69,6 +71,15 @@ export function UserMenu({ user }: UserMenuProps) {
               <GearIcon className="h-4 w-4" /> Settings
             </span>
           </DropdownMenuItem>
+          {profile?.is_public && (
+            <DropdownMenuItem className="w-full">
+              <Link href={`/u/${profile?.username}`}>
+                <span className="w-full flex items-center gap-2">
+                  <UserCircleIcon className="h-4 w-4" /> Public Profile
+                </span>
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             variant="destructive"
             className="w-full"
