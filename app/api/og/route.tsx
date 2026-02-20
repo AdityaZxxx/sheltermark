@@ -2,8 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
-import { getPublicProfile } from "~/app/action/profile";
+import { getProfileDisplayName } from "~/app/action/profile";
 import { OGImage } from "~/components/og/og-image";
+
+const interRegular = fs.readFileSync(
+  path.join(process.cwd(), "assets/Inter_18pt-Regular.ttf"),
+);
+
+const interBold = fs.readFileSync(
+  path.join(process.cwd(), "assets/Inter_18pt-SemiBold.ttf"),
+);
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -17,19 +25,8 @@ export async function GET(req: NextRequest) {
   let display_name: string | undefined;
 
   if (username) {
-    const result = await getPublicProfile(username);
-    if (result.profile?.full_name) {
-      display_name = result.profile.full_name;
-    }
+    display_name = (await getProfileDisplayName(username)) ?? undefined;
   }
-
-  const interRegular = fs.readFileSync(
-    path.join(process.cwd(), "assets/Inter_18pt-Regular.ttf"),
-  );
-
-  const interBold = fs.readFileSync(
-    path.join(process.cwd(), "assets/Inter_18pt-SemiBold.ttf"),
-  );
 
   return new ImageResponse(
     <OGImage
