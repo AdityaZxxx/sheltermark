@@ -15,7 +15,7 @@ export async function PublicHeader({ user }: PublicHeaderProps) {
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
         >
-          <Logo width={28} height={28} className="shrink-0" />
+          <Logo size={28} className="shrink-0" />
           <span className="text-lg font-semibold tracking-tight text-foreground">
             Sheltermark
           </span>
