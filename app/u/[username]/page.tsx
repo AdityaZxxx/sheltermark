@@ -4,7 +4,7 @@ import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readon
 import { PublicHeader } from "~/components/profile/public-header";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
 import { requireAuthSafe } from "~/lib/auth";
-import { getBaseUrl } from "~/lib/utils";
+import { getBaseUrl, slugify } from "~/lib/utils";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -42,7 +42,7 @@ export async function generateMetadata({
   });
 
   if (workspace) {
-    const ws = workspaces.find((w) => w.name === workspace);
+    const ws = workspaces.find((w) => slugify(w.name) === workspace);
     if (ws) {
       title = `${ws.name} — ${displayName} (@${profile.username})`;
       description = `Explore bookmarks in ${ws.name} by ${displayName} on Sheltermark`;

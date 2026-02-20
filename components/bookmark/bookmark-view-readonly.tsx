@@ -3,7 +3,7 @@
 import { useQueryState } from "nuqs";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { getPastelColor, safeDomain } from "~/lib/utils";
+import { getPastelColor, safeDomain, slugify } from "~/lib/utils";
 import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkListItem } from "./bookmark-list-item";
@@ -11,13 +11,6 @@ import { BookmarkViewToggle } from "./bookmark-view-toggle";
 
 interface BookmarkViewReadOnlyProps {
   workspaces: WorkspaceWithBookmarks[];
-}
-
-function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 export function BookmarkViewReadOnly({

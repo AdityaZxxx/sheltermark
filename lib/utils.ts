@@ -73,6 +73,13 @@ export function safeDomain(url: string): string {
   }
 }
 
+export function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 function ensureProtocol(url: string): string {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
