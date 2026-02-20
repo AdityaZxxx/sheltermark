@@ -25,6 +25,26 @@ export const PASTEL_COLORS = [
   "bg-rose-300",
 ];
 
+export const PASTEL_HEX_COLORS = [
+  "#fca5a5",
+  "#fdba74",
+  "#fcd34d",
+  "#fde047",
+  "#bef264",
+  "#86efac",
+  "#6ee7b7",
+  "#5eead4",
+  "#67e8f9",
+  "#7dd3fc",
+  "#93c5fd",
+  "#a5b4fc",
+  "#c4b5fd",
+  "#d8b4fe",
+  "#f0abfc",
+  "#f9a8d4",
+  "#fda4af",
+];
+
 export function getPastelColor(id: string) {
   if (id === "default" || !id) return "bg-muted";
   let hash = 0;
@@ -35,10 +55,30 @@ export function getPastelColor(id: string) {
   return PASTEL_COLORS[index];
 }
 
+export function getPastelHexColor(id: string) {
+  if (id === "default" || !id) return "#a3a3a3";
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PASTEL_HEX_COLORS.length;
+  return PASTEL_HEX_COLORS[index];
+}
+
 export function safeDomain(url: string): string {
   try {
     return new URL(url).hostname;
   } catch {
     return url || "";
   }
+}
+
+export function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
 }
