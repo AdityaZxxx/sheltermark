@@ -2,6 +2,21 @@ import { requireAuthSafe } from "~/lib/auth";
 import type { Profile } from "~/types/profile.types";
 import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 
+export async function getProfileDisplayName(
+  username: string,
+): Promise<string | null> {
+  const { supabase } = await requireAuthSafe();
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("username", username)
+    .eq("is_public", true)
+    .single();
+
+  return data?.full_name ?? null;
+}
+
 export async function getPublicProfile(username: string): Promise<{
   profile?: Profile;
   workspaces: WorkspaceWithBookmarks[];
