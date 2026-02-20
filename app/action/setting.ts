@@ -36,10 +36,6 @@ async function deleteAvatarFromStorage(
 export async function updateProfile(data: { full_name: string }) {
   const { user, supabase } = await requireAuth();
 
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
   const validated = updateProfileSchema.safeParse(data);
 
   if (!validated.success) {
@@ -80,10 +76,6 @@ export async function updatePublicProfile(data: {
   current_username?: string;
 }) {
   const { user, supabase } = await requireAuth();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
 
   const validated = updatePublicProfileSchema.safeParse(data);
 
@@ -145,10 +137,6 @@ export async function updatePublicProfile(data: {
 export async function getProfile() {
   const { user, supabase } = await requireAuth();
 
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
@@ -169,10 +157,6 @@ export async function checkUsernameAvailability(data: {
   current_username?: string;
 }) {
   const { user, supabase } = await requireAuth();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
 
   let { username, current_username } = data;
 
@@ -210,10 +194,6 @@ export async function checkUsernameAvailability(data: {
 
 export async function uploadAvatar(formData: FormData) {
   const { user, supabase } = await requireAuth();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
 
   const file = formData.get("file") as File;
 
@@ -315,10 +295,6 @@ export async function uploadAvatar(formData: FormData) {
 
 export async function deleteAvatar() {
   const { user, supabase } = await requireAuth();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
 
   try {
     const { data: profile } = await supabase

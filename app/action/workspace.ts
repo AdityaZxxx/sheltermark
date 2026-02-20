@@ -4,7 +4,7 @@ import { requireAuth } from "~/lib/auth";
 import { workspaceCreateSchema } from "~/lib/schemas";
 
 export async function getWorkspaces() {
-  const { supabase } = await requireAuth();
+  const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
     .from("workspaces")
@@ -12,7 +12,8 @@ export async function getWorkspaces() {
       *,
       bookmarks(count)
     `)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .eq("user_id", user.id);
 
   if (error) throw new Error(error.message);
 
@@ -34,7 +35,6 @@ export async function createWorkspace(formData: FormData) {
   }
 
   const { user, supabase } = await requireAuth();
-  if (!user) return { error: "Not authenticated" };
 
   const { data, error } = await supabase
     .from("workspaces")
