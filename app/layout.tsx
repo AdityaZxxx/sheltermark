@@ -48,8 +48,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/logo.svg", type: "image/svg+xml" }],
+    apple: [
+      { url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" },
+    ],
+    shortcut: ["/logo.svg"],
   },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
