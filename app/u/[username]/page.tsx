@@ -1,35 +1,77 @@
 import type { Metadata } from "next";
 import { getPublicProfile } from "~/app/action/profile";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
+import { PublicHeader } from "~/components/profile/public-header";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
-import { PublicHeader } from "../../../components/profile/public-header";
-import { requireAuthSafe } from "../../../lib/auth";
+import { requireAuthSafe } from "~/lib/auth";
+import { getBaseUrl } from "~/lib/utils";
 
 interface PublicProfilePageProps {
   params: Promise<{
     username: string;
   }>;
+  searchParams: Promise<{
+    workspace?: string;
+  }>;
 }
-
 export async function generateMetadata({
   params,
+  searchParams,
 }: PublicProfilePageProps): Promise<Metadata> {
   const { username } = await params;
+  const { workspace } = await searchParams;
   const result = await getPublicProfile(username);
 
   if (result.error || !result.profile) {
     return {
       title: "Profile not found — Sheltermark",
+      openGraph: {
+        title: "Profile not found — Sheltermark",
+        images: [`${getBaseUrl()}/api/og?title=Profile%20not%20found`],
+      },
     };
   }
 
-  const { profile } = result;
-  const displayName = profile.full_name || profile.username;
+  const { profile, workspaces } = result;
+  const displayName = profile.full_name;
+  let title: string;
+  let description: string;
+
+  const ogParams = new URLSearchParams({
+    username: profile.username,
+  });
+
+  if (workspace) {
+    const ws = workspaces.find((w) => w.name === workspace);
+    if (ws) {
+      title = `${ws.name} — ${displayName} (@${profile.username})`;
+      description = `Explore bookmarks in ${ws.name} by ${displayName} on Sheltermark`;
+      ogParams.set("workspace", ws.name);
+    } else {
+      title = `${displayName} (@${profile.username}) — Sheltermark`;
+      description = `Check out ${profile.username}'s bookmarks on Sheltermark`;
+    }
+  } else {
+    title = `${displayName} (@${profile.username}) — Sheltermark`;
+    description = `Check out ${profile.username}'s bookmarks on Sheltermark`;
+  }
+
+  const ogUrl = `${getBaseUrl()}/api/og?${ogParams.toString()}`;
 
   return {
-    title: `${displayName} (@${profile.username}) — Sheltermark`,
-    description:
-      profile.bio || `Check out ${profile.username}'s bookmarks on Sheltermark`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogUrl],
+    },
   };
 }
 

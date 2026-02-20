@@ -9,7 +9,7 @@ export default function Page() {
     <div className="flex min-h-screen flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 md:py-24">
         <div className="flex flex-col items-center mt-8 text-center">
-          <Logo width={64} height={64} className="mb-2" />
+          <Logo size={64} className="mb-2" />
           <h1 className="text-4xl font-bold mb-8">Sheltermark</h1>
           <p className="text-base md:text-xl mb-8 text-center text-muted-foreground max-w-2xl">
             A clean, minimalist bookmark manager. Organize and access your
