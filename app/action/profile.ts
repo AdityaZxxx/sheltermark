@@ -1,35 +1,9 @@
 import { requireAuthSafe } from "~/lib/auth";
-
-interface PublicProfile {
-  username: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  github_url: string | null;
-  x_url: string | null;
-  website_url: string | null;
-  is_public: boolean;
-  created_at: string;
-}
-
-interface Bookmark {
-  id: string;
-  title: string;
-  url: string;
-  description: string | null;
-  favicon_url: string | null;
-  og_image_url: string | null;
-  created_at: string;
-}
-
-interface WorkspaceWithBookmarks {
-  id: string;
-  name: string;
-  bookmarks: Bookmark[];
-}
+import type { Profile } from "~/types/profile.types";
+import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 
 export async function getPublicProfile(username: string): Promise<{
-  profile?: PublicProfile;
+  profile?: Profile;
   workspaces: WorkspaceWithBookmarks[];
   error?: string;
 }> {
@@ -80,6 +54,7 @@ export async function getPublicProfile(username: string): Promise<{
 
   return {
     profile: {
+      id: profile.id,
       username: profile.username,
       full_name: profile.full_name,
       avatar_url: profile.avatar_url,
