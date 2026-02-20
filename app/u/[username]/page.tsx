@@ -42,17 +42,12 @@ export async function generateMetadata({
   });
 
   if (workspace) {
-    ogParams.set("workspace", workspace);
-  }
-
-  if (workspace) {
     const ws = workspaces.find((w) => w.name === workspace);
     if (ws) {
       title = `${ws.name} — ${displayName} (@${profile.username})`;
       description = `Explore bookmarks in ${ws.name} by ${displayName} on Sheltermark`;
       ogParams.set("workspace", ws.name);
     } else {
-      // fallback if workspace is not found
       title = `${displayName} (@${profile.username}) — Sheltermark`;
       description = `Check out ${profile.username}'s bookmarks on Sheltermark`;
     }
