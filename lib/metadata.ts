@@ -1,6 +1,16 @@
 import dns from "node:dns/promises";
 import { isIP } from "node:net";
 
+export type Metadata = {
+  title: string;
+  og_image_url: string | null;
+  favicon_url: string | null;
+};
+
+const MAX_REDIRECTS = 5;
+const REQUEST_TIMEOUT = 10000;
+const MAX_HTML_SIZE = 200 * 1024; // 200KB
+
 const HTML_ENTITIES: Record<string, string> = {
   "&amp;": "&",
   "&lt;": "<",
@@ -33,32 +43,40 @@ function decodeHtmlEntities(text: string): string {
   return decoded;
 }
 
-/**
- * Validates if an IP address is private or reserved
- */
+function resolveUrl(path: string | null, baseUrl: string): string | null {
+  if (!path) return null;
+  try {
+    return new URL(path, baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function getGoogleFavicon(hostname: string): string {
+  return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+}
+
 function isPrivateIP(ip: string): boolean {
-  // IPv4 checks
   const ipv4Match = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (ipv4Match) {
     const [, p1, p2] = ipv4Match.map(Number);
-    if (p1 === 10) return true; // 10.0.0.0/8
-    if (p1 === 127) return true; // 127.0.0.0/8
-    if (p1 === 169 && p2 === 254) return true; // 169.254.0.0/16
-    if (p1 === 172 && p2 >= 16 && p2 <= 31) return true; // 172.16.0.0/12
-    if (p1 === 192 && p2 === 168) return true; // 192.168.0.0/16
-    if (p1 === 0) return true; // 0.0.0.0/8
-    if (p1 >= 224) return true; // Multicast/Reserved
+    if (p1 === 10) return true;
+    if (p1 === 127) return true;
+    if (p1 === 169 && p2 === 254) return true;
+    if (p1 === 172 && p2 >= 16 && p2 <= 31) return true;
+    if (p1 === 192 && p2 === 168) return true;
+    if (p1 === 0) return true;
+    if (p1 >= 224) return true;
   }
 
-  // IPv6 checks
   const ipLower = ip.toLowerCase();
   if (
     ipLower === "::1" ||
     ipLower === "::" ||
-    ipLower.startsWith("fe80:") || // link-local
-    ipLower.startsWith("fc00:") || // unique local
-    ipLower.startsWith("fd00:") || // unique local
-    ipLower.startsWith("ff00:") // multicast
+    ipLower.startsWith("fe80:") ||
+    ipLower.startsWith("fc00:") ||
+    ipLower.startsWith("fd00:") ||
+    ipLower.startsWith("ff00:")
   ) {
     return true;
   }
@@ -66,25 +84,14 @@ function isPrivateIP(ip: string): boolean {
   return false;
 }
 
-/**
- * Validates if a URL is safe for server-side fetching (SSRF protection)
- */
 async function isSafeUrl(url: string): Promise<boolean> {
   try {
     const urlObj = new URL(url);
-
-    // 1. Enforce allowed schemes (only https)
     if (urlObj.protocol !== "https:") return false;
 
     const hostname = urlObj.hostname;
+    if (isIP(hostname)) return !isPrivateIP(hostname);
 
-    // 2. Check if hostname is an IP and if it's private
-    if (isIP(hostname)) {
-      return !isPrivateIP(hostname);
-    }
-
-    // 3. Resolve hostname to IP and check if it's private
-    // Using a timeout to prevent DNS hang
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
 
@@ -101,10 +108,6 @@ async function isSafeUrl(url: string): Promise<boolean> {
   }
 }
 
-/**
- * Fetch with retry logic and exponential backoff.
- * Retries on 5xx errors, 429 (rate limit), and network failures.
- */
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
@@ -116,10 +119,9 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, options);
 
-      // Retry on server errors and rate limits
       if (response.status >= 500 || response.status === 429) {
         if (attempt < maxRetries) {
-          const delay = Math.min(1000 * 2 ** attempt, 5000); // 1s, 2s, max 5s
+          const delay = Math.min(1000 * 2 ** attempt, 5000);
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
@@ -128,7 +130,6 @@ async function fetchWithRetry(
       return response;
     } catch (error) {
       lastError = error as Error;
-      // Don't retry on timeout/abort, but retry on network failures
       if (
         attempt < maxRetries &&
         error instanceof Error &&
@@ -145,20 +146,155 @@ async function fetchWithRetry(
   throw lastError || new Error("Max retries exceeded");
 }
 
-export type Metadata = {
-  title: string;
-  og_image_url: string | null;
-  favicon_url: string | null;
-};
+async function readHtmlWithLimit(
+  response: Response,
+  maxBytes: number,
+): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) return "";
 
-/**
- * Fallback to external API (Microlink) for difficult sites
- */
-async function fetchMetadataViaMicrolink(
-  url: string,
-): Promise<Metadata | null> {
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
   try {
-    // Use Microlink API (free tier: 50 requests/day)
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      chunks.push(value);
+      totalBytes += value.length;
+
+      if (totalBytes >= maxBytes) {
+        await reader.cancel();
+        break;
+      }
+    }
+  } catch {
+    // Reader cancelled or error, return what we have
+  }
+
+  const combined = new Uint8Array(Math.min(totalBytes, maxBytes));
+  let offset = 0;
+  for (const chunk of chunks) {
+    const remaining = combined.length - offset;
+    if (remaining <= 0) break;
+    const toCopy = Math.min(chunk.length, remaining);
+    combined.set(chunk.subarray(0, toCopy), offset);
+    offset += toCopy;
+  }
+
+  return new TextDecoder().decode(combined);
+}
+
+async function safeFetchHtml(
+  url: string,
+): Promise<{ html: string; finalUrl: string } | null> {
+  let currentUrl = url;
+  let redirectCount = 0;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  while (redirectCount <= MAX_REDIRECTS) {
+    try {
+      const response = await fetchWithRetry(currentUrl, {
+        signal: controller.signal,
+        redirect: "manual",
+        headers: {
+          "User-Agent": "Sheltermark/1.0",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+      });
+
+      if (
+        response.status >= 300 &&
+        response.status < 400 &&
+        response.headers.get("location")
+      ) {
+        redirectCount++;
+        // biome-ignore lint/style/noNonNullAssertion: because of the check above, this is guaranteed to be defined
+        const location = response.headers.get("location")!;
+        const newUrl = new URL(location, currentUrl).toString();
+
+        const isSafe = await isSafeUrl(newUrl);
+        if (!isSafe) {
+          throw new Error(`Redirect to unsafe URL blocked: ${newUrl}`);
+        }
+
+        currentUrl = newUrl;
+        continue;
+      }
+
+      clearTimeout(timeout);
+
+      if (!response.ok) return null;
+
+      const html = await readHtmlWithLimit(response, MAX_HTML_SIZE);
+      return { html, finalUrl: currentUrl };
+    } catch (error) {
+      clearTimeout(timeout);
+      throw error;
+    }
+  }
+
+  clearTimeout(timeout);
+  throw new Error(`Too many redirects (max ${MAX_REDIRECTS})`);
+}
+
+function extractMetadataFromHtml(
+  html: string,
+  baseUrl: string,
+): Omit<Metadata, "favicon_url"> & { favicon_url: string | null } {
+  const { load } = require("cheerio");
+  const $ = load(html);
+
+  const getMeta = (selectors: string[]): string | null => {
+    for (const selector of selectors) {
+      const el = $(selector);
+      const content = el.attr("content") || el.attr("href") || el.text();
+      if (content) return content;
+    }
+    return null;
+  };
+
+  const title =
+    getMeta([
+      'meta[property="og:title"]',
+      'meta[name="twitter:title"]',
+      'meta[name="title"]',
+      "title",
+    ]) || new URL(baseUrl).hostname;
+
+  const ogImage = resolveUrl(
+    getMeta([
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'link[rel="image_src"]',
+      'meta[itemprop="image"]',
+    ]),
+    baseUrl,
+  );
+
+  const favicon = resolveUrl(
+    getMeta([
+      'link[rel="apple-touch-icon"]',
+      'link[rel="icon"]',
+      'link[rel="shortcut icon"]',
+      'link[rel="mask-icon"]',
+    ]),
+    baseUrl,
+  );
+
+  return {
+    title: decodeHtmlEntities(title.trim()),
+    og_image_url: ogImage,
+    favicon_url: favicon,
+  };
+}
+
+async function fetchViaMicrolink(url: string): Promise<Metadata | null> {
+  try {
     const apiUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}`;
     const response = await fetch(apiUrl, {
       headers: { Accept: "application/json" },
@@ -174,230 +310,130 @@ async function fetchMetadataViaMicrolink(
       og_image_url: data.data?.image?.url || null,
       favicon_url: data.data?.logo?.url || null,
     };
-  } catch (error) {
-    console.error("Microlink fallback failed:", error);
+  } catch {
     return null;
   }
 }
 
-export async function fetchMetadata(url: string): Promise<Metadata> {
+async function fetchTwitterMetadata(url: string): Promise<Metadata | null> {
   try {
     const urlObj = new URL(url);
-    const hostname = urlObj.hostname;
+    const apiPath = urlObj.pathname;
+    const apiUrl = `https://api.fxtwitter.com${apiPath}`;
 
-    // 1. SSRF Check
-    const isSafe = await isSafeUrl(url);
-    if (!isSafe) {
-      return {
-        title: url,
-        og_image_url: null,
-        favicon_url: `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
-      };
-    }
-
-    // 2. Special handling for Twitter/X using fxtwitter (Unlimited & Fast)
-    if (
-      hostname === "twitter.com" ||
-      hostname.endsWith(".twitter.com") ||
-      hostname === "x.com" ||
-      hostname.endsWith(".x.com")
-    ) {
-      try {
-        // Construct fxtwitter URL
-        // e.g. https://x.com/user/status/123 -> https://api.fxtwitter.com/user/status/123
-        const apiPath = urlObj.pathname;
-        const apiUrl = `https://api.fxtwitter.com${apiPath}`;
-
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-
-        // Use a bot UA to ensure we get the JSON response or proper meta if we were scraping
-        // But fxtwitter API returns JSON directly.
-        const response = await fetch(apiUrl, {
-          signal: controller.signal,
-          headers: { "User-Agent": "Sheltermark/1.0" },
-        });
-        clearTimeout(timeout);
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.tweet) {
-            return {
-              title: `${data.tweet.author.name} on X: "${data.tweet.text.substring(0, 50)}..."`,
-              og_image_url:
-                data.tweet.media?.photos?.[0]?.url ||
-                data.tweet.author.avatar_url,
-              favicon_url: data.tweet.author.avatar_url,
-            };
-          }
-          if (data.user) {
-            return {
-              title: `${data.user.name} (@${data.user.screen_name}) / X`,
-              og_image_url: data.user.avatar_url?.replace("_normal", ""),
-              favicon_url: data.user.avatar_url,
-            };
-          }
-        }
-      } catch (e) {
-        console.error(
-          "Twitter API fetch failed, falling back to standard scrape",
-          e,
-        );
-      }
-    }
-
-    // 3. JS-Heavy Check (Instagram, Facebook) -> Use Microlink immediately
-    // These sites are notoriously hard to scrape without headless browsers/APIs
-    if (
-      hostname === "instagram.com" ||
-      hostname.endsWith(".instagram.com") ||
-      hostname === "facebook.com" ||
-      hostname.endsWith(".facebook.com")
-    ) {
-      const microResult = await fetchMetadataViaMicrolink(url);
-      if (microResult) return microResult;
-    }
-
-    // 4. Standard Fetch (Waterfall with Cheerio)
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
-    let response: Response;
-    try {
-      response = await fetchWithRetry(
-        url,
-        {
-          signal: controller.signal,
-          headers: {
-            "User-Agent": "Sheltermark/1.0",
-            Accept:
-              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          },
-        },
-        2,
-      );
-    } catch (e) {
-      clearTimeout(timeout);
-      // If standard fetch fails, try Microlink as last resort
-      console.warn(
-        `Standard fetch failed for ${url}, trying Microlink fallback...`,
-      );
-      const microResult = await fetchMetadataViaMicrolink(url);
-      if (microResult) return microResult;
-      throw e;
-    }
-
+    const response = await fetch(apiUrl, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Sheltermark/1.0" },
+    });
     clearTimeout(timeout);
 
-    if (!response.ok) {
-      // If status is bad (e.g. 403 Forbidden), try Microlink
-      console.warn(
-        `Standard fetch status ${response.status} for ${url}, trying Microlink fallback...`,
-      );
-      const microResult = await fetchMetadataViaMicrolink(url);
-      if (microResult) return microResult;
+    if (!response.ok) return null;
 
+    const data = await response.json();
+    if (data.tweet) {
       return {
-        title: url,
-        og_image_url: null,
-        favicon_url: `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
+        title: `${data.tweet.author.name} on X: "${data.tweet.text.substring(0, 50)}..."`,
+        og_image_url:
+          data.tweet.media?.photos?.[0]?.url || data.tweet.author.avatar_url,
+        favicon_url: data.tweet.author.avatar_url,
       };
     }
+    if (data.user) {
+      return {
+        title: `${data.user.name} (@${data.user.screen_name}) / X`,
+        og_image_url: data.user.avatar_url?.replace("_normal", ""),
+        favicon_url: data.user.avatar_url,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
-    const html = await response.text();
+function isTwitterUrl(hostname: string): boolean {
+  return (
+    hostname === "twitter.com" ||
+    hostname.endsWith(".twitter.com") ||
+    hostname === "x.com" ||
+    hostname.endsWith(".x.com")
+  );
+}
 
-    // Dynamic import for performance
-    const { load } = await import("cheerio");
-    const $ = load(html);
+function isJsHeavySite(hostname: string): boolean {
+  return (
+    hostname === "instagram.com" ||
+    hostname.endsWith(".instagram.com") ||
+    hostname === "facebook.com" ||
+    hostname.endsWith(".facebook.com")
+  );
+}
 
-    // Helper to get content from meta tags
-    const getMeta = (selectors: string[]): string | null => {
-      for (const selector of selectors) {
-        const el = $(selector);
-        const content = el.attr("content") || el.attr("href") || el.text();
-        if (content) return content;
-      }
-      return null;
-    };
+async function fallbackStrategy(
+  url: string,
+  hostname: string,
+): Promise<Metadata | null> {
+  if (isTwitterUrl(hostname)) {
+    const result = await fetchTwitterMetadata(url);
+    if (result) return result;
+  }
 
-    // Extract Metadata (Waterfall strategy)
+  if (isJsHeavySite(hostname)) {
+    const result = await fetchViaMicrolink(url);
+    if (result) return result;
+  }
 
-    // Title
-    const title =
-      getMeta([
-        'meta[property="og:title"]',
-        'meta[name="twitter:title"]',
-        "title",
-      ]) || new URL(url).hostname;
+  return null;
+}
 
-    // Image
-    let ogImage = getMeta([
-      'meta[property="og:image"]',
-      'meta[name="twitter:image"]',
-      'link[rel="image_src"]',
-      'meta[itemprop="image"]',
-    ]);
+function createBasicMetadata(url: string, hostname: string): Metadata {
+  return {
+    title: url,
+    og_image_url: null,
+    favicon_url: getGoogleFavicon(hostname),
+  };
+}
 
-    // Favicon
-    let favicon = getMeta([
-      'link[rel="apple-touch-icon"]',
-      'link[rel="icon"]',
-      'link[rel="shortcut icon"]',
-      'link[rel="mask-icon"]',
-    ]);
+export async function fetchMetadata(url: string): Promise<Metadata> {
+  const urlObj = new URL(url);
+  const hostname = urlObj.hostname;
 
-    // Normalize URLs (handle relative paths)
-    const resolveUrl = (path: string | null) => {
-      if (!path) return null;
-      try {
-        return new URL(path, url).toString();
-      } catch {
-        return null;
-      }
-    };
+  const isSafe = await isSafeUrl(url);
+  if (!isSafe) {
+    return createBasicMetadata(url, hostname);
+  }
 
-    ogImage = resolveUrl(ogImage);
-    favicon = resolveUrl(favicon);
+  const fallbackResult = await fallbackStrategy(url, hostname);
+  if (fallbackResult) return fallbackResult;
 
-    // 6. Fallback for Favicon (Google S2)
-    if (!favicon) {
-      try {
-        favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
-      } catch {
-        // invalid url, keep null
-      }
+  try {
+    const fetchResult = await safeFetchHtml(url);
+    if (!fetchResult) {
+      const microlinkResult = await fetchViaMicrolink(url);
+      if (microlinkResult) return microlinkResult;
+      return createBasicMetadata(url, hostname);
     }
 
-    // 7. Last check: if we barely got anything, try Microlink?
-    // Usually if we got HTML but no tags, Microlink might do better if it uses a headless browser
-    if (title === hostname && !ogImage) {
-      const microResult = await fetchMetadataViaMicrolink(url);
-      if (microResult && microResult.title !== url) return microResult;
-    }
+    const { html, finalUrl } = fetchResult;
+    const metadata = extractMetadataFromHtml(html, finalUrl);
 
-    return {
-      title: decodeHtmlEntities(title.trim()),
-      og_image_url: ogImage,
-      favicon_url: favicon,
-    };
-  } catch (error) {
-    console.error("Metadata fetch error:", error);
-
-    // Final fallback attempt
-    const microResult = await fetchMetadataViaMicrolink(url);
-    if (microResult) return microResult;
-
-    let fallbackHostname = url;
-    try {
-      fallbackHostname = new URL(url).hostname;
-    } catch {
-      // invalid url, keep original
+    if (metadata.title === hostname && !metadata.og_image_url) {
+      const microlinkResult = await fetchViaMicrolink(url);
+      if (microlinkResult && microlinkResult.title !== url) {
+        return microlinkResult;
+      }
     }
 
     return {
-      title: url,
-      og_image_url: null,
-      favicon_url: `https://www.google.com/s2/favicons?domain=${fallbackHostname}&sz=128`,
+      ...metadata,
+      favicon_url: metadata.favicon_url || getGoogleFavicon(hostname),
     };
+  } catch {
+    const microlinkResult = await fetchViaMicrolink(url);
+    if (microlinkResult) return microlinkResult;
+    return createBasicMetadata(url, hostname);
   }
 }
