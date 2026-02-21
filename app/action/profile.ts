@@ -61,7 +61,6 @@ export async function getPublicProfile(username: string): Promise<{
         name: workspace.name,
         bookmarks: bookmarks.map((b) => ({
           ...b,
-          description: null,
         })),
       });
     }
