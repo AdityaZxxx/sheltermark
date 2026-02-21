@@ -4,7 +4,6 @@ export interface Bookmark {
   workspace_id: string | null;
   url: string;
   title: string | null;
-  description?: string | null;
   favicon_url: string | null;
   og_image_url: string | null;
   domain?: string;

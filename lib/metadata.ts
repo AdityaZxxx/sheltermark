@@ -1,6 +1,38 @@
 import dns from "node:dns/promises";
 import { isIP } from "node:net";
 
+const HTML_ENTITIES: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&apos;": "'",
+  "&#39;": "'",
+  "&#x27;": "'",
+  "&#x2F;": "/",
+  "&nbsp;": " ",
+  "&mdash;": "—",
+  "&ndash;": "–",
+  "&hellip;": "…",
+  "&copy;": "©",
+  "&reg;": "®",
+  "&trade;": "™",
+};
+
+function decodeHtmlEntities(text: string): string {
+  let decoded = text;
+  for (const [entity, char] of Object.entries(HTML_ENTITIES)) {
+    decoded = decoded.split(entity).join(char);
+  }
+  decoded = decoded.replace(/&#(\d+);/g, (_, code) =>
+    String.fromCharCode(Number.parseInt(code, 10)),
+  );
+  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
+    String.fromCharCode(Number.parseInt(code, 16)),
+  );
+  return decoded;
+}
+
 /**
  * Validates if an IP address is private or reserved
  */
@@ -117,7 +149,6 @@ export type Metadata = {
   title: string;
   og_image_url: string | null;
   favicon_url: string | null;
-  description: string | null;
 };
 
 /**
@@ -139,10 +170,9 @@ async function fetchMetadataViaMicrolink(
     if (!data.status || data.status !== "success") return null;
 
     return {
-      title: data.data?.title || url,
+      title: decodeHtmlEntities(data.data?.title || url),
       og_image_url: data.data?.image?.url || null,
       favicon_url: data.data?.logo?.url || null,
-      description: data.data?.description || null,
     };
   } catch (error) {
     console.error("Microlink fallback failed:", error);
@@ -162,7 +192,6 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
         title: url,
         og_image_url: null,
         favicon_url: `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
-        description: null,
       };
     }
 
@@ -192,23 +221,19 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
 
         if (response.ok) {
           const data = await response.json();
-          // Handle Tweet
           if (data.tweet) {
             return {
               title: `${data.tweet.author.name} on X: "${data.tweet.text.substring(0, 50)}..."`,
-              description: data.tweet.text,
               og_image_url:
                 data.tweet.media?.photos?.[0]?.url ||
                 data.tweet.author.avatar_url,
               favicon_url: data.tweet.author.avatar_url,
             };
           }
-          // Handle Profile
           if (data.user) {
             return {
               title: `${data.user.name} (@${data.user.screen_name}) / X`,
-              description: data.user.description,
-              og_image_url: data.user.avatar_url?.replace("_normal", ""), // Get high res
+              og_image_url: data.user.avatar_url?.replace("_normal", ""),
               favicon_url: data.user.avatar_url,
             };
           }
@@ -273,12 +298,10 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
       const microResult = await fetchMetadataViaMicrolink(url);
       if (microResult) return microResult;
 
-      // If fallback also fails, return basic info
       return {
         title: url,
         og_image_url: null,
         favicon_url: `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`,
-        description: null,
       };
     }
 
@@ -307,13 +330,6 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
         'meta[name="twitter:title"]',
         "title",
       ]) || new URL(url).hostname;
-
-    // Description
-    const description = getMeta([
-      'meta[property="og:description"]',
-      'meta[name="twitter:description"]',
-      'meta[name="description"]',
-    ]);
 
     // Image
     let ogImage = getMeta([
@@ -361,10 +377,9 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
     }
 
     return {
-      title: title.trim(),
+      title: decodeHtmlEntities(title.trim()),
       og_image_url: ogImage,
       favicon_url: favicon,
-      description: description?.trim() || null,
     };
   } catch (error) {
     console.error("Metadata fetch error:", error);
@@ -384,7 +399,6 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
       title: url,
       og_image_url: null,
       favicon_url: `https://www.google.com/s2/favicons?domain=${fallbackHostname}&sz=128`,
-      description: null,
     };
   }
 }

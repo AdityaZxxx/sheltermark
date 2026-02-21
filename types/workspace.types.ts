@@ -15,7 +15,6 @@ export interface WorkspaceWithBookmarks {
     id: string;
     title: string;
     url: string;
-    description?: string | null;
     favicon_url: string | null;
     og_image_url: string | null;
     created_at: string;
