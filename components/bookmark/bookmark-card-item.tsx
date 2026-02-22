@@ -1,12 +1,7 @@
 import { GlobeIcon } from "@phosphor-icons/react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "~/components/ui/tooltip";
-import { formatDateTime, formatRelativeTime } from "~/lib/format";
+import { formatRelativeTime } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 
@@ -129,12 +124,9 @@ export function BookmarkCardItem({
           </p>
         </div>
         <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 min-w-[80px]">
-          <Tooltip>
-            <TooltipTrigger className="col-start-1 row-start-1 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0 text-right w-full cursor-default">
-              {formatRelativeTime(created_at)}
-            </TooltipTrigger>
-            <TooltipContent>{formatDateTime(created_at)}</TooltipContent>
-          </Tooltip>
+          <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0 text-right w-full">
+            {formatRelativeTime(created_at)}
+          </span>
           <KbdGroup className="absolute right-3 col-start-1 row-start-1 text-xs transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none">
             <Kbd>⌘</Kbd>
             <Kbd>↵</Kbd>
