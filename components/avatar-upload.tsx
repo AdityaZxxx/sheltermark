@@ -1,8 +1,13 @@
 "use client";
 
-import { ImageIcon, SpinnerIcon, TrashIcon } from "@phosphor-icons/react";
+import {
+  PencilSimpleIcon,
+  SpinnerIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 interface AvatarUploadProps {
@@ -13,7 +18,7 @@ interface AvatarUploadProps {
   isUploading?: boolean;
 }
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function AvatarUpload({
@@ -25,129 +30,129 @@ export function AvatarUpload({
 }: AvatarUploadProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl);
   const [error, setError] = useState<string | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  // Cleanup object URL on unmount
+  const hasAvatar = Boolean(previewUrl || currentAvatarUrl);
+
   useEffect(() => {
     return () => {
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
       }
     };
   }, []);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  const openFilePicker = () => {
+    if (!isUploading && !isRemoving) {
+      setError(null);
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setError(null);
 
-    // Validate file type
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setError("Please upload a valid image file (JPEG, PNG, or WebP)");
+      setError("Upload JPEG, PNG, or WebP only");
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("File size must be less than 2MB");
+      setError("Maximum size is 2MB");
       return;
     }
 
-    // Revoke previous object URL if exists
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
     }
 
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
-
     setPreviewUrl(objectUrl);
 
-    // Trigger upload
-    onUpload(file)
-      .then(() => {
-        // Keep the preview on success - upload completed
-      })
-      .catch(() => {
-        // Revert preview on error
-        setPreviewUrl(currentAvatarUrl);
-      });
-  };
-
-  const handleAvatarClick = () => {
-    if (!isUploading) {
-      fileInputRef.current?.click();
+    try {
+      await onUpload(file);
+    } catch {
+      setPreviewUrl(currentAvatarUrl);
+      setError("Upload failed. Please try again.");
     }
   };
 
-  const handleRemoveClick = async (
-    e?: React.MouseEvent | React.KeyboardEvent,
-  ) => {
-    e?.stopPropagation();
-    setPreviewUrl(null);
-    await onRemove();
+  const handleRemove = async () => {
+    if (isUploading || isRemoving) return;
+    setError(null);
+    setIsRemoving(true);
+    try {
+      setPreviewUrl(null);
+      await onRemove();
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
-  const hasAvatar = previewUrl || currentAvatarUrl;
+  const isBusy = isUploading || isRemoving;
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
-        className="relative cursor-pointer bg-transparent border-none p-0"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleAvatarClick}
-        aria-label={hasAvatar ? "Change avatar" : "Upload avatar"}
-      >
-        <Avatar className="h-24 w-24 transition-opacity duration-200">
-          <AvatarImage
-            key={previewUrl || currentAvatarUrl || "fallback"}
-            src={previewUrl || currentAvatarUrl || undefined}
-            alt={fullName}
-            className={isHovered && !isUploading ? "opacity-50" : "opacity-100"}
-          />
-          <AvatarFallback className="text-2xl bg-muted">
-            {fullName.charAt(0).toUpperCase() || "U"}
-          </AvatarFallback>
-        </Avatar>
+    <div className="flex flex-col items-center pt-2 gap-3">
+      <Avatar className={`h-24 w-24 ${error ? "ring-2 ring-destructive" : ""}`}>
+        <AvatarImage
+          src={previewUrl || currentAvatarUrl || undefined}
+          alt={fullName}
+        />
+        <AvatarFallback className="text-2xl bg-muted">
+          {fullName?.charAt(0)?.toUpperCase() || "U"}
+        </AvatarFallback>
+      </Avatar>
 
-        {!isUploading && isHovered && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
-            {hasAvatar ? (
-              // biome-ignore lint/a11y/useSemanticElements: force pass lint
-              <div
-                role="button"
-                onClick={handleRemoveClick}
-                className="p-2 rounded-full bg-background text-destructive hover:bg-back/90 transition-colors cursor-pointer"
-                aria-label="Remove avatar"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleRemoveClick();
-                  }
-                }}
-              >
-                <TrashIcon className="h-5 w-5" weight="bold" />
-              </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          onClick={openFilePicker}
+          disabled={isBusy}
+          aria-label={!hasAvatar ? "Upload avatar" : "Change avatar"}
+        >
+          {isUploading ? (
+            <SpinnerIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <PencilSimpleIcon className="h-4 w-4" />
+          )}
+          <span className="ml-1.5">{!hasAvatar ? "Upload" : "Change"}</span>
+        </Button>
+
+        {hasAvatar && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="xs"
+            onClick={handleRemove}
+            disabled={isBusy}
+            aria-label="Remove avatar"
+          >
+            {isRemoving ? (
+              <SpinnerIcon className="h-4 w-4 animate-spin" />
             ) : (
-              <div className="p-2 rounded-full bg-background/90 text-white">
-                <ImageIcon className="h-5 w-5" />
-              </div>
+              <TrashIcon className="h-4 w-4" />
             )}
-          </div>
+            <span className="ml-1.5">Remove</span>
+          </Button>
         )}
-
-        {isUploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-full">
-            <SpinnerIcon className="h-6 w-6 rounded-full animate-spin" />
-          </div>
-        )}
-      </button>
+      </div>
 
       <Input
         ref={fileInputRef}
@@ -158,10 +163,6 @@ export function AvatarUpload({
       />
 
       {error && <p className="text-sm text-destructive text-center">{error}</p>}
-
-      <p className="text-xs text-muted-foreground text-center">
-        Click avatar to {hasAvatar ? "change" : "upload"} • Max 2MB
-      </p>
     </div>
   );
 }
