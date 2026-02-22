@@ -1,4 +1,5 @@
 import { GlobeIcon } from "@phosphor-icons/react";
+import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import { formatRelativeTime } from "~/lib/format";
@@ -86,16 +87,16 @@ export function BookmarkCardItem({
         </div>
       )}
 
-      <div className="aspect-1200/628 w-full bg-muted overflow-hidden relative">
+      <div className="aspect-1200/628 w-full overflow-hidden relative">
         {og_image_url ? (
-          // biome-ignore lint/performance/noImgElement: external domain source
-          <img
+          <ProgressiveImage
             src={og_image_url}
             alt={title}
-            className="w-full h-full object-cover transition-transform duration-300"
+            containerClassName="w-full h-full"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center bg-muted">
             <GlobeIcon className="w-12 h-12 text-muted-foreground/20" />
           </div>
         )}
