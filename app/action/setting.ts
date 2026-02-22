@@ -201,10 +201,10 @@ export async function uploadAvatar(formData: FormData) {
     return { error: "No file provided" };
   }
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!allowedTypes.includes(file.type)) {
     return {
-      error: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed",
+      error: "Invalid file type. Only JPEG, PNG, and WebP are allowed",
     };
   }
 

@@ -14,7 +14,7 @@ interface AvatarUploadProps {
 }
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function AvatarUpload({
   currentAvatarUrl,
@@ -47,7 +47,7 @@ export function AvatarUpload({
 
     // Validate file type
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setError("Please upload a valid image file (JPEG, PNG, WebP, or GIF)");
+      setError("Please upload a valid image file (JPEG, PNG, or WebP)");
       return;
     }
 
@@ -152,7 +152,7 @@ export function AvatarUpload({
       <Input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/jpeg,image/png,image/webp"
         onChange={handleFileSelect}
         className="hidden"
       />
