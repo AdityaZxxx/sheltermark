@@ -7,14 +7,17 @@ import { getPastelColor, safeDomain, slugify } from "~/lib/utils";
 import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkListItem } from "./bookmark-list-item";
+import { BookmarkSkeleton } from "./bookmark-skeleton";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
 
 interface BookmarkViewReadOnlyProps {
   workspaces: WorkspaceWithBookmarks[];
+  isLoading?: boolean;
 }
 
 export function BookmarkViewReadOnly({
   workspaces,
+  isLoading = false,
 }: BookmarkViewReadOnlyProps) {
   const [view, setView] = useState<"list" | "card">("list");
   const [activeWorkspace, setActiveWorkspace] = useQueryState("workspace");
@@ -41,9 +44,16 @@ export function BookmarkViewReadOnly({
 
   return (
     <div className="space-y-6">
-      {publicWorkspaces.length > 0 && (
+      {isLoading ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="w-full">
+            <div className="h-9 w-64 bg-muted animate-pulse rounded-lg" />
+          </div>
+          <div className="h-9 w-20 bg-muted animate-pulse rounded-lg" />
+        </div>
+      ) : publicWorkspaces.length > 0 ? (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 overflow-y-hidden">
             <Tabs
               value={activeWorkspace || "all"}
               onValueChange={(v) => setActiveWorkspace(v === "all" ? null : v)}
@@ -68,14 +78,16 @@ export function BookmarkViewReadOnly({
           </div>
           <BookmarkViewToggle view={view} onViewChange={setView} />
         </div>
-      )}
+      ) : null}
 
-      {filteredBookmarks.length === 0 ? (
+      {isLoading ? (
+        <BookmarkSkeleton count={6} view={view} />
+      ) : filteredBookmarks.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p>No public bookmarks yet.</p>
         </div>
       ) : view === "card" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBookmarks.map((bookmark, index) => (
             <BookmarkCardItem
               key={bookmark.id}

@@ -13,6 +13,7 @@ import { BookmarkInput } from "./bookmark-input";
 import { BookmarkListItem } from "./bookmark-list-item";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
+import { BookmarkSkeleton } from "./bookmark-skeleton";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
 
@@ -34,6 +35,7 @@ export function BookmarkView() {
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
     bookmarks: filteredBookmarks,
+    isLoading,
     searchQuery,
     setSearchQuery,
     invalidate,
@@ -190,7 +192,7 @@ export function BookmarkView() {
       className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
       onKeyDown={handleKeyDown}
     >
-      <div className="space-y-4 max-w-2xl mx-auto">
+      <div className="space-y-4 mx-auto">
         <BookmarkInput
           ref={inputRef}
           value={searchQuery}
@@ -206,78 +208,84 @@ export function BookmarkView() {
         </div>
       </div>
 
-      <div
-        className={
-          view === "card"
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            : "flex flex-col gap-1 max-w-2xl mx-auto"
-        }
-      >
-        {filteredBookmarks.map((bookmark: Bookmark, index: number) =>
-          view === "card" ? (
-            <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
-              <BookmarkCardItem
-                id={bookmark.id}
-                title={bookmark.title || ""}
-                url={bookmark.url}
-                og_image_url={bookmark.og_image_url || undefined}
-                favicon_url={bookmark.favicon_url || undefined}
-                domain={bookmark.domain || safeDomain(bookmark.url)}
-                created_at={bookmark.created_at}
-                isSelected={
-                  selectedIds.includes(bookmark.id) ||
-                  (!isSelectionMode && focusedIndex === index)
-                }
-                isSelectionMode={isSelectionMode}
-                workspaces={workspaces}
-                currentWorkspaceId={currentWorkspace?.id}
-                onSelect={toggleSelect}
-                onDelete={handleDeleteTrigger}
-                onRename={handleRenameTrigger}
-                onMove={handleMoveTrigger}
-                onMoveToWorkspace={handleMoveToWorkspace}
-                onCopyUrl={handleCopyUrl}
-                onSelectionModeToggle={toggleSelectionMode}
-                tabIndex={
-                  focusedIndex === index || (focusedIndex === -1 && index === 0)
-                    ? 0
-                    : -1
-                }
-              />
-            </div>
-          ) : (
-            <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
-              <BookmarkListItem
-                id={bookmark.id}
-                title={bookmark.title || ""}
-                url={bookmark.url}
-                favicon_url={bookmark.favicon_url || undefined}
-                domain={bookmark.domain || safeDomain(bookmark.url)}
-                created_at={bookmark.created_at}
-                isSelected={
-                  selectedIds.includes(bookmark.id) ||
-                  (!isSelectionMode && focusedIndex === index)
-                }
-                isSelectionMode={isSelectionMode}
-                workspaces={workspaces}
-                currentWorkspaceId={currentWorkspace?.id}
-                onSelect={toggleSelect}
-                onDelete={handleDeleteTrigger}
-                onRename={handleRenameTrigger}
-                onMove={handleMoveTrigger}
-                onMoveToWorkspace={handleMoveToWorkspace}
-                onCopyUrl={handleCopyUrl}
-                onSelectionModeToggle={toggleSelectionMode}
-                tabIndex={
-                  focusedIndex === index || (focusedIndex === -1 && index === 0)
-                    ? 0
-                    : -1
-                }
-              />
-            </div>
-          ),
-        )}
-      </div>
+      {isLoading ? (
+        <BookmarkSkeleton count={6} view={view} />
+      ) : (
+        <div
+          className={
+            view === "card"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              : "flex flex-col gap-1"
+          }
+        >
+          {filteredBookmarks.map((bookmark: Bookmark, index: number) =>
+            view === "card" ? (
+              <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
+                <BookmarkCardItem
+                  id={bookmark.id}
+                  title={bookmark.title || ""}
+                  url={bookmark.url}
+                  og_image_url={bookmark.og_image_url || undefined}
+                  favicon_url={bookmark.favicon_url || undefined}
+                  domain={bookmark.domain || safeDomain(bookmark.url)}
+                  created_at={bookmark.created_at}
+                  isSelected={
+                    selectedIds.includes(bookmark.id) ||
+                    (!isSelectionMode && focusedIndex === index)
+                  }
+                  isSelectionMode={isSelectionMode}
+                  workspaces={workspaces}
+                  currentWorkspaceId={currentWorkspace?.id}
+                  onSelect={toggleSelect}
+                  onDelete={handleDeleteTrigger}
+                  onRename={handleRenameTrigger}
+                  onMove={handleMoveTrigger}
+                  onMoveToWorkspace={handleMoveToWorkspace}
+                  onCopyUrl={handleCopyUrl}
+                  onSelectionModeToggle={toggleSelectionMode}
+                  tabIndex={
+                    focusedIndex === index ||
+                    (focusedIndex === -1 && index === 0)
+                      ? 0
+                      : -1
+                  }
+                />
+              </div>
+            ) : (
+              <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
+                <BookmarkListItem
+                  id={bookmark.id}
+                  title={bookmark.title || ""}
+                  url={bookmark.url}
+                  favicon_url={bookmark.favicon_url || undefined}
+                  domain={bookmark.domain || safeDomain(bookmark.url)}
+                  created_at={bookmark.created_at}
+                  isSelected={
+                    selectedIds.includes(bookmark.id) ||
+                    (!isSelectionMode && focusedIndex === index)
+                  }
+                  isSelectionMode={isSelectionMode}
+                  workspaces={workspaces}
+                  currentWorkspaceId={currentWorkspace?.id}
+                  onSelect={toggleSelect}
+                  onDelete={handleDeleteTrigger}
+                  onRename={handleRenameTrigger}
+                  onMove={handleMoveTrigger}
+                  onMoveToWorkspace={handleMoveToWorkspace}
+                  onCopyUrl={handleCopyUrl}
+                  onSelectionModeToggle={toggleSelectionMode}
+                  tabIndex={
+                    focusedIndex === index ||
+                    (focusedIndex === -1 && index === 0)
+                      ? 0
+                      : -1
+                  }
+                />
+              </div>
+            ),
+          )}
+        </div>
+      )}
 
       <BookmarkToolbar
         selectedCount={selectedIds.length}
