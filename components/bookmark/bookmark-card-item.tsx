@@ -106,16 +106,16 @@ export function BookmarkCardItem({
       </div>
       <div className="flex items-center px-4 py-3 justify-between w-full">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
-          <div className="shrink-0 w-4 h-4 rounded-sm overflow-hidden flex items-center justify-center">
+          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
             {favicon_url ? (
               // biome-ignore lint/performance/noImgElement: nothing to optimize
               <img
                 src={favicon_url}
                 alt={`${domain} favicon`}
-                className="w-4 h-4 object-contain"
+                className="w-full h-full object-contain"
               />
             ) : (
-              <GlobeIcon className="w-4 h-4 text-muted-foreground" />
+              <GlobeIcon className="w-full h-full text-muted-foreground" />
             )}
           </div>
           <p className="text-xs font-medium text-muted-foreground truncate">

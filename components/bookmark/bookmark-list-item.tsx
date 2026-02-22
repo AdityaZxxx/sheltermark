@@ -85,12 +85,16 @@ export function BookmarkListItem({
         </div>
       )}
 
-      <div className="shrink-0 w-6 h-6 rounded-md overflow-hidden flex items-center justify-center">
+      <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
         {favicon_url ? (
           // biome-ignore lint/performance/noImgElement: nothing to optimize
-          <img src={favicon_url} alt="" className="w-4 h-4 object-contain" />
+          <img
+            src={favicon_url}
+            alt=""
+            className="w-full h-full object-contain"
+          />
         ) : (
-          <GlobeIcon className="w-4 h-4 text-muted-foreground" />
+          <GlobeIcon className="w-full h-full text-muted-foreground" />
         )}
       </div>
 
