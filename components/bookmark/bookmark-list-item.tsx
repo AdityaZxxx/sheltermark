@@ -1,6 +1,7 @@
 import { GlobeIcon } from "@phosphor-icons/react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import { formatRelativeTime } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 
@@ -115,7 +116,7 @@ export function BookmarkListItem({
 
         <div className="relative shrink-0 ml-10 text-xs text-muted-foreground">
           <span className="transition-opacity group-hover:opacity-0">
-            {new Date(created_at).toLocaleDateString()}
+            {formatRelativeTime(created_at)}
           </span>
 
           <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
