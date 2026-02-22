@@ -1,26 +1,8 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        // Avoid immediate refetch after SSR hydration
-        staleTime: 60 * 1000,
-        // Retry once on failure
-        retry: 1,
-        // Refetch on window focus for fresh data
-        refetchOnWindowFocus: true,
-      },
-      mutations: {
-        // Retry mutations once on network errors
-        retry: 1,
-      },
-    },
-  });
-}
+import { makeQueryClient } from "~/lib/query-client";
 
 let browserQueryClient: QueryClient | undefined;
 

@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+const PROTECTED_PATHS = ["/dashboard", "/reset-password"];
+const AUTH_ONLY_PATHS = ["/login", "/signup", "/forgot-password"];
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -30,13 +33,42 @@ export async function updateSession(request: NextRequest) {
           request,
         });
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
+          response.cookies.set(name, value, {
+            ...options,
+            sameSite: "none",
+            secure: process.env.NODE_ENV === "production",
+          });
         });
       },
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  const isProtectedPath = PROTECTED_PATHS.some((path) =>
+    pathname.startsWith(path),
+  );
+
+  const isAuthOnlyPath =
+    AUTH_ONLY_PATHS.some((path) => pathname.startsWith(path)) ||
+    pathname === "/";
+
+  if (error && isProtectedPath) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (isProtectedPath && !user) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (isAuthOnlyPath && user) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   return response;
 }

@@ -1,6 +1,11 @@
 "use client";
 
-import { CheckCircleIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import { loginWithGoogle } from "~/app/action/login";
@@ -76,7 +81,7 @@ export function SignupForm({
           <Button
             nativeButton={false}
             variant="default"
-            className="px-4"
+            className="px-4 text-sm"
             render={<Link href="/login" />}
           >
             Back to login
@@ -99,11 +104,12 @@ export function SignupForm({
         onClick={handleGoogleSignup}
         disabled={isLoadingGoogle}
         variant="outline"
-        className="w-full h-11 text-foreground border border-border"
+        className="w-full text-foreground border border-border"
+        size="lg"
       >
         <span className="flex items-center justify-center gap-3">
           <GoogleIcon className="w-5 h-5" />
-          <span className="font-medium">
+          <span className="text-sm font-medium">
             {isLoadingGoogle ? "Connecting..." : "Continue with Google"}
           </span>
         </span>
@@ -140,13 +146,20 @@ export function SignupForm({
           </Field>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="hello@awesome.com"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="hello@awesome.com"
+                required
+                className="pl-10"
+              />
+              <EnvelopeIcon
+                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </div>
           </Field>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
@@ -205,7 +218,12 @@ export function SignupForm({
             </div>
           </Field>
           <Field>
-            <Button type="submit" disabled={isLoadingEmail}>
+            <Button
+              type="submit"
+              disabled={isLoadingEmail}
+              size="lg"
+              className="text-sm"
+            >
               {isLoadingEmail ? "Signing up..." : "Sign up"}
             </Button>
 
