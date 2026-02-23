@@ -1,6 +1,11 @@
 "use client";
 
-import { CheckCircleIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import { loginWithGoogle } from "~/app/action/login";
@@ -140,13 +145,17 @@ export function SignupForm({
           </Field>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="hello@awesome.com"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="hello@awesome.com"
+                required
+                className="pl-10"
+              />
+              <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            </div>
           </Field>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
