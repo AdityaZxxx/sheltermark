@@ -4,7 +4,6 @@ import { EnvelopeIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import { resetPasswordForEmail } from "~/app/action/reset-password";
-import { Button } from "~/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -12,6 +11,7 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { Button } from "../ui/button";
 
 export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,14 +23,18 @@ export function ForgotPasswordForm() {
     setError(null);
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const result = await resetPasswordForEmail(formData);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await resetPasswordForEmail(formData);
 
-    if (result?.error) {
-      setError(result.error);
-      setIsLoading(false);
-    } else {
-      setSuccess(true);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        setSuccess(true);
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -82,7 +86,10 @@ export function ForgotPasswordForm() {
                 required
                 className="pl-10"
               />
-              <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <EnvelopeIcon
+                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             </div>
           </Field>
           <Field>
