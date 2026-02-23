@@ -166,7 +166,10 @@ export function SettingsGeneralTab({
               disabled
               className="bg-muted pl-10"
             />
-            <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <EnvelopeIcon
+              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
           </div>
           <FieldDescription>Email cannot be changed.</FieldDescription>
         </Field>
