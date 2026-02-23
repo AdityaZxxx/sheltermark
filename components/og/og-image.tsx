@@ -34,10 +34,9 @@ export function OGImage({
           padding: 80,
           fontFamily: "Inter, system-ui, sans-serif",
           color: "#171717",
-          gap: 24,
         }}
       >
-        <Logo size={160} />
+        <Logo size={200} />
 
         <div
           style={{
@@ -45,14 +44,14 @@ export function OGImage({
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            gap: 16,
+            gap: 8,
             maxWidth: 900,
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: 64,
+              fontSize: 100,
               fontWeight: 700,
               lineHeight: 1.1,
             }}
@@ -63,7 +62,7 @@ export function OGImage({
           <div
             style={{
               display: "flex",
-              fontSize: 24,
+              fontSize: 40,
               fontWeight: 700,
               color: "#525252",
               textAlign: "center",
@@ -105,7 +104,7 @@ export function OGImage({
             style={{
               display: "flex",
               gap: 16,
-              fontSize: 56,
+              fontSize: 64,
               fontWeight: 700,
             }}
           >
@@ -130,32 +129,33 @@ export function OGImage({
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
-            gap: 16,
+            gap: 8,
+            marginBottom: 16,
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              gap: 8,
             }}
           >
-            <Logo size={70} />
+            <Logo size={90} />
             <div
               style={{
                 display: "flex",
-                fontSize: 42,
+                fontSize: 52,
                 fontWeight: 700,
               }}
             >
-              Sheltermark
+              {title}
             </div>
           </div>
 
           <div
             style={{
               display: "flex",
-              fontSize: 24,
+              fontSize: 28,
               color: "#525252",
               maxWidth: 600,
               fontWeight: 700,
@@ -231,32 +231,33 @@ export function OGImage({
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
-          gap: 16,
+          gap: 8,
+          marginBottom: 16,
         }}
       >
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 8,
           }}
         >
-          <Logo size={70} />
+          <Logo size={90} />
           <div
             style={{
               display: "flex",
-              fontSize: 42,
+              fontSize: 52,
               fontWeight: 700,
             }}
           >
-            Sheltermark
+            {title}
           </div>
         </div>
 
         <div
           style={{
             display: "flex",
-            fontSize: 24,
+            fontSize: 28,
             color: "#525252",
             maxWidth: 600,
             fontWeight: 700,
