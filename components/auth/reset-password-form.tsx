@@ -19,11 +19,16 @@ export function ResetPasswordForm() {
     setError(null);
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const result = await updatePassword(formData);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await updatePassword(formData);
 
-    if (result?.error) {
-      setError(result.error);
+      if (result?.error) {
+        setError(result.error);
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
