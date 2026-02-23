@@ -1,18 +1,13 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { redirect } from "next/navigation";
 import { getBookmarks } from "~/app/action/bookmark";
 import { getWorkspaces } from "~/app/action/workspace";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
 import { Header } from "~/components/header";
-import { requireAuthSafe } from "~/lib/auth";
+import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
 
 export default async function DashboardPage() {
-  const { user } = await requireAuthSafe();
-
-  if (!user) {
-    return redirect("/login");
-  }
+  const { user } = await requireAuth();
 
   const queryClient = makeQueryClient();
 

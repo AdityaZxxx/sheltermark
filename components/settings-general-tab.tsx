@@ -1,5 +1,6 @@
 "use client";
 
+import { EnvelopeIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
@@ -157,13 +158,19 @@ export function SettingsGeneralTab({
 
         <Field>
           <FieldLabel>Email</FieldLabel>
-          <Input
-            id="email"
-            type="email"
-            value={user.email || ""}
-            disabled
-            className="bg-muted"
-          />
+          <div className="relative">
+            <Input
+              id="email"
+              type="email"
+              value={user.email || ""}
+              disabled
+              className="bg-muted pl-10"
+            />
+            <EnvelopeIcon
+              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
           <FieldDescription>Email cannot be changed.</FieldDescription>
         </Field>
 
