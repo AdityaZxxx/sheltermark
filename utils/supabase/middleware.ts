@@ -1,13 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PATHS = ["/dashboard"];
-const AUTH_ONLY_PATHS = [
-  "/login",
-  "/signup",
-  "/forgot-password",
-  "/reset-password",
-];
+const PROTECTED_PATHS = ["/dashboard", "/reset-password"];
+const AUTH_ONLY_PATHS = ["/login", "/signup", "/forgot-password"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -46,19 +41,24 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
   const isProtectedPath = PROTECTED_PATHS.some((path) =>
     request.nextUrl.pathname.startsWith(path),
   );
 
-  if (isProtectedPath && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
   const isAuthOnlyPath = AUTH_ONLY_PATHS.some((path) =>
     request.nextUrl.pathname.startsWith(path),
   );
+
+  if (error && isProtectedPath) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (isProtectedPath && !user) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   if (isAuthOnlyPath && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
