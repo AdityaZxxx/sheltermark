@@ -64,7 +64,7 @@ export function DemoBookmarkView() {
     return matchesWorkspace && matchesSearch;
   });
 
-  const { focusedIndex, setFocusedIndex, inputRef, handleKeyDown } =
+  const { focusedIndex, inputRef, handleKeyDown } =
     useBookmarkKeyboardNavigation({
       itemCount: filteredBookmarks.length,
       view,

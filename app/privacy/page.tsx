@@ -1,11 +1,11 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import Markdown from "react-markdown";
 
 export const metadata: Metadata = {

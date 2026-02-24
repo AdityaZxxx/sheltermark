@@ -10,8 +10,8 @@ import {
   UserCircleIcon,
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
-import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
