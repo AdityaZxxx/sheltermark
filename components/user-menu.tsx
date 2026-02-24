@@ -36,8 +36,9 @@ export function UserMenu({ user }: UserMenuProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { profile } = useProfile();
 
-  const fullName = profile?.full_name || user.user_metadata.full_name;
-  const avatarUrl = profile?.avatar_url || user.user_metadata.avatar_url;
+  if (!profile) {
+    return null;
+  }
 
   return (
     <>
@@ -46,13 +47,16 @@ export function UserMenu({ user }: UserMenuProps) {
           render={
             <Button variant="ghost" className="gap-2 px-2">
               <Avatar className="h-6 w-6 shrink-0">
-                <AvatarImage src={avatarUrl} alt={fullName} />
+                <AvatarImage
+                  src={profile.avatar_url ?? undefined}
+                  alt={profile.full_name ?? undefined}
+                />
                 <AvatarFallback>
-                  {fullName.charAt(0).toUpperCase() || "U"}
+                  {profile.full_name?.charAt(0).toUpperCase() ?? undefined}
                 </AvatarFallback>
               </Avatar>
               <h1 className="text-sm font-medium leading-none hidden md:block">
-                {fullName}
+                {profile.full_name}
               </h1>
               <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
             </Button>
