@@ -1,5 +1,6 @@
 "use client";
 
+import { BookmarkIcon } from "@phosphor-icons/react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
@@ -210,6 +211,15 @@ export function BookmarkView() {
 
       {isLoading ? (
         <BookmarkSkeleton count={6} view={view} />
+      ) : filteredBookmarks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-12 h-12  flex items-center justify-center mb-4">
+            <BookmarkIcon className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">
+            {searchQuery ? "No results found" : "No bookmarks yet"}
+          </h3>
+        </div>
       ) : (
         <div
           className={
