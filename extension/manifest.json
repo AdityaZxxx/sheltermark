@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Sheltermark",
+  "version": "0.1.0",
+  "description": "Quick save bookmarks to Sheltermark",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": [
+    "https://sheltermark.vercel.app/*",
+    "http://localhost:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon.svg",
+      "48": "icons/icon.svg",
+      "128": "icons/icon.svg"
+    }
+  },
+  "icons": {
+    "16": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  }
+}
