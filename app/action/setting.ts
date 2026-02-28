@@ -33,8 +33,12 @@ async function deleteAvatarFromStorage(
   }
 }
 
-export async function updateProfile(data: { name: string }) {
+export async function updateProfile(data: { full_name: string }) {
   const { user, supabase } = await requireAuth();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
 
   const validated = updateProfileSchema.safeParse(data);
 
@@ -42,10 +46,10 @@ export async function updateProfile(data: { name: string }) {
     return { error: validated.error.issues[0].message };
   }
 
-  const { name } = validated.data;
+  const { full_name } = validated.data;
 
   const { error: authError } = await supabase.auth.updateUser({
-    data: { name },
+    data: { full_name },
   });
 
   if (authError) {
@@ -55,7 +59,7 @@ export async function updateProfile(data: { name: string }) {
   const { error } = await supabase
     .from("profiles")
     .update({
-      name: name,
+      full_name: full_name,
     })
     .eq("id", user.id);
 
@@ -76,6 +80,10 @@ export async function updatePublicProfile(data: {
   current_username?: string;
 }) {
   const { user, supabase } = await requireAuth();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
 
   const validated = updatePublicProfileSchema.safeParse(data);
 
@@ -137,10 +145,14 @@ export async function updatePublicProfile(data: {
 export async function getProfile() {
   const { user, supabase } = await requireAuth();
 
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "name, avatar_url, username, bio, github_url, x_url, website_url, is_public",
+      "full_name, avatar_url, username, bio, github_url, x_url, website_url, is_public",
     )
     .eq("id", user.id)
     .single();
@@ -157,6 +169,10 @@ export async function checkUsernameAvailability(data: {
   current_username?: string;
 }) {
   const { user, supabase } = await requireAuth();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
 
   let { username, current_username } = data;
 
@@ -195,16 +211,20 @@ export async function checkUsernameAvailability(data: {
 export async function uploadAvatar(formData: FormData) {
   const { user, supabase } = await requireAuth();
 
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
   const file = formData.get("file") as File;
 
   if (!file) {
     return { error: "No file provided" };
   }
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   if (!allowedTypes.includes(file.type)) {
     return {
-      error: "Invalid file type. Only JPEG, PNG, and WebP are allowed",
+      error: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed",
     };
   }
 
@@ -295,6 +315,10 @@ export async function uploadAvatar(formData: FormData) {
 
 export async function deleteAvatar() {
   const { user, supabase } = await requireAuth();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
 
   try {
     const { data: profile } = await supabase

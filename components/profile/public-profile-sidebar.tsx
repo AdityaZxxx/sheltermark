@@ -2,11 +2,12 @@
 
 import { GithubLogoIcon, GlobeIcon, XLogoIcon } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Button } from "~/components/ui/button";
 
 interface PublicProfileSidebarProps {
   profile: {
     username: string;
-    name: string | null;
+    full_name: string | null;
     avatar_url: string | null;
     bio: string | null;
     github_url: string | null;
@@ -17,13 +18,13 @@ interface PublicProfileSidebarProps {
 }
 
 export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
-  const displayName = profile.name || profile.username;
+  const displayName = profile.full_name || profile.username;
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="space-y-4">
       <div className="flex justify-start">
-        <Avatar className="size-24">
+        <Avatar className="h-24 w-24">
           <AvatarImage
             src={profile.avatar_url || undefined}
             alt={displayName}
@@ -33,8 +34,8 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
       </div>
 
       <div className="text-left">
-        <h1 className="text-2xl font-semibold">{displayName}</h1>
-        <p className="text-muted-foreground text-sm">@{profile.username}</p>
+        <h1 className="text-2xl font-bold">{displayName}</h1>
+        <p className="text-muted-foreground">@{profile.username}</p>
       </div>
 
       {profile.bio && (
@@ -43,7 +44,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
         </p>
       )}
 
-      <div className="flex justify-start gap-4">
+      <div className="flex justify-start">
         {profile.website_url && (
           <a
             href={profile.website_url}
@@ -51,7 +52,9 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
             rel="noopener noreferrer"
             aria-label="Website"
           >
-            <GlobeIcon className="h-4 w-4" />
+            <Button variant="ghost" size="icon">
+              <GlobeIcon className="h-4 w-4" />
+            </Button>
           </a>
         )}
         {profile.github_url && (
@@ -61,7 +64,9 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
             rel="noopener noreferrer"
             aria-label="GitHub"
           >
-            <GithubLogoIcon className="h-4 w-4" />
+            <Button variant="ghost" size="icon">
+              <GithubLogoIcon className="h-4 w-4" />
+            </Button>
           </a>
         )}
         {profile.x_url && (
@@ -71,7 +76,9 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
             rel="noopener noreferrer"
             aria-label="X (Twitter)"
           >
-            <XLogoIcon className="h-4 w-4" />
+            <Button variant="ghost" size="icon">
+              <XLogoIcon className="h-4 w-4" />
+            </Button>
           </a>
         )}
       </div>

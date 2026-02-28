@@ -1,43 +1,5 @@
 import { z } from "zod";
 
-export const bookmarkCreateSchema = z.object({
-  url: z.url("Invalid URL format"),
-  workspaceId: z.uuid().nullable().optional(),
-});
-
-export const bookmarkDeleteSchema = z.object({
-  ids: z.array(z.uuid()).min(1, "At least one bookmark ID required"),
-});
-
-export const bookmarkMoveSchema = z.object({
-  ids: z.array(z.uuid()).min(1, "At least one bookmark ID required"),
-  targetWorkspaceId: z.uuid().nullable(),
-});
-
-export const bookmarkRenameSchema = z.object({
-  id: z.uuid(),
-  title: z.string().min(1, "Title is required").max(200, "Title too long"),
-});
-
-export const workspaceCreateSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Workspace name is required")
-    .max(35, "Workspace name too long"),
-});
-
-export const workspaceRenameSchema = z.object({
-  id: z.uuid(),
-  name: z
-    .string()
-    .min(1, "Workspace name is required")
-    .max(35, "Workspace name too long"),
-});
-
-export const workspaceSetDefaultSchema = z.object({
-  id: z.uuid(),
-});
-
 export const usernameSchema = z
   .string()
   .min(3, { message: "Username must be at least 3 characters" })
@@ -76,7 +38,7 @@ export const websiteSchema = z
   .or(z.literal(""));
 
 export const updateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  full_name: z.string().min(1, "Full name is required"),
 });
 
 export const updatePublicProfileSchema = z.object({
@@ -89,40 +51,7 @@ export const updatePublicProfileSchema = z.object({
   current_username: z.string().optional(),
 });
 
-export const exportOptionsSchema = z.object({
-  workspaceId: z.uuid().nullable().optional(),
-  format: z.enum(["json", "csv"]),
-});
-
-export const importOptionsSchema = z.object({
-  targetWorkspaceId: z.uuid().nullable().optional(),
-  duplicateStrategy: z.enum(["skip", "replace"]),
-  createWorkspace: z.boolean().optional(),
-  newWorkspaceName: z.string().max(50).optional(),
-});
-
-export const importPreviewSchema = z.object({
-  totalBookmarks: z.number(),
-  validBookmarks: z.number(),
-  duplicates: z.number(),
-  workspaces: z.array(
-    z.object({
-      name: z.string(),
-      count: z.number(),
-    }),
-  ),
-});
-
-export type BookmarkCreateInput = z.infer<typeof bookmarkCreateSchema>;
-export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
-export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;
-export type BookmarkRenameInput = z.infer<typeof bookmarkRenameSchema>;
-export type WorkspaceCreateInput = z.infer<typeof workspaceCreateSchema>;
-export type WorkspaceRenameInput = z.infer<typeof workspaceRenameSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePublicProfileInput = z.infer<
   typeof updatePublicProfileSchema
 >;
-export type ExportOptionsInput = z.infer<typeof exportOptionsSchema>;
-export type ImportOptionsInput = z.infer<typeof importOptionsSchema>;
-export type ImportPreviewOutput = z.infer<typeof importPreviewSchema>;

@@ -30,11 +30,6 @@ interface BookmarkMoveDialogProps {
   workspaces: { id: string; name: string }[];
   currentWorkspaceId?: string | null;
   onSuccess: () => void;
-  onConfirm?: (
-    ids: string[],
-    targetWorkspaceId: string,
-  ) => void | Promise<void>;
-  silent?: boolean;
 }
 
 export function BookmarkMoveDialog({
@@ -44,8 +39,6 @@ export function BookmarkMoveDialog({
   workspaces,
   currentWorkspaceId,
   onSuccess,
-  onConfirm,
-  silent = false,
 }: BookmarkMoveDialogProps) {
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
     null,
@@ -72,43 +65,17 @@ export function BookmarkMoveDialog({
     if (ids.length === 0 || !targetWorkspaceId) return;
 
     setIsPending(true);
+    const res = await moveBookmarks(ids, targetWorkspaceId);
+    setIsPending(false);
 
-    if (onConfirm) {
-      await onConfirm(ids, targetWorkspaceId);
-      setIsPending(false);
+    if (res.success) {
+      toast.success(
+        ids.length === 1 ? "Bookmark moved" : `${ids.length} bookmarks moved`,
+      );
       onSuccess();
       onOpenChange(false);
     } else {
-      const res = await moveBookmarks(ids, targetWorkspaceId);
-      setIsPending(false);
-
-      if (res.success) {
-        if (!silent) {
-          const workspaceName = selectedWorkspace?.name || "Target Workspace";
-
-          if (res.movedCount > 0 && res.skippedCount > 0) {
-            toast.success(
-              `${res.movedCount} moved, ${res.skippedCount} already in ${workspaceName}`,
-            );
-          } else if (res.movedCount > 0) {
-            toast.success(
-              res.movedCount === 1
-                ? `Bookmark moved to ${workspaceName}`
-                : `${res.movedCount} bookmarks moved to ${workspaceName}`,
-            );
-          } else if (res.skippedCount > 0) {
-            toast.info(
-              res.skippedCount === 1
-                ? `Bookmark already exists in ${workspaceName}`
-                : `Bookmarks already exist in ${workspaceName}`,
-            );
-          }
-        }
-        onSuccess();
-        onOpenChange(false);
-      } else {
-        toast.error(res.error || "Failed to move bookmarks");
-      }
+      toast.error(res.error || "Failed to move bookmarks");
     }
   };
 

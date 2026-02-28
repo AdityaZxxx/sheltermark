@@ -4,7 +4,6 @@ import {
   CaretUpDownIcon,
   GlobeIcon,
   GlobeXIcon,
-  LinkBreakIcon,
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -21,12 +20,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { Switch } from "~/components/ui/switch";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog";
-import { WorkspaceVisibilityDialog } from "./workspace-visibility-dialog";
+import { WorkspacePrivateDialog } from "./workspace-private-dialog";
+import { WorkspacePublicDialog } from "./workspace-public-dialog";
 
 export function WorkspaceMenu() {
   const {
@@ -38,12 +37,12 @@ export function WorkspaceMenu() {
     deleteWorkspace,
     isDeleting,
     togglePublicStatus,
-    toggleAutoCheckBroken,
   } = useWorkspaces();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
+  const [isPublicDialogOpen, setIsPublicDialogOpen] = useState(false);
+  const [isPrivateDialogOpen, setIsPrivateDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -64,7 +63,13 @@ export function WorkspaceMenu() {
   const activeWorkspaceName = currentWorkspace?.name || "";
 
   const handleTogglePublic = () => {
-    setIsVisibilityDialogOpen(true);
+    if (currentWorkspace) {
+      if (currentWorkspace.is_public) {
+        setIsPrivateDialogOpen(true);
+      } else {
+        setIsPublicDialogOpen(true);
+      }
+    }
   };
 
   const handleAddWorkspace = (name: string) => {
@@ -87,7 +92,7 @@ export function WorkspaceMenu() {
                 <div
                   className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspace?.id || "default")}`}
                 />
-                <span className="truncate max-w-[100px] text-sm">
+                <span className="truncate max-w-[100px]">
                   {activeWorkspaceName}
                 </span>
               </div>
@@ -157,33 +162,6 @@ export function WorkspaceMenu() {
             )}
           />
 
-          <DropdownMenuItem
-            nativeButton
-            className="w-full gap-1.5"
-            render={(props) => (
-              <button {...props}>
-                <div className="flex items-center gap-2">
-                  <LinkBreakIcon className="h-4 w-4" />
-                  Weekly URL Check
-                </div>
-                <Switch
-                  size="sm"
-                  className="left-10"
-                  checked={currentWorkspace?.auto_check_broken !== false}
-                  onCheckedChange={(checked) => {
-                    if (currentWorkspace) {
-                      toggleAutoCheckBroken({
-                        id: currentWorkspace.id,
-                        enabled: checked,
-                      });
-                    }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </button>
-            )}
-          />
-
           {workspaces.length > 1 && (
             <DropdownMenuItem
               nativeButton
@@ -220,17 +198,24 @@ export function WorkspaceMenu() {
         isDefault={currentWorkspace?.is_default}
       />
 
-      <WorkspaceVisibilityDialog
-        isOpen={isVisibilityDialogOpen}
-        onOpenChange={setIsVisibilityDialogOpen}
-        mode={currentWorkspace?.is_public ? "private" : "public"}
+      <WorkspacePublicDialog
+        isOpen={isPublicDialogOpen}
+        onOpenChange={setIsPublicDialogOpen}
         onConfirm={() => {
           if (currentWorkspace) {
-            togglePublicStatus({
-              id: currentWorkspace.id,
-              isPublic: !currentWorkspace.is_public,
-            });
-            setIsVisibilityDialogOpen(false);
+            togglePublicStatus({ id: currentWorkspace.id, isPublic: true });
+            setIsPublicDialogOpen(false);
+          }
+        }}
+      />
+
+      <WorkspacePrivateDialog
+        isOpen={isPrivateDialogOpen}
+        onOpenChange={setIsPrivateDialogOpen}
+        onConfirm={() => {
+          if (currentWorkspace) {
+            togglePublicStatus({ id: currentWorkspace.id, isPublic: false });
+            setIsPrivateDialogOpen(false);
           }
         }}
       />

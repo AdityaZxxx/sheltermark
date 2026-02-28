@@ -26,7 +26,7 @@ export async function signupWithEmail(formData: FormData) {
     password,
     options: {
       data: {
-        name: name,
+        full_name: name,
       },
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`,
     },

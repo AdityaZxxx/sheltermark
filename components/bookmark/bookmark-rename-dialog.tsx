@@ -20,8 +20,6 @@ interface BookmarkRenameDialogProps {
   onOpenChange: (open: boolean) => void;
   bookmark: { id: string; title: string } | null;
   onSuccess: () => void;
-  onConfirm?: (id: string, title: string) => void | Promise<void>;
-  silent?: boolean;
 }
 
 export function BookmarkRenameDialog({
@@ -29,8 +27,6 @@ export function BookmarkRenameDialog({
   onOpenChange,
   bookmark,
   onSuccess,
-  onConfirm,
-  silent = false,
 }: BookmarkRenameDialogProps) {
   const [title, setTitle] = useState("");
   const [isPending, setIsPending] = useState(false);
@@ -49,23 +45,15 @@ export function BookmarkRenameDialog({
     }
 
     setIsPending(true);
+    const res = await renameBookmark(bookmark.id, title.trim());
+    setIsPending(false);
 
-    if (onConfirm) {
-      await onConfirm(bookmark.id, title.trim());
-      setIsPending(false);
+    if (res.success) {
+      toast.success("Bookmark renamed");
       onSuccess();
       onOpenChange(false);
     } else {
-      const res = await renameBookmark(bookmark.id, title.trim());
-      setIsPending(false);
-
-      if (res.success) {
-        if (!silent) toast.success("Bookmark renamed");
-        onSuccess();
-        onOpenChange(false);
-      } else {
-        toast.error(res.error || "Failed to rename bookmark");
-      }
+      toast.error(res.error || "Failed to rename bookmark");
     }
   };
 

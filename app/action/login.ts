@@ -20,7 +20,7 @@ export async function loginWithGoogle() {
   });
 
   if (error) {
-    redirect("/auth-code-error");
+    redirect("/error");
   }
 
   if (data.url) {

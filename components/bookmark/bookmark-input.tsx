@@ -32,12 +32,8 @@ export const BookmarkInput = forwardRef<HTMLInputElement, BookmarkInputProps>(
       if (e.key === "Enter" && value.trim()) {
         e.preventDefault();
         e.stopPropagation();
-        const isUrl =
-          value.trim().includes(".") || value.trim().startsWith("http");
         onSubmit(value.trim());
-        if (isUrl) {
-          onChange("");
-        }
+        onChange("");
         return;
       }
       if (e.key === "Escape") {

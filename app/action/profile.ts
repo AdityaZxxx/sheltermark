@@ -1,28 +1,39 @@
 import { requireAuthSafe } from "~/lib/auth";
-import type { Profile } from "~/types/profile.types";
-import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 
-export async function getProfileDisplayName(
-  username: string,
-): Promise<string | null> {
-  const { supabase } = await requireAuthSafe();
+interface PublicProfile {
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  github_url: string | null;
+  x_url: string | null;
+  website_url: string | null;
+  is_public: boolean;
+  created_at: string;
+}
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("name")
-    .eq("username", username)
-    .eq("is_public", true)
-    .single();
+interface Bookmark {
+  id: string;
+  title: string;
+  url: string;
+  description: string | null;
+  favicon_url: string | null;
+  og_image_url: string | null;
+  created_at: string;
+}
 
-  return data?.name ?? null;
+interface WorkspaceWithBookmarks {
+  id: string;
+  name: string;
+  bookmarks: Bookmark[];
 }
 
 export async function getPublicProfile(username: string): Promise<{
-  profile?: Profile;
+  profile?: PublicProfile;
   workspaces: WorkspaceWithBookmarks[];
   error?: string;
 }> {
-  const { supabase } = await requireAuthSafe();
+  const {supabase} = await requireAuthSafe();
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
@@ -61,6 +72,7 @@ export async function getPublicProfile(username: string): Promise<{
         name: workspace.name,
         bookmarks: bookmarks.map((b) => ({
           ...b,
+          description: null,
         })),
       });
     }
@@ -68,9 +80,8 @@ export async function getPublicProfile(username: string): Promise<{
 
   return {
     profile: {
-      id: profile.id,
       username: profile.username,
-      name: profile.name,
+      full_name: profile.full_name,
       avatar_url: profile.avatar_url,
       bio: profile.bio,
       github_url: profile.github_url,

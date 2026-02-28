@@ -1,71 +1,72 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getProfile,
-  updateProfile as updateProfileAction,
-  updatePublicProfile as updatePublicProfileAction,
+  updateProfile,
+  updatePublicProfile,
 } from "~/app/action/setting";
-import { useSupabase } from "~/components/providers/supabase-provider";
-import type { Profile } from "../types/profile.types";
+
+export interface Profile {
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
+  bio: string | null;
+  github_url: string | null;
+  x_url: string | null;
+  website_url: string | null;
+  is_public: boolean;
+}
 
 export function useProfile() {
-  const queryClient = useQueryClient();
-  const { user, isLoading: isAuthLoading } = useSupabase();
-
-  const queryKey = ["profile", user?.id] as const;
-
-  const { data, isLoading } = useQuery<Profile | null>({
-    queryKey,
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["profile"],
     queryFn: async () => {
       const result = await getProfile();
       if (result.error) {
         throw new Error(result.error);
       }
-      return result.profile as Profile | null;
+      return result.profile as Profile;
     },
-    enabled: !!user?.id && !isAuthLoading,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (data: { name: string }) => {
-      const result = await updateProfileAction(data);
-      return result;
-    },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
-      } else {
-        toast.success("Profile updated");
-        queryClient.invalidateQueries({ queryKey });
-      }
-    },
-  });
-
-  const updatePublicMutation = useMutation({
-    mutationFn: async (
-      data: Parameters<typeof updatePublicProfileAction>[0],
-    ) => {
-      const result = await updatePublicProfileAction(data);
-      return result;
-    },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
-      } else {
-        toast.success("Public profile updated");
-        queryClient.invalidateQueries({ queryKey });
-      }
-    },
+    staleTime: 30000,
   });
 
   return {
     profile: data,
-    isLoading: isAuthLoading || isLoading,
-    updateProfile: updateMutation.mutate,
-    isUpdating: updateMutation.isPending,
-    updatePublicProfile: updatePublicMutation.mutate,
-    isUpdatingPublic: updatePublicMutation.isPending,
+    isLoading,
+    error,
+  };
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return async (data: { full_name: string }) => {
+    const result = await updateProfile(data);
+    if (!result.error) {
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
+    }
+    return result;
+  };
+}
+
+export function useUpdatePublicProfile() {
+  const queryClient = useQueryClient();
+
+  return async (data: {
+    username: string;
+    is_public: boolean;
+    bio?: string;
+    github_username?: string;
+    x_username?: string;
+    website?: string;
+    current_username?: string;
+  }) => {
+    const result = await updatePublicProfile(data);
+    if (!result.error) {
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+    }
+    return result;
   };
 }

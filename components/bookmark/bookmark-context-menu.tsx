@@ -1,5 +1,4 @@
 import {
-  ArrowClockwiseIcon,
   CopyIcon,
   FolderOpenIcon,
   PencilIcon,
@@ -32,7 +31,6 @@ interface BookmarkContextMenuProps {
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
   onDelete?: (id: string) => void;
-  onRefetch?: (id: string) => void;
   onSelectionModeToggle?: () => void;
 }
 
@@ -49,7 +47,6 @@ export function BookmarkContextMenu({
   onMoveToWorkspace,
   onCopyUrl,
   onDelete,
-  onRefetch,
   onSelectionModeToggle,
 }: BookmarkContextMenuProps) {
   const handleSelectionModeToggle = () => {
@@ -75,11 +72,6 @@ export function BookmarkContextMenu({
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
           <CopyIcon />
           Copy URL
-        </ContextMenuItem>
-
-        <ContextMenuItem onClick={() => onRefetch?.(id)}>
-          <ArrowClockwiseIcon />
-          Refresh Metadata
         </ContextMenuItem>
 
         {availableWorkspaces.length > 0 && (

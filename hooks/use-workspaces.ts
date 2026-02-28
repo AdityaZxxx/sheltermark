@@ -8,28 +8,19 @@ import {
   createWorkspace,
   deleteWorkspace,
   getWorkspaces,
-  setDefaultWorkspace,
-  toggleAutoCheckBroken,
   togglePublicStatus,
 } from "~/app/action/workspace";
-import { useSupabase } from "~/components/providers/supabase-provider";
 
 export function useWorkspaces() {
   const queryClient = useQueryClient();
   const [activeWorkspaceId, setActiveWorkspaceId] = useQueryState("workspace");
-  const { user, isLoading: isAuthLoading } = useSupabase();
 
-  const queryKey = ["workspaces", user?.id] as const;
-
-  const { data: workspaces = [], isLoading: isWsLoading } = useQuery({
-    queryKey,
-    queryFn: getWorkspaces,
-    enabled: !!user?.id && !isAuthLoading,
+  const { data: workspaces = [], isLoading } = useQuery({
+    queryKey: ["workspaces"],
+    queryFn: () => getWorkspaces(),
   });
 
   const currentWorkspace = useMemo(() => {
-    if (workspaces.length === 0) return null;
-
     if (!activeWorkspaceId) {
       return workspaces.find((ws) => ws.is_default) || workspaces[0];
     }
@@ -44,37 +35,36 @@ export function useWorkspaces() {
     setActiveWorkspaceId(id);
   };
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
-
   const createMutation = useMutation({
-    mutationFn: createWorkspace,
+    mutationFn: (formData: FormData) => createWorkspace(formData),
     onSuccess: (data) => {
       if (data.error) {
         toast.error(data.error);
       } else {
         toast.success("Workspace created");
-        invalidate();
-        if (data.data?.id) setActiveWorkspace(data.data.id);
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+        if (data.data?.id) {
+          setActiveWorkspace(data.data.id);
+        }
       }
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteWorkspace,
+    mutationFn: (id: string) => deleteWorkspace(id),
     onSuccess: (data) => {
       if (data.error) {
         toast.error(data.error);
       } else {
         toast.success("Workspace deleted");
-        invalidate();
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+        // Fallback to default if deleted was active
         const nextWs =
           workspaces.find(
             (ws) => ws.id !== activeWorkspaceId && ws.is_default,
           ) || workspaces.find((ws) => ws.id !== activeWorkspaceId);
         if (nextWs) {
           setActiveWorkspace(nextWs.id);
-        } else {
-          setActiveWorkspaceId(null);
         }
       }
     },
@@ -90,36 +80,7 @@ export function useWorkspaces() {
         toast.success(
           `Workspace is now ${variables.isPublic ? "public" : "private"}`,
         );
-        queryClient.invalidateQueries({ queryKey: ["workspaces", user?.id] });
-      }
-    },
-  });
-
-  const setDefaultMutation = useMutation({
-    mutationFn: setDefaultWorkspace,
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
-      } else {
-        toast.success("Default workspace updated");
-        queryClient.invalidateQueries({ queryKey: ["workspaces", user?.id] });
-      }
-    },
-  });
-
-  const autoCheckMutation = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      toggleAutoCheckBroken(id, enabled),
-    onSuccess: (data, variables) => {
-      if (data.error) {
-        toast.error(data.error);
-      } else {
-        toast.success(
-          variables.enabled
-            ? "Weekly URL check enabled"
-            : "Weekly URL check disabled",
-        );
-        queryClient.invalidateQueries({ queryKey: ["workspaces", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       }
     },
   });
@@ -127,7 +88,7 @@ export function useWorkspaces() {
   return {
     workspaces,
     currentWorkspace,
-    isLoading: isAuthLoading || isWsLoading,
+    isLoading,
     setActiveWorkspace,
     createWorkspace: createMutation.mutate,
     isCreating: createMutation.isPending,
@@ -135,9 +96,5 @@ export function useWorkspaces() {
     isDeleting: deleteMutation.isPending,
     togglePublicStatus: publicToggleMutation.mutate,
     isTogglingPublic: publicToggleMutation.isPending,
-    setDefaultWorkspace: setDefaultMutation.mutate,
-    isSettingDefault: setDefaultMutation.isPending,
-    toggleAutoCheckBroken: autoCheckMutation.mutate,
-    isTogglingAutoCheck: autoCheckMutation.isPending,
   };
 }

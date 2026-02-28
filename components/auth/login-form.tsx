@@ -1,6 +1,6 @@
 "use client";
 
-import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import { loginWithEmail, loginWithGoogle } from "~/app/action/login";
@@ -56,12 +56,11 @@ export function LoginForm({
         onClick={handleGoogleLogin}
         disabled={isLoadingGoogle}
         variant="outline"
-        className="w-full text-foreground border border-border"
-        size="lg"
+        className="w-full h-11 text-foreground border border-border"
       >
         <span className="flex items-center justify-center gap-3">
           <GoogleIcon className="w-5 h-5" />
-          <span className="text-sm font-medium">
+          <span className="font-medium">
             {isLoadingGoogle ? "Connecting..." : "Continue with Google"}
           </span>
         </span>
@@ -88,27 +87,20 @@ export function LoginForm({
         <FieldGroup>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <div className="relative">
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="hello@awesome.com"
-                required
-                className="pl-10"
-              />
-              <EnvelopeIcon
-                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
-                aria-hidden="true"
-              />
-            </div>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="hello@awesome.com"
+              required
+            />
           </Field>
           <Field>
             <div className="flex items-center">
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <Link
                 href="/forgot-password"
-                className="ml-auto inline-block text-xs underline-offset-4 hover:underline"
+                className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
               >
                 Forgot your password?
               </Link>
@@ -139,12 +131,7 @@ export function LoginForm({
             </div>
           </Field>
           <Field>
-            <Button
-              type="submit"
-              disabled={isLoadingEmail}
-              size="lg"
-              className="text-sm"
-            >
+            <Button type="submit" disabled={isLoadingEmail}>
               {isLoadingEmail ? "Logging in..." : "Login"}
             </Button>
 
