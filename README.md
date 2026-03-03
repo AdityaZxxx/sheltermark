@@ -16,6 +16,7 @@ A clean, minimalist bookmark manager. Organize and access your bookmarks from an
 - **Backend:** Supabase (Auth, Database, Storage)
 - **State Management:** TanStack Query
 - **Package Manager:** Bun
+- **Extension:** Chrome Extension Manifest V3
 
 ## Features in Detail
 
@@ -40,6 +41,6 @@ A clean, minimalist bookmark manager. Organize and access your bookmarks from an
 - [x] Web app with workspaces
 - [x] Public profile pages
 - [x] Auto-metadata fetching
-- [ ] Chrome Extension (WIP)
+- [x] Chrome Extension (currently the extension is not yet available in the web store due to registration payment issues)
 - [ ] Import/export
 - [ ] Full-text search
