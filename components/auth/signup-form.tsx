@@ -81,7 +81,7 @@ export function SignupForm({
           <Button
             nativeButton={false}
             variant="default"
-            className="px-4"
+            className="px-4 text-sm"
             render={<Link href="/login" />}
           >
             Back to login
@@ -104,11 +104,12 @@ export function SignupForm({
         onClick={handleGoogleSignup}
         disabled={isLoadingGoogle}
         variant="outline"
-        className="w-full h-11 text-foreground border border-border"
+        className="w-full text-foreground border border-border"
+        size="lg"
       >
         <span className="flex items-center justify-center gap-3">
           <GoogleIcon className="w-5 h-5" />
-          <span className="font-medium">
+          <span className="text-sm font-medium">
             {isLoadingGoogle ? "Connecting..." : "Continue with Google"}
           </span>
         </span>
@@ -217,7 +218,12 @@ export function SignupForm({
             </div>
           </Field>
           <Field>
-            <Button type="submit" disabled={isLoadingEmail}>
+            <Button
+              type="submit"
+              disabled={isLoadingEmail}
+              size="lg"
+              className="text-sm"
+            >
               {isLoadingEmail ? "Signing up..." : "Sign up"}
             </Button>
 

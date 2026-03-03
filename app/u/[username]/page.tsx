@@ -111,8 +111,8 @@ export default async function PublicProfilePage({
             <BookmarkViewReadOnly workspaces={workspaces} />
           </div>
         </div>
-        <Footer />
       </div>
+      <Footer />
     </div>
   );
 }

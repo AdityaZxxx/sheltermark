@@ -15,7 +15,7 @@ export function BookmarkViewToggle({
       value={view}
       onValueChange={(v) => onViewChange(v as "list" | "card")}
     >
-      <TabsList className="grid w-24 grid-cols-2 bg-muted/60 p-1 rounded-lg">
+      <TabsList className="grid w-16 grid-cols-2 bg-muted/60 rounded-lg">
         <TabsTrigger
           value="list"
           className="rounded-md data-active:bg-background data-active:shadow-sm"
