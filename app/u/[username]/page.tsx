@@ -5,6 +5,7 @@ import { PublicHeader } from "~/components/profile/public-header";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
 import { requireAuthSafe } from "~/lib/auth";
 import { getBaseUrl, slugify } from "~/lib/utils";
+import { Footer } from "../../../components/footer";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -110,6 +111,7 @@ export default async function PublicProfilePage({
             <BookmarkViewReadOnly workspaces={workspaces} />
           </div>
         </div>
+        <Footer />
       </div>
     </div>
   );

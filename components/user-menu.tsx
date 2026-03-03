@@ -3,15 +3,11 @@
 import {
   CaretUpDownIcon,
   GearIcon,
-  LaptopIcon,
-  MoonIcon,
   SignOutIcon,
-  SunIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -22,9 +18,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useProfile } from "~/hooks/use-profile";
 import { SettingsDialog } from "./settings-dialog";
+import { ThemeMode } from "./theme-mode";
 import { Button } from "./ui/button";
 
 interface UserMenuProps {
@@ -63,8 +59,7 @@ export function UserMenu({ user }: UserMenuProps) {
           }
         />
         <DropdownMenuContent className="rounded-xl" align="end" sideOffset={8}>
-          <ThemeTabs />
-
+          <ThemeMode variant="tabs" />
           <DropdownMenuSeparator className="my-1" />
 
           <DropdownMenuItem
@@ -114,35 +109,5 @@ export function UserMenu({ user }: UserMenuProps) {
         user={user}
       />
     </>
-  );
-}
-
-function ThemeTabs() {
-  const { theme, setTheme } = useTheme();
-  return (
-    <div className="p-1.5">
-      <Tabs value={theme} onValueChange={(v) => setTheme(v)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-muted/60 rounded-lg p-1">
-          <TabsTrigger
-            value="light"
-            className="rounded-md data-active:bg-foreground! data-active:shadow-sm data-active:text-primary-foreground!"
-          >
-            <SunIcon className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger
-            value="dark"
-            className="rounded-md data-active:bg-foreground! data-active:shadow-sm data-active:text-primary-foreground!"
-          >
-            <MoonIcon className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger
-            value="system"
-            className="rounded-md data-active:bg-foreground! data-active:shadow-sm data-active:text-primary-foreground!"
-          >
-            <LaptopIcon className="h-4 w-4" />
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </div>
   );
 }
