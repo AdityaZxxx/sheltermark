@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
-import { fetchMetadata } from "~/lib/metadata";
+import { insertBookmark } from "~/lib/bookmark";
 import { bookmarkCreateSchema } from "~/lib/schemas";
 
 export async function addBookmark(formData: FormData) {
@@ -19,48 +19,18 @@ export async function addBookmark(formData: FormData) {
 
   const { user, supabase } = await requireAuth();
 
-  // Check if bookmark already exists in workspace (BEFORE fetching metadata)
-  const workspaceIdValue = validated.data.workspaceId;
-  let existingQuery = supabase
-    .from("bookmarks")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("url", validated.data.url);
-
-  if (workspaceIdValue) {
-    existingQuery = existingQuery.eq("workspace_id", workspaceIdValue);
-  } else {
-    existingQuery = existingQuery.is("workspace_id", null);
-  }
-
-  // Parallel: check duplicate + fetch metadata simultaneously
-  const [existing, metadata] = await Promise.all([
-    existingQuery.maybeSingle(),
-    fetchMetadata(validated.data.url),
-  ]);
-
-  if (existing.data) {
-    return { error: "Bookmark already exists in this workspace" };
-  }
-
-  const insertData = {
-    user_id: user.id,
+  const result = await insertBookmark(supabase, user.id, {
     url: validated.data.url,
-    title: metadata.title,
-    favicon_url: metadata.favicon_url,
-    og_image_url: metadata.og_image_url,
-    workspace_id: validated.data.workspaceId,
-  };
+    workspaceId: validated.data.workspaceId,
+  });
 
-  const { data, error } = await supabase
-    .from("bookmarks")
-    .insert([insertData])
-    .select()
-    .single();
+  if (!result.success) {
+    if (result.duplicate)
+      return { error: "Bookmark already exists in this workspace" };
+    return { error: result.error };
+  }
 
-  if (error) return { error: error.message };
-
-  return { success: true, data };
+  return { success: true, data: result.data };
 }
 
 export async function deleteBookmarks(ids: string[]) {
