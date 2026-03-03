@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   addBookmark as addBookmarkAction,
@@ -15,8 +15,11 @@ import type { Bookmark } from "~/types/bookmark.types";
 
 export function useBookmarks(workspaceId?: string) {
   const queryClient = useQueryClient();
-  const { user, isLoading: isAuthLoading } = useSupabase();
+  const { supabase, user, isLoading: isAuthLoading } = useSupabase();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const queryClientRef = useRef(queryClient);
+  queryClientRef.current = queryClient;
 
   const queryKey = useMemo(
     () => ["bookmarks", workspaceId, user?.id] as const,
@@ -38,7 +41,36 @@ export function useBookmarks(workspaceId?: string) {
     return allBookmarks.filter((b) => b.workspace_id === workspaceId);
   }, [allBookmarks, workspaceId]);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
+
+  // Realtime subscription - auto-refresh when new bookmark is added from extension
+  useEffect(() => {
+    if (!user?.id || !supabase) return;
+
+    const channel = supabase
+      .channel("bookmarks-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "bookmarks",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          console.log("[useBookmarks] New bookmark detected");
+          queryClientRef.current.invalidateQueries({ queryKey: ["bookmarks"] });
+          toast.success("New bookmark added!");
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, supabase]);
 
   const addBookmark = useMutation({
     mutationFn: addBookmarkAction,
