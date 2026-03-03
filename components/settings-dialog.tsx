@@ -45,7 +45,7 @@ export function SettingsDialog({
 
           <TabsContent
             value="general"
-            className="flex-1 overflow-y-auto -mx-2 px-2 my-6"
+            className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 my-6"
           >
             <SettingsGeneralTab
               user={user}
@@ -55,7 +55,7 @@ export function SettingsDialog({
 
           <TabsContent
             value="profile"
-            className="flex-1 overflow-y-auto -mx-2 px-2 my-6"
+            className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 my-6"
           >
             <SettingsProfileTab onCancel={() => onOpenChange(false)} />
           </TabsContent>

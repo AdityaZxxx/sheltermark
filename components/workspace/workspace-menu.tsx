@@ -84,7 +84,7 @@ export function WorkspaceMenu() {
                 <div
                   className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspace?.id || "default")}`}
                 />
-                <span className="truncate max-w-[100px]">
+                <span className="truncate max-w-[100px] text-sm">
                   {activeWorkspaceName}
                 </span>
               </div>

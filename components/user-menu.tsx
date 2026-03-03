@@ -42,7 +42,7 @@ export function UserMenu({ user }: UserMenuProps) {
         <DropdownMenuTrigger
           render={
             <Button variant="ghost" className="gap-2 px-2">
-              <Avatar>
+              <Avatar size="sm">
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
                   alt={profile.full_name ?? undefined}
@@ -51,9 +51,9 @@ export function UserMenu({ user }: UserMenuProps) {
                   {profile.full_name?.charAt(0).toUpperCase() ?? undefined}
                 </AvatarFallback>
               </Avatar>
-              <h1 className="text-sm font-medium leading-none hidden md:block">
+              <span className="text-sm hidden md:block">
                 {profile.full_name}
-              </h1>
+              </span>
               <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
             </Button>
           }
