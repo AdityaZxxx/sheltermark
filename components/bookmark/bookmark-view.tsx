@@ -96,12 +96,32 @@ export function BookmarkView() {
 
   const handleMoveToWorkspace = useCallback(
     (id: string, workspaceId: string) => {
-      moveBookmarks({
-        ids: [id],
-        targetWorkspaceId: workspaceId,
-      });
+      moveBookmarks(
+        {
+          ids: [id],
+          targetWorkspaceId: workspaceId,
+        },
+        {
+          onSuccess: (res) => {
+            if (res.success) {
+              const workspace = workspaces.find((ws) => ws.id === workspaceId);
+              const workspaceName = workspace?.name || "Target Workspace";
+
+              if (res.movedCount > 0 && res.skippedCount > 0) {
+                toast.success(
+                  `${res.movedCount} moved, ${res.skippedCount} already in ${workspaceName}`,
+                );
+              } else if (res.movedCount > 0) {
+                toast.success(`Bookmark moved to ${workspaceName}`);
+              } else if (res.skippedCount > 0) {
+                toast.info(`Bookmark already exists in ${workspaceName}`);
+              }
+            }
+          },
+        },
+      );
     },
-    [moveBookmarks],
+    [moveBookmarks, workspaces],
   );
 
   const handleBulkMoveTrigger = useCallback(() => {
