@@ -1,26 +1,32 @@
 /**
  * Format a date string for display
- * Returns format: "Jan 1, 2026"
+ * Returns format: "Jan 1" (if same year) or "Jan 1, 2026" (if different year)
  */
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
+  const now = new Date();
+  const isSameYear = date.getFullYear() === now.getFullYear();
+
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
+    year: isSameYear ? undefined : "numeric",
   });
 }
 
 /**
  * Format a date string with time
- * Returns format: "Jan 1, 2026, 2:30 PM"
+ * Returns format: "Jan 1, 2:30 PM" (if same year) or "Jan 1, 2026, 2:30 PM"
  */
 export function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
+  const now = new Date();
+  const isSameYear = date.getFullYear() === now.getFullYear();
+
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
+    year: isSameYear ? undefined : "numeric",
     hour: "numeric",
     minute: "2-digit",
   });
