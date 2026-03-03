@@ -10,7 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@base-ui/react": "^1.1.0",
+    "@base-ui/react": "^1.2.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/ssr": "^0.8.0",
