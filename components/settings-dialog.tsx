@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { useProfile } from "~/hooks/use-profile";
 import { SettingsGeneralTab } from "./settings-general-tab";
 import { SettingsProfileTab } from "./settings-profile-tab";
 
@@ -25,16 +24,14 @@ export function SettingsDialog({
   onOpenChange,
   user,
 }: SettingsDialogProps) {
-  const { profile, isLoading } = useProfile();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex flex-col max-h-[95vh]">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Manage your account settings.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="general">
+        <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
           <TabsList className="w-full">
             <TabsTrigger value="general" className="flex-1">
               <GearIcon className="size-4" />
@@ -46,34 +43,21 @@ export function SettingsDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="pt-2">
-            {isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Loading profile...
-              </div>
-            ) : (
-              <SettingsGeneralTab
-                user={user}
-                profile={profile ?? null}
-                onCancel={() => onOpenChange(false)}
-              />
-            )}
+          <TabsContent
+            value="general"
+            className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 my-6"
+          >
+            <SettingsGeneralTab
+              user={user}
+              onCancel={() => onOpenChange(false)}
+            />
           </TabsContent>
 
           <TabsContent
             value="profile"
-            className="pt-2 -mx-2 px-2 max-h-[60vh] overflow-y-auto"
+            className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 my-6"
           >
-            {isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Loading profile...
-              </div>
-            ) : (
-              <SettingsProfileTab
-                profile={profile ?? null}
-                onCancel={() => onOpenChange(false)}
-              />
-            )}
+            <SettingsProfileTab onCancel={() => onOpenChange(false)} />
           </TabsContent>
         </Tabs>
       </DialogContent>

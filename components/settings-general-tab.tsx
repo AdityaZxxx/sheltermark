@@ -1,5 +1,6 @@
 "use client";
 
+import { EnvelopeIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
@@ -15,23 +16,30 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import type { Profile } from "~/hooks/use-profile";
-import { useUpdateProfile } from "~/hooks/use-profile";
+import { useProfile } from "~/hooks/use-profile";
+import { useWorkspaces } from "~/hooks/use-workspaces";
 import { updateProfileSchema } from "~/lib/schemas";
+import { getPastelColor } from "../lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface SettingsGeneralTabProps {
   user: User;
-  profile: Profile | null;
   onCancel: () => void;
 }
 
 export function SettingsGeneralTab({
   user,
-  profile,
   onCancel,
 }: SettingsGeneralTabProps) {
+  const { profile, updateProfile } = useProfile();
+  const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
   const defaultFullName = profile?.full_name || "";
-  const updateProfile = useUpdateProfile();
 
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -88,13 +96,8 @@ export function SettingsGeneralTab({
       onSubmit: updateProfileSchema,
     },
     onSubmit: async ({ value }) => {
-      const result = await updateProfile({ full_name: value.full_name });
-      if (result?.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Profile updated successfully");
-        onCancel();
-      }
+      updateProfile({ full_name: value.full_name });
+      onCancel();
     },
   });
 
@@ -107,6 +110,7 @@ export function SettingsGeneralTab({
         e.preventDefault();
         form.handleSubmit();
       }}
+      className="flex flex-col"
     >
       <FieldGroup>
         <div className="flex justify-center pb-4 border-b border-border">
@@ -154,22 +158,65 @@ export function SettingsGeneralTab({
 
         <Field>
           <FieldLabel>Email</FieldLabel>
-          <Input
-            id="email"
-            type="email"
-            value={user.email || ""}
-            disabled
-            className="bg-muted"
-          />
+          <div className="relative">
+            <Input
+              id="email"
+              type="email"
+              value={user.email || ""}
+              disabled
+              className="bg-muted pl-10"
+            />
+            <EnvelopeIcon
+              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
           <FieldDescription>Email cannot be changed.</FieldDescription>
         </Field>
 
-        <SettingsDialogFooter
-          isSubmitting={isSubmitting}
-          isDirty={isDirty}
-          onCancel={onCancel}
-        />
+        <Field>
+          <FieldLabel>Default Workspace</FieldLabel>
+          <Select
+            value={
+              workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id
+            }
+            onValueChange={(value) => setDefaultWorkspace(value)}
+            disabled={isSettingDefault}
+          >
+            <SelectTrigger>
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${getPastelColor(workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id)}`}
+                  />
+                  <span className="truncate">
+                    {workspaces.find((ws) => ws.is_default)?.name ||
+                      workspaces[0]?.name}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {workspaces.map((ws) => (
+                <SelectItem key={ws.id} value={ws.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
+                    />
+                    <span className="truncate">{ws.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       </FieldGroup>
+
+      <SettingsDialogFooter
+        isSubmitting={isSubmitting}
+        isDirty={isDirty}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

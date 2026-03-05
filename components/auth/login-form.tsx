@@ -1,6 +1,6 @@
 "use client";
 
-import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
 import { loginWithEmail, loginWithGoogle } from "~/app/action/login";
@@ -87,13 +87,20 @@ export function LoginForm({
         <FieldGroup>
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="hello@awesome.com"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="hello@awesome.com"
+                required
+                className="pl-10"
+              />
+              <EnvelopeIcon
+                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </div>
           </Field>
           <Field>
             <div className="flex items-center">

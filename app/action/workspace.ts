@@ -1,17 +1,10 @@
 "use server";
 
-import { z } from "zod";
 import { requireAuth } from "~/lib/auth";
-
-const workspaceSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Workspace name is required")
-    .max(50, "Name too long"),
-});
+import { workspaceCreateSchema } from "~/lib/schemas";
 
 export async function getWorkspaces() {
-  const { supabase } = await requireAuth();
+  const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
     .from("workspaces")
@@ -19,7 +12,8 @@ export async function getWorkspaces() {
       *,
       bookmarks(count)
     `)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .eq("user_id", user.id);
 
   if (error) throw new Error(error.message);
 
@@ -34,14 +28,13 @@ export async function getWorkspaces() {
 
 export async function createWorkspace(formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
-  const validated = workspaceSchema.safeParse(rawData);
+  const validated = workspaceCreateSchema.safeParse(rawData);
 
   if (!validated.success) {
     return { error: validated.error.issues[0].message };
   }
 
   const { user, supabase } = await requireAuth();
-  if (!user) return { error: "Not authenticated" };
 
   const { data, error } = await supabase
     .from("workspaces")
@@ -91,6 +84,29 @@ export async function togglePublicStatus(id: string, isPublic: boolean) {
   const { error } = await supabase
     .from("workspaces")
     .update({ is_public: isPublic })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
+export async function setDefaultWorkspace(id: string) {
+  const { user, supabase } = await requireAuth();
+
+  // First, unset all defaults
+  const { error: unsetError } = await supabase
+    .from("workspaces")
+    .update({ is_default: false })
+    .eq("user_id", user.id);
+
+  if (unsetError) return { error: unsetError.message };
+
+  // Then set the new default
+  const { error } = await supabase
+    .from("workspaces")
+    .update({ is_default: true })
     .eq("id", id)
     .eq("user_id", user.id);
 
