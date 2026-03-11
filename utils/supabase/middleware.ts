@@ -33,11 +33,7 @@ export async function updateSession(request: NextRequest) {
           request,
         });
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, {
-            ...options,
-            sameSite: "none",
-            secure: process.env.NODE_ENV === "production",
-          });
+          response.cookies.set(name, value, options);
         });
       },
     },

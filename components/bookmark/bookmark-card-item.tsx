@@ -71,13 +71,7 @@ export function BookmarkCardItem({
         "group flex flex-col rounded-sm overflow-hidden hover:bg-muted/50 h-full relative cursor-pointer transition-all text-left w-full  ",
         isSelected && "bg-primary/5",
       )}
-      onClick={() => {
-        if (isSelectionMode) {
-          onSelect?.(id);
-        } else {
-          window.open(url, "_blank");
-        }
-      }}
+      onClick={() => window.open(url, "_blank")}
     >
       {isSelected && (
         <div className="absolute inset-0 rounded-sm pointer-events-none z-20" />
