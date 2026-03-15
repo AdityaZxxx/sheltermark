@@ -42,5 +42,5 @@ A clean, minimalist bookmark manager. Organize and access your bookmarks from an
 - [x] Public profile pages
 - [x] Auto-metadata fetching
 - [x] Chrome Extension (currently the extension is not yet available in the web store due to registration payment issues)
-- [ ] Import/export
+- [x] Import/export bookmarks JSON and CSV support
 - [ ] Full-text search

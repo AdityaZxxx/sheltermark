@@ -2,6 +2,9 @@
 
 import { GearIcon, UserIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
+import { useState } from "react";
+import { ExportDialog } from "~/components/import-export/export-dialog";
+import { ImportDialog } from "~/components/import-export/import-dialog";
 import {
   Dialog,
   DialogContent,
@@ -24,9 +27,19 @@ export function SettingsDialog({
   onOpenChange,
   user,
 }: SettingsDialogProps) {
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const isChildDialogOpen = exportDialogOpen || importDialogOpen;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col max-h-[95vh]">
+      <DialogContent
+        className="flex flex-col max-h-[95vh] transition-all duration-200"
+        style={{
+          filter: isChildDialogOpen ? "blur(8px)" : undefined,
+          opacity: isChildDialogOpen ? 0.5 : undefined,
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Manage your account settings.</DialogDescription>
@@ -50,6 +63,8 @@ export function SettingsDialog({
             <SettingsGeneralTab
               user={user}
               onCancel={() => onOpenChange(false)}
+              onOpenExportDialog={() => setExportDialogOpen(true)}
+              onOpenImportDialog={() => setImportDialogOpen(true)}
             />
           </TabsContent>
 
@@ -61,6 +76,15 @@ export function SettingsDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+      />
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+      />
     </Dialog>
   );
 }

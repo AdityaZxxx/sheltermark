@@ -1,6 +1,10 @@
 "use client";
 
-import { EnvelopeIcon } from "@phosphor-icons/react";
+import {
+  DownloadSimpleIcon,
+  EnvelopeIcon,
+  UploadSimpleIcon,
+} from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
@@ -8,6 +12,7 @@ import { toast } from "sonner";
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting";
 import { AvatarUpload } from "~/components/avatar-upload";
 import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
+import { Button } from "~/components/ui/button";
 import {
   Field,
   FieldDescription,
@@ -31,11 +36,15 @@ import {
 interface SettingsGeneralTabProps {
   user: User;
   onCancel: () => void;
+  onOpenExportDialog: () => void;
+  onOpenImportDialog: () => void;
 }
 
 export function SettingsGeneralTab({
   user,
   onCancel,
+  onOpenExportDialog,
+  onOpenImportDialog,
 }: SettingsGeneralTabProps) {
   const { profile, updateProfile } = useProfile();
   const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
@@ -210,6 +219,30 @@ export function SettingsGeneralTab({
             </SelectContent>
           </Select>
         </Field>
+
+        <div className="pt-4 border-t border-border">
+          <FieldLabel className="pb-2">Import & Export</FieldLabel>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenImportDialog}
+              className="flex-1 gap-2"
+            >
+              <UploadSimpleIcon className="size-4" />
+              Import
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenExportDialog}
+              className="flex-1 gap-2"
+            >
+              <DownloadSimpleIcon className="size-4" />
+              Export
+            </Button>
+          </div>
+        </div>
       </FieldGroup>
 
       <SettingsDialogFooter
