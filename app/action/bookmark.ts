@@ -49,18 +49,68 @@ export async function deleteBookmarks(ids: string[]) {
 
 export async function moveBookmarks(ids: string[], targetWorkspaceId: string) {
   const { user, supabase } = await requireAuth();
+  const targetId = targetWorkspaceId === "null" ? null : targetWorkspaceId;
 
-  const { error } = await supabase
+  // 1. Get the URLs of the bookmarks to be moved
+  const { data: sourceBookmarks, error: fetchError } = await supabase
     .from("bookmarks")
-    .update({
-      workspace_id: targetWorkspaceId === "null" ? null : targetWorkspaceId,
-    })
+    .select("id, url")
     .in("id", ids)
     .eq("user_id", user.id);
 
-  if (error) return { error: error.message };
+  if (fetchError) return { error: fetchError.message };
+  if (!sourceBookmarks || sourceBookmarks.length === 0)
+    return { error: "No bookmarks found to move" };
 
-  return { success: true };
+  const sourceUrls = sourceBookmarks.map((b) => b.url);
+
+  // 2. Check for existing URLs in the target workspace
+  let existingQuery = supabase
+    .from("bookmarks")
+    .select("url")
+    .eq("user_id", user.id)
+    .in("url", sourceUrls);
+
+  if (targetId) {
+    existingQuery = existingQuery.eq("workspace_id", targetId);
+  } else {
+    existingQuery = existingQuery.is("workspace_id", null);
+  }
+
+  const { data: existingInTarget, error: checkError } = await existingQuery;
+
+  if (checkError) return { error: checkError.message };
+
+  const existingUrls = new Set(existingInTarget?.map((b) => b.url) || []);
+
+  // 3. Separate IDs into those to move and those to skip
+  const toMoveIds: string[] = [];
+  let skippedCount = 0;
+
+  for (const bookmark of sourceBookmarks) {
+    if (existingUrls.has(bookmark.url)) {
+      skippedCount++;
+    } else {
+      toMoveIds.push(bookmark.id);
+    }
+  }
+
+  // 4. Perform the move for non-duplicates
+  if (toMoveIds.length > 0) {
+    const { error: moveError } = await supabase
+      .from("bookmarks")
+      .update({ workspace_id: targetId })
+      .in("id", toMoveIds)
+      .eq("user_id", user.id);
+
+    if (moveError) return { error: moveError.message };
+  }
+
+  return {
+    success: true,
+    movedCount: toMoveIds.length,
+    skippedCount,
+  };
 }
 
 export async function renameBookmark(id: string, title: string) {

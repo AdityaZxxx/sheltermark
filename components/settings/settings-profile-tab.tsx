@@ -4,7 +4,7 @@ import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
 import { checkUsernameAvailability } from "~/app/action/setting";
-import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
+import { SettingsDialogFooter } from "~/components/settings/settings-dialog-footer";
 import {
   Field,
   FieldContent,
@@ -17,7 +17,7 @@ import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
 import { useProfile } from "~/hooks/use-profile";
 import { usernameSchema } from "~/lib/schemas";
-import { Textarea } from "./ui/textarea";
+import { Textarea } from "../ui/textarea";
 
 interface SettingsProfileTabProps {
   onCancel: () => void;

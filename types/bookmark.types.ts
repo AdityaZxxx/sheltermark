@@ -9,4 +9,7 @@ export interface Bookmark {
   domain?: string;
   created_at: string;
   updated_at?: string | null;
+  is_broken?: boolean;
+  http_status?: number | null;
+  last_checked_at?: string | null;
 }

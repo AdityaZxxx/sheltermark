@@ -3,6 +3,7 @@ export interface Workspace {
   name: string;
   is_public?: boolean;
   is_default?: boolean;
+  auto_check_broken?: boolean;
   bookmarks_count?: number;
   user_id?: string;
   created_at?: string;

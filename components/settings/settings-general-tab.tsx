@@ -10,8 +10,8 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting";
-import { AvatarUpload } from "~/components/avatar-upload";
-import { SettingsDialogFooter } from "~/components/settings-dialog-footer";
+import { AvatarUpload } from "~/components/settings/avatar-upload";
+import { SettingsDialogFooter } from "~/components/settings/settings-dialog-footer";
 import { Button } from "~/components/ui/button";
 import {
   Field,
@@ -21,17 +21,17 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { useProfile } from "~/hooks/use-profile";
-import { useWorkspaces } from "~/hooks/use-workspaces";
-import { updateProfileSchema } from "~/lib/schemas";
-import { getPastelColor } from "../lib/utils";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "~/components/ui/select";
+import { useProfile } from "~/hooks/use-profile";
+import { useWorkspaces } from "~/hooks/use-workspaces";
+import { updateProfileSchema } from "~/lib/schemas";
+import { getPastelColor } from "~/lib/utils";
 
 interface SettingsGeneralTabProps {
   user: User;

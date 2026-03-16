@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "~/utils/supabase/server";
 import Logo from "./logo";
-import { UserMenu } from "./user-menu";
+import { UserMenu } from "./settings/user-menu";
 import { WorkspaceMenu } from "./workspace/workspace-menu";
 
 export async function Header() {

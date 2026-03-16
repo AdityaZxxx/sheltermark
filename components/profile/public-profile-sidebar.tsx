@@ -23,7 +23,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-start">
-        <Avatar className="h-24 w-24">
+        <Avatar className="size-24">
           <AvatarImage
             src={profile.avatar_url || undefined}
             alt={displayName}

@@ -9,6 +9,7 @@ import {
   deleteWorkspace,
   getWorkspaces,
   setDefaultWorkspace,
+  toggleAutoCheckBroken,
   togglePublicStatus,
 } from "~/app/action/workspace";
 import { useSupabase } from "~/components/providers/supabase-provider";
@@ -106,6 +107,23 @@ export function useWorkspaces() {
     },
   });
 
+  const autoCheckMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      toggleAutoCheckBroken(id, enabled),
+    onSuccess: (data, variables) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success(
+          variables.enabled
+            ? "Weekly URL check enabled"
+            : "Weekly URL check disabled",
+        );
+        queryClient.invalidateQueries({ queryKey: ["workspaces", user?.id] });
+      }
+    },
+  });
+
   return {
     workspaces,
     currentWorkspace,
@@ -119,5 +137,7 @@ export function useWorkspaces() {
     isTogglingPublic: publicToggleMutation.isPending,
     setDefaultWorkspace: setDefaultMutation.mutate,
     isSettingDefault: setDefaultMutation.isPending,
+    toggleAutoCheckBroken: autoCheckMutation.mutate,
+    isTogglingAutoCheck: autoCheckMutation.isPending,
   };
 }

@@ -1,8 +1,13 @@
-import { GlobeIcon } from "@phosphor-icons/react";
+import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
-import { cn } from "~/lib/utils";
+import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 
 interface BookmarkItemProps {
@@ -13,6 +18,9 @@ interface BookmarkItemProps {
   favicon_url?: string;
   og_image_url?: string;
   created_at: string;
+  isBroken?: boolean;
+  httpStatus?: number | null;
+  autoCheckBroken?: boolean;
   isSelected?: boolean;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
@@ -28,7 +36,9 @@ interface BookmarkItemProps {
   disableContextMenu?: boolean;
 }
 
-interface BookmarkListItemProps extends BookmarkItemProps {}
+interface BookmarkListItemProps extends BookmarkItemProps {
+  autoCheckBroken?: boolean;
+}
 
 export function BookmarkListItem({
   id,
@@ -37,6 +47,9 @@ export function BookmarkListItem({
   favicon_url,
   domain,
   created_at,
+  isBroken,
+  httpStatus,
+  autoCheckBroken = true,
   isSelected,
   isSelectionMode,
   workspaces = [],
@@ -109,9 +122,27 @@ export function BookmarkListItem({
           >
             {title}
           </p>
-          <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
-            {domain}
-          </p>
+          {isBroken && autoCheckBroken ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center cursor-help">
+                    <WarningIcon
+                      className="w-3.5 h-3.5 text-red-500"
+                      weight="fill"
+                    />
+                  </div>
+                }
+              />
+              <TooltipContent>
+                <span>{getBrokenLinkMessage(httpStatus)}</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+              {domain}
+            </p>
+          )}
         </div>
 
         <div className="relative shrink-0 ml-10 text-xs text-muted-foreground">

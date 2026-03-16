@@ -4,6 +4,7 @@ import {
   CaretUpDownIcon,
   GlobeIcon,
   GlobeXIcon,
+  LinkBreakIcon,
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -20,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { Switch } from "~/components/ui/switch";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
@@ -36,6 +38,7 @@ export function WorkspaceMenu() {
     deleteWorkspace,
     isDeleting,
     togglePublicStatus,
+    toggleAutoCheckBroken,
   } = useWorkspaces();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -84,7 +87,7 @@ export function WorkspaceMenu() {
                 <div
                   className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspace?.id || "default")}`}
                 />
-                <span className="truncate max-w-[100px]">
+                <span className="truncate max-w-[100px] text-sm">
                   {activeWorkspaceName}
                 </span>
               </div>
@@ -150,6 +153,33 @@ export function WorkspaceMenu() {
                     Make Public
                   </>
                 )}
+              </button>
+            )}
+          />
+
+          <DropdownMenuItem
+            nativeButton
+            className="w-full gap-1.5"
+            render={(props) => (
+              <button {...props}>
+                <div className="flex items-center gap-2">
+                  <LinkBreakIcon className="h-4 w-4" />
+                  Weekly URL Check
+                </div>
+                <Switch
+                  size="sm"
+                  className="left-10"
+                  checked={currentWorkspace?.auto_check_broken !== false}
+                  onCheckedChange={(checked) => {
+                    if (currentWorkspace) {
+                      toggleAutoCheckBroken({
+                        id: currentWorkspace.id,
+                        enabled: checked,
+                      });
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </button>
             )}
           />

@@ -35,7 +35,7 @@ export function BookmarkView() {
 
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
-    bookmarks: filteredBookmarks,
+    filteredBookmarks,
     isLoading,
     searchQuery,
     setSearchQuery,
@@ -96,12 +96,32 @@ export function BookmarkView() {
 
   const handleMoveToWorkspace = useCallback(
     (id: string, workspaceId: string) => {
-      moveBookmarks({
-        ids: [id],
-        targetWorkspaceId: workspaceId,
-      });
+      moveBookmarks(
+        {
+          ids: [id],
+          targetWorkspaceId: workspaceId,
+        },
+        {
+          onSuccess: (res) => {
+            if (res.success) {
+              const workspace = workspaces.find((ws) => ws.id === workspaceId);
+              const workspaceName = workspace?.name || "Target Workspace";
+
+              if (res.movedCount > 0 && res.skippedCount > 0) {
+                toast.success(
+                  `${res.movedCount} moved, ${res.skippedCount} already in ${workspaceName}`,
+                );
+              } else if (res.movedCount > 0) {
+                toast.success(`Bookmark moved to ${workspaceName}`);
+              } else if (res.skippedCount > 0) {
+                toast.info(`Bookmark already exists in ${workspaceName}`);
+              }
+            }
+          },
+        },
+      );
     },
-    [moveBookmarks],
+    [moveBookmarks, workspaces],
   );
 
   const handleBulkMoveTrigger = useCallback(() => {
@@ -137,6 +157,9 @@ export function BookmarkView() {
             err instanceof Error ? err.message : "Failed to add bookmark",
         },
       );
+    } else {
+      // Search query is already updated via onChange, clear focused index
+      setFocusedIndex(-1);
     }
   };
 
@@ -239,6 +262,11 @@ export function BookmarkView() {
                   favicon_url={bookmark.favicon_url || undefined}
                   domain={bookmark.domain || safeDomain(bookmark.url)}
                   created_at={bookmark.created_at}
+                  isBroken={bookmark.is_broken}
+                  httpStatus={bookmark.http_status}
+                  autoCheckBroken={
+                    currentWorkspace?.auto_check_broken !== false
+                  }
                   isSelected={
                     selectedIds.includes(bookmark.id) ||
                     (!isSelectionMode && focusedIndex === index)
@@ -270,6 +298,11 @@ export function BookmarkView() {
                   favicon_url={bookmark.favicon_url || undefined}
                   domain={bookmark.domain || safeDomain(bookmark.url)}
                   created_at={bookmark.created_at}
+                  isBroken={bookmark.is_broken}
+                  httpStatus={bookmark.http_status}
+                  autoCheckBroken={
+                    currentWorkspace?.auto_check_broken !== false
+                  }
                   isSelected={
                     selectedIds.includes(bookmark.id) ||
                     (!isSelectionMode && focusedIndex === index)

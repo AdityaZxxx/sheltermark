@@ -3,6 +3,7 @@ import { Geist_Mono, Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { QueryProvider } from "~/components/providers/query-provider";
 import { SupabaseProvider } from "~/components/providers/supabase-provider";
+import { ThemeProvider } from "~/components/providers/theme-provider";
 import { getBaseUrl } from "~/lib/utils";
 import "./globals.css";
 
@@ -70,7 +71,16 @@ export default function RootLayout({
       <body className="antialiased">
         <NuqsAdapter>
           <SupabaseProvider>
-            <QueryProvider>{children}</QueryProvider>
+            <QueryProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </QueryProvider>
           </SupabaseProvider>
         </NuqsAdapter>
       </body>

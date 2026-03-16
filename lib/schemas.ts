@@ -86,6 +86,30 @@ export const updatePublicProfileSchema = z.object({
   current_username: z.string().optional(),
 });
 
+export const exportOptionsSchema = z.object({
+  workspaceId: z.uuid().nullable().optional(),
+  format: z.enum(["json", "csv"]),
+});
+
+export const importOptionsSchema = z.object({
+  targetWorkspaceId: z.uuid().nullable().optional(),
+  duplicateStrategy: z.enum(["skip", "replace"]),
+  createWorkspace: z.boolean().optional(),
+  newWorkspaceName: z.string().max(50).optional(),
+});
+
+export const importPreviewSchema = z.object({
+  totalBookmarks: z.number(),
+  validBookmarks: z.number(),
+  duplicates: z.number(),
+  workspaces: z.array(
+    z.object({
+      name: z.string(),
+      count: z.number(),
+    }),
+  ),
+});
+
 export type BookmarkCreateInput = z.infer<typeof bookmarkCreateSchema>;
 export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
 export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;
@@ -96,3 +120,6 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePublicProfileInput = z.infer<
   typeof updatePublicProfileSchema
 >;
+export type ExportOptionsInput = z.infer<typeof exportOptionsSchema>;
+export type ImportOptionsInput = z.infer<typeof importOptionsSchema>;
+export type ImportPreviewOutput = z.infer<typeof importPreviewSchema>;
