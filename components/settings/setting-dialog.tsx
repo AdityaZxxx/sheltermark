@@ -13,8 +13,8 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { SettingsGeneralTab } from "./settings-general-tab";
-import { SettingsProfileTab } from "./settings-profile-tab";
+import { SettingsGeneralTab } from "./setting-general-tab";
+import { SettingsProfileTab } from "./setting-profile-tab";
 
 interface SettingsDialogProps {
   open: boolean;

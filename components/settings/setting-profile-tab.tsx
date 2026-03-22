@@ -4,7 +4,7 @@ import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useState } from "react";
 import { checkUsernameAvailability } from "~/app/action/setting";
-import { SettingsDialogFooter } from "~/components/settings/settings-dialog-footer";
+import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import {
   Field,
   FieldContent,

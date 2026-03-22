@@ -21,7 +21,7 @@ import {
 import { useProfile } from "~/hooks/use-profile";
 import { ThemeMode } from "../theme-mode";
 import { Button } from "../ui/button";
-import { SettingsDialog } from "./settings-dialog";
+import { SettingsDialog } from "./setting-dialog";
 
 interface UserMenuProps {
   user: User;

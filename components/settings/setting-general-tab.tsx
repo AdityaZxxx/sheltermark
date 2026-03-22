@@ -11,7 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting";
 import { AvatarUpload } from "~/components/settings/avatar-upload";
-import { SettingsDialogFooter } from "~/components/settings/settings-dialog-footer";
+import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import { Button } from "~/components/ui/button";
 import {
   Field,
