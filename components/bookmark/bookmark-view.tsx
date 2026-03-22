@@ -35,7 +35,7 @@ export function BookmarkView() {
 
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
-    bookmarks: filteredBookmarks,
+    filteredBookmarks,
     isLoading,
     searchQuery,
     setSearchQuery,
@@ -157,6 +157,9 @@ export function BookmarkView() {
             err instanceof Error ? err.message : "Failed to add bookmark",
         },
       );
+    } else {
+      // Search query is already updated via onChange, clear focused index
+      setFocusedIndex(-1);
     }
   };
 
@@ -259,6 +262,11 @@ export function BookmarkView() {
                   favicon_url={bookmark.favicon_url || undefined}
                   domain={bookmark.domain || safeDomain(bookmark.url)}
                   created_at={bookmark.created_at}
+                  isBroken={bookmark.is_broken}
+                  httpStatus={bookmark.http_status}
+                  autoCheckBroken={
+                    currentWorkspace?.auto_check_broken !== false
+                  }
                   isSelected={
                     selectedIds.includes(bookmark.id) ||
                     (!isSelectionMode && focusedIndex === index)
@@ -290,6 +298,11 @@ export function BookmarkView() {
                   favicon_url={bookmark.favicon_url || undefined}
                   domain={bookmark.domain || safeDomain(bookmark.url)}
                   created_at={bookmark.created_at}
+                  isBroken={bookmark.is_broken}
+                  httpStatus={bookmark.http_status}
+                  autoCheckBroken={
+                    currentWorkspace?.auto_check_broken !== false
+                  }
                   isSelected={
                     selectedIds.includes(bookmark.id) ||
                     (!isSelectionMode && focusedIndex === index)

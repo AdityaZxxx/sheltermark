@@ -19,9 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useProfile } from "~/hooks/use-profile";
+import { ThemeMode } from "../theme-mode";
+import { Button } from "../ui/button";
 import { SettingsDialog } from "./settings-dialog";
-import { ThemeMode } from "./theme-mode";
-import { Button } from "./ui/button";
 
 interface UserMenuProps {
   user: User;

@@ -114,3 +114,17 @@ export async function setDefaultWorkspace(id: string) {
 
   return { success: true };
 }
+
+export async function toggleAutoCheckBroken(id: string, enabled: boolean) {
+  const { user, supabase } = await requireAuth();
+
+  const { error } = await supabase
+    .from("workspaces")
+    .update({ auto_check_broken: enabled })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
