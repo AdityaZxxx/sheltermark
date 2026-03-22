@@ -32,6 +32,7 @@ interface BookmarkItemProps {
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
+  onRefetch?: (id: string) => void;
   onSelectionModeToggle?: () => void;
   tabIndex?: number;
   disableContextMenu?: boolean;
@@ -62,6 +63,7 @@ export function BookmarkCardItem({
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
+  onRefetch,
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
@@ -190,6 +192,7 @@ export function BookmarkCardItem({
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}
+      onRefetch={onRefetch}
       onSelectionModeToggle={onSelectionModeToggle}
     >
       {(triggerProps) => (

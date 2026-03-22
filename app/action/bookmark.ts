@@ -2,6 +2,7 @@
 
 import { requireAuth } from "~/lib/auth";
 import { insertBookmark } from "~/lib/bookmark";
+import { fetchMetadata } from "~/lib/metadata";
 import { bookmarkCreateSchema } from "~/lib/schemas";
 
 export async function addBookmark(formData: FormData) {
@@ -123,6 +124,35 @@ export async function renameBookmark(id: string, title: string) {
     .eq("user_id", user.id);
 
   if (error) return { error: error.message };
+
+  return { success: true };
+}
+
+export async function refetchBookmarkMetadata(id: string) {
+  const { user, supabase } = await requireAuth();
+
+  const { data: bookmark, error: fetchError } = await supabase
+    .from("bookmarks")
+    .select("id, url, favicon_url, og_image_url")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (fetchError || !bookmark) return { error: "Bookmark not found" };
+
+  const metadata = await fetchMetadata(bookmark.url);
+
+  const { error: updateError } = await supabase
+    .from("bookmarks")
+    .update({
+      favicon_url: metadata.favicon_url,
+      og_image_url: metadata.og_image_url,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (updateError) return { error: updateError.message };
 
   return { success: true };
 }

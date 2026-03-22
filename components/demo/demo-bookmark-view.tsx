@@ -85,6 +85,37 @@ export function DemoBookmarkView() {
     navigator.clipboard.writeText(urls);
   }, [selectedIds, filteredBookmarks]);
 
+  const handleRefetchTrigger = useCallback(
+    async (id: string) => {
+      const bookmark = bookmarks.find((b) => b.id === id);
+      if (!bookmark) return;
+
+      try {
+        const res = await fetch("/api/demo/metadata", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: bookmark.url }),
+        });
+        const metadata = await res.json();
+
+        setBookmarks((prev) =>
+          prev.map((b) =>
+            b.id === id
+              ? {
+                  ...b,
+                  favicon_url: metadata.favicon_url || null,
+                  og_image_url: metadata.og_image_url || null,
+                }
+              : b,
+          ),
+        );
+      } catch {
+        // silently fail in demo
+      }
+    },
+    [bookmarks],
+  );
+
   const handleConfirmRename = useCallback((id: string, title: string) => {
     setBookmarks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, title } : b)),
@@ -250,6 +281,7 @@ export function DemoBookmarkView() {
                     handleConfirmMove([id], wsId)
                   }
                   onCopyUrl={handleCopyUrl}
+                  onRefetch={handleRefetchTrigger}
                   onSelectionModeToggle={toggleSelectionMode}
                   tabIndex={
                     focusedIndex === index ||
@@ -283,6 +315,7 @@ export function DemoBookmarkView() {
                     handleConfirmMove([id], wsId)
                   }
                   onCopyUrl={handleCopyUrl}
+                  onRefetch={handleRefetchTrigger}
                   onSelectionModeToggle={toggleSelectionMode}
                   tabIndex={
                     focusedIndex === index ||
