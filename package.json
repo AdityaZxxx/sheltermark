@@ -1,34 +1,48 @@
 {
   "name": "sheltermark",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check:urls-health": "node .github/scripts/check-urls.js",
+    "check:urls-health": "bun run scripts/check-urls.ts",
+    "check:types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --reporter=verbose",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "format:fix": "biome check --write --unsafe",
+    "prepare": "husky",
+    "knip": "knip",
+    "sync-feeds": "bun run scripts/sync-feeds.ts",
+    "cleanup-trash": "bun run scripts/cleanup-trash.ts",
+    "ext:build": "bun run scripts/build-extension.ts",
+    "ext:watch": "bun run scripts/build-extension.ts --watch"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
     "@phosphor-icons/react": "^2.1.10",
-    "@radix-ui/react-switch": "^1.2.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
-    "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-form": "^1.28.1",
     "@tanstack/react-query": "^5.90.20",
-    "@tanstack/zod-form-adapter": "^0.42.1",
+    "@tanstack/react-virtual": "^3.14.7",
+    "@types/chrome": "^0.1.42",
+    "@vercel/analytics": "^2.0.1",
+    "ai": "^6.0.209",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
-    "next": "16.1.6",
+    "next": "16.3.0",
     "next-themes": "^0.4.6",
     "nuqs": "^2.8.8",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "ollama-ai-provider-v2": "^3.6.0",
+    "parse5": "^8.0.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
     "shadcn": "^3.8.4",
     "sharp": "^0.34.5",
@@ -38,14 +52,22 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.0",
+    "@biomejs/biome": "2.3.11",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/node": "^26.1.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "esbuild": "^0.28.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
+    "knip": "^6.3.1",
+    "lint-staged": "^16.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "ignoreScripts": [
     "sharp",
@@ -54,5 +76,14 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "biome check --fix",
+      "biome format --write"
+    ],
+    "*.{json,css,md}": [
+      "biome format --write"
+    ]
+  }
 }

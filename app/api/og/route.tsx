@@ -1,16 +1,16 @@
-import fs from "node:fs";
-import path from "node:path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
-import { getProfileDisplayName } from "~/app/action/profile";
+import { getProfileDisplayName } from "~/app/action/profile.action";
 import { OGImage } from "~/components/og/og-image";
 
-const interRegular = fs.readFileSync(
-  path.join(process.cwd(), "assets/Inter_18pt-Regular.ttf"),
+const interRegular = readFileSync(
+  join(process.cwd(), "assets/Inter_18pt-Regular.ttf"),
 );
 
-const interBold = fs.readFileSync(
-  path.join(process.cwd(), "assets/Inter_18pt-SemiBold.ttf"),
+const interBold = readFileSync(
+  join(process.cwd(), "assets/Inter_18pt-SemiBold.ttf"),
 );
 
 export async function GET(req: NextRequest) {
@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
   let display_name: string | undefined;
 
   if (username) {
-    display_name = (await getProfileDisplayName(username)) ?? undefined;
+    const res = await getProfileDisplayName({ username });
+    // unwrap ActionResult
+    display_name = res.success ? (res.data ?? undefined) : undefined;
   }
 
   return new ImageResponse(

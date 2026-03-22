@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
-import { insertBookmark } from "~/lib/bookmark";
+import type { DbClient } from "~/lib/data/db-client";
+import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
+import { logger } from "~/lib/logger";
+import { extensionBookmarkSaveSchema } from "~/lib/schemas/extension.schema";
 import { createClient } from "~/utils/supabase/server";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { url, workspace_id, title: clientTitle } = body;
+    const validated = extensionBookmarkSaveSchema.safeParse(body);
+
+    if (!validated.success) {
+      const message =
+        validated.error?.issues?.[0]?.message ?? "Invalid request";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    const { url, workspace_id, title: clientTitle, tags } = validated.data;
 
     if (!url) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
@@ -58,11 +69,16 @@ export async function POST(req: Request) {
       workspaceId = defaultWorkspace.id;
     }
 
-    const result = await insertBookmark(supabase, user.id, {
-      url,
-      workspaceId,
-      clientTitle: clientTitle ?? null,
-    });
+    const result = await insertBookmark(
+      supabase as unknown as DbClient,
+      user.id,
+      {
+        url,
+        workspaceId,
+        clientTitle: clientTitle ?? null,
+        tagNames: tags,
+      },
+    );
 
     if (!result.success) {
       if (result.duplicate) {
@@ -74,9 +90,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: result.data });
+    return NextResponse.json({
+      success: true,
+      data: { ...result.data, tags: result.tags },
+    });
   } catch (error) {
-    console.error("Extension bookmark error:", error);
+    logger.error("Extension bookmark error", { error });
     return NextResponse.json(
       { error: "Failed to save bookmark" },
       { status: 500 },

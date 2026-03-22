@@ -1,4 +1,5 @@
 import {
+  ArrowClockwiseIcon,
   CopyIcon,
   FolderOpenIcon,
   PencilIcon,
@@ -16,7 +17,9 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu";
-import { cn, getPastelColor } from "~/lib/utils";
+import { getPastelColor } from "~/lib/utils";
+
+const EMPTY_WORKSPACES: { id: string; name: string }[] = [];
 
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
@@ -24,13 +27,14 @@ interface BookmarkContextMenuProps {
   url: string;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string | null;
+  currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
-  onRename?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
   onDelete?: (id: string) => void;
+  onRefetch?: (id: string) => void;
   onSelectionModeToggle?: () => void;
 }
 
@@ -39,14 +43,15 @@ export function BookmarkContextMenu({
   id,
   url,
   isSelectionMode,
-  workspaces = [],
+  workspaces = EMPTY_WORKSPACES,
   currentWorkspaceId,
   onSelect,
-  onRename,
+  onEdit,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
   onDelete,
+  onRefetch,
   onSelectionModeToggle,
 }: BookmarkContextMenuProps) {
   const handleSelectionModeToggle = () => {
@@ -64,14 +69,19 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onRename?.(id)}>
+        <ContextMenuItem onClick={() => onEdit?.(id)}>
           <PencilIcon />
-          Rename
+          Edit
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
           <CopyIcon />
           Copy URL
+        </ContextMenuItem>
+
+        <ContextMenuItem onClick={() => onRefetch?.(id)}>
+          <ArrowClockwiseIcon />
+          Refresh Metadata
         </ContextMenuItem>
 
         {availableWorkspaces.length > 0 && (
@@ -81,7 +91,7 @@ export function BookmarkContextMenu({
               Move to...
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuGroup>
+              <ContextMenuGroup className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
                 {availableWorkspaces.map((ws) => (
                   <ContextMenuItem
                     key={ws.id}
@@ -89,10 +99,8 @@ export function BookmarkContextMenu({
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className={cn(
-                          "w-2 h-2 rounded-full shrink-0",
-                          getPastelColor(ws.id),
-                        )}
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: getPastelColor(ws.id) }}
                       />
                       <span className="truncate">{ws.name}</span>
                     </div>

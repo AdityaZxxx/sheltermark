@@ -1,64 +1,23 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  getProfile,
-  updateProfile as updateProfileAction,
-  updatePublicProfile as updatePublicProfileAction,
-} from "~/app/action/setting";
+import { useQuery } from "@tanstack/react-query";
 import { useSupabase } from "~/components/providers/supabase-provider";
-import type { Profile } from "../types/profile.types";
+import { useUser } from "~/components/providers/user-context";
+import {
+  useUpdateProfile,
+  useUpdatePublicProfile,
+} from "~/lib/mutations/profile.mutations";
+import { profileQueryOptions } from "~/lib/queries/profile.queries";
 
 export function useProfile() {
-  const queryClient = useQueryClient();
-  const { user, isLoading: isAuthLoading } = useSupabase();
+  const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
+  const serverUser = useUser();
+  const userId = serverUser?.id ?? supabaseUser?.id;
 
-  const queryKey = ["profile", user?.id] as const;
+  const { data, isLoading } = useQuery(profileQueryOptions(userId));
 
-  const { data, isLoading } = useQuery<Profile | null>({
-    queryKey,
-    queryFn: async () => {
-      const result = await getProfile();
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      return result.profile as Profile | null;
-    },
-    enabled: !!user?.id && !isAuthLoading,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (data: { full_name: string }) => {
-      const result = await updateProfileAction(data);
-      return result;
-    },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
-      } else {
-        toast.success("Profile updated");
-        queryClient.invalidateQueries({ queryKey });
-      }
-    },
-  });
-
-  const updatePublicMutation = useMutation({
-    mutationFn: async (
-      data: Parameters<typeof updatePublicProfileAction>[0],
-    ) => {
-      const result = await updatePublicProfileAction(data);
-      return result;
-    },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
-      } else {
-        toast.success("Public profile updated");
-        queryClient.invalidateQueries({ queryKey });
-      }
-    },
-  });
+  const updateMutation = useUpdateProfile(userId);
+  const updatePublicMutation = useUpdatePublicProfile(userId);
 
   return {
     profile: data,

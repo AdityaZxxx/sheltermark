@@ -21,23 +21,31 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
     .header-left { display: flex; align-items: center; gap: 8px; }
     .logo { width: 24px; height: 24px; }
     .title { font-size: 16px; font-weight: 600; }
     .btn {
       width: 100%;
-      padding: 12px 16px;
+      /* 14px vertical padding + ~16px line-height ≈ 44px tall hit target
+         (WCAG 2.5.5 minimum, AAA recommended). */
+      padding: 14px 16px;
       font-size: 14px;
+      line-height: 16px;
       font-weight: 500;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s, transform 0.15s;
     }
     .btn:hover { opacity: 0.9; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
     .btn-primary { background: #171717; color: #ffffff; }
     @media (prefers-color-scheme: dark) {
       .btn-primary { background: #fafafa; color: #0a0a0a; }
@@ -46,10 +54,16 @@
     @media (prefers-color-scheme: dark) {
       .btn-secondary { background: #262626; color: #fafafa; }
     }
-    .hidden { display: none !important; }
+    .btn-saved { background: #16a34a; color: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .btn-saved { background: #16a34a; }
+    }
+    .hidden { display: none; }
     .auth-section { text-align: center; padding: 16px; }
     .auth-section p { font-size: 14px; color: #737373; margin-bottom: 12px; }
-    .workspace-select {
+
+    .field { margin-bottom: 10px; }
+    .field-input, .workspace-select {
       width: 100%;
       padding: 10px 12px;
       font-size: 14px;
@@ -57,7 +71,14 @@
       border-radius: 8px;
       background-color: #ffffff;
       color: #171717;
-      margin-bottom: 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-input:focus, .workspace-select:focus {
+      outline: none;
+      border-color: #3d3d3d;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .workspace-select {
       appearance: none;
       -webkit-appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
@@ -65,15 +86,146 @@
       background-position: right 12px center;
       padding-right: 36px;
       cursor: pointer;
-      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .workspace-select:hover { border-color: #a3a3a3; }
-    .workspace-select:focus { outline: none; border-color: #3d3d3d; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-    @media (prefers-color-scheme: dark) {
-      .workspace-select { background-color: #1a1a1a; border-color: #404040; color: #fafafa; }
+
+    /* Tag chip input (mirrors web tag-input.tsx patterns) */
+    .tag-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #ffffff;
+      cursor: text;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .status { font-size: 12px; color: #22c55e; margin-top: 8px; text-align: center; }
-    .error { color: #ef4444; }
+    .tag-box:focus-within {
+      border-color: #3d3d3d;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      font-size: 12px;
+      border-radius: 999px;
+      background: #f5f5f5;
+      color: #171717;
+      border: 1px solid #e5e5e5;
+      white-space: nowrap;
+    }
+    .tag-chip button {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.6;
+    }
+    .tag-chip button:hover { opacity: 1; }
+    .tag-chip button:focus-visible {
+      opacity: 1;
+      outline: 2px solid #3b82f6;
+      outline-offset: 1px;
+      border-radius: 2px;
+    }
+    #tag-input {
+      flex: 1;
+      min-width: 8ch;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      background: transparent;
+      color: inherit;
+      padding: 2px 0;
+    }
+
+    .tag-suggestions {
+      margin-top: 4px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      max-height: 168px;
+      overflow-y: auto;
+      display: none;
+    }
+    .tag-suggestions.open { display: block; }
+    .tag-suggestion {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      color: #171717;
+    }
+    .tag-suggestion:hover, .tag-suggestion.active { background: #f5f5f5; }
+    .tag-suggestion:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: -2px;
+    }
+    .tag-suggestion .count { color: #737373; font-size: 12px; }
+    .tag-suggestion.create { color: #3d3d3d; }
+
+    .status { font-size: 12px; margin-top: 8px; text-align: center; transition: opacity 0.2s; min-height: 1em; }
+    /* WCAG AA contrast on white: #16a34a = 4.55:1, #dc2626 = 4.55:1 */
+    .status-success { color: #16a34a; }
+    .status-error { color: #dc2626; }
+    .status-info { color: #6b7280; }
+
+    @media (prefers-color-scheme: dark) {
+      .field-input, .workspace-select { background-color: #1a1a1a; border-color: #404040; color: #fafafa; }
+      .tag-box { background: #1a1a1a; border-color: #404040; }
+      .tag-chip { background: #262626; color: #fafafa; border-color: #404040; }
+      .tag-suggestions { background: #1a1a1a; border-color: #404040; }
+      .tag-suggestion { color: #fafafa; }
+      .tag-suggestion:hover, .tag-suggestion.active { background: #262626; }
+      .tag-suggestion .count { color: #a3a3a3; }
+    }
+
+    /* Skeleton shimmer */
+    @keyframes shimmer {
+      0% { background-position: -200px 0; }
+      100% { background-position: calc(200px + 100%) 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200px 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      color: transparent;
+      user-select: none;
+      pointer-events: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      .skeleton {
+        background: linear-gradient(90deg, #262626 25%, #333 50%, #262626 75%);
+        background-size: 200px 100%;
+      }
+    }
+
+    /* Respect user's motion preference: drop the press-scale animation and
+       status fade-in, keep instantaneous state changes. */
+    @media (prefers-reduced-motion: reduce) {
+      .btn, .field-input, .workspace-select, .tag-box, .status {
+        transition: none;
+      }
+      .btn:active { transform: none; }
+      .skeleton { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -96,14 +248,25 @@
     </div>
 
     <div id="main-section" class="hidden">
-      <select id="workspace-select" class="workspace-select">
-        <option value="">Loading...</option>
-      </select>
-      <button id="save-btn" class="btn btn-primary">Save Current Tab</button>
-      <div id="status"></div>
+      <div class="field">
+        <input id="title-input" class="field-input" type="text" maxlength="200" autocomplete="off" placeholder="Title">
+      </div>
+      <div class="field">
+        <select id="workspace-select" class="workspace-select">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div class="field">
+        <div id="tag-box" class="tag-box">
+          <input id="tag-input" type="text" maxlength="50" autocomplete="off" placeholder="Add a tag..." aria-label="Tags" aria-autocomplete="list" aria-controls="tag-suggestions">
+        </div>
+        <div id="tag-suggestions" class="tag-suggestions" role="listbox" aria-label="Tag suggestions"></div>
+      </div>
+      <button id="save-btn" class="btn btn-primary">Save</button>
+      <div id="status" class="status" aria-live="polite" aria-atomic="true"></div>
     </div>
   </div>
 
-  <script type="module" src="popup.js"></script>
+  <script type="module" src="dist/popup.js"></script>
 </body>
 </html>

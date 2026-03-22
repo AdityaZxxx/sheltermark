@@ -8,8 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
-import { loginWithGoogle } from "~/app/action/login";
-import { signupWithEmail } from "~/app/action/signup";
+import { loginWithGoogle } from "~/app/action/login.action";
+import { signupWithEmail } from "~/app/action/signup.action";
 import { GoogleIcon } from "~/components/google-icon";
 import { Button } from "~/components/ui/button";
 import {
@@ -20,11 +20,13 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
+import { AuthError } from "./auth-error";
 
 export function SignupForm({
   className,
+  next,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { next?: string }) {
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,15 +36,18 @@ export function SignupForm({
 
   const handleGoogleSignup = async () => {
     setIsLoadingGoogle(true);
-    await loginWithGoogle();
+    await loginWithGoogle(next);
   };
 
-  const handleEmailSignup = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoadingEmail(true);
 
     const formData = new FormData(e.currentTarget);
+    if (next) {
+      formData.append("next", next);
+    }
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
@@ -54,7 +59,7 @@ export function SignupForm({
 
     const result = await signupWithEmail(formData);
 
-    if (result.error) {
+    if (!result.success) {
       setError(result.error);
     } else {
       setSuccess(true);
@@ -126,11 +131,7 @@ export function SignupForm({
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
+      {error && <AuthError error={error} />}
 
       <form onSubmit={handleEmailSignup}>
         <FieldGroup>
@@ -230,7 +231,9 @@ export function SignupForm({
             <FieldDescription className="text-center">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href={
+                  next ? `/login?next=${encodeURIComponent(next)}` : "/login"
+                }
                 className="underline underline-offset-4 hover:text-primary"
               >
                 Login
