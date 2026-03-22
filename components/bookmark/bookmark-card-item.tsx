@@ -1,9 +1,14 @@
-import { GlobeIcon } from "@phosphor-icons/react";
+import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
-import { cn } from "~/lib/utils";
+import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 
 interface BookmarkItemProps {
@@ -14,6 +19,9 @@ interface BookmarkItemProps {
   favicon_url?: string;
   og_image_url?: string;
   created_at: string;
+  isBroken?: boolean;
+  httpStatus?: number | null;
+  autoCheckBroken?: boolean;
   isSelected?: boolean;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
@@ -30,7 +38,7 @@ interface BookmarkItemProps {
 }
 
 interface BookmarkCardItemProps extends BookmarkItemProps {
-  og_image_url?: string;
+  autoCheckBroken?: boolean;
 }
 
 export function BookmarkCardItem({
@@ -41,6 +49,9 @@ export function BookmarkCardItem({
   favicon_url,
   domain,
   created_at,
+  isBroken,
+  httpStatus,
+  autoCheckBroken = true,
   isSelected,
   isSelectionMode,
   workspaces = [],
@@ -105,6 +116,25 @@ export function BookmarkCardItem({
           <div className="w-full h-full flex items-center justify-center bg-muted">
             <GlobeIcon className="w-12 h-12 text-muted-foreground/20" />
           </div>
+        )}
+        {isBroken && autoCheckBroken && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <div className="absolute top-2 left-2 z-10 cursor-help">
+                  <div className="w-6 h-6 rounded-full bg-red-500/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                    <WarningIcon
+                      className="w-3.5 h-3.5 text-white"
+                      weight="fill"
+                    />
+                  </div>
+                </div>
+              }
+            />
+            <TooltipContent>
+              <span>{getBrokenLinkMessage(httpStatus)}</span>
+            </TooltipContent>
+          </Tooltip>
         )}
         <div className="absolute bottom-0.5 left-1 right-1 bg-black/60 px-2 py-1 mx-auto">
           <h3 className="text-[10px] text-white truncate leading-none font-medium">

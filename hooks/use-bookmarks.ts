@@ -41,6 +41,17 @@ export function useBookmarks(workspaceId?: string) {
     return allBookmarks.filter((b) => b.workspace_id === workspaceId);
   }, [allBookmarks, workspaceId]);
 
+  const filteredBookmarks = useMemo(() => {
+    if (!searchQuery.trim()) return bookmarks;
+    const query = searchQuery.toLowerCase();
+    return bookmarks.filter(
+      (b) =>
+        b.title?.toLowerCase().includes(query) ||
+        b.url.toLowerCase().includes(query) ||
+        b.domain?.toLowerCase().includes(query),
+    );
+  }, [bookmarks, searchQuery]);
+
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey });
   }, [queryClient, queryKey]);
@@ -128,6 +139,7 @@ export function useBookmarks(workspaceId?: string) {
 
   return {
     bookmarks,
+    filteredBookmarks,
     allBookmarks,
     isLoading: isAuthLoading || isLoading,
     searchQuery,
