@@ -8,6 +8,7 @@ import {
   deleteBookmarks as deleteBookmarksAction,
   getBookmarks,
   moveBookmarks as moveBookmarksAction,
+  refetchBookmarkMetadata as refetchBookmarkMetadataAction,
   renameBookmark as renameBookmarkAction,
 } from "~/app/action/bookmark";
 import { useSupabase } from "~/components/providers/supabase-provider";
@@ -137,6 +138,18 @@ export function useBookmarks(workspaceId?: string) {
     },
   });
 
+  const refetchBookmarkMetadata = useMutation({
+    mutationFn: refetchBookmarkMetadataAction,
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        invalidate();
+        toast.success("Metadata refreshed");
+      }
+    },
+  });
+
   return {
     bookmarks,
     filteredBookmarks,
@@ -149,5 +162,6 @@ export function useBookmarks(workspaceId?: string) {
     deleteBookmarks: deleteBookmarks.mutate,
     renameBookmark: renameBookmark.mutate,
     moveBookmarks: moveBookmarks.mutate,
+    refetchBookmarkMetadata: refetchBookmarkMetadata.mutate,
   };
 }

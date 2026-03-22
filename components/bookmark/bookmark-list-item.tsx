@@ -31,6 +31,7 @@ interface BookmarkItemProps {
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
+  onRefetch?: (id: string) => void;
   onSelectionModeToggle?: () => void;
   tabIndex?: number;
   disableContextMenu?: boolean;
@@ -60,6 +61,7 @@ export function BookmarkListItem({
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
+  onRefetch,
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
@@ -176,6 +178,7 @@ export function BookmarkListItem({
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}
+      onRefetch={onRefetch}
       onSelectionModeToggle={onSelectionModeToggle}
     >
       {(triggerProps) => <div {...triggerProps}>{buttonContent}</div>}

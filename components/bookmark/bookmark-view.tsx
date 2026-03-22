@@ -42,6 +42,7 @@ export function BookmarkView() {
     invalidate,
     moveBookmarks,
     addBookmark,
+    refetchBookmarkMetadata,
   } = useBookmarks(currentWorkspace?.id);
 
   const {
@@ -93,6 +94,13 @@ export function BookmarkView() {
     setBookmarksToMove([id]);
     setMoveDialogOpen(true);
   }, []);
+
+  const handleRefetchTrigger = useCallback(
+    (id: string) => {
+      refetchBookmarkMetadata(id);
+    },
+    [refetchBookmarkMetadata],
+  );
 
   const handleMoveToWorkspace = useCallback(
     (id: string, workspaceId: string) => {
@@ -280,6 +288,7 @@ export function BookmarkView() {
                   onMove={handleMoveTrigger}
                   onMoveToWorkspace={handleMoveToWorkspace}
                   onCopyUrl={handleCopyUrl}
+                  onRefetch={handleRefetchTrigger}
                   onSelectionModeToggle={toggleSelectionMode}
                   tabIndex={
                     focusedIndex === index ||
@@ -316,6 +325,7 @@ export function BookmarkView() {
                   onMove={handleMoveTrigger}
                   onMoveToWorkspace={handleMoveToWorkspace}
                   onCopyUrl={handleCopyUrl}
+                  onRefetch={handleRefetchTrigger}
                   onSelectionModeToggle={toggleSelectionMode}
                   tabIndex={
                     focusedIndex === index ||
