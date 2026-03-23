@@ -36,6 +36,16 @@ A clean, minimalist bookmark manager. Organize and access your bookmarks from an
 - Beautiful profile pages at `/u/username`
 - Filter by workspace tabs
 
+## Browser Extension
+
+### Chrome / Edge / Brave
+- Download extension-chrome.zip from the latest GitHub release.
+- Unzip it somewhere on disk.
+- Open your browser and navigate to chrome://extensions.
+- Enable "Developer mode" in the top right corner.
+- Click "Load unpacked".
+- Select the unzipped extension-chrome folder.
+
 ## Roadmap
 
 - [x] Web app with workspaces

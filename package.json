@@ -1,6 +1,6 @@
 {
   "name": "sheltermark",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "check:urls-health": "node .github/scripts/check-urls.js",

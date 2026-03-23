@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sheltermark",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Save any page or link to your Sheltermark bookmarks with one click.",
   "permissions": [
     "activeTab",
