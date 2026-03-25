@@ -54,8 +54,10 @@ export function FeaturesSection() {
               <feature.icon className="w-6 h-6 text-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-1">{feature.title}</h3>
-              <p className="text-base text-muted-foreground">
+              <h3 className="font-semibold text-base md:text-lg mb-1">
+                {feature.title}
+              </h3>
+              <p className="text-sm md:text-base text-muted-foreground">
                 {feature.description}
               </p>
             </div>
