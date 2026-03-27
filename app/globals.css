@@ -124,3 +124,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Bookmark Loading Animations  */
+
+@keyframes matrix-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+.matrix-dot-pulse {
+  animation: matrix-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}

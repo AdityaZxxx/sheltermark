@@ -1,7 +1,7 @@
 "use client";
 
 import { BookmarkIcon } from "@phosphor-icons/react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarks } from "~/hooks/use-bookmarks";
@@ -9,9 +9,11 @@ import { useWorkspaces } from "~/hooks/use-workspaces";
 import { safeDomain } from "~/lib/utils";
 import type { Bookmark } from "~/types/bookmark.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
+import { BookmarkCardItemLoading } from "./bookmark-card-item-loading";
 import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
 import { BookmarkInput } from "./bookmark-input";
 import { BookmarkListItem } from "./bookmark-list-item";
+import { BookmarkListItemLoading } from "./bookmark-list-item-loading";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
 import { BookmarkSkeleton } from "./bookmark-skeleton";
@@ -32,6 +34,9 @@ export function BookmarkView() {
   } | null>(null);
   const [bookmarksToDelete, setBookmarksToDelete] = useState<string[]>([]);
   const [bookmarksToMove, setBookmarksToMove] = useState<string[]>([]);
+  const [pendingUrls, setPendingUrls] = useState<{ id: string; url: string }[]>(
+    [],
+  );
 
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
@@ -54,6 +59,16 @@ export function BookmarkView() {
     clearSelection,
     clearSelectionOnly,
   } = useBookmarkSelection();
+
+  // Remove pending bookmarks once they appear in the real list
+  useEffect(() => {
+    if (pendingUrls.length === 0) return;
+    setPendingUrls((prev) =>
+      prev.filter(
+        (p) => !filteredBookmarks.some((b: Bookmark) => b.url === p.url),
+      ),
+    );
+  }, [filteredBookmarks, pendingUrls.length]);
 
   const handleCopyUrl = useCallback((url: string) => {
     navigator.clipboard.writeText(url);
@@ -141,14 +156,19 @@ export function BookmarkView() {
     const trimmed = val.trim();
     if (trimmed.includes(".") || trimmed.startsWith("http")) {
       const formData = new FormData();
-      formData.append(
-        "url",
-        trimmed.startsWith("http") ? trimmed : `https://${trimmed}`,
-      );
+      const normalizedUrl = trimmed.startsWith("http")
+        ? trimmed
+        : `https://${trimmed}`;
+      formData.append("url", normalizedUrl);
       if (currentWorkspace?.id) {
         formData.append("workspaceId", currentWorkspace.id);
       }
 
+      const pendingId = `pending-${Date.now()}`;
+      setPendingUrls((prev) => [
+        ...prev,
+        { id: pendingId, url: normalizedUrl },
+      ]);
       setSearchQuery("");
       toast.promise(
         async () => {
@@ -161,8 +181,12 @@ export function BookmarkView() {
             invalidate();
             return "Bookmark added!";
           },
-          error: (err) =>
-            err instanceof Error ? err.message : "Failed to add bookmark",
+          error: (err) => {
+            setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
+            return err instanceof Error
+              ? err.message
+              : "Failed to add bookmark";
+          },
         },
       );
     } else {
@@ -242,7 +266,7 @@ export function BookmarkView() {
 
       {isLoading ? (
         <BookmarkSkeleton count={6} view={view} />
-      ) : filteredBookmarks.length === 0 ? (
+      ) : filteredBookmarks.length === 0 && pendingUrls.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-12 h-12  flex items-center justify-center mb-4">
             <BookmarkIcon className="w-6 h-6 text-muted-foreground" />
@@ -259,6 +283,13 @@ export function BookmarkView() {
               : "flex flex-col gap-1"
           }
         >
+          {pendingUrls.map((pending) =>
+            view === "card" ? (
+              <BookmarkCardItemLoading key={pending.id} url={pending.url} />
+            ) : (
+              <BookmarkListItemLoading key={pending.id} url={pending.url} />
+            ),
+          )}
           {filteredBookmarks.map((bookmark: Bookmark, index: number) =>
             view === "card" ? (
               <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
