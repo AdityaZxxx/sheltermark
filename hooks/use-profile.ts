@@ -29,7 +29,7 @@ export function useProfile() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { full_name: string }) => {
+    mutationFn: async (data: { name: string }) => {
       const result = await updateProfileAction(data);
       return result;
     },

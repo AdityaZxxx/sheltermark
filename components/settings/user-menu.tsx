@@ -45,15 +45,13 @@ export function UserMenu({ user }: UserMenuProps) {
               <Avatar>
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
-                  alt={profile.full_name ?? undefined}
+                  alt={profile.name ?? undefined}
                 />
                 <AvatarFallback>
-                  {profile.full_name?.charAt(0).toUpperCase() ?? undefined}
+                  {profile.name?.charAt(0).toUpperCase() ?? undefined}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm hidden md:block">
-                {profile.full_name}
-              </span>
+              <span className="text-sm hidden md:block">{profile.name}</span>
               <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
             </Button>
           }

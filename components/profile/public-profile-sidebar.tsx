@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 interface PublicProfileSidebarProps {
   profile: {
     username: string;
-    full_name: string | null;
+    name: string | null;
     avatar_url: string | null;
     bio: string | null;
     github_url: string | null;
@@ -17,7 +17,7 @@ interface PublicProfileSidebarProps {
 }
 
 export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
-  const displayName = profile.full_name || profile.username;
+  const displayName = profile.name || profile.username;
   const initials = displayName.charAt(0).toUpperCase();
 
   return (

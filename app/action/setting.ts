@@ -33,7 +33,7 @@ async function deleteAvatarFromStorage(
   }
 }
 
-export async function updateProfile(data: { full_name: string }) {
+export async function updateProfile(data: { name: string }) {
   const { user, supabase } = await requireAuth();
 
   const validated = updateProfileSchema.safeParse(data);
@@ -42,10 +42,10 @@ export async function updateProfile(data: { full_name: string }) {
     return { error: validated.error.issues[0].message };
   }
 
-  const { full_name } = validated.data;
+  const { name } = validated.data;
 
   const { error: authError } = await supabase.auth.updateUser({
-    data: { full_name },
+    data: { name },
   });
 
   if (authError) {
@@ -55,7 +55,7 @@ export async function updateProfile(data: { full_name: string }) {
   const { error } = await supabase
     .from("profiles")
     .update({
-      full_name: full_name,
+      name: name,
     })
     .eq("id", user.id);
 
@@ -140,7 +140,7 @@ export async function getProfile() {
   const { data: profile, error } = await supabase
     .from("profiles")
     .select(
-      "full_name, avatar_url, username, bio, github_url, x_url, website_url, is_public",
+      "name, avatar_url, username, bio, github_url, x_url, website_url, is_public",
     )
     .eq("id", user.id)
     .single();

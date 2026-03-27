@@ -9,12 +9,12 @@ export async function getProfileDisplayName(
 
   const { data } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("name")
     .eq("username", username)
     .eq("is_public", true)
     .single();
 
-  return data?.full_name ?? null;
+  return data?.name ?? null;
 }
 
 export async function getPublicProfile(username: string): Promise<{
@@ -70,7 +70,7 @@ export async function getPublicProfile(username: string): Promise<{
     profile: {
       id: profile.id,
       username: profile.username,
-      full_name: profile.full_name,
+      name: profile.name,
       avatar_url: profile.avatar_url,
       bio: profile.bio,
       github_url: profile.github_url,

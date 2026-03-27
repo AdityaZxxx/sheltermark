@@ -34,7 +34,7 @@ export async function generateMetadata({
   }
 
   const { profile, workspaces } = result;
-  const displayName = profile.full_name;
+  const displayName = profile.name;
   let title: string;
   let description: string;
 
