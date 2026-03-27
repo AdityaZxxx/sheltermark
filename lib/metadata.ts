@@ -354,6 +354,98 @@ async function fetchTwitterMetadata(url: string): Promise<Metadata | null> {
   }
 }
 
+async function fetchYouTubeOEmbed(url: string): Promise<Metadata | null> {
+  try {
+    const apiUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(apiUrl, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return {
+      title: decodeHtmlEntities(data.title || url),
+      og_image_url: data.thumbnail_url || null,
+      favicon_url: getGoogleFavicon("youtube.com"),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchViaNoembed(url: string): Promise<Metadata | null> {
+  try {
+    const apiUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(apiUrl, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (data.error) return null;
+
+    return {
+      title: decodeHtmlEntities(data.title || url),
+      og_image_url: data.thumbnail_url || null,
+      favicon_url: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYouTubeMetadata(url: string): Promise<Metadata | null> {
+  const videoId = extractYouTubeVideoId(url);
+  const fallbackThumbnail = videoId
+    ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+    : null;
+
+  // Layer 1: YouTube official oEmbed
+  const oembedResult = await fetchYouTubeOEmbed(url);
+  if (oembedResult) {
+    return {
+      ...oembedResult,
+      og_image_url: oembedResult.og_image_url || fallbackThumbnail,
+      favicon_url: oembedResult.favicon_url || getGoogleFavicon("youtube.com"),
+    };
+  }
+
+  // Layer 2: noembed (broader platform support)
+  const noembedResult = await fetchViaNoembed(url);
+  if (noembedResult) {
+    return {
+      ...noembedResult,
+      og_image_url: noembedResult.og_image_url || fallbackThumbnail,
+      favicon_url: noembedResult.favicon_url || getGoogleFavicon("youtube.com"),
+    };
+  }
+
+  // Layer 3: Construct from video ID (always works for valid video IDs)
+  if (videoId) {
+    return {
+      title: "YouTube Video",
+      og_image_url: fallbackThumbnail,
+      favicon_url: getGoogleFavicon("youtube.com"),
+    };
+  }
+
+  return null;
+}
+
 function isTwitterUrl(hostname: string): boolean {
   return (
     hostname === "twitter.com" ||
@@ -372,12 +464,61 @@ function isJsHeavySite(hostname: string): boolean {
   );
 }
 
+function isYouTubeUrl(hostname: string): boolean {
+  return (
+    hostname === "youtube.com" ||
+    hostname.endsWith(".youtube.com") ||
+    hostname === "youtu.be" ||
+    hostname.endsWith(".youtu.be") ||
+    hostname === "youtube-nocookie.com" ||
+    hostname.endsWith(".youtube-nocookie.com")
+  );
+}
+
+function extractYouTubeVideoId(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+
+    // youtu.be/VIDEO_ID
+    if (
+      urlObj.hostname === "youtu.be" ||
+      urlObj.hostname.endsWith(".youtu.be")
+    ) {
+      return urlObj.pathname.slice(1).split("/")[0] || null;
+    }
+
+    // youtube.com/watch?v=VIDEO_ID
+    if (urlObj.pathname === "/watch") {
+      return urlObj.searchParams.get("v");
+    }
+
+    // youtube.com/embed/VIDEO_ID, /shorts/VIDEO_ID, /live/VIDEO_ID
+    const embedMatch = urlObj.pathname.match(
+      /^\/(embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/,
+    );
+    if (embedMatch) return embedMatch[2];
+
+    // youtube.com/VIDEO_ID via /v/ path
+    const vMatch = urlObj.pathname.match(/^\/([a-zA-Z0-9_-]{11})$/);
+    if (vMatch) return vMatch[1];
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function fallbackStrategy(
   url: string,
   hostname: string,
 ): Promise<Metadata | null> {
   if (isTwitterUrl(hostname)) {
     const result = await fetchTwitterMetadata(url);
+    if (result) return result;
+  }
+
+  if (isYouTubeUrl(hostname)) {
+    const result = await fetchYouTubeMetadata(url);
     if (result) return result;
   }
 
