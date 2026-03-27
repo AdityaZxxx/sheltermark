@@ -97,8 +97,8 @@ export default async function PublicProfilePage({
   const { profile, workspaces } = result;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-1">
         <PublicHeader user={user} />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
           <div className="lg:col-span-1">
