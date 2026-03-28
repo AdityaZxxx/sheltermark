@@ -1,17 +1,14 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { Tag } from "~/lib/schemas/tag.schema";
 
 interface ActiveBookmark {
   id: string;
   title: string;
-  note: string | null;
-  tags: Tag[];
 }
 
 export function useBookmarkDialogs() {
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [activeBookmark, setActiveBookmark] = useState<ActiveBookmark | null>(
@@ -30,32 +27,13 @@ export function useBookmarkDialogs() {
     setDeleteDialogOpen(true);
   }, []);
 
-  const handleEditTrigger = useCallback(
-    (
-      id: string,
-      bookmarks: {
-        id: string;
-        title: string | null;
-        note: string | null;
-        tagsByBookmarkId: Map<string, string[]>;
-        allTags: Tag[];
-      }[],
-    ) => {
+  const handleRenameTrigger = useCallback(
+    (id: string, bookmarks: { id: string; title: string | null }[]) => {
       const bookmark = bookmarks.find((b) => b.id === id);
-      if (!bookmark) return;
-
-      const tagIds = bookmark.tagsByBookmarkId.get(id) ?? [];
-      const tags = tagIds
-        .map((tagId) => bookmark.allTags.find((t) => t.id === tagId))
-        .filter((t): t is Tag => t !== undefined);
-
-      setActiveBookmark({
-        id: bookmark.id,
-        title: bookmark.title || "",
-        note: bookmark.note ?? null,
-        tags,
-      });
-      setEditDialogOpen(true);
+      if (bookmark) {
+        setActiveBookmark({ id: bookmark.id, title: bookmark.title || "" });
+        setRenameDialogOpen(true);
+      }
     },
     [],
   );
@@ -75,9 +53,9 @@ export function useBookmarkDialogs() {
     setDeleteDialogOpen(false);
   }, []);
 
-  const resetEdit = useCallback(() => {
+  const resetRename = useCallback(() => {
     setActiveBookmark(null);
-    setEditDialogOpen(false);
+    setRenameDialogOpen(false);
   }, []);
 
   const resetMove = useCallback(() => {
@@ -86,8 +64,8 @@ export function useBookmarkDialogs() {
   }, []);
 
   return {
-    editDialogOpen,
-    setEditDialogOpen,
+    renameDialogOpen,
+    setRenameDialogOpen,
     deleteDialogOpen,
     setDeleteDialogOpen,
     moveDialogOpen,
@@ -97,11 +75,11 @@ export function useBookmarkDialogs() {
     bookmarksToMove,
     handleDeleteTrigger,
     handleBulkDeleteTrigger,
-    handleEditTrigger,
+    handleRenameTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
     resetDelete,
-    resetEdit,
+    resetRename,
     resetMove,
   };
 }

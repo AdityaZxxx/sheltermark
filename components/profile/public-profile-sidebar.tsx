@@ -2,10 +2,18 @@
 
 import { GithubLogoIcon, GlobeIcon, XLogoIcon } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import type { Profile } from "~/lib/schemas/profile.schema";
 
 interface PublicProfileSidebarProps {
-  profile: Profile;
+  profile: {
+    username: string;
+    name: string | null;
+    avatar_url: string | null;
+    bio: string | null;
+    github_url: string | null;
+    x_url: string | null;
+    website_url: string | null;
+    created_at: string;
+  };
 }
 
 export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {

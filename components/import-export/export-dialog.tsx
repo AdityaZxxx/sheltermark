@@ -3,7 +3,7 @@
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { exportBookmarks } from "~/app/action/export.action";
+import { exportBookmarks } from "~/app/action/export";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -49,19 +49,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         return;
       }
 
-      const blob = new Blob([result.data.content], {
-        type: result.data.contentType,
-      });
+      const blob = new Blob([result.data], { type: result.contentType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = result.data.filename;
+      a.download = result.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${result.data.filename}`);
+      toast.success(`Exported ${result.filename}`);
       onOpenChange(false);
     } catch {
       toast.error("Export failed");
@@ -122,8 +120,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                   ) : (
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getPastelColor(workspaceId) }}
+                        className={`w-2 h-2 rounded-full ${getPastelColor(workspaceId)}`}
                       />
                       <span className="truncate">
                         {workspaces.find((ws) => ws.id === workspaceId)?.name}
@@ -138,8 +135,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                   <SelectItem key={ws.id} value={ws.id}>
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: getPastelColor(ws.id) }}
+                        className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
                       />
                       <span className="truncate">{ws.name}</span>
                     </div>

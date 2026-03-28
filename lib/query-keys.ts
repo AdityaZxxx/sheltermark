@@ -17,24 +17,8 @@ export const profileKeys = {
   detail: (id: string) => ["profile", "detail", id] as const,
 };
 
-export const feedKeys = {
-  all: ["feeds"] as const,
-  byUser: (userId?: string) => ["feeds", userId] as const,
-  detail: (id: string) => ["feeds", "detail", id] as const,
-  entries: (feedId: string) => ["feeds", "entries", feedId] as const,
-};
-
-export const trashKeys = {
-  all: ["trash"] as const,
-  bookmarks: ["trash", "bookmarks"] as const,
-  workspaces: ["trash", "workspaces"] as const,
-};
-
-export const tagKeys = {
-  all: ["tags"] as const,
-  links: ["tags", "links"] as const,
-  withCount: ["tags", "withCount"] as const,
-  byBookmark: (bookmarkId: string) => ["tags", "bookmark", bookmarkId] as const,
+export const urlHealthKeys = {
+  all: ["url-health"] as const,
   byWorkspace: (workspaceId: string) =>
-    ["tags", "byWorkspace", workspaceId] as const,
+    ["url-health", "workspace", workspaceId] as const,
 };

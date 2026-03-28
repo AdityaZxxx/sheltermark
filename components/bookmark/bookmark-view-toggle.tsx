@@ -1,46 +1,32 @@
-import { ListIcon, RowsIcon, SquaresFourIcon } from "@phosphor-icons/react";
+import { ListIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
-import { cn } from "~/lib/utils";
 
 interface BookmarkViewToggleProps {
-  view: BookmarkViewVariant;
-  onViewChange: (view: BookmarkViewVariant) => void;
-  className?: string;
+  view: "list" | "card";
+  onViewChange: (view: "list" | "card") => void;
 }
 
 export function BookmarkViewToggle({
   view,
   onViewChange,
-  className,
 }: BookmarkViewToggleProps) {
   return (
     <Tabs
       value={view}
-      onValueChange={(v) => onViewChange(v as BookmarkViewVariant)}
+      onValueChange={(v) => onViewChange(v as "list" | "card")}
     >
-      <TabsList
-        className={cn("grid grid-cols-3 bg-muted/60 rounded-lg", className)}
-      >
-        <TabsTrigger value="list" className="rounded-md" aria-label="List view">
-          <ListIcon className="h-4 w-4" />{" "}
-          <span className="md:hidden">List</span>
-        </TabsTrigger>
+      <TabsList className="grid w-16 grid-cols-2 bg-muted/60 rounded-lg">
         <TabsTrigger
-          value="comfort"
-          className="rounded-md"
-          aria-label="Comfort view"
+          value="list"
+          className="rounded-md data-active:bg-background data-active:shadow-sm"
         >
-          <RowsIcon className="size-4" />{" "}
-          <span className="md:hidden">Comfort</span>
+          <ListIcon className="h-4 w-4" />
         </TabsTrigger>
         <TabsTrigger
           value="card"
-          className="rounded-md"
-          aria-label="Gallery view"
+          className="rounded-md data-active:bg-background data-active:shadow-sm"
         >
-          <SquaresFourIcon className="h-4 w-4" />{" "}
-          <span className="md:hidden">Gallery</span>
+          <SquaresFourIcon className="h-4 w-4" />
         </TabsTrigger>
       </TabsList>
     </Tabs>

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { getPublicProfile } from "~/app/action/profile.action";
+import { getPublicProfile } from "~/app/action/profile";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
-import { Footer } from "~/components/footer";
 import { PublicHeader } from "~/components/profile/public-header";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
 import { requireAuthSafe } from "~/lib/auth";
 import { getBaseUrl, slugify } from "~/lib/utils";
+import { Footer } from "../../../components/footer";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -19,13 +19,11 @@ export async function generateMetadata({
   params,
   searchParams,
 }: PublicProfilePageProps): Promise<Metadata> {
-  const [{ username }, { workspace }] = await Promise.all([
-    params,
-    searchParams,
-  ]);
+  const { username } = await params;
+  const { workspace } = await searchParams;
   const result = await getPublicProfile(username);
 
-  if (!result.success || !result.data) {
+  if (result.error || !result.profile) {
     return {
       title: "Profile not found — Sheltermark",
       openGraph: {
@@ -35,19 +33,7 @@ export async function generateMetadata({
     };
   }
 
-  // Data is guaranteed to exist here; narrow profile to non-nullable
-  const data = result.data;
-  const profile = data?.profile;
-  if (!profile) {
-    return {
-      title: "Profile not found — Sheltermark",
-      openGraph: {
-        title: "Profile not found — Sheltermark",
-        images: [`${getBaseUrl()}/api/og?title=Profile%20not%20found`],
-      },
-    };
-  }
-  const workspaces = data?.workspaces ?? [];
+  const { profile, workspaces } = result;
   const displayName = profile.name;
   let title: string;
   let description: string;
@@ -94,12 +80,10 @@ export default async function PublicProfilePage({
   params,
 }: PublicProfilePageProps) {
   const { username } = await params;
-  const [result, { user }] = await Promise.all([
-    getPublicProfile(username),
-    requireAuthSafe(),
-  ]);
+  const result = await getPublicProfile(username);
+  const { user } = await requireAuthSafe();
 
-  if (!result.success || !result.data || !result.data.profile) {
+  if (result.error || !result.profile) {
     return (
       <div className="flex flex-col mx-auto items-center justify-center h-screen">
         <h3 className="text-foreground text-2xl">Profile not found</h3>
@@ -110,19 +94,7 @@ export default async function PublicProfilePage({
     );
   }
 
-  const data = result.data;
-  const profile = data?.profile;
-  if (!profile) {
-    return (
-      <div className="flex flex-col mx-auto items-center justify-center h-screen">
-        <h3 className="text-foreground text-2xl">Profile not found</h3>
-        <p className="text-muted-foreground">
-          Please check the username and try again
-        </p>
-      </div>
-    );
-  }
-  const workspaces = data?.workspaces ?? [];
+  const { profile, workspaces } = result;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

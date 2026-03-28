@@ -30,8 +30,8 @@ export function WorkspaceVisibilityDialog({
           <DialogTitle>{isPublic ? "Make Public" : "Make Private"}</DialogTitle>
           <DialogDescription>
             {isPublic
-              ? "Anyone with the link will be able to view this workspace."
-              : "The public link will stop working for everyone with it."}
+              ? "Make this workspace public to share it with others."
+              : "Are you sure you want to make this workspace private? It will no longer be accessible via the public link."}
           </DialogDescription>
         </DialogHeader>
 

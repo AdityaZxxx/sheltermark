@@ -3,11 +3,9 @@
 import { useQueryState } from "nuqs";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark.schema";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import { getPastelColor, safeDomain, slugify } from "~/lib/utils";
+import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
-import { BookmarkComfortItem } from "./bookmark-comfort-item";
 import { BookmarkListItem } from "./bookmark-list-item";
 import { BookmarkSkeleton } from "./bookmark-skeleton";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
@@ -21,7 +19,7 @@ export function BookmarkViewReadOnly({
   workspaces,
   isLoading = false,
 }: BookmarkViewReadOnlyProps) {
-  const [view, setView] = useState<BookmarkViewVariant>("list");
+  const [view, setView] = useState<"list" | "card">("list");
   const [activeWorkspace, setActiveWorkspace] = useQueryState("workspace");
 
   const publicWorkspaces = workspaces.filter((ws) => ws.bookmarks.length > 0);
@@ -69,8 +67,7 @@ export function BookmarkViewReadOnly({
                   >
                     {tab.color && (
                       <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: tab.color }}
+                        className={`w-2 h-2 rounded-full shrink-0 ${tab.color}`}
                       />
                     )}
                     {tab.label}
@@ -86,27 +83,8 @@ export function BookmarkViewReadOnly({
       {isLoading ? (
         <BookmarkSkeleton count={6} view={view} />
       ) : filteredBookmarks.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-12 text-muted-foreground">
           <p>No public bookmarks yet.</p>
-        </div>
-      ) : view === "comfort" ? (
-        <div className="flex flex-col gap-1">
-          {filteredBookmarks.map((bookmark, index) => (
-            <BookmarkComfortItem
-              key={bookmark.id}
-              id={bookmark.id}
-              title={bookmark.title || ""}
-              url={bookmark.url}
-              og_image_url={bookmark.og_image_url || undefined}
-              favicon_url={bookmark.favicon_url || undefined}
-              domain={safeDomain(bookmark.url)}
-              created_at={bookmark.created_at}
-              isSelected={false}
-              isSelectionMode={false}
-              tabIndex={index === 0 ? 0 : -1}
-              disableContextMenu={true}
-            />
-          ))}
         </div>
       ) : view === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
