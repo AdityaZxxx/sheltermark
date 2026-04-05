@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
-    "prepare": "husky init"
+    "prepare": "husky"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

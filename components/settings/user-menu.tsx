@@ -70,7 +70,11 @@ export function UserMenu({ user }: UserMenuProps) {
           </DropdownMenuItem>
           {profile?.is_public && (
             <DropdownMenuItem className="w-full">
-              <Link href={`/u/${profile?.username}`}>
+              <Link
+                href={`/u/${profile?.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <span className="w-full flex items-center gap-2">
                   <UserCircleIcon className="h-4 w-4" /> Public Profile
                 </span>
