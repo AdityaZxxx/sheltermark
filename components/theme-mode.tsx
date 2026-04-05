@@ -63,11 +63,7 @@ export function ThemeMode({
               )}
             >
               <Icon
-                className={cn(
-                  iconSize,
-                  "transition-transform duration-200",
-                  isActive && "scale-110",
-                )}
+                className={cn(iconSize, "transition-transform duration-200")}
               />
             </button>
           );
