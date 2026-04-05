@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "prepare": "husky init"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -45,6 +46,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
@@ -55,5 +58,14 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "biome check --fix",
+      "biome format --write"
+    ],
+    "*.{json,css,md}": [
+      "biome format --write"
+    ]
+  }
 }
