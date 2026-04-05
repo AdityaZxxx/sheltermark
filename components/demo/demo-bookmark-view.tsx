@@ -220,7 +220,7 @@ export function DemoBookmarkView() {
   );
 
   return (
-    <div className="h-[500px] bg-background max-w-4xl mx-auto rounded-lg border">
+    <div className="h-full bg-background max-w-4xl mx-auto rounded-lg border">
       <DemoHeader
         workspaces={workspaces}
         currentWorkspaceId={activeWorkspaceId}
