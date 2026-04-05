@@ -41,8 +41,11 @@ export function UserMenu({ user }: UserMenuProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" className="gap-2 px-2">
-              <Avatar>
+            <Button
+              variant="ghost"
+              className="gap-2 px-2 py-2 md:px-2 md:py-1 -m-2 md:m-0 rounded-full md:rounded-md h-auto"
+            >
+              <Avatar size="sm">
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
                   alt={profile.name ?? undefined}
