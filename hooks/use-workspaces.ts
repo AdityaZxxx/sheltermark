@@ -25,6 +25,10 @@ export function useWorkspaces() {
     queryKey,
     queryFn: getWorkspaces,
     enabled: !!user?.id && !isAuthLoading,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const currentWorkspace = useMemo(() => {
