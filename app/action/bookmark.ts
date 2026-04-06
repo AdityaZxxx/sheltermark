@@ -26,9 +26,10 @@ export async function addBookmark(formData: FormData) {
   });
 
   if (!result.success) {
-    if (result.duplicate)
-      return { error: "Bookmark already exists in this workspace" };
-    return { error: result.error };
+    if (result.duplicate) {
+      throw new Error("Bookmark already exists in this workspace");
+    }
+    throw new Error(result.error);
   }
 
   return { success: true, data: result.data };
