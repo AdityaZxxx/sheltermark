@@ -109,3 +109,56 @@ export function getBrokenLinkMessage(
   if (status >= 400) return `Error (${status})`;
   return "Link issue";
 }
+
+const TRACKING_PARAMS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "fbclid",
+  "gclid",
+  "ttclid",
+  "irclid",
+  "mc_cid",
+  "mc_eid",
+  "s_kwcid",
+  "_ga",
+  "_gl",
+  "yclid",
+  "wickedid",
+  "wbraid",
+  "gbraid",
+];
+
+export function normalizeUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+
+    // Normalize hostname: lowercase + remove www prefix
+    let hostname = urlObj.hostname.toLowerCase();
+    if (hostname.startsWith("www.")) {
+      hostname = hostname.slice(4);
+    }
+    urlObj.hostname = hostname;
+
+    // Remove tracking params
+    TRACKING_PARAMS.forEach((param) => {
+      urlObj.searchParams.delete(param);
+    });
+
+    // Remove hash
+    urlObj.hash = "";
+
+    // Remove trailing slash (except for root path)
+    let pathname = urlObj.pathname;
+    if (pathname.length > 1 && pathname.endsWith("/")) {
+      pathname = pathname.slice(0, -1);
+    }
+    urlObj.pathname = pathname;
+
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
+}
