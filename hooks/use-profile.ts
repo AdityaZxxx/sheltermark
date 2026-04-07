@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   getProfile,
@@ -8,38 +9,67 @@ import {
   updatePublicProfile as updatePublicProfileAction,
 } from "~/app/action/setting";
 import { useSupabase } from "~/components/providers/supabase-provider";
-import type { Profile } from "../types/profile.types";
+import { profileKeys } from "~/lib/query-keys";
+import type { Profile } from "~/types/profile.types";
+
+const profileQueryOptions = (userId: string | undefined) => ({
+  queryKey: profileKeys.byUser(userId),
+  queryFn: async () => {
+    const result = await getProfile();
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    return result.profile as Profile | null;
+  },
+  enabled: !!userId,
+});
 
 export function useProfile() {
   const queryClient = useQueryClient();
   const { user, isLoading: isAuthLoading } = useSupabase();
 
-  const queryKey = ["profile", user?.id] as const;
+  const queryKey = useMemo(() => profileKeys.byUser(user?.id), [user?.id]);
 
-  const { data, isLoading } = useQuery<Profile | null>({
-    queryKey,
-    queryFn: async () => {
-      const result = await getProfile();
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      return result.profile as Profile | null;
-    },
-    enabled: !!user?.id && !isAuthLoading,
-  });
+  const { data, isLoading } = useQuery<Profile | null>(
+    profileQueryOptions(user?.id),
+  );
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: { name: string }) => {
       const result = await updateProfileAction(data);
       return result;
     },
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousProfile = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: Profile | null) => ({
+        ...old,
+        name: variables.name,
+      }));
+
+      return { previousProfile };
+    },
+    onError: (error, _variables, context) => {
+      console.error("[useProfile] updateProfile failed:", error);
+      if (context?.previousProfile) {
+        queryClient.setQueryData(queryKey, context.previousProfile);
+      }
+      toast.error("Failed to update profile");
+    },
     onSuccess: (data) => {
       if (data.error) {
         toast.error(data.error);
       } else {
         toast.success("Profile updated");
-        queryClient.invalidateQueries({ queryKey });
       }
+    },
+    onSettled: () => {
+      invalidate();
     },
   });
 
@@ -50,13 +80,33 @@ export function useProfile() {
       const result = await updatePublicProfileAction(data);
       return result;
     },
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousProfile = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: Profile | null) => ({
+        ...old,
+        is_public: variables.is_public,
+      }));
+
+      return { previousProfile };
+    },
+    onError: (error, _variables, context) => {
+      console.error("[useProfile] updatePublicProfile failed:", error);
+      if (context?.previousProfile) {
+        queryClient.setQueryData(queryKey, context.previousProfile);
+      }
+      toast.error("Failed to update public profile");
+    },
     onSuccess: (data) => {
       if (data.error) {
         toast.error(data.error);
       } else {
         toast.success("Public profile updated");
-        queryClient.invalidateQueries({ queryKey });
       }
+    },
+    onSettled: () => {
+      invalidate();
     },
   });
 

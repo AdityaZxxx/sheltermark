@@ -187,9 +187,11 @@ export function SettingsGeneralTab({
           <FieldLabel>Default Workspace</FieldLabel>
           <Select
             value={
-              workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id
+              workspaces.find((ws) => ws.is_default)?.id ||
+              workspaces[0]?.id ||
+              ""
             }
-            onValueChange={(value) => setDefaultWorkspace(value)}
+            onValueChange={(value) => value && setDefaultWorkspace(value)}
             disabled={isSettingDefault}
           >
             <SelectTrigger>

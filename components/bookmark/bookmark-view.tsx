@@ -114,7 +114,7 @@ export function BookmarkView() {
 
   const handleRefetchTrigger = useCallback(
     (id: string) => {
-      refetchBookmarkMetadata(id);
+      refetchBookmarkMetadata({ id });
     },
     [refetchBookmarkMetadata],
   );
