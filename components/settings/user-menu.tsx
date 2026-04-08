@@ -10,6 +10,7 @@ import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
+import { ShortcutButton } from "~/components/keyboard-shortcuts-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -71,6 +72,11 @@ export function UserMenu({ user }: UserMenuProps) {
               <GearIcon className="h-4 w-4" /> Settings
             </span>
           </DropdownMenuItem>
+
+          <DropdownMenuItem>
+            <ShortcutButton />
+          </DropdownMenuItem>
+
           {profile?.is_public && (
             <DropdownMenuItem className="w-full">
               <Link
