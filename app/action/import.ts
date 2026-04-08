@@ -2,7 +2,6 @@
 
 import { requireAuth } from "~/lib/auth";
 import { importOptionsSchema } from "~/lib/schemas";
-import { normalizeUrl } from "~/lib/utils";
 import type { Bookmark } from "~/types/bookmark.types";
 
 type BookmarkRow = Omit<
@@ -162,10 +161,7 @@ export async function importBookmarks(
 
   const { data: existingBookmarks } = await query;
 
-  // Normalize existing URLs for comparison
-  const existingUrls = new Set(
-    existingBookmarks?.map((b) => normalizeUrl(b.url)) || [],
-  );
+  const existingUrls = new Set(existingBookmarks?.map((b) => b.url) || []);
 
   const errors: string[] = [];
   const toInsert: Omit<BookmarkRow, "id" | "created_at" | "updated_at">[] = [];
@@ -178,10 +174,8 @@ export async function importBookmarks(
       continue;
     }
 
-    const normalizedUrl = normalizeUrl(bookmark.url);
-
     // Only check duplicate in target workspace, not across all workspaces
-    if (targetWorkspaceId && existingUrls.has(normalizedUrl)) {
+    if (targetWorkspaceId && existingUrls.has(bookmark.url)) {
       if (validated.data.duplicateStrategy === "skip") {
         continue;
       }
@@ -190,14 +184,14 @@ export async function importBookmarks(
         .from("bookmarks")
         .delete()
         .eq("user_id", user.id)
-        .eq("url", normalizedUrl)
+        .eq("url", bookmark.url)
         .eq("workspace_id", targetWorkspaceId);
     }
 
     toInsert.push({
       user_id: user.id,
       workspace_id: targetWorkspaceId,
-      url: normalizedUrl,
+      url: bookmark.url,
       title: bookmark.title || bookmark.url,
       favicon_url: bookmark.favicon_url || null,
       og_image_url: bookmark.og_image_url || null,

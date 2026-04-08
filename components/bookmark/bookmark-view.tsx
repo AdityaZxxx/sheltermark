@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarks } from "~/hooks/use-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { normalizeUrl, safeDomain } from "~/lib/utils";
+import { safeDomain } from "~/lib/utils";
 import type { Bookmark } from "~/types/bookmark.types";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkCardItemLoading } from "./bookmark-card-item-loading";
@@ -64,10 +64,8 @@ export function BookmarkView() {
   useEffect(() => {
     if (pendingUrls.length === 0) return;
     setPendingUrls((prev) =>
-      prev.filter((p) =>
-        filteredBookmarks.some(
-          (b: Bookmark) => normalizeUrl(b.url) === normalizeUrl(p.url),
-        ),
+      prev.filter(
+        (p) => !filteredBookmarks.some((b: Bookmark) => b.url === p.url),
       ),
     );
   }, [filteredBookmarks, pendingUrls.length]);
@@ -172,15 +170,25 @@ export function BookmarkView() {
         { id: pendingId, url: normalizedUrl },
       ]);
       setSearchQuery("");
-      addBookmark(formData, {
-        onSuccess: () => {
-          invalidate();
+      toast.promise(
+        async () => {
+          await addBookmark(formData);
+          return "Bookmark added!";
         },
-        onError: (err) => {
-          setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
-          toast.error(err.message || "Failed to add bookmark");
+        {
+          loading: "Fetching metadata and saving...",
+          success: () => {
+            invalidate();
+            return "Bookmark added!";
+          },
+          error: (err) => {
+            setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
+            return err instanceof Error
+              ? err.message
+              : "Failed to add bookmark";
+          },
         },
-      });
+      );
     } else {
       // Search query is already updated via onChange, clear focused index
       setFocusedIndex(-1);

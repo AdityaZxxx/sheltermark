@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchMetadata } from "~/lib/metadata";
-import { normalizeUrl } from "~/lib/utils";
 
 export type InsertBookmarkParams = {
   url: string;
@@ -23,14 +22,12 @@ export async function insertBookmark(
   userId: string,
   { url, workspaceId, clientTitle }: InsertBookmarkParams,
 ): Promise<InsertBookmarkResult> {
-  const normalizedUrl = normalizeUrl(url);
-
-  // Build duplicate check query using normalized URL
+  // Build duplicate check query
   let existingQuery = supabase
     .from("bookmarks")
     .select("id")
     .eq("user_id", userId)
-    .eq("url", normalizedUrl);
+    .eq("url", url);
 
   if (workspaceId) {
     existingQuery = existingQuery.eq("workspace_id", workspaceId);
@@ -55,7 +52,7 @@ export async function insertBookmark(
     .insert([
       {
         user_id: userId,
-        url: normalizedUrl,
+        url,
         workspace_id: workspaceId ?? null,
         title,
         favicon_url: metadata.favicon_url,

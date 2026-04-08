@@ -91,7 +91,9 @@ export function useBookmarks(workspaceId?: string) {
   const addBookmark = useMutation({
     mutationFn: addBookmarkAction,
     onSuccess: (data) => {
-      if (data.success) {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
         invalidate();
       }
     },
@@ -100,7 +102,9 @@ export function useBookmarks(workspaceId?: string) {
   const deleteBookmarks = useMutation({
     mutationFn: deleteBookmarksAction,
     onSuccess: (data) => {
-      if (data.success) {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
         invalidate();
       }
     },
