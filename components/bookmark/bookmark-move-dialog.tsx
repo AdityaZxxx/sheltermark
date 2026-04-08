@@ -28,7 +28,7 @@ interface BookmarkMoveDialogProps {
   onOpenChange: (open: boolean) => void;
   ids: string[];
   workspaces: { id: string; name: string }[];
-  currentWorkspaceId?: string | null;
+  currentWorkspaceId?: string;
   onSuccess: () => void;
   onConfirm?: (
     ids: string[],
@@ -79,26 +79,27 @@ export function BookmarkMoveDialog({
       onSuccess();
       onOpenChange(false);
     } else {
-      const res = await moveBookmarks(ids, targetWorkspaceId);
+      const res = await moveBookmarks({ ids, targetWorkspaceId });
       setIsPending(false);
 
       if (res.success) {
         if (!silent) {
           const workspaceName = selectedWorkspace?.name || "Target Workspace";
+          const { movedCount, skippedCount } = res.data;
 
-          if (res.movedCount > 0 && res.skippedCount > 0) {
+          if (movedCount > 0 && skippedCount > 0) {
             toast.success(
-              `${res.movedCount} moved, ${res.skippedCount} already in ${workspaceName}`,
+              `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
             );
-          } else if (res.movedCount > 0) {
+          } else if (movedCount > 0) {
             toast.success(
-              res.movedCount === 1
+              movedCount === 1
                 ? `Bookmark moved to ${workspaceName}`
-                : `${res.movedCount} bookmarks moved to ${workspaceName}`,
+                : `${movedCount} bookmarks moved to ${workspaceName}`,
             );
-          } else if (res.skippedCount > 0) {
+          } else if (skippedCount > 0) {
             toast.info(
-              res.skippedCount === 1
+              skippedCount === 1
                 ? `Bookmark already exists in ${workspaceName}`
                 : `Bookmarks already exist in ${workspaceName}`,
             );
