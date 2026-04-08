@@ -12,17 +12,35 @@ import { BookmarkViewToggle } from "~/components/bookmark/bookmark-view-toggle";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
+import type { Bookmark } from "~/lib/schemas/bookmark";
+import type { Workspace } from "~/lib/schemas/workspace";
 import { safeDomain } from "~/lib/utils";
-import type { Bookmark } from "~/types/bookmark.types";
-import type { Workspace } from "~/types/workspace.types";
 import { DEMO_WORKSPACES, INITIAL_DEMO_BOOKMARKS } from "./demo-data";
 import { DemoHeader } from "./demo-header";
 
+type BookmarkDemo = Pick<
+  Bookmark,
+  | "id"
+  | "url"
+  | "title"
+  | "favicon_url"
+  | "og_image_url"
+  | "workspace_id"
+  | "created_at"
+> & {
+  domain?: string;
+};
+
+type WorkspaceDemo = Pick<
+  Workspace,
+  "id" | "name" | "is_public" | "is_default"
+>;
+
 export function DemoBookmarkView() {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(
+  const [bookmarks, setBookmarks] = useState<BookmarkDemo[]>(
     INITIAL_DEMO_BOOKMARKS,
   );
-  const [workspaces] = useState<Workspace[]>(DEMO_WORKSPACES);
+  const [workspaces] = useState<WorkspaceDemo[]>(DEMO_WORKSPACES);
   const [activeWorkspaceId, setActiveWorkspaceId] =
     useState<string>("personal");
   const [view, setView] = useState<"list" | "card">("list");
@@ -161,13 +179,12 @@ export function DemoBookmarkView() {
 
       const metadata = await res.json();
 
-      const newBookmark: Bookmark = {
+      const newBookmark: BookmarkDemo = {
         id: crypto.randomUUID(),
         title: metadata.title || url,
         url,
         favicon_url: metadata.favicon_url || null,
         og_image_url: metadata.og_image_url || null,
-        domain: safeDomain(url),
         workspace_id: activeWorkspaceId || "personal",
         created_at: new Date().toISOString(),
       };
@@ -175,13 +192,12 @@ export function DemoBookmarkView() {
       setBookmarks((prev) => [newBookmark, ...prev]);
       setSearchQuery("");
     } catch {
-      const newBookmark: Bookmark = {
+      const newBookmark: BookmarkDemo = {
         id: crypto.randomUUID(),
         title: url,
         url,
         favicon_url: null,
         og_image_url: null,
-        domain: safeDomain(url),
         workspace_id: activeWorkspaceId || "personal",
         created_at: new Date().toISOString(),
       };
@@ -272,7 +288,7 @@ export function DemoBookmarkView() {
                   }
                   isSelectionMode={isSelectionMode}
                   workspaces={workspaces}
-                  currentWorkspaceId={bookmark.workspace_id}
+                  currentWorkspaceId={bookmark.workspace_id ?? undefined}
                   onSelect={toggleSelect}
                   onDelete={handleDeleteTrigger}
                   onRename={onRenameTrigger}
@@ -306,7 +322,7 @@ export function DemoBookmarkView() {
                   }
                   isSelectionMode={isSelectionMode}
                   workspaces={workspaces}
-                  currentWorkspaceId={bookmark.workspace_id}
+                  currentWorkspaceId={bookmark.workspace_id ?? undefined}
                   onSelect={toggleSelect}
                   onDelete={handleDeleteTrigger}
                   onRename={onRenameTrigger}
@@ -381,8 +397,9 @@ export function DemoBookmarkView() {
           workspaces={workspaces}
           currentWorkspaceId={
             bookmarksToMove.length === 1
-              ? bookmarks.find((b) => b.id === bookmarksToMove[0])?.workspace_id
-              : null
+              ? (bookmarks.find((b) => b.id === bookmarksToMove[0])
+                  ?.workspace_id ?? undefined)
+              : undefined
           }
           onSuccess={() => setMoveDialogOpen(false)}
           onConfirm={handleConfirmMove}

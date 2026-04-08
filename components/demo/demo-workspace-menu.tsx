@@ -19,10 +19,14 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { getPastelColor } from "~/lib/utils";
-import type { Workspace } from "~/types/workspace.types";
 
 interface DemoWorkspaceMenuProps {
-  workspaces: Workspace[];
+  workspaces: {
+    id: string;
+    name: string;
+    is_public?: boolean;
+    bookmarks_count?: number;
+  }[];
   currentWorkspaceId: string;
   onSelectWorkspace: (id: string) => void;
 }
