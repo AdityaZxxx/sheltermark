@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
-import { workspaceCreateSchema } from "~/lib/schemas";
+import { workspaceCreateSchema } from "~/lib/schemas/workspace";
 
 export async function getWorkspaces() {
   const { user, supabase } = await requireAuth();

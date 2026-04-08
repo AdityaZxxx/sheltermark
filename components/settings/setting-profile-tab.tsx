@@ -16,7 +16,7 @@ import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
 import { useProfile } from "~/hooks/use-profile";
-import { usernameSchema } from "~/lib/schemas";
+import { usernameSchema } from "~/lib/schemas/profile";
 import { Textarea } from "../ui/textarea";
 
 interface SettingsProfileTabProps {

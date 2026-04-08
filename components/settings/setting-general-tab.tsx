@@ -30,7 +30,7 @@ import {
 } from "~/components/ui/select";
 import { useProfile } from "~/hooks/use-profile";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { updateProfileSchema } from "~/lib/schemas";
+import { updateProfileSchema } from "~/lib/schemas/profile";
 import { getPastelColor } from "~/lib/utils";
 
 interface SettingsGeneralTabProps {

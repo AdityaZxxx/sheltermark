@@ -25,7 +25,7 @@ interface BookmarkContextMenuProps {
   url: string;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string | null;
+  currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onRename?: (id: string) => void;
   onMove?: (id: string) => void;

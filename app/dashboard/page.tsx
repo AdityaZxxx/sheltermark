@@ -19,9 +19,9 @@ export default async function DashboardPage() {
     queryClient.prefetchQuery({
       queryKey: ["bookmarks", user?.id],
       queryFn: async () => {
-        const { data, error } = await getBookmarks();
-        if (error) throw new Error(error);
-        return data;
+        const result = await getBookmarks();
+        if (!result.success) throw new Error(result.error);
+        return result.data;
       },
     }),
   ]);

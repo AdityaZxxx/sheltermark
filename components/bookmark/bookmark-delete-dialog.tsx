@@ -44,7 +44,7 @@ export function BookmarkDeleteDialog({
       onSuccess();
       onOpenChange(false);
     } else {
-      const res = await deleteBookmarks(ids);
+      const res = await deleteBookmarks({ ids });
       setIsPending(false);
 
       if (res.success) {

@@ -56,7 +56,10 @@ export function BookmarkRenameDialog({
       onSuccess();
       onOpenChange(false);
     } else {
-      const res = await renameBookmark(bookmark.id, title.trim());
+      const res = await renameBookmark({
+        id: bookmark.id,
+        title: title.trim(),
+      });
       setIsPending(false);
 
       if (res.success) {
