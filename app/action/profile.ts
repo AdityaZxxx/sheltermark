@@ -1,14 +1,17 @@
 import { requireAuthSafe } from "~/lib/auth";
-import { usernameSchema } from "~/lib/schemas";
-import type { Profile } from "~/types/profile.types";
-import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
+import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark";
+import {
+  getProfileByUsernameSchema,
+  type Profile,
+} from "~/lib/schemas/profile";
 
-export async function getProfileDisplayName(
-  username: string,
-): Promise<string | null> {
+export async function getProfileDisplayName(username: {
+  username: string;
+}): Promise<string | null> {
   const { supabase } = await requireAuthSafe();
 
-  const validateUsername = usernameSchema.safeParse(username);
+  const validateUsername = getProfileByUsernameSchema.safeParse(username);
+
   if (!validateUsername.success) {
     return null;
   }
@@ -16,7 +19,7 @@ export async function getProfileDisplayName(
   const { data } = await supabase
     .from("profiles")
     .select("name")
-    .eq("username", username)
+    .eq("username", username.username)
     .eq("is_public", true)
     .single();
 
@@ -28,9 +31,14 @@ export async function getPublicProfile(username: string): Promise<{
   workspaces: WorkspaceWithBookmarks[];
   error?: string;
 }> {
-  const validateUsername = usernameSchema.safeParse(username);
-  if (!validateUsername.success) {
-    return { error: "Invalid username format", workspaces: [] };
+  if (!username || typeof username !== "string") {
+    return { error: "Invalid username", workspaces: [] };
+  }
+
+  const cleanUsername = username.trim().toLowerCase();
+
+  if (!cleanUsername) {
+    return { error: "Invalid username", workspaces: [] };
   }
 
   const { supabase } = await requireAuthSafe();
@@ -38,9 +46,9 @@ export async function getPublicProfile(username: string): Promise<{
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
-    .eq("username", username)
+    .eq("username", cleanUsername)
     .eq("is_public", true)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile) {
     return { error: "Profile not found", workspaces: [] };
@@ -88,6 +96,7 @@ export async function getPublicProfile(username: string): Promise<{
       x_url: profile.x_url,
       website_url: profile.website_url,
       is_public: profile.is_public,
+      updated_at: profile.updated_at,
       created_at: profile.created_at,
     },
     workspaces: workspacesWithBookmarks,

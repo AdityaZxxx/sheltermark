@@ -1,14 +1,8 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
-import { importOptionsSchema } from "~/lib/schemas";
+import { importOptionsSchema } from "~/lib/schemas/profile";
 import { normalizeUrl } from "~/lib/utils";
-import type { Bookmark } from "~/types/bookmark.types";
-
-type BookmarkRow = Omit<
-  Bookmark,
-  "id" | "created_at" | "updated_at" | "domain"
->;
 
 export type ImportPreviewResult = {
   success: true;
@@ -31,6 +25,11 @@ interface ParsedBookmark {
   workspaceName?: string;
   workspaceId?: string;
 }
+
+type BookmarkInsertInput = Pick<
+  Bookmark,
+  "user_id" | "workspace_id" | "url" | "title" | "favicon_url" | "og_image_url"
+>;
 
 export async function previewImport(
   fileContent: string,
@@ -106,8 +105,8 @@ export async function importBookmarks(
 
   const { user, supabase } = await requireAuth();
 
-  let targetWorkspaceId: string | null =
-    validated.data.targetWorkspaceId ?? null;
+  let targetWorkspaceId: string | null | undefined =
+    validated.data.targetWorkspaceId;
 
   // Create new workspace if requested
   if (validated.data.createWorkspace && validated.data.newWorkspaceName) {
@@ -168,7 +167,7 @@ export async function importBookmarks(
   );
 
   const errors: string[] = [];
-  const toInsert: Omit<BookmarkRow, "id" | "created_at" | "updated_at">[] = [];
+  const toInsert: BookmarkInsertInput[] = [];
 
   for (const bookmark of parsed.bookmarks) {
     try {
@@ -196,7 +195,7 @@ export async function importBookmarks(
 
     toInsert.push({
       user_id: user.id,
-      workspace_id: targetWorkspaceId,
+      workspace_id: targetWorkspaceId || null,
       url: normalizedUrl,
       title: bookmark.title || bookmark.url,
       favicon_url: bookmark.favicon_url || null,
@@ -392,3 +391,4 @@ function parseCSVLine(line: string): string[] {
 }
 
 import type { z } from "zod";
+import type { Bookmark } from "../../lib/schemas/bookmark";

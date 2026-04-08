@@ -1,7 +1,12 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
-import { updateProfileSchema, updatePublicProfileSchema } from "~/lib/schemas";
+import {
+  type UpdateProfileInput,
+  type UpdatePublicProfileInput,
+  updateProfileSchema,
+  updatePublicProfileSchema,
+} from "../../lib/schemas/profile";
 
 // Helper to delete avatar file from storage
 async function deleteAvatarFromStorage(
@@ -33,7 +38,7 @@ async function deleteAvatarFromStorage(
   }
 }
 
-export async function updateProfile(data: { name: string }) {
+export async function updateProfile(data: UpdateProfileInput) {
   const { user, supabase } = await requireAuth();
 
   const validated = updateProfileSchema.safeParse(data);
@@ -66,15 +71,7 @@ export async function updateProfile(data: { name: string }) {
   return { success: true, message: "Profile updated successfully", user };
 }
 
-export async function updatePublicProfile(data: {
-  username: string;
-  is_public: boolean;
-  bio?: string;
-  github_username?: string;
-  x_username?: string;
-  website?: string;
-  current_username?: string;
-}) {
+export async function updatePublicProfile(data: UpdatePublicProfileInput) {
   const { user, supabase } = await requireAuth();
 
   const validated = updatePublicProfileSchema.safeParse(data);
@@ -108,7 +105,7 @@ export async function updatePublicProfile(data: {
   }
 
   // Helper to normalize URLs
-  const normalizeUrl = (value: string | undefined, prefix: string) => {
+  const normalizeUrl = (value: string | null | undefined, prefix: string) => {
     if (!value) return null;
     return value.startsWith("http") ? value : `${prefix}${value}`;
   };
@@ -139,9 +136,7 @@ export async function getProfile() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select(
-      "name, avatar_url, username, bio, github_url, x_url, website_url, is_public",
-    )
+    .select("*")
     .eq("id", user.id)
     .single();
 
