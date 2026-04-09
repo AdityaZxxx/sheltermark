@@ -142,7 +142,7 @@ export async function moveBookmarks({
   if (toMoveIds.length > 0) {
     const { error: moveError } = await supabase
       .from("bookmarks")
-      .update({ workspace_id: targetId })
+      .update({ workspace_id: targetId, updated_at: new Date().toISOString() })
       .in("id", toMoveIds)
       .eq("user_id", user.id);
 
@@ -172,7 +172,10 @@ export async function renameBookmark({
 
   const { error } = await supabase
     .from("bookmarks")
-    .update({ title: validated.data.title })
+    .update({
+      title: validated.data.title,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", validated.data.id)
     .eq("user_id", user.id);
 
@@ -226,6 +229,7 @@ export async function getBookmarks(): Promise<GetBookmarksResult> {
     .from("bookmarks")
     .select("*")
     .eq("user_id", user.id)
+    .order("updated_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   if (error) return { success: false, error: error.message };

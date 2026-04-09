@@ -50,6 +50,7 @@ export const bookmarkPreviewSchema = z.object({
   favicon_url: z.string().nullable(),
   og_image_url: z.string().nullable(),
   created_at: z.string(),
+  updated_at: z.string().nullable(),
 });
 
 export const workspaceWithBookmarksSchema = z.object({

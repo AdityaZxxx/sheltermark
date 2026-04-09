@@ -36,7 +36,9 @@ export async function exportBookmarks(
     query = query.eq("workspace_id", validated.data.workspaceId);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
 
   if (error) {
     return { success: false, error: error.message };
