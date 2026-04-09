@@ -1,7 +1,10 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
-import { workspaceCreateSchema } from "~/lib/schemas/workspace";
+import {
+  workspaceCreateSchema,
+  workspaceRenameSchema,
+} from "~/lib/schemas/workspace";
 
 export async function getWorkspaces() {
   const { user, supabase } = await requireAuth();
@@ -122,6 +125,26 @@ export async function toggleAutoCheckBroken(id: string, enabled: boolean) {
     .from("workspaces")
     .update({ auto_check_broken: enabled })
     .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
+export async function renameWorkspace(id: string, name: string) {
+  const validated = workspaceRenameSchema.safeParse({ id, name });
+
+  if (!validated.success) {
+    return { error: validated.error.issues[0].message };
+  }
+
+  const { user, supabase } = await requireAuth();
+
+  const { error } = await supabase
+    .from("workspaces")
+    .update({ name: validated.data.name })
+    .eq("id", validated.data.id)
     .eq("user_id", user.id);
 
   if (error) return { error: error.message };

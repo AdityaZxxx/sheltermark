@@ -8,6 +8,7 @@ import {
   createWorkspace,
   deleteWorkspace,
   getWorkspaces,
+  renameWorkspace,
   setDefaultWorkspace,
   toggleAutoCheckBroken,
   togglePublicStatus,
@@ -261,6 +262,38 @@ export function useWorkspaces() {
     },
   });
 
+  const renameMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      renameWorkspace(id, name),
+    onMutate: async ({ id, name }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousWorkspaces = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
+        old.map((ws) => (ws.id === id ? { ...ws, name } : ws)),
+      );
+
+      return { previousWorkspaces };
+    },
+    onError: (error, _variables, context) => {
+      console.error("[useWorkspaces] renameWorkspace failed:", error);
+      if (context?.previousWorkspaces) {
+        queryClient.setQueryData(queryKey, context.previousWorkspaces);
+      }
+      toast.error("Failed to rename workspace");
+    },
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success("Workspace renamed");
+      }
+    },
+    onSettled: () => {
+      invalidate();
+    },
+  });
+
   return {
     workspaces,
     currentWorkspace,
@@ -276,5 +309,7 @@ export function useWorkspaces() {
     isSettingDefault: setDefaultMutation.isPending,
     toggleAutoCheckBroken: autoCheckMutation.mutate,
     isTogglingAutoCheck: autoCheckMutation.isPending,
+    renameWorkspace: renameMutation.mutate,
+    isRenaming: renameMutation.isPending,
   };
 }
