@@ -51,7 +51,8 @@ export function DemoWorkspaceMenu({
           >
             <div className="flex items-center gap-2">
               <div
-                className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspaceId || "default")}`}
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: getPastelColor(currentWorkspaceId) }}
               />
               <span className="truncate max-w-[100px]">
                 {activeWorkspaceName}

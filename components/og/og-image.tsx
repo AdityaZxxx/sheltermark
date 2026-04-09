@@ -1,5 +1,5 @@
 import Logo from "~/components/logo";
-import { getPastelHexColor } from "~/lib/utils";
+import { getPastelColor } from "~/lib/utils";
 
 type OGImageProps = {
   title?: string;
@@ -207,7 +207,7 @@ export function OGImage({
               width: 28,
               height: 28,
               borderRadius: "50%",
-              backgroundColor: getPastelHexColor(workspace ?? ""),
+              backgroundColor: getPastelColor(workspace ?? ""),
             }}
           />
           {workspace}

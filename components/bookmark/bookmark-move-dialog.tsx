@@ -143,7 +143,12 @@ export function BookmarkMoveDialog({
               >
                 <div className="flex items-center gap-2 overflow-hidden">
                   <div
-                    className={`w-2 h-2 rounded-full shrink-0 ${getPastelColor(targetWorkspaceId || "default")}`}
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: getPastelColor(
+                        targetWorkspaceId || "default",
+                      ),
+                    }}
                   />
                   <span className="truncate">
                     {selectedWorkspace?.name || "Select workspace..."}
@@ -165,7 +170,8 @@ export function BookmarkMoveDialog({
                 <DropdownMenuRadioItem key={ws.id} value={ws.id}>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
+                      className="w-2 h-2 rounded-full "
+                      style={{ backgroundColor: getPastelColor(ws.id) }}
                     />
                     <span className="truncate">{ws.name}</span>
                   </div>

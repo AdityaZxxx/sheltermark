@@ -67,7 +67,8 @@ export function BookmarkViewReadOnly({
                   >
                     {tab.color && (
                       <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${tab.color}`}
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: tab.color }}
                       />
                     )}
                     {tab.label}

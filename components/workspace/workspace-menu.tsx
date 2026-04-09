@@ -90,7 +90,12 @@ export function WorkspaceMenu() {
             >
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspace?.id || "default")}`}
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{
+                    backgroundColor: getPastelColor(
+                      currentWorkspace?.id || "default",
+                    ),
+                  }}
                 />
                 <span className="truncate max-w-[100px] text-sm">
                   {activeWorkspaceName}
@@ -113,7 +118,8 @@ export function WorkspaceMenu() {
                 <DropdownMenuRadioItem value={ws.id} key={ws.id}>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-2.5 h-2.5 rounded-full ${getPastelColor(ws.id)}`}
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: getPastelColor(ws.id) }}
                     />
                     <span className="truncate">{ws.name}</span>
                     {ws.is_public && (
