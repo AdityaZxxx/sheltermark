@@ -5,6 +5,7 @@ import { BookmarkView } from "~/components/bookmark/bookmark-view";
 import { Header } from "~/components/header";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
+import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
 
 export default async function DashboardPage() {
   const { user } = await requireAuth();
@@ -13,11 +14,11 @@ export default async function DashboardPage() {
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: ["workspaces", user?.id],
+      queryKey: workspaceKeys.byUser(user?.id),
       queryFn: () => getWorkspaces(),
     }),
     queryClient.prefetchQuery({
-      queryKey: ["bookmarks", user?.id],
+      queryKey: bookmarkKeys.all,
       queryFn: async () => {
         const result = await getBookmarks();
         if (!result.success) throw new Error(result.error);
