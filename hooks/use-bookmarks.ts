@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   addBookmark as addBookmarkAction,
@@ -51,31 +51,6 @@ export function useBookmarks(workspaceId?: string) {
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>(
     bookmarksQueryOptions(workspaceId, user?.id),
   );
-
-  const { supabase } = useSupabase();
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel("bookmarks-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bookmarks",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, supabase, queryClient]);
 
   const filteredBookmarks = workspaceId
     ? allBookmarks.filter((b) => b.workspace_id === workspaceId)

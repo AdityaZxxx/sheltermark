@@ -1,7 +1,7 @@
 "use client";
 
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { makeQueryClient } from "~/lib/query-client";
 
 let browserQueryClient: QueryClient | undefined;
@@ -22,10 +22,16 @@ interface QueryProviderProps {
 
 function FocusRefetchHandler() {
   const queryClient = getQueryClient();
+  const COOLDOWN_MS = 30_000;
+  const lastRefetchRef = useRef(0);
 
   useEffect(() => {
     const handleFocus = () => {
-      queryClient.invalidateQueries();
+      const now = Date.now();
+      if (now - lastRefetchRef.current >= COOLDOWN_MS) {
+        lastRefetchRef.current = now;
+        queryClient.invalidateQueries();
+      }
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
