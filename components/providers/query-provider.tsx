@@ -1,17 +1,15 @@
 "use client";
 
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { makeQueryClient } from "~/lib/query-client";
 
 let browserQueryClient: QueryClient | undefined;
 
 function getQueryClient() {
   if (typeof window === "undefined") {
-    // Server: always make a new query client
     return makeQueryClient();
   }
-  // Browser: make a new query client if we don't already have one
   if (!browserQueryClient) {
     browserQueryClient = makeQueryClient();
   }
@@ -22,10 +20,27 @@ interface QueryProviderProps {
   children: React.ReactNode;
 }
 
+function FocusRefetchHandler() {
+  const queryClient = getQueryClient();
+
+  useEffect(() => {
+    const handleFocus = () => {
+      queryClient.invalidateQueries();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [queryClient]);
+
+  return null;
+}
+
 export function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(() => getQueryClient());
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <FocusRefetchHandler />
+      {children}
+    </QueryClientProvider>
   );
 }

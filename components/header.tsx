@@ -1,14 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "~/utils/supabase/server";
+import { requireAuth } from "~/lib/auth";
 import Logo from "./logo";
 import { UserMenu } from "./settings/user-menu";
 import { WorkspaceMenu } from "./workspace/workspace-menu";
 
 export async function Header() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await requireAuth();
+
   if (!user) {
     redirect("/login");
   }
