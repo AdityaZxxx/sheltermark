@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { requireAuth } from "~/lib/auth";
 import { exportOptionsSchema } from "~/lib/schemas/profile";
 
-export type ExportResult =
+type ExportResult =
   | { success: true; data: string; filename: string; contentType: string }
   | { success: false; error: string };
 

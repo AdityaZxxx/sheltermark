@@ -1,17 +1,17 @@
 import { z } from "zod";
 
-const uuidSchema = z.string().uuid();
+const uuidSchema = z.uuid();
 
-const timestampSchema = z.string().datetime();
+const timestampSchema = z.iso.datetime();
 
 export const bookmarkSchema = z.object({
   id: uuidSchema,
   user_id: uuidSchema,
   workspace_id: uuidSchema.nullable(),
-  url: z.string().url(),
+  url: z.url(),
   title: z.string(),
-  favicon_url: z.string().url().nullable(),
-  og_image_url: z.string().url().nullable(),
+  favicon_url: z.url().nullable(),
+  og_image_url: z.url().nullable(),
   is_public: z.boolean().default(false),
   is_broken: z.boolean().default(false),
   last_checked_at: timestampSchema.nullable(),
@@ -21,7 +21,7 @@ export const bookmarkSchema = z.object({
 });
 
 export const bookmarkCreateSchema = z.object({
-  url: z.string().url("Invalid URL format"),
+  url: z.url("Invalid URL format"),
   workspaceId: uuidSchema,
 });
 
@@ -60,7 +60,6 @@ export const workspaceWithBookmarksSchema = z.object({
 });
 
 export type Bookmark = z.infer<typeof bookmarkSchema>;
-export type BookmarkPreview = z.infer<typeof bookmarkPreviewSchema>;
 export type BookmarkCreateInput = z.infer<typeof bookmarkCreateSchema>;
 export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
 export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-const uuidSchema = z.string().uuid();
+const uuidSchema = z.uuid();
 
-const timestampSchema = z.string().datetime();
+const timestampSchema = z.iso.datetime();
 
 export const usernameSchema = z
   .string()
@@ -39,15 +39,15 @@ export const profileSchema = z.object({
   id: uuidSchema,
   username: usernameSchema,
   name: z.string().nullable(),
-  avatar_url: z.string().url().nullable(),
+  avatar_url: z.url().nullable(),
   bio: z
     .string()
     .max(160, "Bio must be less than 160 characters")
     .optional()
     .or(z.literal("")),
   website_url: websiteSchema.nullable(),
-  github_url: z.string().url().nullable(),
-  x_url: z.string().url().nullable(),
+  github_url: z.url().nullable(),
+  x_url: z.url().nullable(),
   is_public: z.boolean(),
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),

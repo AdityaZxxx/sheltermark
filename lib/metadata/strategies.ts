@@ -28,7 +28,7 @@ const PLATFORMS: Record<Platform, (hostname: string) => boolean> = {
   generic: () => true,
 };
 
-export function detectPlatform(hostname: string): Platform {
+function detectPlatform(hostname: string): Platform {
   for (const [platform, check] of Object.entries(PLATFORMS)) {
     if (check(hostname)) return platform as Platform;
   }

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-const uuidSchema = z.string().uuid();
+const uuidSchema = z.uuid();
 
-const timestampSchema = z.string().datetime();
+const timestampSchema = z.iso.datetime();
 
 export const workspaceSchema = z.object({
   id: uuidSchema,
@@ -30,17 +30,8 @@ export const workspaceRenameSchema = z.object({
     .max(35, "Workspace name too long"),
 });
 
-export const workspaceSetDefaultSchema = z.object({
-  id: uuidSchema,
-});
-
 export type WorkspaceWithCount = Workspace & {
   bookmarks_count: number;
 };
 
 export type Workspace = z.infer<typeof workspaceSchema>;
-export type WorkspaceCreateInput = z.infer<typeof workspaceCreateSchema>;
-export type WorkspaceRenameInput = z.infer<typeof workspaceRenameSchema>;
-export type WorkspaceSetDefaultInput = z.infer<
-  typeof workspaceSetDefaultSchema
->;
