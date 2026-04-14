@@ -24,13 +24,10 @@ import type {
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-const bookmarksQueryOptions = (
-  workspaceId: string | undefined,
-  userId: string | undefined,
-) => ({
-  queryKey: bookmarkKeys.byWorkspace(workspaceId, userId),
+const bookmarksQueryOptions = (userId: string | undefined) => ({
+  queryKey: bookmarkKeys.all,
   queryFn: async () => {
-    const result = await getBookmarks(workspaceId);
+    const result = await getBookmarks();
     if (!result.success) throw new Error(result.error);
     return result.data;
   },
@@ -49,7 +46,7 @@ export function useBookmarks(workspaceId?: string) {
   const queryKey = bookmarkKeys.all;
 
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>(
-    bookmarksQueryOptions(workspaceId, user?.id),
+    bookmarksQueryOptions(user?.id),
   );
 
   const filteredBookmarks = workspaceId
