@@ -46,7 +46,7 @@ export function useBookmarks(workspaceId?: string) {
   const { user, isLoading: isAuthLoading } = useSupabase();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const queryKey = bookmarkKeys.byWorkspace(workspaceId, user?.id);
+  const queryKey = bookmarkKeys.all;
 
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>(
     bookmarksQueryOptions(workspaceId, user?.id),
