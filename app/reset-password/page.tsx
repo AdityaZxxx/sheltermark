@@ -1,9 +1,6 @@
 import { ResetPasswordForm } from "~/components/auth/reset-password-form";
-import { requireAuth } from "~/lib/auth";
 
-export default async function ResetPasswordPage() {
-  await requireAuth();
-
+export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-xs">

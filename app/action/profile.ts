@@ -1,5 +1,4 @@
 import { requireAuthSafe } from "~/lib/auth";
-import { usernameSchema } from "~/lib/schemas";
 import type { Profile } from "~/types/profile.types";
 import type { WorkspaceWithBookmarks } from "~/types/workspace.types";
 
@@ -8,19 +7,14 @@ export async function getProfileDisplayName(
 ): Promise<string | null> {
   const { supabase } = await requireAuthSafe();
 
-  const validateUsername = usernameSchema.safeParse(username);
-  if (!validateUsername.success) {
-    return null;
-  }
-
   const { data } = await supabase
     .from("profiles")
-    .select("name")
+    .select("full_name")
     .eq("username", username)
     .eq("is_public", true)
     .single();
 
-  return data?.name ?? null;
+  return data?.full_name ?? null;
 }
 
 export async function getPublicProfile(username: string): Promise<{
@@ -28,11 +22,6 @@ export async function getPublicProfile(username: string): Promise<{
   workspaces: WorkspaceWithBookmarks[];
   error?: string;
 }> {
-  const validateUsername = usernameSchema.safeParse(username);
-  if (!validateUsername.success) {
-    return { error: "Invalid username format", workspaces: [] };
-  }
-
   const { supabase } = await requireAuthSafe();
 
   const { data: profile, error: profileError } = await supabase
@@ -48,40 +37,40 @@ export async function getPublicProfile(username: string): Promise<{
 
   const { data: workspaces, error: workspacesError } = await supabase
     .from("workspaces")
-    .select(
-      "id, name, bookmarks(id, url, title, favicon_url, og_image_url, created_at)",
-    )
+    .select("*")
     .eq("user_id", profile.id)
     .eq("is_public", true)
     .order("created_at", { ascending: true });
 
-  if (workspacesError) {
-    return {
-      error: `Failed to fetch workspaces: ${workspacesError.message}`,
-      workspaces: [],
-    };
+  if (workspacesError || !workspaces) {
+    return { error: "Failed to fetch workspaces", workspaces: [] };
   }
 
-  const workspacesWithBookmarks: WorkspaceWithBookmarks[] = (
-    workspaces || []
-  ).map((ws) => ({
-    id: ws.id,
-    name: ws.name,
-    bookmarks: (ws.bookmarks || []).map((b) => ({
-      id: b.id,
-      url: b.url,
-      title: b.title,
-      favicon_url: b.favicon_url,
-      og_image_url: b.og_image_url,
-      created_at: b.created_at,
-    })),
-  }));
+  const workspacesWithBookmarks: WorkspaceWithBookmarks[] = [];
+
+  for (const workspace of workspaces) {
+    const { data: bookmarks, error: bookmarksError } = await supabase
+      .from("bookmarks")
+      .select("id, url, title, favicon_url, og_image_url, created_at")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: false });
+
+    if (!bookmarksError && bookmarks) {
+      workspacesWithBookmarks.push({
+        id: workspace.id,
+        name: workspace.name,
+        bookmarks: bookmarks.map((b) => ({
+          ...b,
+        })),
+      });
+    }
+  }
 
   return {
     profile: {
       id: profile.id,
       username: profile.username,
-      name: profile.name,
+      full_name: profile.full_name,
       avatar_url: profile.avatar_url,
       bio: profile.bio,
       github_url: profile.github_url,

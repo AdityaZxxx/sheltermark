@@ -43,5 +43,3 @@ next-env.d.ts
 # development
 .vscode
 opencode.json
-AGENT.md
-prd.md

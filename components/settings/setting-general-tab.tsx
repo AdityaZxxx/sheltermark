@@ -48,7 +48,7 @@ export function SettingsGeneralTab({
 }: SettingsGeneralTabProps) {
   const { profile, updateProfile } = useProfile();
   const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
-  const defaultName = profile?.name || "";
+  const defaultFullName = profile?.full_name || "";
 
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -99,13 +99,13 @@ export function SettingsGeneralTab({
 
   const form = useForm({
     defaultValues: {
-      name: defaultName,
+      full_name: defaultFullName,
     },
     validators: {
       onSubmit: updateProfileSchema,
     },
     onSubmit: async ({ value }) => {
-      updateProfile({ name: value.name });
+      updateProfile({ full_name: value.full_name });
       onCancel();
     },
   });
@@ -123,7 +123,7 @@ export function SettingsGeneralTab({
     >
       <FieldGroup>
         <div className="flex justify-center pb-4 border-b border-border">
-          <form.Field name="name">
+          <form.Field name="full_name">
             {(field) => (
               <AvatarUpload
                 currentAvatarUrl={avatarUrl}
@@ -137,9 +137,9 @@ export function SettingsGeneralTab({
         </div>
 
         <form.Field
-          name="name"
+          name="full_name"
           validators={{
-            onBlur: updateProfileSchema.shape.name,
+            onBlur: updateProfileSchema.shape.full_name,
           }}
         >
           {(field) => {
@@ -147,17 +147,17 @@ export function SettingsGeneralTab({
             return (
               <Field data-invalid={hasError}>
                 <FieldLabel>
-                  Name <span className="text-destructive">*</span>
+                  Full Name <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
-                  id="name"
+                  id="full-name"
                   name={field.name}
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasError}
                   disabled={field.form.state.isSubmitting}
-                  placeholder="Enter your name"
+                  placeholder="Enter your full name"
                 />
                 {hasError && <FieldError errors={field.state.meta.errors} />}
               </Field>

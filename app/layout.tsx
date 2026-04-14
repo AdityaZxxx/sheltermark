@@ -1,4 +1,3 @@
-import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
@@ -80,7 +79,6 @@ export default function RootLayout({
                 disableTransitionOnChange
               >
                 {children}
-                <Analytics />
               </ThemeProvider>
             </QueryProvider>
           </SupabaseProvider>

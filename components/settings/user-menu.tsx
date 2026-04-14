@@ -41,20 +41,19 @@ export function UserMenu({ user }: UserMenuProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              variant="ghost"
-              className="gap-2 px-2 py-2 md:px-2 md:py-1 -m-2 md:m-0 rounded-full md:rounded-md h-auto"
-            >
-              <Avatar size="sm">
+            <Button variant="ghost" className="gap-2 px-2">
+              <Avatar>
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
-                  alt={profile.name ?? undefined}
+                  alt={profile.full_name ?? undefined}
                 />
                 <AvatarFallback>
-                  {profile.name?.charAt(0).toUpperCase() ?? undefined}
+                  {profile.full_name?.charAt(0).toUpperCase() ?? undefined}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm hidden md:block">{profile.name}</span>
+              <span className="text-sm hidden md:block">
+                {profile.full_name}
+              </span>
               <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
             </Button>
           }
@@ -73,11 +72,7 @@ export function UserMenu({ user }: UserMenuProps) {
           </DropdownMenuItem>
           {profile?.is_public && (
             <DropdownMenuItem className="w-full">
-              <Link
-                href={`/u/${profile?.username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link href={`/u/${profile?.username}`}>
                 <span className="w-full flex items-center gap-2">
                   <UserCircleIcon className="h-4 w-4" /> Public Profile
                 </span>

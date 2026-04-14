@@ -23,15 +23,12 @@ export const workspaceCreateSchema = z.object({
   name: z
     .string()
     .min(1, "Workspace name is required")
-    .max(35, "Workspace name too long"),
+    .max(50, "Name too long"),
 });
 
 export const workspaceRenameSchema = z.object({
   id: z.uuid(),
-  name: z
-    .string()
-    .min(1, "Workspace name is required")
-    .max(35, "Workspace name too long"),
+  name: z.string().min(1, "Name is required").max(50, "Name too long"),
 });
 
 export const workspaceSetDefaultSchema = z.object({
@@ -76,7 +73,7 @@ export const websiteSchema = z
   .or(z.literal(""));
 
 export const updateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  full_name: z.string().min(1, "Full name is required"),
 });
 
 export const updatePublicProfileSchema = z.object({
