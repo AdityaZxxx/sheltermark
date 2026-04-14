@@ -30,7 +30,7 @@ const bookmarksQueryOptions = (
 ) => ({
   queryKey: bookmarkKeys.byWorkspace(workspaceId, userId),
   queryFn: async () => {
-    const result = await getBookmarks();
+    const result = await getBookmarks(workspaceId);
     if (!result.success) throw new Error(result.error);
     return result.data;
   },

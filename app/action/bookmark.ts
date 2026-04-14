@@ -222,15 +222,24 @@ export async function refetchBookmarkMetadata(
   return { success: true, data: null };
 }
 
-export async function getBookmarks(): Promise<GetBookmarksResult> {
+export async function getBookmarks(
+  workspaceId?: string,
+): Promise<GetBookmarksResult> {
   const { user, supabase } = await requireAuth();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("bookmarks")
     .select("*")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
+
+  // Filter by workspace if provided
+  if (workspaceId) {
+    query = query.eq("workspace_id", workspaceId);
+  }
+
+  const { data, error } = await query;
 
   if (error) return { success: false, error: error.message };
 
