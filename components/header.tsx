@@ -12,7 +12,7 @@ export async function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between px-4 md:px-6 py-4 mx-auto w-full">
+    <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-4 mx-auto w-full bg-background">
       <div className="flex items-center gap-2">
         <Logo size={28} className="shrink-0" />
         <WorkspaceMenu />
