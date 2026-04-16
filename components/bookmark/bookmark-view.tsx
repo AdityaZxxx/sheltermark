@@ -26,6 +26,8 @@ export function BookmarkView() {
     isLoading,
     searchQuery,
     setSearchQuery,
+    sort,
+    setSort,
     invalidate,
     moveBookmarks,
     addBookmark,
@@ -118,9 +120,11 @@ export function BookmarkView() {
         inputRef={inputRef}
         view={view}
         searchQuery={searchQuery}
+        sort={sort}
         onSearchChange={setSearchQuery}
         onSubmit={handleSubmit}
         onViewChange={setView}
+        onSortChange={setSort}
       />
 
       <BookmarkList

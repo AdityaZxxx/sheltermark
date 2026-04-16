@@ -70,3 +70,16 @@ export type BookmarkRefetchMetadataInput = z.infer<
 export type WorkspaceWithBookmarks = z.infer<
   typeof workspaceWithBookmarksSchema
 >;
+
+const bookmarkSortSchemaBase = z.object({
+  sortBy: z
+    .enum(["created_at", "updated_at", "title", "domain"])
+    .default("updated_at"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type BookmarkSortBy = z.infer<typeof bookmarkSortSchemaBase>["sortBy"];
+export type BookmarkSortOrder = z.infer<
+  typeof bookmarkSortSchemaBase
+>["sortOrder"];
+export type BookmarkSort = z.infer<typeof bookmarkSortSchemaBase>;
