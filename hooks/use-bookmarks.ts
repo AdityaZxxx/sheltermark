@@ -19,10 +19,13 @@ import type {
   BookmarkMoveInput,
   BookmarkRefetchMetadataInput,
   BookmarkRenameInput,
+  BookmarkSort,
 } from "~/lib/schemas/bookmark";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+const DEFAULT_SORT: BookmarkSort = { sortBy: "created_at", sortOrder: "desc" };
 
 const bookmarksQueryOptions = (userId: string | undefined) => ({
   queryKey: bookmarkKeys.all,
@@ -42,6 +45,7 @@ export function useBookmarks(workspaceId?: string) {
   const queryClient = useQueryClient();
   const { user, isLoading: isAuthLoading } = useSupabase();
   const [searchQuery, setSearchQuery] = useState("");
+  const [sort, setSort] = useState<BookmarkSort>(DEFAULT_SORT);
 
   const queryKey = bookmarkKeys.all;
 
@@ -53,13 +57,30 @@ export function useBookmarks(workspaceId?: string) {
     ? allBookmarks.filter((b) => b.workspace_id === workspaceId)
     : allBookmarks;
 
-  const bookmarks = searchQuery.trim()
+  const searchedBookmarks = searchQuery.trim()
     ? filteredBookmarks.filter(
         (b) =>
           b.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           b.url.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : filteredBookmarks;
+
+  const bookmarks = [...searchedBookmarks].sort((a, b) => {
+    const asc = sort.sortOrder === "asc";
+    const cmp = (x: string, y: string) =>
+      asc ? x.localeCompare(y) : y.localeCompare(x);
+
+    switch (sort.sortBy) {
+      case "title":
+        return cmp(a.title || "", b.title || "");
+      case "domain":
+        return cmp(a.url, b.url);
+      case "updated_at":
+        return cmp(a.updated_at || "", b.updated_at || "");
+      default:
+        return cmp(a.created_at, b.created_at);
+    }
+  });
 
   const invalidateBookmarks = () => {
     queryClient.invalidateQueries({ queryKey });
@@ -279,6 +300,8 @@ export function useBookmarks(workspaceId?: string) {
     isLoading: isAuthLoading || isLoading,
     searchQuery,
     setSearchQuery,
+    sort,
+    setSort,
     invalidate: invalidateBookmarks,
     addBookmark: addBookmark.mutate,
     isAddingBookmark: addBookmark.isPending,
