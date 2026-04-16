@@ -44,7 +44,7 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
         value={sort.sortBy}
         onValueChange={handleSortByChange}
       >
-        <SelectTrigger className="h-7 w-36">
+        <SelectTrigger>
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
         <SelectContent>
