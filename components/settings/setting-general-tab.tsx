@@ -3,6 +3,7 @@
 import {
   DownloadSimpleIcon,
   EnvelopeIcon,
+  TrashIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
@@ -38,6 +39,7 @@ interface SettingsGeneralTabProps {
   onCancel: () => void;
   onOpenExportDialog: () => void;
   onOpenImportDialog: () => void;
+  onOpenDeleteAlert?: () => void;
 }
 
 export function SettingsGeneralTab({
@@ -45,6 +47,7 @@ export function SettingsGeneralTab({
   onCancel,
   onOpenExportDialog,
   onOpenImportDialog,
+  onOpenDeleteAlert,
 }: SettingsGeneralTabProps) {
   const { profile, updateProfile } = useProfile();
   const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
@@ -251,6 +254,23 @@ export function SettingsGeneralTab({
               Export
             </Button>
           </div>
+        </div>
+
+        <div className="pt-4 border-t border-border">
+          <FieldLabel className="pb-2">Danger Zone</FieldLabel>
+          <p className="text-xs text-muted-foreground pb-3">
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="mt-4"
+            onClick={onOpenDeleteAlert}
+          >
+            <TrashIcon className="size-4" />
+            Delete Account
+          </Button>
         </div>
       </FieldGroup>
 

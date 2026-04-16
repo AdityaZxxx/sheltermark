@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
+import { createAdminClient } from "~/utils/supabase/server";
 import {
   type UpdateProfileInput,
   type UpdatePublicProfileInput,
@@ -336,5 +337,49 @@ export async function deleteAvatar() {
   } catch (error) {
     console.error("Avatar delete error:", error);
     return { error: "Failed to delete avatar" };
+  }
+}
+
+export async function deleteAccount() {
+  const { user } = await requireAuth();
+  const adminClient = await createAdminClient();
+
+  try {
+    const { error: deleteProfileError } = await adminClient
+      .from("profiles")
+      .delete()
+      .eq("id", user.id);
+
+    if (deleteProfileError) {
+      return {
+        error: `Failed to delete profile: ${deleteProfileError.message}`,
+      };
+    }
+
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.avatar_url) {
+      const { supabase } = await requireAuth();
+      await deleteAvatarFromStorage(supabase, profile.avatar_url);
+    }
+
+    const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(
+      user.id,
+    );
+
+    if (deleteUserError) {
+      return {
+        error: `Failed to delete auth user: ${deleteUserError.message}`,
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return { error: "Failed to delete account" };
   }
 }
