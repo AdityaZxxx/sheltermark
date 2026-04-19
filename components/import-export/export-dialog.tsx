@@ -120,7 +120,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                   ) : (
                     <div className="flex items-center gap-2">
                       <div
-                        className={`w-2 h-2 rounded-full ${getPastelColor(workspaceId)}`}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getPastelColor(workspaceId) }}
                       />
                       <span className="truncate">
                         {workspaces.find((ws) => ws.id === workspaceId)?.name}
@@ -135,7 +136,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                   <SelectItem key={ws.id} value={ws.id}>
                     <div className="flex items-center gap-2">
                       <div
-                        className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: getPastelColor(ws.id) }}
                       />
                       <span className="truncate">{ws.name}</span>
                     </div>

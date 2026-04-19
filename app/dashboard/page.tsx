@@ -1,10 +1,13 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { Suspense } from "react";
 import { getBookmarks } from "~/app/action/bookmark";
 import { getWorkspaces } from "~/app/action/workspace";
+import { ShareDialogManager } from "~/components/add/share-dialog-manager";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
 import { Header } from "~/components/header";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
+import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
 
 export default async function DashboardPage() {
   const { user } = await requireAuth();
@@ -13,15 +16,15 @@ export default async function DashboardPage() {
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: ["workspaces", user?.id],
+      queryKey: workspaceKeys.byUser(user?.id),
       queryFn: () => getWorkspaces(),
     }),
     queryClient.prefetchQuery({
-      queryKey: ["bookmarks", user?.id],
+      queryKey: bookmarkKeys.all,
       queryFn: async () => {
-        const { data, error } = await getBookmarks();
-        if (error) throw new Error(error);
-        return data;
+        const result = await getBookmarks();
+        if (!result.success) throw new Error(result.error);
+        return result.data;
       },
     }),
   ]);
@@ -31,6 +34,9 @@ export default async function DashboardPage() {
       <main className="min-h-dvh bg-background">
         <Header />
         <BookmarkView />
+        <Suspense>
+          <ShareDialogManager />
+        </Suspense>
       </main>
     </HydrationBoundary>
   );

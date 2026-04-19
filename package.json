@@ -1,14 +1,18 @@
 {
   "name": "sheltermark",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check:urls-health": "node .github/scripts/check-urls.js",
+    "check:urls-health": "bun run .github/scripts/check-urls.js",
+    "check:types": "tsc --noEmit",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "prepare": "husky",
+    "knip": "knip",
+    "sync-feeds": "bun run scripts/sync-feeds.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -20,6 +24,7 @@
     "@tanstack/react-form": "^1.28.1",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/zod-form-adapter": "^0.42.1",
+    "@vercel/analytics": "^2.0.1",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -44,6 +49,9 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "husky": "^9.1.7",
+    "knip": "^6.3.1",
+    "lint-staged": "^16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
@@ -54,5 +62,14 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "biome check --fix",
+      "biome format --write"
+    ],
+    "*.{json,css,md}": [
+      "biome format --write"
+    ]
+  }
 }

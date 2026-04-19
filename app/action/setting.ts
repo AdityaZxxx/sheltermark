@@ -1,7 +1,13 @@
 "use server";
 
 import { requireAuth } from "~/lib/auth";
-import { updateProfileSchema, updatePublicProfileSchema } from "~/lib/schemas";
+import { createAdminClient } from "~/utils/supabase/server";
+import {
+  type UpdateProfileInput,
+  type UpdatePublicProfileInput,
+  updateProfileSchema,
+  updatePublicProfileSchema,
+} from "../../lib/schemas/profile";
 
 // Helper to delete avatar file from storage
 async function deleteAvatarFromStorage(
@@ -33,7 +39,7 @@ async function deleteAvatarFromStorage(
   }
 }
 
-export async function updateProfile(data: { full_name: string }) {
+export async function updateProfile(data: UpdateProfileInput) {
   const { user, supabase } = await requireAuth();
 
   const validated = updateProfileSchema.safeParse(data);
@@ -42,10 +48,10 @@ export async function updateProfile(data: { full_name: string }) {
     return { error: validated.error.issues[0].message };
   }
 
-  const { full_name } = validated.data;
+  const { name } = validated.data;
 
   const { error: authError } = await supabase.auth.updateUser({
-    data: { full_name },
+    data: { name },
   });
 
   if (authError) {
@@ -55,7 +61,7 @@ export async function updateProfile(data: { full_name: string }) {
   const { error } = await supabase
     .from("profiles")
     .update({
-      full_name: full_name,
+      name: name,
     })
     .eq("id", user.id);
 
@@ -66,15 +72,7 @@ export async function updateProfile(data: { full_name: string }) {
   return { success: true, message: "Profile updated successfully", user };
 }
 
-export async function updatePublicProfile(data: {
-  username: string;
-  is_public: boolean;
-  bio?: string;
-  github_username?: string;
-  x_username?: string;
-  website?: string;
-  current_username?: string;
-}) {
+export async function updatePublicProfile(data: UpdatePublicProfileInput) {
   const { user, supabase } = await requireAuth();
 
   const validated = updatePublicProfileSchema.safeParse(data);
@@ -108,7 +106,7 @@ export async function updatePublicProfile(data: {
   }
 
   // Helper to normalize URLs
-  const normalizeUrl = (value: string | undefined, prefix: string) => {
+  const normalizeUrl = (value: string | null | undefined, prefix: string) => {
     if (!value) return null;
     return value.startsWith("http") ? value : `${prefix}${value}`;
   };
@@ -139,9 +137,7 @@ export async function getProfile() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select(
-      "full_name, avatar_url, username, bio, github_url, x_url, website_url, is_public",
-    )
+    .select("*")
     .eq("id", user.id)
     .single();
 
@@ -341,5 +337,49 @@ export async function deleteAvatar() {
   } catch (error) {
     console.error("Avatar delete error:", error);
     return { error: "Failed to delete avatar" };
+  }
+}
+
+export async function deleteAccount() {
+  const { user } = await requireAuth();
+  const adminClient = await createAdminClient();
+
+  try {
+    const { error: deleteProfileError } = await adminClient
+      .from("profiles")
+      .delete()
+      .eq("id", user.id);
+
+    if (deleteProfileError) {
+      return {
+        error: `Failed to delete profile: ${deleteProfileError.message}`,
+      };
+    }
+
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.avatar_url) {
+      const { supabase } = await requireAuth();
+      await deleteAvatarFromStorage(supabase, profile.avatar_url);
+    }
+
+    const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(
+      user.id,
+    );
+
+    if (deleteUserError) {
+      return {
+        error: `Failed to delete auth user: ${deleteUserError.message}`,
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return { error: "Failed to delete account" };
   }
 }

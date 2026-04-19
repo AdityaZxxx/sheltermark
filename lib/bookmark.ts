@@ -1,17 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchMetadata } from "~/lib/metadata";
+import { normalizeUrl } from "~/lib/utils";
+import type { Bookmark } from "./schemas/bookmark";
 
-export type InsertBookmarkParams = {
+type InsertBookmarkParams = {
   url: string;
-  workspaceId: string | null | undefined;
+  workspaceId: string;
   clientTitle?: string | null;
 };
 
-export type InsertBookmarkResult =
-  | { success: true; data: unknown }
+type InsertBookmarkResult =
+  | { success: true; data: Bookmark }
   | { success: false; duplicate: true }
   | { success: false; duplicate?: false; error: string };
-
 /**
  * Shared bookmark insert service — used by both server actions and API route handlers.
  * Performs duplicate check + metadata fetch in parallel before inserting.
@@ -22,12 +23,14 @@ export async function insertBookmark(
   userId: string,
   { url, workspaceId, clientTitle }: InsertBookmarkParams,
 ): Promise<InsertBookmarkResult> {
-  // Build duplicate check query
+  const normalizedUrl = normalizeUrl(url);
+
+  // Build duplicate check query using normalized URL
   let existingQuery = supabase
     .from("bookmarks")
     .select("id")
     .eq("user_id", userId)
-    .eq("url", url);
+    .eq("url", normalizedUrl);
 
   if (workspaceId) {
     existingQuery = existingQuery.eq("workspace_id", workspaceId);
@@ -45,15 +48,15 @@ export async function insertBookmark(
     return { success: false, duplicate: true };
   }
 
-  const title = metadata.title || clientTitle || "";
+  const title = metadata.title || clientTitle;
 
   const { data, error } = await supabase
     .from("bookmarks")
     .insert([
       {
         user_id: userId,
-        url,
-        workspace_id: workspaceId ?? null,
+        url: normalizedUrl,
+        workspace_id: workspaceId || null,
         title,
         favicon_url: metadata.favicon_url,
         og_image_url: metadata.og_image_url,

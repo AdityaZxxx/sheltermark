@@ -260,7 +260,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                     ) : (
                       <div className="flex items-center gap-2">
                         <div
-                          className={`w-2 h-2 rounded-full ${getPastelColor(targetWorkspaceId)}`}
+                          className="w-2 h-2 rounded-full"
+                          style={{
+                            backgroundColor: getPastelColor(targetWorkspaceId),
+                          }}
                         />
                         <span className="truncate">
                           {
@@ -278,7 +281,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                     <SelectItem key={ws.id} value={ws.id}>
                       <div className="flex items-center gap-2">
                         <div
-                          className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
+                          className="w-2 h-2 rounded-full "
+                          style={{ backgroundColor: getPastelColor(ws.id) }}
                         />
                         <span className="truncate">{ws.name}</span>
                       </div>

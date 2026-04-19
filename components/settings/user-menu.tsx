@@ -3,6 +3,7 @@
 import {
   CaretUpDownIcon,
   GearIcon,
+  RssIcon,
   SignOutIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react";
@@ -10,6 +11,8 @@ import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
+import { FeedManager } from "~/components/feed/feed-manager";
+import { ShortcutButton } from "~/components/keyboard-shortcuts-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -30,6 +33,7 @@ interface UserMenuProps {
 export function UserMenu({ user }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedsOpen, setFeedsOpen] = useState(false);
   const { profile } = useProfile();
 
   if (!profile) {
@@ -41,19 +45,20 @@ export function UserMenu({ user }: UserMenuProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" className="gap-2 px-2">
-              <Avatar>
+            <Button
+              variant="ghost"
+              className="gap-2 px-2 py-2 md:px-2 md:py-1 -m-2 md:m-0 rounded-full md:rounded-md h-auto"
+            >
+              <Avatar size="sm">
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
-                  alt={profile.full_name ?? undefined}
+                  alt={profile.name ?? undefined}
                 />
                 <AvatarFallback>
-                  {profile.full_name?.charAt(0).toUpperCase() ?? undefined}
+                  {profile.name?.charAt(0).toUpperCase() ?? undefined}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm hidden md:block">
-                {profile.full_name}
-              </span>
+              <span className="text-sm hidden md:block">{profile.name}</span>
               <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
             </Button>
           }
@@ -70,9 +75,27 @@ export function UserMenu({ user }: UserMenuProps) {
               <GearIcon className="h-4 w-4" /> Settings
             </span>
           </DropdownMenuItem>
+
+          <DropdownMenuItem>
+            <ShortcutButton />
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => setFeedsOpen(true)}
+            className="w-full"
+          >
+            <span className="w-full flex items-center gap-2">
+              <RssIcon className="h-4 w-4" /> Subscriptions
+            </span>
+          </DropdownMenuItem>
+
           {profile?.is_public && (
             <DropdownMenuItem className="w-full">
-              <Link href={`/u/${profile?.username}`}>
+              <Link
+                href={`/u/${profile?.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <span className="w-full flex items-center gap-2">
                   <UserCircleIcon className="h-4 w-4" /> Public Profile
                 </span>
@@ -108,6 +131,8 @@ export function UserMenu({ user }: UserMenuProps) {
         onOpenChange={setSettingsOpen}
         user={user}
       />
+
+      <FeedManager open={feedsOpen} onOpenChange={setFeedsOpen} />
     </>
   );
 }

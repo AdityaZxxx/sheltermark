@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DemoBookmarkViewLazy } from "~/components/demo/demo-bookmark-view-lazy";
+import { FeaturesSection } from "~/components/features-section";
 import { Footer } from "~/components/footer";
 import Logo from "~/components/logo";
 import { Button } from "~/components/ui/button";
@@ -41,6 +42,8 @@ export default function Page() {
       <div className="flex-1">
         <DemoBookmarkViewLazy />
       </div>
+
+      <FeaturesSection />
 
       <Footer />
     </div>

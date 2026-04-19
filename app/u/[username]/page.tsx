@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { getPublicProfile } from "~/app/action/profile";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
+import { Footer } from "~/components/footer";
 import { PublicHeader } from "~/components/profile/public-header";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
 import { requireAuthSafe } from "~/lib/auth";
 import { getBaseUrl, slugify } from "~/lib/utils";
-import { Footer } from "../../../components/footer";
 
 interface PublicProfilePageProps {
   params: Promise<{
@@ -34,7 +34,7 @@ export async function generateMetadata({
   }
 
   const { profile, workspaces } = result;
-  const displayName = profile.full_name;
+  const displayName = profile.name;
   let title: string;
   let description: string;
 
@@ -97,8 +97,8 @@ export default async function PublicProfilePage({
   const { profile, workspaces } = result;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-1">
         <PublicHeader user={user} />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
           <div className="lg:col-span-1">

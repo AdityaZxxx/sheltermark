@@ -166,12 +166,18 @@ async function checkSoft404(url) {
           "User-Agent": USER_AGENT,
           Range: "bytes=0-8192",
           Accept: "text/html",
+          "Accept-Encoding": "gzip, deflate, br",
         },
       },
       TIMEOUT_MS,
     );
 
-    const text = await res.text();
+    let text;
+    try {
+      text = await res.text();
+    } catch {
+      return { isSoft404: false };
+    }
 
     if (text.length < 2000) {
       const lower = text.toLowerCase();
@@ -362,9 +368,6 @@ async function main() {
     const { bookmark, is_broken, http_status, reason } = check;
 
     if (is_broken) {
-      console.log(
-        `[BROKEN] ${bookmark.url} | Status: ${http_status} | Reason: ${reason}`,
-      );
       brokenCount++;
     } else if (reason === "unknown") {
       unknownCount++;

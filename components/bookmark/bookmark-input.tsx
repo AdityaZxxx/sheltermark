@@ -4,6 +4,11 @@ import { forwardRef, useEffect } from "react";
 import { Input } from "~/components/ui/input";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 
+const isMac =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.userAgent);
+const mod = isMac ? "⌘" : "Ctrl";
+
 interface BookmarkInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -76,7 +81,7 @@ export const BookmarkInput = forwardRef<HTMLInputElement, BookmarkInputProps>(
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
           <KbdGroup>
-            <Kbd>⌘</Kbd>
+            <Kbd>{mod}</Kbd>
             <Kbd>K</Kbd>
           </KbdGroup>
         </div>

@@ -5,27 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const PASTEL_COLORS = [
-  "bg-red-300",
-  "bg-orange-300",
-  "bg-amber-300",
-  "bg-yellow-300",
-  "bg-lime-300",
-  "bg-green-300",
-  "bg-emerald-300",
-  "bg-teal-300",
-  "bg-cyan-300",
-  "bg-sky-300",
-  "bg-blue-300",
-  "bg-indigo-300",
-  "bg-violet-300",
-  "bg-purple-300",
-  "bg-fuchsia-300",
-  "bg-pink-300",
-  "bg-rose-300",
-];
-
-export const PASTEL_HEX_COLORS = [
+const PASTEL_COLORS = [
   "#fca5a5",
   "#fdba74",
   "#fcd34d",
@@ -53,16 +33,6 @@ export function getPastelColor(id: string) {
   }
   const index = Math.abs(hash) % PASTEL_COLORS.length;
   return PASTEL_COLORS[index];
-}
-
-export function getPastelHexColor(id: string) {
-  if (id === "default" || !id) return "#a3a3a3";
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % PASTEL_HEX_COLORS.length;
-  return PASTEL_HEX_COLORS[index];
 }
 
 export function safeDomain(url: string): string {
@@ -108,4 +78,57 @@ export function getBrokenLinkMessage(
   if (status >= 500) return "Server error";
   if (status >= 400) return `Error (${status})`;
   return "Link issue";
+}
+
+const TRACKING_PARAMS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "fbclid",
+  "gclid",
+  "ttclid",
+  "irclid",
+  "mc_cid",
+  "mc_eid",
+  "s_kwcid",
+  "_ga",
+  "_gl",
+  "yclid",
+  "wickedid",
+  "wbraid",
+  "gbraid",
+];
+
+export function normalizeUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+
+    // Normalize hostname: lowercase + remove www prefix
+    let hostname = urlObj.hostname.toLowerCase();
+    if (hostname.startsWith("www.")) {
+      hostname = hostname.slice(4);
+    }
+    urlObj.hostname = hostname;
+
+    // Remove tracking params
+    TRACKING_PARAMS.forEach((param) => {
+      urlObj.searchParams.delete(param);
+    });
+
+    // Remove hash
+    urlObj.hash = "";
+
+    // Remove trailing slash (except for root path)
+    let pathname = urlObj.pathname;
+    if (pathname.length > 1 && pathname.endsWith("/")) {
+      pathname = pathname.slice(0, -1);
+    }
+    urlObj.pathname = pathname;
+
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
 }

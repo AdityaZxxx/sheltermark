@@ -3,6 +3,7 @@
 import {
   DownloadSimpleIcon,
   EnvelopeIcon,
+  TrashIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
@@ -30,7 +31,7 @@ import {
 } from "~/components/ui/select";
 import { useProfile } from "~/hooks/use-profile";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { updateProfileSchema } from "~/lib/schemas";
+import { updateProfileSchema } from "~/lib/schemas/profile";
 import { getPastelColor } from "~/lib/utils";
 
 interface SettingsGeneralTabProps {
@@ -38,6 +39,7 @@ interface SettingsGeneralTabProps {
   onCancel: () => void;
   onOpenExportDialog: () => void;
   onOpenImportDialog: () => void;
+  onOpenDeleteAlert?: () => void;
 }
 
 export function SettingsGeneralTab({
@@ -45,10 +47,11 @@ export function SettingsGeneralTab({
   onCancel,
   onOpenExportDialog,
   onOpenImportDialog,
+  onOpenDeleteAlert,
 }: SettingsGeneralTabProps) {
   const { profile, updateProfile } = useProfile();
   const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
-  const defaultFullName = profile?.full_name || "";
+  const defaultName = profile?.name || "";
 
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -99,13 +102,13 @@ export function SettingsGeneralTab({
 
   const form = useForm({
     defaultValues: {
-      full_name: defaultFullName,
+      name: defaultName,
     },
     validators: {
       onSubmit: updateProfileSchema,
     },
     onSubmit: async ({ value }) => {
-      updateProfile({ full_name: value.full_name });
+      updateProfile({ name: value.name });
       onCancel();
     },
   });
@@ -123,7 +126,7 @@ export function SettingsGeneralTab({
     >
       <FieldGroup>
         <div className="flex justify-center pb-4 border-b border-border">
-          <form.Field name="full_name">
+          <form.Field name="name">
             {(field) => (
               <AvatarUpload
                 currentAvatarUrl={avatarUrl}
@@ -137,9 +140,9 @@ export function SettingsGeneralTab({
         </div>
 
         <form.Field
-          name="full_name"
+          name="name"
           validators={{
-            onBlur: updateProfileSchema.shape.full_name,
+            onBlur: updateProfileSchema.shape.name,
           }}
         >
           {(field) => {
@@ -147,17 +150,17 @@ export function SettingsGeneralTab({
             return (
               <Field data-invalid={hasError}>
                 <FieldLabel>
-                  Full Name <span className="text-destructive">*</span>
+                  Name <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
-                  id="full-name"
+                  id="name"
                   name={field.name}
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasError}
                   disabled={field.form.state.isSubmitting}
-                  placeholder="Enter your full name"
+                  placeholder="Enter your name"
                 />
                 {hasError && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -187,16 +190,24 @@ export function SettingsGeneralTab({
           <FieldLabel>Default Workspace</FieldLabel>
           <Select
             value={
-              workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id
+              workspaces.find((ws) => ws.is_default)?.id ||
+              workspaces[0]?.id ||
+              ""
             }
-            onValueChange={(value) => setDefaultWorkspace(value)}
+            onValueChange={(value) => value && setDefaultWorkspace(value)}
             disabled={isSettingDefault}
           >
             <SelectTrigger>
               <SelectValue>
                 <div className="flex items-center gap-2">
                   <div
-                    className={`w-2 h-2 rounded-full ${getPastelColor(workspaces.find((ws) => ws.is_default)?.id || workspaces[0]?.id)}`}
+                    className="w-2 h-2 rounded-full"
+                    style={{
+                      backgroundColor: getPastelColor(
+                        workspaces.find((ws) => ws.is_default)?.id ||
+                          workspaces[0]?.id,
+                      ),
+                    }}
                   />
                   <span className="truncate">
                     {workspaces.find((ws) => ws.is_default)?.name ||
@@ -210,7 +221,8 @@ export function SettingsGeneralTab({
                 <SelectItem key={ws.id} value={ws.id}>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-2 h-2 rounded-full ${getPastelColor(ws.id)}`}
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: getPastelColor(ws.id) }}
                     />
                     <span className="truncate">{ws.name}</span>
                   </div>
@@ -242,6 +254,23 @@ export function SettingsGeneralTab({
               Export
             </Button>
           </div>
+        </div>
+
+        <div className="pt-4 border-t border-border">
+          <FieldLabel className="pb-2">Danger Zone</FieldLabel>
+          <p className="text-xs text-muted-foreground pb-3">
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="mt-4"
+            onClick={onOpenDeleteAlert}
+          >
+            <TrashIcon className="size-4" />
+            Delete Account
+          </Button>
         </div>
       </FieldGroup>
 

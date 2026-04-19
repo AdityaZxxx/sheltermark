@@ -48,20 +48,28 @@ export async function updateSession(request: NextRequest) {
     error,
   } = await supabase.auth.getUser();
 
+  const pathname = request.nextUrl.pathname;
+
   const isProtectedPath = PROTECTED_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path),
+    pathname.startsWith(path),
   );
 
-  const isAuthOnlyPath = AUTH_ONLY_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path),
-  );
+  const isAuthOnlyPath =
+    AUTH_ONLY_PATHS.some((path) => pathname.startsWith(path)) ||
+    pathname === "/";
 
   if (error && isProtectedPath) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirectUrl = new URL("/login", request.url);
+    const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    redirectUrl.searchParams.set("next", returnTo);
+    return NextResponse.redirect(redirectUrl);
   }
 
   if (isProtectedPath && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirectUrl = new URL("/login", request.url);
+    const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    redirectUrl.searchParams.set("next", returnTo);
+    return NextResponse.redirect(redirectUrl);
   }
 
   if (isAuthOnlyPath && user) {
