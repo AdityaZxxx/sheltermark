@@ -1,8 +1,6 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { Suspense } from "react";
 import { getBookmarks } from "~/app/action/bookmark";
 import { getWorkspaces } from "~/app/action/workspace";
-import { ShareDialogManager } from "~/components/add/share-dialog-manager";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
 import { Header } from "~/components/header";
 import { requireAuth } from "~/lib/auth";
@@ -34,9 +32,6 @@ export default async function DashboardPage() {
       <main className="min-h-dvh bg-background">
         <Header />
         <BookmarkView />
-        <Suspense>
-          <ShareDialogManager />
-        </Suspense>
       </main>
     </HydrationBoundary>
   );

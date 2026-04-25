@@ -17,9 +17,8 @@ import { cn } from "~/lib/utils";
 
 export function LoginForm({
   className,
-  next,
   ...props
-}: React.ComponentProps<"div"> & { next?: string }) {
+}: React.ComponentProps<"div">) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
@@ -27,18 +26,15 @@ export function LoginForm({
 
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
-    await loginWithGoogle(next);
+    await loginWithGoogle();
   };
 
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoadingEmail(true);
 
     const formData = new FormData(e.currentTarget);
-    if (next) {
-      formData.append("next", next);
-    }
     const result = await loginWithEmail(formData);
 
     if (result?.error) {

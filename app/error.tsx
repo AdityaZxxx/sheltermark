@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function ErrorBoundary({
@@ -11,15 +11,12 @@ export default function ErrorBoundary({
   reset: () => void;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (error.message === "Unauthorized") {
-      const currentUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-      router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
+      router.push("/login");
     }
-  }, [error, router, pathname, searchParams]);
+  }, [error, router]);
 
   if (error.message === "Unauthorized") {
     return null;
