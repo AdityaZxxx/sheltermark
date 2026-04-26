@@ -22,5 +22,16 @@
   ],
   "theme_color": "#ffffff",
   "background_color": "#000000",
-  "display": "standalone"
+  "display": "standalone",
+  "share_target": {
+    "action": "/api/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "prefer_related_applications": false,
+  "related_applications": []
 }
