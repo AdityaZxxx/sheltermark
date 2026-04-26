@@ -2,22 +2,21 @@
   "name": "Sheltermark",
   "short_name": "Sheltermark",
   "description": "Safe place for your bookmarks",
+  "id": "/",
   "start_url": "/",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/logo.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "theme_color": "#ffffff",
