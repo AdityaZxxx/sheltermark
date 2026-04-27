@@ -12,10 +12,11 @@ export function usePendingBookmarks(filteredBookmarks: Bookmark[]) {
   useEffect(() => {
     if (pendingUrls.length === 0) return;
     setPendingUrls((prev) =>
-      prev.filter((p) =>
-        filteredBookmarks.some(
-          (b: Bookmark) => normalizeUrl(b.url) === normalizeUrl(p.url),
-        ),
+      prev.filter(
+        (p) =>
+          !filteredBookmarks.some(
+            (b: Bookmark) => normalizeUrl(b.url) === normalizeUrl(p.url),
+          ),
       ),
     );
   }, [filteredBookmarks, pendingUrls.length]);

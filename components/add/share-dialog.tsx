@@ -3,7 +3,6 @@
 import { CaretUpDownIcon, GlobeIcon, LinkIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { addBookmark as addBookmarkAction } from "~/app/action/bookmark";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -21,6 +20,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useBookmarks } from "~/hooks/use-bookmarks";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
 import { getPastelColor } from "~/lib/utils";
 
@@ -43,11 +43,11 @@ export function ShareDialog({
   currentWorkspaceId,
   onSuccess,
 }: ShareDialogProps) {
+  const { addBookmark } = useBookmarks();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
     null,
   );
   const [title, setTitle] = useState(initialTitle || "");
-  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -56,28 +56,19 @@ export function ShareDialog({
     }
   }, [open, currentWorkspaceId, workspaces, initialTitle]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!selectedWorkspaceId) {
       toast.error("Please select a workspace");
       return;
     }
 
-    setIsPending(true);
-
-    const result = await addBookmarkAction({
+    addBookmark({
       url,
       workspaceId: selectedWorkspaceId,
     });
 
-    setIsPending(false);
-
-    if (result.success) {
-      toast.success("Bookmark added");
-      onSuccess();
-      onOpenChange(false);
-    } else {
-      toast.error(result.error || "Failed to add bookmark");
-    }
+    onSuccess();
+    onOpenChange(false);
   };
 
   const displayUrl = url.length > 60 ? `${url.slice(0, 60)}...` : url;
@@ -168,13 +159,8 @@ export function ShareDialog({
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isPending || !selectedWorkspaceId}
-          >
-            {isPending
-              ? "Saving..."
-              : `Save to ${workspaceName || "workspace"}`}
+          <Button onClick={handleSave} disabled={!selectedWorkspaceId}>
+            {`Save to ${workspaceName || "workspace"}`}
           </Button>
         </DialogFooter>
       </DialogContent>

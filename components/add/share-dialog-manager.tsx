@@ -25,18 +25,23 @@ export function ShareDialogManager() {
   }, [shareUrl, shareTitle]);
 
   const handleSuccess = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("share_url");
-    url.searchParams.delete("share_title");
-    window.history.replaceState({}, "", url.pathname);
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete("share_url");
+    newUrl.searchParams.delete("share_title");
+    window.history.replaceState({}, "", newUrl.pathname);
   }, []);
 
-  if (!shareUrl) return null;
+  if (!url && !shareUrl) return null;
 
   return (
     <ShareDialog
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          handleSuccess();
+        }
+      }}
       url={url}
       title={title}
       workspaces={workspaces}

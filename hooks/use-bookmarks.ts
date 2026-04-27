@@ -135,7 +135,9 @@ export function useBookmarks(workspaceId?: string) {
       toast.error("Failed to add bookmark");
     },
     onSuccess: (data) => {
-      if (data.success) {
+      if (!data.success) {
+        toast.error(data.error);
+      } else {
         toast.success("Bookmark added");
       }
     },
@@ -165,7 +167,9 @@ export function useBookmarks(workspaceId?: string) {
       toast.error("Failed to delete bookmarks");
     },
     onSuccess: (data) => {
-      if (data.success) {
+      if (!data.success) {
+        toast.error(data.error);
+      } else {
         toast.success("Bookmarks deleted");
       }
     },
