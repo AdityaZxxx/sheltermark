@@ -12,6 +12,9 @@ const signupSchema = z.object({
 export async function signupWithEmail(formData: FormData) {
   const supabase = await createClient();
 
+  const next = formData.get("next")?.toString();
+  formData.delete("next");
+
   const rawData = Object.fromEntries(formData.entries());
   const validated = signupSchema.safeParse(rawData);
 
@@ -21,6 +24,10 @@ export async function signupWithEmail(formData: FormData) {
 
   const { name, email, password } = validated.data;
 
+  const redirectUrl = next
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`
+    : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -28,7 +35,7 @@ export async function signupWithEmail(formData: FormData) {
       data: {
         name: name,
       },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`,
+      emailRedirectTo: redirectUrl,
     },
   });
 

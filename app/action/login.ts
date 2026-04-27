@@ -9,13 +9,17 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(next?: string) {
   const supabase = await createClient();
+
+  const redirectUrl = next
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`
+    : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`,
+      redirectTo: redirectUrl,
     },
   });
 
@@ -30,6 +34,9 @@ export async function loginWithGoogle() {
 
 export async function loginWithEmail(formData: FormData) {
   const supabase = await createClient();
+
+  const next = formData.get("next")?.toString();
+  formData.delete("next");
 
   const rawData = Object.fromEntries(formData.entries());
   const validated = loginSchema.safeParse(rawData);
@@ -49,7 +56,8 @@ export async function loginWithEmail(formData: FormData) {
     return { error: error.message };
   }
 
-  redirect("/dashboard");
+  const redirectUrl = next || "/dashboard";
+  redirect(redirectUrl);
 }
 
 export async function logout() {

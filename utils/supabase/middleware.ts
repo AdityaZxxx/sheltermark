@@ -59,11 +59,17 @@ export async function updateSession(request: NextRequest) {
     pathname === "/";
 
   if (error && isProtectedPath) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirectUrl = new URL("/login", request.url);
+    const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    redirectUrl.searchParams.set("next", returnTo);
+    return NextResponse.redirect(redirectUrl);
   }
 
   if (isProtectedPath && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirectUrl = new URL("/login", request.url);
+    const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    redirectUrl.searchParams.set("next", returnTo);
+    return NextResponse.redirect(redirectUrl);
   }
 
   if (isAuthOnlyPath && user) {

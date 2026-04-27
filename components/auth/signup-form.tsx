@@ -23,8 +23,9 @@ import { cn } from "~/lib/utils";
 
 export function SignupForm({
   className,
+  next,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { next?: string }) {
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,15 +35,18 @@ export function SignupForm({
 
   const handleGoogleSignup = async () => {
     setIsLoadingGoogle(true);
-    await loginWithGoogle();
+    await loginWithGoogle(next);
   };
 
-  const handleEmailSignup = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoadingEmail(true);
 
     const formData = new FormData(e.currentTarget);
+    if (next) {
+      formData.append("next", next);
+    }
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
@@ -230,7 +234,9 @@ export function SignupForm({
             <FieldDescription className="text-center">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href={
+                  next ? `/login?next=${encodeURIComponent(next)}` : "/login"
+                }
                 className="underline underline-offset-4 hover:text-primary"
               >
                 Login
