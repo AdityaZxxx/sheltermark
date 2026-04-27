@@ -5,7 +5,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { QueryProvider } from "~/components/providers/query-provider";
 import { SupabaseProvider } from "~/components/providers/supabase-provider";
 import { ThemeProvider } from "~/components/providers/theme-provider";
-import { ServiceWorkerRegistration } from "~/components/service-worker-registration";
 import { getBaseUrl } from "~/lib/utils";
 import "./globals.css";
 
@@ -80,7 +79,6 @@ export default function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                <ServiceWorkerRegistration />
                 {children}
                 <Analytics />
               </ThemeProvider>

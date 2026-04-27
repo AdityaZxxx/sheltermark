@@ -24,7 +24,8 @@
   "display": "standalone",
   "share_target": {
     "action": "/api/share",
-    "method": "GET",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "title",
       "text": "text",
