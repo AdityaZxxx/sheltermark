@@ -22,3 +22,10 @@ export const urlHealthKeys = {
   byWorkspace: (workspaceId: string) =>
     ["url-health", "workspace", workspaceId] as const,
 };
+
+export const feedKeys = {
+  all: ["feeds"] as const,
+  byUser: (userId?: string) => ["feeds", userId] as const,
+  detail: (id: string) => ["feeds", "detail", id] as const,
+  entries: (feedId: string) => ["feeds", "entries", feedId] as const,
+};

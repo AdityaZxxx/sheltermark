@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check:urls-health": "node .github/scripts/check-urls.js",
+    "check:urls-health": "bun run .github/scripts/check-urls.js",
     "check:types": "tsc --noEmit",
     "dev": "next dev",
     "build": "next build",
@@ -11,7 +11,8 @@
     "lint": "biome check",
     "format": "biome format --write",
     "prepare": "husky",
-    "knip": "knip"
+    "knip": "knip",
+    "sync-feeds": "bun run scripts/sync-feeds.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

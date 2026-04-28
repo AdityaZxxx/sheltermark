@@ -3,6 +3,7 @@
 import {
   CaretUpDownIcon,
   GearIcon,
+  RssIcon,
   SignOutIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react";
@@ -10,6 +11,7 @@ import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login";
+import { FeedManager } from "~/components/feed/feed-manager";
 import { ShortcutButton } from "~/components/keyboard-shortcuts-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
@@ -31,6 +33,7 @@ interface UserMenuProps {
 export function UserMenu({ user }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedsOpen, setFeedsOpen] = useState(false);
   const { profile } = useProfile();
 
   if (!profile) {
@@ -77,6 +80,15 @@ export function UserMenu({ user }: UserMenuProps) {
             <ShortcutButton />
           </DropdownMenuItem>
 
+          <DropdownMenuItem
+            onClick={() => setFeedsOpen(true)}
+            className="w-full"
+          >
+            <span className="w-full flex items-center gap-2">
+              <RssIcon className="h-4 w-4" /> Subscriptions
+            </span>
+          </DropdownMenuItem>
+
           {profile?.is_public && (
             <DropdownMenuItem className="w-full">
               <Link
@@ -119,6 +131,8 @@ export function UserMenu({ user }: UserMenuProps) {
         onOpenChange={setSettingsOpen}
         user={user}
       />
+
+      <FeedManager open={feedsOpen} onOpenChange={setFeedsOpen} />
     </>
   );
 }
