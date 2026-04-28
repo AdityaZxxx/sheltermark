@@ -3,12 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import { fetchMetadata } from "~/lib/metadata";
 import { parseFeed } from "~/lib/rss-parser";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error(
-    "Missing required env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY",
+    "Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY",
   );
   process.exit(1);
 }
