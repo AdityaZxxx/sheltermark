@@ -34,10 +34,11 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s, transform 0.15s;
     }
     .btn:hover { opacity: 0.9; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .btn-primary { background: #171717; color: #ffffff; }
     @media (prefers-color-scheme: dark) {
       .btn-primary { background: #fafafa; color: #0a0a0a; }
@@ -45,6 +46,13 @@
     .btn-secondary { background: #f5f5f5; color: #171717; margin-top: 8px; }
     @media (prefers-color-scheme: dark) {
       .btn-secondary { background: #262626; color: #fafafa; }
+    }
+    .btn-saved {
+      background: #22c55e !important;
+      color: #ffffff !important;
+    }
+    @media (prefers-color-scheme: dark) {
+      .btn-saved { background: #16a34a !important; }
     }
     .hidden { display: none !important; }
     .auth-section { text-align: center; padding: 16px; }
@@ -65,15 +73,38 @@
       background-position: right 12px center;
       padding-right: 36px;
       cursor: pointer;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     .workspace-select:hover { border-color: #a3a3a3; }
     .workspace-select:focus { outline: none; border-color: #3d3d3d; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
     @media (prefers-color-scheme: dark) {
       .workspace-select { background-color: #1a1a1a; border-color: #404040; color: #fafafa; }
     }
-    .status { font-size: 12px; color: #22c55e; margin-top: 8px; text-align: center; }
-    .error { color: #ef4444; }
+    .status { font-size: 12px; margin-top: 8px; text-align: center; transition: opacity 0.2s; }
+    .status-success { color: #22c55e; }
+    .status-error { color: #ef4444; }
+    .status-info { color: #6b7280; }
+
+    /* Skeleton shimmer */
+    @keyframes shimmer {
+      0% { background-position: -200px 0; }
+      100% { background-position: calc(200px + 100%) 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200px 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      color: transparent !important;
+      user-select: none;
+      pointer-events: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      .skeleton {
+        background: linear-gradient(90deg, #262626 25%, #333 50%, #262626 75%);
+        background-size: 200px 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -100,10 +131,10 @@
         <option value="">Loading...</option>
       </select>
       <button id="save-btn" class="btn btn-primary">Save Current Tab</button>
-      <div id="status"></div>
+      <div id="status" class="status"></div>
     </div>
   </div>
 
-  <script type="module" src="popup.js"></script>
+  <script type="module" src="dist/popup.js"></script>
 </body>
 </html>

@@ -1,6 +1,3 @@
-// Sheltermark X/Twitter Bookmark Capture
-// Content script: captures bookmark events on X/Twitter via DOM listener
-
 (() => {
   const TWEET_URL_PATTERN =
     /^https?:\/\/(x\.com|twitter\.com)\/([^/]+)\/status\/(\d+)/;
@@ -17,7 +14,7 @@
     "/compose",
   ];
 
-  function isCanonicalTweetUrl(url) {
+  function isCanonicalTweetUrl(url: string): boolean {
     if (!url) return false;
     try {
       const parsed = new URL(url);
@@ -29,26 +26,26 @@
     }
   }
 
-  function extractTweetUrl(url) {
+  function extractTweetUrl(url: string): string | null {
     const match = url.match(TWEET_URL_PATTERN);
     if (!match) return null;
-    const domain = match[1];
-    const username = match[2];
-    const tweetId = match[3];
+    const domain = match[1] as string;
+    const username = match[2] as string;
+    const tweetId = match[3] as string;
     return `https://${domain}/${username}/status/${tweetId}`;
   }
 
-  function findBookmarkButtons(root) {
+  function findBookmarkButtons(root: Document | Element): NodeListOf<Element> {
     return root.querySelectorAll(
       '[data-testid="bookmark"], [data-testid="removeBookmark"]',
     );
   }
 
-  function findClosestTweetArticle(el) {
+  function findClosestTweetArticle(el: Element): Element | null {
     return el.closest('article[data-testid="tweet"]');
   }
 
-  function extractTweetUrlFromArticle(article) {
+  function extractTweetUrlFromArticle(article: Element | null): string | null {
     if (!article) return null;
 
     const timeLink = article.querySelector("a time");
@@ -59,9 +56,12 @@
       }
     }
 
-    const links = article.querySelectorAll('a[href*="/status/"]');
-    for (const link of links) {
-      if (isCanonicalTweetUrl(link.href)) {
+    const links = article.querySelectorAll<HTMLAnchorElement>(
+      'a[href*="/status/"]',
+    );
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i];
+      if (link && isCanonicalTweetUrl(link.href)) {
         return extractTweetUrl(link.href);
       }
     }
@@ -69,33 +69,35 @@
     return null;
   }
 
-  function sendBookmarkMessage(tweetUrl) {
+  function sendBookmarkMessage(tweetUrl: string): void {
     chrome.runtime
       .sendMessage({
         type: "X_BOOKMARK_CAPTURED",
         url: tweetUrl,
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error("[Sheltermark] Failed to send message:", error);
       });
   }
 
-  const processedClicks = new WeakSet();
+  const processedClicks = new WeakSet<Element>();
 
-  function attachBookmarkListeners(root) {
+  function attachBookmarkListeners(root: Document | Element): void {
     const buttons = findBookmarkButtons(root);
-    for (const btn of buttons) {
-      if (processedClicks.has(btn)) continue;
+    for (let i = 0; i < buttons.length; i++) {
+      const btn = buttons[i];
+      if (!btn || processedClicks.has(btn)) continue;
       processedClicks.add(btn);
 
       btn.addEventListener(
         "click",
-        (e) => {
+        (e: Event) => {
+          const target = e.currentTarget as Element;
           const isBookmarkAction =
-            e.currentTarget.getAttribute("data-testid") === "bookmark";
+            target.getAttribute("data-testid") === "bookmark";
           if (!isBookmarkAction) return;
 
-          const article = findClosestTweetArticle(e.currentTarget);
+          const article = findClosestTweetArticle(target);
           const tweetUrl = extractTweetUrlFromArticle(article);
           if (!tweetUrl) return;
 
@@ -108,13 +110,12 @@
 
   attachBookmarkListeners(document);
 
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType !== Node.ELEMENT_NODE) continue;
-        attachBookmarkListeners(node);
-      }
-    }
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  const observer = new MutationObserver(() => {
+    if (debounceTimer !== null) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      attachBookmarkListeners(document);
+    }, 400);
   });
 
   observer.observe(document.body, { childList: true, subtree: true });

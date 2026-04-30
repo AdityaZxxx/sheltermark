@@ -1,17 +1,15 @@
-// Sheltermark Extension - Options Page
-
 import { DEFAULT_BASE_URL } from "./constants.js";
 import { getBaseUrl, setBaseUrl } from "./storage.js";
 
-const baseUrlInput = document.getElementById("base-url");
-const saveBtn = document.getElementById("save-btn");
-const resetBtn = document.getElementById("reset-btn");
-const statusEl = document.getElementById("status");
+const baseUrlInput = document.getElementById("base-url") as HTMLInputElement;
+const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
+const resetBtn = document.getElementById("reset-btn") as HTMLButtonElement;
+const statusEl = document.getElementById("status") as HTMLElement;
 
-let statusTimer = null;
+let statusTimer: ReturnType<typeof setTimeout> | null = null;
 
-function showStatus(message, isError = false) {
-  clearTimeout(statusTimer);
+function showStatus(message: string, isError = false): void {
+  if (statusTimer !== null) clearTimeout(statusTimer);
   statusEl.textContent = message;
   statusEl.className = isError ? "error visible" : "visible";
   statusTimer = setTimeout(() => {
@@ -19,24 +17,23 @@ function showStatus(message, isError = false) {
   }, 2500);
 }
 
-async function load() {
+async function load(): Promise<void> {
   baseUrlInput.value = await getBaseUrl();
 }
 
-async function save() {
+async function save(): Promise<void> {
   const raw = baseUrlInput.value.trim();
   if (!raw) {
     showStatus("URL cannot be empty", true);
     return;
   }
 
-  let normalized;
+  let normalized: string;
   try {
     const parsed = new URL(raw);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       throw new Error("Invalid protocol");
     }
-    // Strip trailing slash for consistency
     normalized = parsed.href.replace(/\/$/, "");
   } catch {
     showStatus("Invalid URL", true);
@@ -48,7 +45,7 @@ async function save() {
   showStatus("Saved");
 }
 
-async function reset() {
+async function reset(): Promise<void> {
   baseUrlInput.value = DEFAULT_BASE_URL;
   await setBaseUrl(DEFAULT_BASE_URL);
   showStatus("Reset to default");
@@ -56,7 +53,7 @@ async function reset() {
 
 saveBtn.addEventListener("click", save);
 resetBtn.addEventListener("click", reset);
-baseUrlInput.addEventListener("keydown", (e) => {
+baseUrlInput.addEventListener("keydown", (e: KeyboardEvent) => {
   if (e.key === "Enter") save();
 });
 
