@@ -1,6 +1,8 @@
 "use server";
 
+import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
+import type { Profile } from "~/lib/schemas/profile";
 import { createAdminClient } from "~/utils/supabase/server";
 import {
   type UpdateProfileInput,
@@ -39,13 +41,15 @@ async function deleteAvatarFromStorage(
   }
 }
 
-export async function updateProfile(data: UpdateProfileInput) {
+export async function updateProfile(
+  data: UpdateProfileInput,
+): Promise<ActionResult<{ message: string }>> {
   const { user, supabase } = await requireAuth();
 
   const validated = updateProfileSchema.safeParse(data);
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message };
+    return { success: false, error: validated.error.issues[0].message };
   }
 
   const { name } = validated.data;
@@ -55,7 +59,7 @@ export async function updateProfile(data: UpdateProfileInput) {
   });
 
   if (authError) {
-    return { error: authError.message };
+    return { success: false, error: authError.message };
   }
 
   const { error } = await supabase
@@ -66,19 +70,23 @@ export async function updateProfile(data: UpdateProfileInput) {
     .eq("id", user.id);
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
-
-  return { success: true, message: "Profile updated successfully", user };
+  return {
+    success: true,
+    data: { message: "Profile updated successfully" },
+  };
 }
 
-export async function updatePublicProfile(data: UpdatePublicProfileInput) {
+export async function updatePublicProfile(
+  data: UpdatePublicProfileInput,
+): Promise<ActionResult<{ message: string }>> {
   const { user, supabase } = await requireAuth();
 
   const validated = updatePublicProfileSchema.safeParse(data);
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message };
+    return { success: false, error: validated.error.issues[0].message };
   }
 
   let { username, is_public, bio, github_username, x_username, website } =
@@ -98,11 +106,11 @@ export async function updatePublicProfile(data: UpdatePublicProfileInput) {
   // PGRST116 = no rows found (username is available)
   // Any other error or if profile exists = username taken
   if (checkError && checkError.code !== "PGRST116") {
-    return { error: "Error checking username availability" };
+    return { success: false, error: "Error checking username availability" };
   }
 
   if (existingProfile) {
-    return { error: "Username is already taken" };
+    return { success: false, error: "Username is already taken" };
   }
 
   // Helper to normalize URLs
@@ -126,13 +134,18 @@ export async function updatePublicProfile(data: UpdatePublicProfileInput) {
     .eq("id", user.id);
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 
-  return { success: true, message: "Public profile updated successfully" };
+  return {
+    success: true,
+    data: { message: "Public profile updated successfully" },
+  };
 }
 
-export async function getProfile() {
+export async function getProfile(): Promise<
+  ActionResult<{ profile: Profile }>
+> {
   const { user, supabase } = await requireAuth();
 
   const { data: profile, error } = await supabase
@@ -142,10 +155,10 @@ export async function getProfile() {
     .single();
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 
-  return { profile };
+  return { success: true, data: { profile } };
 }
 
 export async function checkUsernameAvailability(data: {
@@ -157,7 +170,7 @@ export async function checkUsernameAvailability(data: {
   let { username, current_username } = data;
 
   if (!username || username.length < 3) {
-    return { error: "Username too short" };
+    return { success: false, error: "Username too short" };
   }
 
   // Normalize username to lowercase
@@ -165,7 +178,7 @@ export async function checkUsernameAvailability(data: {
 
   // Skip if same as user's current username from profiles table
   if (current_username && username === current_username.toLowerCase()) {
-    return { available: true };
+    return { success: true, data: { available: true } };
   }
 
   // Check if username is already taken by another user (case-insensitive)
@@ -178,35 +191,43 @@ export async function checkUsernameAvailability(data: {
 
   // If error and not "no rows found"
   if (error && error.code !== "PGRST116") {
-    return { error: error.message, available: false };
+    return { success: false, error: error.message };
   }
 
   if (existingProfile) {
-    return { available: false, message: "Username is already taken" };
+    return {
+      success: true,
+      data: { available: false, message: "Username is already taken" },
+    };
   }
-
-  return { available: true, message: "Username is available" };
+  return {
+    success: true,
+    data: { available: true, message: "Username is available" },
+  };
 }
 
-export async function uploadAvatar(formData: FormData) {
+export async function uploadAvatar(
+  formData: FormData,
+): Promise<ActionResult<{ avatarUrl: string }>> {
   const { user, supabase } = await requireAuth();
 
   const file = formData.get("file") as File;
 
   if (!file) {
-    return { error: "No file provided" };
+    return { success: false, error: "No file provided" };
   }
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!allowedTypes.includes(file.type)) {
     return {
+      success: false,
       error: "Invalid file type. Only JPEG, PNG, and WebP are allowed",
     };
   }
 
   const maxSize = 2 * 1024 * 1024; // 2MB
   if (file.size > maxSize) {
-    return { error: "File too large. Maximum size is 2MB" };
+    return { success: false, error: "File too large. Maximum size is 2MB" };
   }
 
   try {
@@ -241,7 +262,7 @@ export async function uploadAvatar(formData: FormData) {
       });
 
     if (uploadError) {
-      return { error: uploadError.message };
+      return { success: false, error: uploadError.message };
     }
 
     // Delete old avatar after successful upload
@@ -267,7 +288,7 @@ export async function uploadAvatar(formData: FormData) {
     });
 
     if (authError) {
-      return { error: authError.message };
+      return { success: false, error: authError.message };
     }
 
     const { error: profileError } = await supabase
@@ -279,17 +300,16 @@ export async function uploadAvatar(formData: FormData) {
       .eq("id", user.id);
 
     if (profileError) {
-      return { error: profileError.message };
+      return { success: false, error: profileError.message };
     }
-
-    return { success: true, avatarUrl };
+    return { success: true, data: { avatarUrl } };
   } catch (error) {
     console.error("Avatar upload error:", error);
-    return { error: "Failed to upload avatar" };
+    return { success: false, error: "Failed to upload avatar" };
   }
 }
 
-export async function deleteAvatar() {
+export async function deleteAvatar(): Promise<ActionResult<null>> {
   const { user, supabase } = await requireAuth();
 
   try {
@@ -318,7 +338,7 @@ export async function deleteAvatar() {
     });
 
     if (authError) {
-      return { error: authError.message };
+      return { success: false, error: authError.message };
     }
 
     const { error: profileError } = await supabase
@@ -330,17 +350,17 @@ export async function deleteAvatar() {
       .eq("id", user.id);
 
     if (profileError) {
-      return { error: profileError.message };
+      return { success: false, error: profileError.message };
     }
 
-    return { success: true };
+    return { success: true, data: null };
   } catch (error) {
     console.error("Avatar delete error:", error);
-    return { error: "Failed to delete avatar" };
+    return { success: false, error: "Failed to delete avatar" };
   }
 }
 
-export async function deleteAccount() {
+export async function deleteAccount(): Promise<ActionResult<null>> {
   const { user } = await requireAuth();
   const adminClient = await createAdminClient();
 
@@ -352,6 +372,7 @@ export async function deleteAccount() {
 
     if (deleteProfileError) {
       return {
+        success: false,
         error: `Failed to delete profile: ${deleteProfileError.message}`,
       };
     }
@@ -373,13 +394,13 @@ export async function deleteAccount() {
 
     if (deleteUserError) {
       return {
+        success: false,
         error: `Failed to delete auth user: ${deleteUserError.message}`,
       };
     }
-
-    return { success: true };
+    return { success: true, data: null };
   } catch (error) {
     console.error("Delete account error:", error);
-    return { error: "Failed to delete account" };
+    return { success: false, error: "Failed to delete account" };
   }
 }

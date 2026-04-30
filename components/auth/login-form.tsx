@@ -41,7 +41,7 @@ export function LoginForm({
     }
     const result = await loginWithEmail(formData);
 
-    if (result?.error) {
+    if (!result.success) {
       setError(result.error);
       setIsLoadingEmail(false);
     }

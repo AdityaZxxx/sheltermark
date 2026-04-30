@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchMetadata } from "~/lib/metadata";
+import type { Bookmark } from "~/lib/schemas/bookmark";
 import { normalizeUrl } from "~/lib/utils";
-import type { Bookmark } from "./schemas/bookmark";
 
 type InsertBookmarkParams = {
   url: string;
@@ -13,11 +13,6 @@ type InsertBookmarkResult =
   | { success: true; data: Bookmark }
   | { success: false; duplicate: true }
   | { success: false; duplicate?: false; error: string };
-/**
- * Shared bookmark insert service — used by both server actions and API route handlers.
- * Performs duplicate check + metadata fetch in parallel before inserting.
- * workspaceId=null means "no workspace" (stored as null in DB).
- */
 export async function insertBookmark(
   supabase: SupabaseClient,
   userId: string,
@@ -25,7 +20,6 @@ export async function insertBookmark(
 ): Promise<InsertBookmarkResult> {
   const normalizedUrl = normalizeUrl(url);
 
-  // Build duplicate check query using normalized URL
   let existingQuery = supabase
     .from("bookmarks")
     .select("id")
@@ -38,7 +32,6 @@ export async function insertBookmark(
     existingQuery = existingQuery.is("workspace_id", null);
   }
 
-  // Parallel: duplicate check + metadata fetch — no sequential waiting
   const [existing, metadata] = await Promise.all([
     existingQuery.maybeSingle(),
     fetchMetadata(url),

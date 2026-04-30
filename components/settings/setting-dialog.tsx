@@ -58,7 +58,7 @@ export function SettingsDialog({
     try {
       const result = await deleteAccount();
 
-      if (result.error) {
+      if (!result.success) {
         toast.error(result.error);
         throw new Error(result.error);
       }

@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { workspace } = await searchParams;
   const result = await getPublicProfile(username);
 
-  if (result.error || !result.profile) {
+  if (!result.success || !result.data) {
     return {
       title: "Profile not found — Sheltermark",
       openGraph: {
@@ -33,7 +33,19 @@ export async function generateMetadata({
     };
   }
 
-  const { profile, workspaces } = result;
+  // Data is guaranteed to exist here; narrow profile to non-nullable
+  const data = result.data;
+  const profile = data?.profile;
+  if (!profile) {
+    return {
+      title: "Profile not found — Sheltermark",
+      openGraph: {
+        title: "Profile not found — Sheltermark",
+        images: [`${getBaseUrl()}/api/og?title=Profile%20not%20found`],
+      },
+    };
+  }
+  const workspaces = data?.workspaces ?? [];
   const displayName = profile.name;
   let title: string;
   let description: string;
@@ -83,7 +95,7 @@ export default async function PublicProfilePage({
   const result = await getPublicProfile(username);
   const { user } = await requireAuthSafe();
 
-  if (result.error || !result.profile) {
+  if (!result.success || !result.data || !result.data.profile) {
     return (
       <div className="flex flex-col mx-auto items-center justify-center h-screen">
         <h3 className="text-foreground text-2xl">Profile not found</h3>
@@ -94,7 +106,19 @@ export default async function PublicProfilePage({
     );
   }
 
-  const { profile, workspaces } = result;
+  const data = result.data;
+  const profile = data?.profile;
+  if (!profile) {
+    return (
+      <div className="flex flex-col mx-auto items-center justify-center h-screen">
+        <h3 className="text-foreground text-2xl">Profile not found</h3>
+        <p className="text-muted-foreground">
+          Please check the username and try again
+        </p>
+      </div>
+    );
+  }
+  const workspaces = data?.workspaces ?? [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

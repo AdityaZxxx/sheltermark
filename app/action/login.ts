@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { ActionResult } from "~/lib/action-result";
 import { createClient } from "~/utils/supabase/server";
 
 const loginSchema = z.object({
@@ -9,7 +10,9 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-export async function loginWithGoogle(next?: string) {
+export async function loginWithGoogle(
+  next?: string,
+): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
   const redirectUrl = next
@@ -30,9 +33,13 @@ export async function loginWithGoogle(next?: string) {
   if (data.url) {
     redirect(data.url);
   }
+
+  return { success: true, data: null };
 }
 
-export async function loginWithEmail(formData: FormData) {
+export async function loginWithEmail(
+  formData: FormData,
+): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
   const next = formData.get("next")?.toString();
@@ -42,7 +49,7 @@ export async function loginWithEmail(formData: FormData) {
   const validated = loginSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message };
+    return { success: false, error: validated.error.issues[0].message };
   }
 
   const { email, password } = validated.data;
@@ -53,11 +60,13 @@ export async function loginWithEmail(formData: FormData) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 
   const redirectUrl = next || "/dashboard";
   redirect(redirectUrl);
+
+  return { success: true, data: null };
 }
 
 export async function logout() {

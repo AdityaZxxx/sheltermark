@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
   let display_name: string | undefined;
 
   if (username) {
-    display_name = (await getProfileDisplayName({ username })) || undefined;
+    const res = await getProfileDisplayName({ username });
+    // unwrap ActionResult
+    display_name = res.success ? (res.data ?? undefined) : undefined;
   }
 
   return new ImageResponse(

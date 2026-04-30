@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
+import { Dialog, DialogContent } from "~/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +18,11 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Separator } from "~/components/ui/separator";
 import { useFeeds } from "~/hooks/use-feeds";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import type { Feed } from "~/lib/schemas/feed";
 import { getPastelColor } from "~/lib/utils";
-import { Dialog, DialogContent } from "../ui/dialog";
-import { Separator } from "../ui/separator";
 
 interface FeedManagerProps {
   open: boolean;
@@ -29,8 +30,9 @@ interface FeedManagerProps {
 }
 
 export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
-  const { feeds, subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } =
-    useFeeds();
+  const feedsHook = useFeeds();
+  const feeds = feedsHook.feeds as Feed[];
+  const { subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } = feedsHook;
   const { workspaces } = useWorkspaces();
   const [url, setUrl] = useState("");
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);

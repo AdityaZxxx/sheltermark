@@ -19,7 +19,11 @@ const generateTempId = () =>
 
 const feedsQueryOptions = (userId: string | undefined) => ({
   queryKey: feedKeys.byUser(userId),
-  queryFn: getFeeds,
+  queryFn: async (): Promise<Feed[]> => {
+    const result = await getFeeds();
+    if (!result.success) throw new Error(result.error);
+    return result.data;
+  },
   enabled: !!userId,
   staleTime: 1000 * 60 * 5,
   gcTime: 1000 * 60 * 30,
@@ -33,7 +37,7 @@ export function useFeeds() {
 
   const queryKey = useMemo(() => feedKeys.byUser(user?.id), [user?.id]);
 
-  const { data: feeds = [], isLoading: isFeedsLoading } = useQuery<Feed[]>(
+  const { data: feeds = [], isLoading: isFeedsLoading } = useQuery(
     feedsQueryOptions(user?.id),
   );
 
@@ -77,11 +81,11 @@ export function useFeeds() {
       }
       toast.error("Failed to subscribe to feed");
     },
-    onSuccess: (data) => {
-      if (data.success) {
+    onSuccess: (result) => {
+      if (result.success) {
         toast.success("Subscribed to feed");
       } else {
-        toast.error(data.error);
+        toast.error(result.error);
       }
     },
     onSettled: () => {
@@ -112,9 +116,9 @@ export function useFeeds() {
       }
       toast.error("Failed to refresh feed");
     },
-    onSuccess: (data) => {
-      if (!data.success) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error);
       }
     },
     onSettled: () => {
@@ -141,11 +145,11 @@ export function useFeeds() {
       }
       toast.error("Failed to delete feed");
     },
-    onSuccess: (data) => {
-      if (data.success) {
+    onSuccess: (result) => {
+      if (result.success) {
         toast.success("Feed deleted");
       } else {
-        toast.error(data.error);
+        toast.error(result.error);
       }
     },
     onSettled: () => {
@@ -155,14 +159,17 @@ export function useFeeds() {
 
   const syncAllMutation = useMutation({
     mutationFn: syncAllFeeds,
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(`Synced ${data.synced} feeds`);
-        if (data.errors.length > 0) {
-          for (const err of data.errors) {
+    onSuccess: (result) => {
+      if (result.success) {
+        const d = result.data;
+        toast.success(`Synced ${d?.synced ?? 0} feeds`);
+        if (d?.errors?.length) {
+          for (const err of d.errors) {
             toast.error(err);
           }
         }
+      } else {
+        toast.error(result.error);
       }
     },
     onError: (error) => {

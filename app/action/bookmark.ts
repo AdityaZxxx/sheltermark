@@ -1,7 +1,8 @@
 "use server";
 
+import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
-import { insertBookmark } from "~/lib/bookmark";
+import { insertBookmark } from "~/lib/bookmarks";
 import { fetchMetadata } from "~/lib/metadata";
 import {
   type Bookmark,
@@ -17,23 +18,11 @@ import {
   bookmarkRenameSchema,
 } from "~/lib/schemas/bookmark";
 
-type ActionResult<T = unknown> =
-  | { success: true; data: T }
-  | { success: false; error: string };
-
-type AddBookmarkResult = ActionResult<Bookmark>;
-type DeleteBookmarksResult = ActionResult<null>;
-type MoveBookmarksResult = ActionResult<{
-  movedCount: number;
-  skippedCount: number;
-}>;
-type RenameBookmarkResult = ActionResult<null>;
-type RefetchMetadataResult = ActionResult<null>;
-type GetBookmarksResult = ActionResult<Bookmark[]>;
+// Replaced local ActionResult aliases with shared ActionResult type
 
 export async function addBookmark(
   data: BookmarkCreateInput,
-): Promise<AddBookmarkResult> {
+): Promise<ActionResult<Bookmark>> {
   const validated = bookmarkCreateSchema.safeParse(data);
 
   if (!validated.success) {
@@ -58,7 +47,7 @@ export async function addBookmark(
 
 export async function deleteBookmarks({
   ids,
-}: BookmarkDeleteInput): Promise<DeleteBookmarksResult> {
+}: BookmarkDeleteInput): Promise<ActionResult<null>> {
   const validated = bookmarkDeleteSchema.safeParse({ ids });
 
   if (!validated.success) {
@@ -81,7 +70,9 @@ export async function deleteBookmarks({
 export async function moveBookmarks({
   ids,
   targetWorkspaceId,
-}: BookmarkMoveInput): Promise<MoveBookmarksResult> {
+}: BookmarkMoveInput): Promise<
+  ActionResult<{ movedCount: number; skippedCount: number }>
+> {
   const validated = bookmarkMoveSchema.safeParse({ ids, targetWorkspaceId });
 
   if (!validated.success) {
@@ -161,7 +152,7 @@ export async function moveBookmarks({
 export async function renameBookmark({
   id,
   title,
-}: BookmarkRenameInput): Promise<RenameBookmarkResult> {
+}: BookmarkRenameInput): Promise<ActionResult<null>> {
   const validated = bookmarkRenameSchema.safeParse({ id, title });
 
   if (!validated.success) {
@@ -186,7 +177,7 @@ export async function renameBookmark({
 
 export async function refetchBookmarkMetadata(
   id: BookmarkRefetchMetadataInput,
-): Promise<RefetchMetadataResult> {
+): Promise<ActionResult<null>> {
   const validated = bookmarkRefetchMetadataSchema.safeParse(id);
 
   if (!validated.success) {
@@ -224,7 +215,7 @@ export async function refetchBookmarkMetadata(
 
 export async function getBookmarks(
   workspaceId?: string,
-): Promise<GetBookmarksResult> {
+): Promise<ActionResult<Bookmark[]>> {
   const { user, supabase } = await requireAuth();
 
   let query = supabase

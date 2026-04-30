@@ -2,20 +2,23 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { ActionResult } from "~/lib/action-result";
 import { createClient } from "~/utils/supabase/server";
 
 const resetPasswordSchema = z.object({
   email: z.email("Invalid email address"),
 });
 
-export async function resetPasswordForEmail(formData: FormData) {
+export async function resetPasswordForEmail(
+  formData: FormData,
+): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
   const rawData = Object.fromEntries(formData.entries());
   const validated = resetPasswordSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message };
+    return { success: false, error: validated.error.issues[0].message };
   }
 
   const { email } = validated.data;
@@ -25,10 +28,10 @@ export async function resetPasswordForEmail(formData: FormData) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 
-  return { success: true };
+  return { success: true, data: null };
 }
 
 const updatePasswordSchema = z
@@ -41,14 +44,16 @@ const updatePasswordSchema = z
     path: ["confirmPassword"],
   });
 
-export async function updatePassword(formData: FormData) {
+export async function updatePassword(
+  formData: FormData,
+): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
   const rawData = Object.fromEntries(formData.entries());
   const validated = updatePasswordSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message };
+    return { success: false, error: validated.error.issues[0].message };
   }
 
   const { password } = validated.data;
@@ -56,8 +61,9 @@ export async function updatePassword(formData: FormData) {
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 
   redirect("/dashboard");
+  return { success: true, data: null };
 }

@@ -105,7 +105,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       });
 
       if (result.success) {
-        setPreview(result);
+        setPreview(result.data);
         setStep("preview");
       } else {
         toast.error(result.error);
@@ -148,12 +148,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       }
 
+      const importedData = importResult.data;
       setResult({
-        imported: importResult.imported,
-        skipped: importResult.skipped,
+        imported: importedData?.imported ?? 0,
+        skipped: importedData?.skipped ?? 0,
       });
       setStep("done");
-      toast.success(`Imported ${importResult.imported} bookmarks`);
+      toast.success(`Imported ${importedData?.imported ?? 0} bookmarks`);
     } catch {
       toast.error("Import failed");
       setStep("upload");
@@ -183,7 +184,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       });
 
       if (result.success) {
-        setPreview(result);
+        setPreview(result.data);
       }
       setIsCheckingDuplicates(false);
     };
