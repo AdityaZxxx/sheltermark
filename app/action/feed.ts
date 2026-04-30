@@ -1,5 +1,6 @@
 "use server";
 
+import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
 import { fetchMetadata } from "~/lib/metadata";
 import { type ParsedFeed, parseFeed } from "~/lib/rss-parser";
@@ -10,11 +11,9 @@ import {
   feedRefreshSchema,
 } from "~/lib/schemas/feed";
 
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+// Use shared ActionResult type
 
-export async function getFeeds(): Promise<Feed[]> {
+export async function getFeeds(): Promise<ActionResult<Feed[]>> {
   const { user, supabase } = await requireAuth();
 
   const { data, error } = await supabase
@@ -23,9 +22,9 @@ export async function getFeeds(): Promise<Feed[]> {
     .order("created_at", { ascending: false })
     .eq("user_id", user.id);
 
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, error: error.message };
 
-  return data || [];
+  return { success: true, data: data ?? [] };
 }
 
 export async function subscribeToFeed(
@@ -226,9 +225,7 @@ export async function refreshFeed(id: string): Promise<ActionResult<Feed>> {
   return { success: true, data: { ...feed, title: feedData.title } };
 }
 
-export async function deleteFeed(
-  id: string,
-): Promise<{ success: boolean; error?: string }> {
+export async function deleteFeed(id: string): Promise<ActionResult<null>> {
   const { user, supabase } = await requireAuth();
 
   const validated = feedDeleteSchema.safeParse({ id });
@@ -244,14 +241,12 @@ export async function deleteFeed(
 
   if (error) return { success: false, error: error.message };
 
-  return { success: true };
+  return { success: true, data: null };
 }
 
-export async function syncAllFeeds(): Promise<{
-  success: boolean;
-  synced: number;
-  errors: string[];
-}> {
+export async function syncAllFeeds(): Promise<
+  ActionResult<{ synced: number; errors: string[] }>
+> {
   const { user, supabase } = await requireAuth();
 
   const { data: feeds } = await supabase
@@ -260,7 +255,7 @@ export async function syncAllFeeds(): Promise<{
     .eq("user_id", user.id);
 
   if (!feeds || feeds.length === 0) {
-    return { success: true, synced: 0, errors: [] };
+    return { success: true, data: { synced: 0, errors: [] } };
   }
 
   let synced = 0;
@@ -275,5 +270,5 @@ export async function syncAllFeeds(): Promise<{
     }
   }
 
-  return { success: true, synced, errors };
+  return { success: true, data: { synced, errors } };
 }

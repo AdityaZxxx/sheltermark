@@ -1,4 +1,4 @@
-name: Weekly Broken URL Checker
+name: Check URLs Health
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: bun install @supabase/supabase-js dotenv
 
-      - name: Check broken URLs
+      - name: Check URLs health
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

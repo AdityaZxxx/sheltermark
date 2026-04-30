@@ -1,51 +1,52 @@
-// Sheltermark Chrome Extension - Popup Script
+import {
+  type AuthResult,
+  type CheckResult,
+  MESSAGE_TYPES,
+  type TabInfo,
+  type Workspace,
+} from "./constants.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const { getBaseUrl, getLastWorkspace, setLastWorkspace } = await import(
     "./storage.js"
   );
-  const { MESSAGE_TYPES } = await import("./constants.js");
   const baseUrl = await getBaseUrl();
 
-  const authSection = document.getElementById("auth-section");
-  const mainSection = document.getElementById("main-section");
-  const workspaceSelect = document.getElementById("workspace-select");
-  const saveBtn = document.getElementById("save-btn");
-  const authBtn = document.getElementById("auth-btn");
-  const statusDiv = document.getElementById("status");
+  const authSection = document.getElementById("auth-section") as HTMLElement;
+  const mainSection = document.getElementById("main-section") as HTMLElement;
+  const workspaceSelect = document.getElementById(
+    "workspace-select",
+  ) as HTMLSelectElement;
+  const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
+  const authBtn = document.getElementById("auth-btn") as HTMLButtonElement;
+  const statusDiv = document.getElementById("status") as HTMLElement;
 
-  let workspaces = [];
-  let selectedWorkspaceId = null;
-  let currentTabInfo = null;
+  let workspaces: Workspace[] = [];
+  let selectedWorkspaceId: string | null = null;
+  let currentTabInfo: TabInfo | null = null;
   let isSaved = false;
-  // Generation counter prevents stale checkAlreadySaved responses from applying
   let checkGeneration = 0;
 
-  // Fetch tab info + auth in parallel — no sequential waiting
+  mainSection.classList.remove("hidden");
+
   const [auth, tabInfo] = await Promise.all([checkAuth(), getCurrentTabInfo()]);
   currentTabInfo = tabInfo;
+  updateSaveButton();
 
   if (!auth.authenticated) {
     showAuthRequired();
     return;
   }
 
-  showMainSection();
-  await loadWorkspaces();
-  updateSaveButton();
+  await Promise.all([loadWorkspaces(), checkAlreadySaved()]);
 
-  // Keyboard-first: focus save button immediately
+  updateSaveButton();
   saveBtn.focus();
 
-  // Non-blocking: check already-saved state after UI is ready
-  checkAlreadySaved();
-
-  // Auth button
   authBtn.addEventListener("click", () => {
     chrome.tabs.create({ url: `${baseUrl}/login` });
   });
 
-  // Save button
   saveBtn.addEventListener("click", async () => {
     if (isSaved || saveBtn.disabled) return;
 
@@ -55,58 +56,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // Instant feedback — disable button while in-flight
-    saveBtn.disabled = true;
-    saveBtn.textContent = "Saving…";
-    statusDiv.textContent = "";
-
-    let result;
-    try {
-      result = await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.SAVE_BOOKMARK,
-        data: {
-          url,
-          title: currentTabInfo?.title ?? null,
-          workspaceId: selectedWorkspaceId,
-        },
-      });
-    } catch {
-      // SW unavailable — re-enable so user can retry
-      saveBtn.disabled = false;
-      updateSaveButton();
-      showError("Extension error, try again");
-      return;
-    }
-
-    if (result?.duplicate) {
-      // Stay open — give clear in-popup feedback
-      isSaved = true;
-      saveBtn.textContent = "Already saved";
-      showInfo("Already saved in this workspace");
-      return;
-    }
-
-    if (result?.needsLogin) {
-      saveBtn.disabled = false;
-      updateSaveButton();
-      showError("Session expired — please log in again");
-      return;
-    }
-
-    if (!result?.success) {
-      saveBtn.disabled = false;
-      updateSaveButton();
-      showError(result?.error || "Failed to save");
-      return;
-    }
-
-    // Happy path — close after brief confirmation
     isSaved = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saved!";
     showSuccess("Saved!");
-    setTimeout(() => window.close(), 900);
+
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.SAVE_BOOKMARK,
+      data: {
+        url,
+        title: currentTabInfo?.title ?? null,
+        workspaceId: selectedWorkspaceId,
+      },
+    });
+
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED,
+      data: { url, workspaceId: selectedWorkspaceId },
+    });
+
+    setTimeout(() => window.close(), 400);
   });
 
-  // Workspace change — re-check saved state for new workspace
   workspaceSelect.addEventListener("change", async () => {
     selectedWorkspaceId = workspaceSelect.value || null;
     if (selectedWorkspaceId) {
@@ -117,22 +88,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     checkAlreadySaved();
   });
 
-  async function checkAuth() {
+  async function checkAuth(): Promise<AuthResult> {
     try {
       const response = await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.CHECK_AUTH,
       });
-      return response || { authenticated: false };
+      return (response as AuthResult) || { authenticated: false };
     } catch {
       return { authenticated: false };
     }
   }
 
-  async function loadWorkspaces() {
+  async function loadWorkspaces(): Promise<void> {
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = (await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.GET_WORKSPACES,
-      });
+      })) as { workspaces?: Workspace[] };
+
       workspaces = response.workspaces || [];
 
       workspaceSelect.innerHTML = "";
@@ -142,10 +114,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      // Single workspace — hide the select, no decision needed
       if (workspaces.length === 1) {
         workspaceSelect.classList.add("hidden");
-        selectedWorkspaceId = workspaces[0].id;
+        selectedWorkspaceId = workspaces[0]?.id ?? null;
         await setLastWorkspace(selectedWorkspaceId);
         return;
       }
@@ -174,39 +145,56 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  async function checkAlreadySaved() {
+  async function checkAlreadySaved(): Promise<void> {
     const url = currentTabInfo?.url;
     if (!url || !selectedWorkspaceId) return;
     if (!url.startsWith("http://") && !url.startsWith("https://")) return;
 
-    // Capture generation before async call — discard stale responses
     const generation = ++checkGeneration;
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const cached = (await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.CHECK_BOOKMARK_CACHED,
+        data: { url, workspaceId: selectedWorkspaceId },
+      })) as CheckResult | undefined;
+
+      if (generation !== checkGeneration) return;
+      if (cached?.saved) {
+        setAlreadySaved();
+        return;
+      }
+    } catch {
+      // fallback to network
+    }
+
+    try {
+      const response = (await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.CHECK_BOOKMARK,
         data: { url, workspaceId: selectedWorkspaceId },
-      });
+      })) as CheckResult | undefined;
 
-      // If workspace changed while request was in-flight, ignore this response
       if (generation !== checkGeneration) return;
 
       if (response?.saved) {
-        isSaved = true;
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Already saved";
-        statusDiv.textContent = "";
+        setAlreadySaved();
       } else {
         isSaved = false;
         saveBtn.disabled = false;
         updateSaveButton();
       }
     } catch {
-      // Non-critical — silently fail, user can still try to save
+      // silent
     }
   }
 
-  function updateSaveButton() {
+  function setAlreadySaved(): void {
+    isSaved = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Already saved";
+    statusDiv.textContent = "";
+  }
+
+  function updateSaveButton(): void {
     if (isSaved) return;
     const title = currentTabInfo?.title;
     if (title) {
@@ -218,42 +206,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function getCurrentTabInfo() {
+  function getCurrentTabInfo(): Promise<TabInfo | null> {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
         { type: MESSAGE_TYPES.GET_TAB_INFO },
-        (response) => {
+        (response: unknown) => {
           if (chrome.runtime.lastError) {
             resolve(null);
           } else {
-            resolve(response);
+            resolve((response as TabInfo) ?? null);
           }
         },
       );
     });
   }
 
-  function showAuthRequired() {
+  function showAuthRequired(): void {
     authSection.classList.remove("hidden");
     mainSection.classList.add("hidden");
   }
 
-  function showMainSection() {
-    authSection.classList.add("hidden");
-    mainSection.classList.remove("hidden");
-  }
-
-  function showError(msg) {
+  function showError(msg: string): void {
     statusDiv.textContent = msg;
     statusDiv.style.color = "#ef4444";
   }
 
-  function showInfo(msg) {
-    statusDiv.textContent = msg;
-    statusDiv.style.color = "#6b7280";
-  }
-
-  function showSuccess(msg) {
+  function showSuccess(msg: string): void {
     statusDiv.textContent = msg;
     statusDiv.style.color = "#22c55e";
   }

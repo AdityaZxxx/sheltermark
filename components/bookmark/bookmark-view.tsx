@@ -6,10 +6,11 @@ import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkGlobalShortcuts } from "~/hooks/use-bookmark-global-shortcuts";
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
-import { useBookmarks } from "~/hooks/use-bookmarks";
+import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
 import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import type { Bookmark } from "~/lib/schemas/bookmark";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
 import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
@@ -29,10 +30,19 @@ export function BookmarkView() {
     sort,
     setSort,
     invalidate,
-    moveBookmarks,
-    addBookmark,
-    refetchBookmarkMetadata,
   } = useBookmarks(currentWorkspace?.id);
+
+  // Ensure mutation return shape is correctly typed
+  const mutations = useBookmarkMutations();
+  const { addBookmark, moveBookmarks, refetchBookmarkMetadata } =
+    mutations as unknown as {
+      addBookmark: (payload: { url: string; workspaceId: string }) => void;
+      moveBookmarks: (payload: {
+        ids: string[];
+        targetWorkspaceId: string;
+      }) => void;
+      refetchBookmarkMetadata: (payload: { id: string }) => void;
+    };
 
   const selection = useBookmarkSelection();
   const dialogs = useBookmarkDialogs();
@@ -58,7 +68,8 @@ export function BookmarkView() {
     selectedIds: selection.selectedIds,
     filteredBookmarks,
     currentWorkspace,
-    workspaces,
+    // Cast to the expected type to satisfy TS after hook fixes
+    workspaces: workspaces as WorkspaceWithCount[],
     addBookmark,
     moveBookmarks,
     refetchBookmarkMetadata,

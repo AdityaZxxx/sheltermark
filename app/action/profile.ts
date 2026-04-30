@@ -1,3 +1,4 @@
+import type { ActionResult } from "~/lib/action-result";
 import { requireAuthSafe } from "~/lib/auth";
 import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark";
 import {
@@ -7,13 +8,13 @@ import {
 
 export async function getProfileDisplayName(username: {
   username: string;
-}): Promise<string | null> {
+}): Promise<ActionResult<string | null>> {
   const { supabase } = await requireAuthSafe();
 
   const validateUsername = getProfileByUsernameSchema.safeParse(username);
 
   if (!validateUsername.success) {
-    return null;
+    return { success: false, error: "Invalid username" };
   }
 
   const { data } = await supabase
@@ -23,22 +24,22 @@ export async function getProfileDisplayName(username: {
     .eq("is_public", true)
     .single();
 
-  return data?.name ?? null;
+  return { success: true, data: data?.name ?? null };
 }
 
-export async function getPublicProfile(username: string): Promise<{
-  profile?: Profile;
-  workspaces: WorkspaceWithBookmarks[];
-  error?: string;
-}> {
+export async function getPublicProfile(
+  username: string,
+): Promise<
+  ActionResult<{ profile?: Profile; workspaces: WorkspaceWithBookmarks[] }>
+> {
   if (!username || typeof username !== "string") {
-    return { error: "Invalid username", workspaces: [] };
+    return { success: false, error: "Invalid username" };
   }
 
   const cleanUsername = username.trim().toLowerCase();
 
   if (!cleanUsername) {
-    return { error: "Invalid username", workspaces: [] };
+    return { success: false, error: "Invalid username" };
   }
 
   const { supabase } = await requireAuthSafe();
@@ -51,7 +52,7 @@ export async function getPublicProfile(username: string): Promise<{
     .maybeSingle();
 
   if (profileError || !profile) {
-    return { error: "Profile not found", workspaces: [] };
+    return { success: false, error: "Profile not found" };
   }
 
   const { data: workspaces, error: workspacesError } = await supabase
@@ -65,8 +66,8 @@ export async function getPublicProfile(username: string): Promise<{
 
   if (workspacesError) {
     return {
+      success: false,
       error: `Failed to fetch workspaces: ${workspacesError.message}`,
-      workspaces: [],
     };
   }
 
@@ -87,19 +88,22 @@ export async function getPublicProfile(username: string): Promise<{
   }));
 
   return {
-    profile: {
-      id: profile.id,
-      username: profile.username,
-      name: profile.name,
-      avatar_url: profile.avatar_url,
-      bio: profile.bio,
-      github_url: profile.github_url,
-      x_url: profile.x_url,
-      website_url: profile.website_url,
-      is_public: profile.is_public,
-      updated_at: profile.updated_at,
-      created_at: profile.created_at,
+    success: true,
+    data: {
+      profile: {
+        id: profile.id,
+        username: profile.username,
+        name: profile.name,
+        avatar_url: profile.avatar_url,
+        bio: profile.bio,
+        github_url: profile.github_url,
+        x_url: profile.x_url,
+        website_url: profile.website_url,
+        is_public: profile.is_public,
+        updated_at: profile.updated_at,
+        created_at: profile.created_at,
+      },
+      workspaces: workspacesWithBookmarks,
     },
-    workspaces: workspacesWithBookmarks,
   };
 }

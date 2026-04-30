@@ -58,7 +58,7 @@ export function SignupForm({
 
     const result = await signupWithEmail(formData);
 
-    if (result.error) {
+    if (!result.success) {
       setError(result.error);
     } else {
       setSuccess(true);

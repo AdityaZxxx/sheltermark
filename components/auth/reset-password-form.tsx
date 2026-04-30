@@ -23,7 +23,7 @@ export function ResetPasswordForm() {
       const formData = new FormData(e.currentTarget);
       const result = await updatePassword(formData);
 
-      if (result?.error) {
+      if (!result.success) {
         setError(result.error);
       }
     } catch {

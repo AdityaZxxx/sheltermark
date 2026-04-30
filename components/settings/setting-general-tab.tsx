@@ -66,13 +66,14 @@ export function SettingsGeneralTab({
 
       const result = await uploadAvatar(formData);
 
-      if (result.error) {
+      if (!result.success) {
         toast.error(result.error);
         throw new Error(result.error);
       }
 
-      if (result.avatarUrl) {
-        setAvatarUrl(result.avatarUrl);
+      const avatarUrl = result.data?.avatarUrl ?? null;
+      if (avatarUrl) {
+        setAvatarUrl(avatarUrl);
         toast.success("Avatar uploaded successfully");
       }
     } finally {
@@ -85,7 +86,7 @@ export function SettingsGeneralTab({
     try {
       const result = await deleteAvatar();
 
-      if (result.error) {
+      if (!result.success) {
         toast.error(result.error);
         throw new Error(result.error);
       }

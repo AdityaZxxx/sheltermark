@@ -122,9 +122,9 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
         current_username: originalUsername,
       });
 
-      if (result.error) {
+      if (!result.success) {
         setUsernameStatus("idle");
-      } else if (result.available) {
+      } else if (result.data?.available) {
         setUsernameStatus("available");
       } else {
         setUsernameStatus("taken");

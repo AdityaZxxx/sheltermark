@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import type { ActionResult } from "~/lib/action-result";
 import { createClient } from "~/utils/supabase/server";
 
 const signupSchema = z.object({
@@ -9,7 +10,9 @@ const signupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-export async function signupWithEmail(formData: FormData) {
+export async function signupWithEmail(
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
   const supabase = await createClient();
 
   const next = formData.get("next")?.toString();
@@ -19,7 +22,7 @@ export async function signupWithEmail(formData: FormData) {
   const validated = signupSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { error: validated.error.issues[0].message };
+    return { success: false, error: validated.error.issues[0].message };
   }
 
   const { name, email, password } = validated.data;
@@ -40,8 +43,8 @@ export async function signupWithEmail(formData: FormData) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { success: false, error: error.message };
   }
 
-  return { success: true, data };
+  return { success: true, data: data as unknown };
 }

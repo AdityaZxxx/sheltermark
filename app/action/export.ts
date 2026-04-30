@@ -1,16 +1,31 @@
 "use server";
 
 import type { z } from "zod";
+import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
 import { exportOptionsSchema } from "~/lib/schemas/profile";
 
-type ExportResult =
-  | { success: true; data: string; filename: string; contentType: string }
-  | { success: false; error: string };
+interface WorkspaceInfo {
+  id: number;
+  name: string;
+}
+
+interface BookmarkWithWorkspace {
+  id: string;
+  url: string;
+  title: string | null;
+  favicon_url: string | null;
+  og_image_url: string | null;
+  created_at: string;
+  workspace_id: string | null;
+  workspaces: WorkspaceInfo[] | null;
+}
 
 export async function exportBookmarks(
   options: z.infer<typeof exportOptionsSchema>,
-): Promise<ExportResult> {
+): Promise<
+  ActionResult<{ content: string; filename: string; contentType: string }>
+> {
   const validated = exportOptionsSchema.safeParse(options);
   if (!validated.success) {
     return { success: false, error: validated.error.issues[0].message };
@@ -45,19 +60,23 @@ export async function exportBookmarks(
   }
 
   const format = validated.data.format;
+  // Normalize data into strongly-typed bookmarks data
+  const bookmarksData = (data ?? []) as BookmarkWithWorkspace[];
 
   if (format === "json") {
     const exportData = {
       version: "1.0",
       exportedAt: new Date().toISOString(),
-      workspaces: groupBookmarksByWorkspace(data || []),
+      workspaces: groupBookmarksByWorkspace(bookmarksData),
     };
 
     return {
       success: true,
-      data: JSON.stringify(exportData, null, 2),
-      filename: `sheltermark-export-${formatDate(new Date())}.json`,
-      contentType: "application/json",
+      data: {
+        content: JSON.stringify(exportData, null, 2),
+        filename: `sheltermark-export-${formatDate(new Date())}.json`,
+        contentType: "application/json",
+      },
     };
   }
 
@@ -73,12 +92,10 @@ export async function exportBookmarks(
         "og_image_url",
         "created_at",
       ].join(","),
-      ...(data || []).map((bookmark) =>
+      ...bookmarksData.map((bookmark) =>
         [
           escapeCSV(bookmark.workspace_id || ""),
-          escapeCSV(
-            (bookmark.workspaces as unknown as { name: string })?.name || "",
-          ),
+          escapeCSV(bookmark.workspaces?.[0]?.name ?? ""),
           escapeCSV(bookmark.id),
           escapeCSV(bookmark.url),
           escapeCSV(bookmark.title || ""),
@@ -91,33 +108,22 @@ export async function exportBookmarks(
 
     return {
       success: true,
-      data: rows.join("\n"),
-      filename: `sheltermark-export-${formatDate(new Date())}.csv`,
-      contentType: "text/csv",
+      data: {
+        content: rows.join("\n"),
+        filename: `sheltermark-export-${formatDate(new Date())}.csv`,
+        contentType: "text/csv",
+      },
     };
   }
 
   return { success: false, error: "Invalid format" };
 }
 
-function groupBookmarksByWorkspace(
-  bookmarks: Array<{
-    id: string;
-    url: string;
-    title: string | null;
-    favicon_url: string | null;
-    og_image_url: string | null;
-    created_at: string;
-    workspace_id: string | null;
-    workspaces: unknown;
-  }>,
-) {
-  const groups: Record<string, (typeof bookmarks)[0][]> = {};
+function groupBookmarksByWorkspace(bookmarks: BookmarkWithWorkspace[]) {
+  const groups: Record<string, BookmarkWithWorkspace[]> = {};
 
   for (const bookmark of bookmarks) {
-    const workspaceName =
-      (bookmark.workspaces as unknown as { name: string })?.name ||
-      "Uncategorized";
+    const workspaceName = bookmark.workspaces?.[0]?.name ?? "Uncategorized";
     if (!groups[workspaceName]) {
       groups[workspaceName] = [];
     }

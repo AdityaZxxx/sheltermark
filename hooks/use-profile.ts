@@ -13,13 +13,13 @@ import type { Profile } from "~/lib/schemas/profile";
 
 const profileQueryOptions = (userId: string | undefined) => ({
   queryKey: profileKeys.byUser(userId),
-  queryFn: async () => {
+  queryFn: async (): Promise<Profile | null> => {
     if (!userId) return null;
     const result = await getProfile();
-    if (result.error) {
+    if (!result.success) {
       throw new Error(result.error);
     }
-    return result.profile || null;
+    return result.data?.profile ?? null;
   },
   enabled: !!userId,
 });
@@ -61,9 +61,9 @@ export function useProfile() {
       }
       toast.error("Failed to update profile");
     },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to update profile");
       } else {
         toast.success("Profile updated");
       }
@@ -98,9 +98,9 @@ export function useProfile() {
       }
       toast.error("Failed to update public profile");
     },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to update public profile");
       } else {
         toast.success("Public profile updated");
       }

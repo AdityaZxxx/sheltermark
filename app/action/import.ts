@@ -1,20 +1,11 @@
 "use server";
 
+import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
+import type { ImportOptionsInput } from "~/lib/schemas/profile";
 import { importOptionsSchema } from "~/lib/schemas/profile";
 import { normalizeUrl } from "~/lib/utils";
-
-type ImportPreviewResult = {
-  success: true;
-  totalBookmarks: number;
-  validBookmarks: number;
-  duplicates: number;
-  workspaces: Array<{ name: string; count: number }>;
-};
-
-type ImportResult =
-  | { success: true; imported: number; skipped: number; errors: string[] }
-  | { success: false; error: string };
+import type { Bookmark } from "../../lib/schemas/bookmark";
 
 interface ParsedBookmark {
   id?: string;
@@ -31,6 +22,11 @@ type BookmarkInsertInput = Pick<
   "user_id" | "workspace_id" | "url" | "title" | "favicon_url" | "og_image_url"
 >;
 
+// Result type inferred from parseFile
+type ParseResult =
+  | { success: true; bookmarks: ParsedBookmark[] }
+  | { success: false; error: string };
+
 export async function previewImport(
   fileContent: string,
   fileType: "json" | "csv",
@@ -39,14 +35,24 @@ export async function previewImport(
     createWorkspace?: boolean;
     newWorkspaceName?: string;
   },
-): Promise<ImportPreviewResult | { success: false; error: string }> {
+): Promise<
+  ActionResult<{
+    totalBookmarks: number;
+    validBookmarks: number;
+    duplicates: number;
+    workspaces: { name: string; count: number }[];
+  }>
+> {
   try {
-    const parsed = parseFile(fileContent, fileType);
-    if (!parsed.success) return parsed;
+    const parsed = parseFile(fileContent, fileType) as ParseResult;
+    if (!parsed.success) {
+      return { success: false, error: parsed.error ?? "Parse error" };
+    }
+    const bookmarksFromParse = parsed.bookmarks ?? [];
 
     const { user, supabase } = await requireAuth();
 
-    const urls = parsed.bookmarks.map((b) => b.url);
+    const urls = bookmarksFromParse.map((b) => b.url);
 
     // Query duplicates only in target workspace if specified
     let query = supabase
@@ -67,41 +73,47 @@ export async function previewImport(
     const { data: existing } = await query;
 
     // For new workspace, duplicates should be 0 (we're creating a new workspace)
-    const duplicateCount = isNewWorkspace ? 0 : existing?.length || 0;
+    const duplicateCount = isNewWorkspace ? 0 : (existing?.length ?? 0);
 
     const workspaceCounts: Record<string, number> = {};
-    for (const bookmark of parsed.bookmarks) {
+    for (const bookmark of bookmarksFromParse) {
       const wsName = bookmark.workspaceName || "Imported - Browser";
       workspaceCounts[wsName] = (workspaceCounts[wsName] || 0) + 1;
     }
 
     return {
       success: true,
-      totalBookmarks: parsed.bookmarks.length,
-      validBookmarks: parsed.bookmarks.length,
-      duplicates: duplicateCount,
-      workspaces: Object.entries(workspaceCounts).map(([name, count]) => ({
-        name,
-        count,
-      })),
+      data: {
+        totalBookmarks: bookmarksFromParse.length,
+        validBookmarks: bookmarksFromParse.length,
+        duplicates: duplicateCount,
+        workspaces: Object.entries(workspaceCounts).map(([name, count]) => ({
+          name,
+          count,
+        })),
+      },
     };
   } catch (error) {
     return { success: false, error: String(error) };
   }
 }
 
+type ImportResult = { imported: number; skipped: number; errors: string[] };
+
 export async function importBookmarks(
   fileContent: string,
   fileType: "json" | "csv",
-  options: z.infer<typeof importOptionsSchema>,
-): Promise<ImportResult> {
+  options: ImportOptionsInput,
+): Promise<ActionResult<ImportResult>> {
   const validated = importOptionsSchema.safeParse(options);
   if (!validated.success) {
     return { success: false, error: validated.error.issues[0].message };
   }
 
-  const parsed = parseFile(fileContent, fileType);
-  if (!parsed.success) return parsed;
+  const parsed = parseFile(fileContent, fileType) as ParseResult;
+  if (!parsed.success) {
+    return { success: false, error: parsed.error ?? "Parse error" };
+  }
 
   const { user, supabase } = await requireAuth();
 
@@ -169,7 +181,7 @@ export async function importBookmarks(
   const errors: string[] = [];
   const toInsert: BookmarkInsertInput[] = [];
 
-  for (const bookmark of parsed.bookmarks) {
+  for (const bookmark of parsed.bookmarks ?? []) {
     try {
       new URL(bookmark.url);
     } catch {
@@ -206,10 +218,12 @@ export async function importBookmarks(
   if (toInsert.length === 0) {
     return {
       success: true,
-      imported: 0,
-      skipped: parsed.bookmarks.length,
-      errors,
-    };
+      data: {
+        imported: 0,
+        skipped: parsed.bookmarks?.length ?? 0,
+        errors,
+      },
+    } as ActionResult<ImportResult>;
   }
 
   const batchSize = 100;
@@ -228,9 +242,11 @@ export async function importBookmarks(
 
   return {
     success: true,
-    imported,
-    skipped: parsed.bookmarks.length - imported,
-    errors,
+    data: {
+      imported,
+      skipped: (parsed.bookmarks?.length ?? 0) - imported,
+      errors,
+    },
   };
 }
 
@@ -390,5 +406,4 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-import type { z } from "zod";
-import type { Bookmark } from "../../lib/schemas/bookmark";
+// Removed unused z and duplicate Bookmark imports; Bookmark is already imported at top.

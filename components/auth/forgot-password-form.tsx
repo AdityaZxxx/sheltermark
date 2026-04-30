@@ -27,7 +27,7 @@ export function ForgotPasswordForm() {
       const formData = new FormData(e.currentTarget);
       const result = await resetPasswordForEmail(formData);
 
-      if (result?.error) {
+      if (!result.success) {
         setError(result.error);
       } else {
         setSuccess(true);

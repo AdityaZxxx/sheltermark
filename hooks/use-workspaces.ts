@@ -22,7 +22,11 @@ const generateTempId = () =>
 
 const workspacesQueryOptions = (userId: string | undefined) => ({
   queryKey: workspaceKeys.byUser(userId),
-  queryFn: getWorkspaces,
+  queryFn: async (): Promise<WorkspaceWithCount[]> => {
+    const result = await getWorkspaces();
+    if (!result.success) throw new Error(result.error);
+    return result.data as WorkspaceWithCount[];
+  },
   enabled: !!userId,
   staleTime: 1000 * 60 * 5,
   gcTime: 1000 * 60 * 30,
@@ -37,9 +41,9 @@ export function useWorkspaces() {
 
   const queryKey = useMemo(() => workspaceKeys.byUser(user?.id), [user?.id]);
 
-  const { data: workspaces = [], isLoading: isWsLoading } = useQuery<
-    WorkspaceWithCount[]
-  >(workspacesQueryOptions(user?.id));
+  const { data: workspaces = [], isLoading: isWsLoading } = useQuery(
+    workspacesQueryOptions(user?.id),
+  );
 
   const currentWorkspace = useMemo(() => {
     if (workspaces.length === 0) return null;
@@ -87,10 +91,10 @@ export function useWorkspaces() {
         updated_at: null,
       } satisfies WorkspaceWithCount;
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) => [
-        ...old,
-        optimisticWorkspace,
-      ]);
+      queryClient.setQueryData<WorkspaceWithCount[]>(queryKey, (old) => {
+        const prev = old ?? [];
+        return [...prev, optimisticWorkspace];
+      });
 
       return { previousWorkspaces };
     },
@@ -101,13 +105,13 @@ export function useWorkspaces() {
       }
       toast.error("Failed to create workspace");
     },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error);
       } else {
         toast.success("Workspace created");
-        if (data.data?.id) {
-          setActiveWorkspace(data.data.id);
+        if (result.data?.id) {
+          setActiveWorkspace(result.data.id);
         }
       }
     },
@@ -122,9 +126,10 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
-        old.filter((ws) => ws.id !== id),
-      );
+      queryClient.setQueryData<WorkspaceWithCount[]>(queryKey, (old) => {
+        const prev = old ?? [];
+        return prev.filter((ws) => ws.id !== id);
+      });
 
       return { previousWorkspaces };
     },
@@ -135,9 +140,9 @@ export function useWorkspaces() {
       }
       toast.error("Failed to delete workspace");
     },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error);
       } else {
         toast.success("Workspace deleted");
         const nextWs =
@@ -163,9 +168,12 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
-        old.map((ws) => (ws.id === id ? { ...ws, is_public: isPublic } : ws)),
-      );
+      queryClient.setQueryData<WorkspaceWithCount[]>(queryKey, (old) => {
+        const prev = old ?? [];
+        return prev.map((ws) =>
+          ws.id === id ? { ...ws, is_public: isPublic } : ws,
+        );
+      });
 
       return { previousWorkspaces };
     },
@@ -176,9 +184,9 @@ export function useWorkspaces() {
       }
       toast.error("Failed to toggle visibility");
     },
-    onSuccess: (data, variables) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result, variables) => {
+      if (!result.success) {
+        toast.error(result.error);
       } else {
         toast.success(
           `Workspace is now ${variables.isPublic ? "public" : "private"}`,
@@ -196,12 +204,13 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
-        old.map((ws) => ({
+      queryClient.setQueryData<WorkspaceWithCount[]>(queryKey, (old) => {
+        const prev = old ?? [];
+        return prev.map((ws) => ({
           ...ws,
           is_default: ws.id === id,
-        })),
-      );
+        }));
+      });
 
       return { previousWorkspaces };
     },
@@ -212,13 +221,14 @@ export function useWorkspaces() {
       }
       toast.error("Failed to set default workspace");
     },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error);
       } else {
         toast.success("Default workspace updated");
       }
     },
+
     onSettled: () => {
       invalidate();
     },
@@ -231,11 +241,12 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
-        old.map((ws) =>
+      queryClient.setQueryData<WorkspaceWithCount[]>(queryKey, (old) => {
+        const prev = old ?? [];
+        return prev.map((ws) =>
           ws.id === id ? { ...ws, auto_check_broken: enabled } : ws,
-        ),
-      );
+        );
+      });
 
       return { previousWorkspaces };
     },
@@ -246,9 +257,9 @@ export function useWorkspaces() {
       }
       toast.error("Failed to toggle auto check");
     },
-    onSuccess: (data, variables) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result, variables) => {
+      if (!result.success) {
+        toast.error(result.error);
       } else {
         toast.success(
           variables.enabled
@@ -269,9 +280,10 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
-        old.map((ws) => (ws.id === id ? { ...ws, name } : ws)),
-      );
+      queryClient.setQueryData<WorkspaceWithCount[]>(queryKey, (old) => {
+        const prev = old ?? [];
+        return prev.map((ws) => (ws.id === id ? { ...ws, name } : ws));
+      });
 
       return { previousWorkspaces };
     },
@@ -282,9 +294,9 @@ export function useWorkspaces() {
       }
       toast.error("Failed to rename workspace");
     },
-    onSuccess: (data) => {
-      if (data.error) {
-        toast.error(data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        toast.error(result.error);
       } else {
         toast.success("Workspace renamed");
       }
