@@ -8,6 +8,7 @@ import { Header } from "~/components/header";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
 import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
 
 export default async function DashboardPage() {
   const { user } = await requireAuth();
@@ -17,7 +18,11 @@ export default async function DashboardPage() {
   await Promise.all([
     queryClient.prefetchQuery({
       queryKey: workspaceKeys.byUser(user?.id),
-      queryFn: () => getWorkspaces(),
+      queryFn: async () => {
+        const result = await getWorkspaces();
+        if (!result.success) throw new Error(result.error);
+        return result.data as WorkspaceWithCount[];
+      },
     }),
     queryClient.prefetchQuery({
       queryKey: bookmarkKeys.all,
