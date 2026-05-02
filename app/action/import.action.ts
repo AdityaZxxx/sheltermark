@@ -2,10 +2,14 @@
 
 import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
-import type { ImportOptionsInput } from "~/lib/schemas/profile";
-import { importOptionsSchema } from "~/lib/schemas/profile";
+import {
+  createWorkspaceRaw,
+  getDefaultWorkspace,
+} from "~/lib/data/repositories/workspace.repository";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
+import { importOptionsSchema } from "~/lib/schemas/profile.schema";
 import { normalizeUrl } from "~/lib/utils";
-import type { Bookmark } from "../../lib/schemas/bookmark";
 
 interface ParsedBookmark {
   id?: string;
@@ -107,7 +111,9 @@ export async function importBookmarks(
 ): Promise<ActionResult<ImportResult>> {
   const validated = importOptionsSchema.safeParse(options);
   if (!validated.success) {
-    return { success: false, error: validated.error.issues[0].message };
+    const msg =
+      validated.error?.issues?.[0]?.message ?? "Invalid import options";
+    return { success: false, error: msg };
   }
 
   const parsed = parseFile(fileContent, fileType) as ParseResult;
@@ -120,47 +126,29 @@ export async function importBookmarks(
   let targetWorkspaceId: string | null | undefined =
     validated.data.targetWorkspaceId;
 
-  // Create new workspace if requested
   if (validated.data.createWorkspace && validated.data.newWorkspaceName) {
-    const { data: ws, error: wsError } = await supabase
-      .from("workspaces")
-      .insert({
-        name: validated.data.newWorkspaceName,
-        user_id: user.id,
-        is_default: false,
-        is_public: false,
-      })
-      .select("id")
-      .single();
+    const result = await createWorkspaceRaw(
+      supabase,
+      user.id,
+      validated.data.newWorkspaceName,
+    );
 
-    if (wsError) {
-      return {
-        success: false,
-        error: `Failed to create workspace: ${wsError.message}`,
-      };
+    if (!result.success) {
+      return result;
     }
 
-    if (!ws) {
-      return {
-        success: false,
-        error: "Failed to create workspace: no data returned",
-      };
-    }
-
-    targetWorkspaceId = ws.id;
+    targetWorkspaceId = result.data.id;
   }
 
-  // If no workspace specified and not creating new one, use default workspace
   if (!targetWorkspaceId && !validated.data.createWorkspace) {
-    const { data: defaultWs } = await supabase
-      .from("workspaces")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("is_default", true)
-      .maybeSingle();
+    const result = await getDefaultWorkspace(supabase, user.id);
 
-    if (defaultWs) {
-      targetWorkspaceId = defaultWs.id;
+    if (!result.success) {
+      return result;
+    }
+
+    if (result.data) {
+      targetWorkspaceId = result.data.id;
     }
   }
 
@@ -322,7 +310,9 @@ function parseCSV(
       return { success: false, error: "CSV file is empty or has no data rows" };
     }
 
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+    const headers = (lines[0] ?? "")
+      .split(",")
+      .map((h) => h.trim().toLowerCase());
     const idIndex = headers.indexOf("id");
     const urlIndex = headers.indexOf("url");
     const titleIndex = headers.indexOf("title");
@@ -338,8 +328,9 @@ function parseCSV(
     const bookmarks: ParsedBookmark[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = parseCSVLine(lines[i]);
-      const url = values[urlIndex]?.trim();
+      const currentLine = lines[i] ?? "";
+      const values = parseCSVLine(currentLine);
+      const url = (values[urlIndex] ?? "").trim();
 
       if (!url) continue;
 

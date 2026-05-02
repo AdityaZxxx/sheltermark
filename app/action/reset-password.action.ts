@@ -18,17 +18,24 @@ export async function resetPasswordForEmail(
   const validated = resetPasswordSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { success: false, error: validated.error.issues[0].message };
+    const message = validated.error?.issues?.[0]?.message ?? "Invalid data";
+    return { success: false, error: message };
   }
 
-  const { email } = validated.data;
+  const email = validated.data?.email;
+  if (!email) {
+    return { success: false, error: "Email is required" };
+  }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
-  });
+  const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+    email,
+    {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
+    },
+  );
 
-  if (error) {
-    return { success: false, error: error.message };
+  if (resetError) {
+    return { success: false, error: resetError.message };
   }
 
   return { success: true, data: null };
@@ -53,10 +60,14 @@ export async function updatePassword(
   const validated = updatePasswordSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { success: false, error: validated.error.issues[0].message };
+    const message = validated.error?.issues?.[0]?.message ?? "Invalid data";
+    return { success: false, error: message };
   }
 
-  const { password } = validated.data;
+  const password = validated.data?.password;
+  if (!password) {
+    return { success: false, error: "Password is required" };
+  }
 
   const { error } = await supabase.auth.updateUser({ password });
 

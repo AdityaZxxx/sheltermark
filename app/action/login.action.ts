@@ -49,18 +49,19 @@ export async function loginWithEmail(
   const validated = loginSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { success: false, error: validated.error.issues[0].message };
+    const msg = validated.error?.issues?.[0]?.message ?? "Invalid login data";
+    return { success: false, error: msg };
   }
 
   const { email, password } = validated.data;
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error: loginError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) {
-    return { success: false, error: error.message };
+  if (loginError) {
+    return { success: false, error: loginError.message };
   }
 
   const redirectUrl = next || "/dashboard";

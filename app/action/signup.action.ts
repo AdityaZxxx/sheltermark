@@ -22,7 +22,8 @@ export async function signupWithEmail(
   const validated = signupSchema.safeParse(rawData);
 
   if (!validated.success) {
-    return { success: false, error: validated.error.issues[0].message };
+    const msg = validated.error?.issues?.[0]?.message ?? "Invalid signup data";
+    return { success: false, error: msg };
   }
 
   const { name, email, password } = validated.data;
@@ -31,7 +32,10 @@ export async function signupWithEmail(
     ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`
     : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`;
 
-  const { data, error } = await supabase.auth.signUp({
+  const {
+    data: { user, session },
+    error,
+  } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -46,5 +50,5 @@ export async function signupWithEmail(
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: data as unknown };
+  return { success: true, data: { user, session } };
 }

@@ -3,7 +3,8 @@
 import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
-import { exportOptionsSchema } from "~/lib/schemas/profile";
+import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
+import { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 
 interface WorkspaceInfo {
   id: number;
@@ -28,41 +29,31 @@ export async function exportBookmarks(
 > {
   const validated = exportOptionsSchema.safeParse(options);
   if (!validated.success) {
-    return { success: false, error: validated.error.issues[0].message };
+    // Guard against potential undefined properties under strict mode
+    const msg =
+      validated.error?.issues?.[0]?.message ?? "Invalid export options";
+    return { success: false, error: msg };
   }
 
   const { user, supabase } = await requireAuth();
 
-  let query = supabase
-    .from("bookmarks")
-    .select(`
-      id,
-      url,
-      title,
-      favicon_url,
-      og_image_url,
-      created_at,
-      workspace_id,
-      workspaces!inner(id, name)
-    `)
-    .eq("user_id", user.id);
+  // Delegate data retrieval to the repository
+  const repoResult = await repoExportBookmarks(
+    supabase,
+    user.id,
+    validated.data,
+  );
 
-  if (validated.data.workspaceId) {
-    query = query.eq("workspace_id", validated.data.workspaceId);
+  if (!repoResult.success) {
+    return { success: false, error: repoResult.error };
   }
 
-  const { data, error } = await query
-    .order("updated_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
+  // Normalization: repository returns BookmarkWithWorkspace[]
+  const bookmarksData = repoResult.data;
 
   const format = validated.data.format;
   // Normalize data into strongly-typed bookmarks data
-  const bookmarksData = (data ?? []) as BookmarkWithWorkspace[];
-
+  // (BookmarkWithWorkspace is defined in this module for formatting logic)
   if (format === "json") {
     const exportData = {
       version: "1.0",
@@ -152,5 +143,7 @@ function escapeCSV(value: string): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  const iso = date.toISOString();
+  const tIndex = iso.indexOf("T");
+  return tIndex === -1 ? iso : iso.substring(0, tIndex);
 }
