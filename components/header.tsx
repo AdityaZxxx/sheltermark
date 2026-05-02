@@ -1,12 +1,14 @@
+import type { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
-import { requireAuth } from "~/lib/auth";
 import Logo from "./logo";
 import { UserMenu } from "./settings/user-menu";
 import { WorkspaceMenu } from "./workspace/workspace-menu";
 
-export async function Header() {
-  const { user } = await requireAuth();
+interface HeaderProps {
+  user: User;
+}
 
+export async function Header({ user }: HeaderProps) {
   if (!user) {
     redirect("/login");
   }
