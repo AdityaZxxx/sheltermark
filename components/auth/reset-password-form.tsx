@@ -2,8 +2,8 @@
 
 import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useState } from "react";
-import { updatePassword } from "~/app/action/reset-password";
+import { useState, useTransition } from "react";
+import { updatePassword } from "~/app/action/reset-password.action";
 import { Button } from "~/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
@@ -11,26 +11,25 @@ import { Input } from "~/components/ui/input";
 export function ResetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
 
-    try {
-      const formData = new FormData(e.currentTarget);
-      const result = await updatePassword(formData);
+    startTransition(async () => {
+      try {
+        const formData = new FormData(e.currentTarget);
+        const result = await updatePassword(formData);
 
-      if (!result.success) {
-        setError(result.error);
+        if (!result.success) {
+          setError(result.error);
+        }
+      } catch {
+        setError("An unexpected error occurred. Please try again.");
       }
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   return (
@@ -105,8 +104,8 @@ export function ResetPasswordForm() {
             </div>
           </Field>
           <Field>
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Resetting..." : "Reset Password"}
+            <Button type="submit" disabled={isPending} className="w-full">
+              {isPending ? "Resetting..." : "Reset Password"}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               <Link

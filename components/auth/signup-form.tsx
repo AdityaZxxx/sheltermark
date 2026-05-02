@@ -8,8 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
-import { loginWithGoogle } from "~/app/action/login";
-import { signupWithEmail } from "~/app/action/signup";
+import { loginWithGoogle } from "~/app/action/login.action";
+import { signupWithEmail } from "~/app/action/signup.action";
 import { GoogleIcon } from "~/components/google-icon";
 import { Button } from "~/components/ui/button";
 import {
