@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { SignupForm } from "~/components/auth/signup-form";
+
+export const metadata: Metadata = {
+  title: "Sign Up - Sheltermark",
+  description:
+    "Create your Sheltermark account to start organizing your bookmarks.",
+};
 
 export default async function SignupPage({
   searchParams,
