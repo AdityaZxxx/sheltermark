@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "~/lib/logger";
 
 export async function POST(request: Request) {
   // Verify cron secret (optional but recommended)
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Feed sync failed:", error);
+    logger.error("Feed sync failed", { error });
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 },
