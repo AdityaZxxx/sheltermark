@@ -17,12 +17,6 @@ export const profileKeys = {
   detail: (id: string) => ["profile", "detail", id] as const,
 };
 
-export const urlHealthKeys = {
-  all: ["url-health"] as const,
-  byWorkspace: (workspaceId: string) =>
-    ["url-health", "workspace", workspaceId] as const,
-};
-
 export const feedKeys = {
   all: ["feeds"] as const,
   byUser: (userId?: string) => ["feeds", userId] as const,
