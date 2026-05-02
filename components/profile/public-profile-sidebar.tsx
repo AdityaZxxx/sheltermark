@@ -2,7 +2,7 @@
 
 import { GithubLogoIcon, GlobeIcon, XLogoIcon } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import type { Profile } from "~/lib/schemas/profile";
+import type { Profile } from "~/lib/schemas/profile.schema";
 
 interface PublicProfileSidebarProps {
   profile: Profile;

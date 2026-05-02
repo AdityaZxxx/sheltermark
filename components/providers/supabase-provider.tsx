@@ -2,7 +2,7 @@
 
 import type { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, use, useEffect, useState } from "react";
 import { createClient } from "~/utils/supabase/client";
 
 interface SupabaseContextValue {
@@ -14,7 +14,7 @@ interface SupabaseContextValue {
 const SupabaseContext = createContext<SupabaseContextValue | null>(null);
 
 export function useSupabase() {
-  const context = useContext(SupabaseContext);
+  const context = use(SupabaseContext);
   if (!context) {
     throw new Error("useSupabase must be used within SupabaseProvider");
   }
