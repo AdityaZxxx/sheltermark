@@ -28,14 +28,14 @@ export function WorkspaceRenameDialog({
   onRename,
   isRenaming,
 }: WorkspaceRenameDialogProps) {
-  const [name, setName] = useState(currentName);
+  const [name, setName] = useState("");
 
   useEffect(() => {
     if (isOpen) setName(currentName);
   }, [isOpen, currentName]);
 
   const handleOpenChange = (open: boolean) => {
-    if (!open) setName(currentName);
+    if (!open) setName("");
     onOpenChange(open);
   };
 

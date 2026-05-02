@@ -34,7 +34,6 @@ export function WorkspaceMenu() {
   const {
     workspaces,
     currentWorkspace,
-    isLoading,
     setActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
@@ -50,23 +49,7 @@ export function WorkspaceMenu() {
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
-  if (isLoading) {
-    return (
-      <Button
-        variant="ghost"
-        className="gap-2 justify-between outline-none"
-        disabled
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-muted animate-pulse" />
-          <span className="truncate max-w-[100px]">Loading...</span>
-        </div>
-        <CaretUpDownIcon className="h-4 w-4 text-muted-foreground" />
-      </Button>
-    );
-  }
-
-  const activeWorkspaceName = currentWorkspace?.name || "";
+  const activeWorkspaceName = currentWorkspace?.name || "Select workspace";
 
   const handleTogglePublic = () => {
     setIsVisibilityDialogOpen(true);
