@@ -3,7 +3,6 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { Workspace, WorkspaceWithCount } from "~/lib/schemas/workspace";
 import { ShareDialog } from "./share-dialog";
 
 export function ShareDialogManager() {
@@ -15,10 +14,7 @@ export function ShareDialogManager() {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
 
-  const { workspaces, currentWorkspace } = useWorkspaces() as unknown as {
-    workspaces: WorkspaceWithCount[];
-    currentWorkspace: Workspace;
-  };
+  const { workspaces, currentWorkspace } = useWorkspaces();
 
   useEffect(() => {
     if (shareUrl) {

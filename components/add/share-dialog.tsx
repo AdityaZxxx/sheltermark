@@ -21,7 +21,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useBookmarkMutations } from "~/hooks/use-bookmarks";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface ShareDialogProps {
@@ -43,10 +43,7 @@ export function ShareDialog({
   currentWorkspaceId,
   onSuccess,
 }: ShareDialogProps) {
-  // Cast to the expected mutation shape to satisfy TS when hook return types
-  const { addBookmark } = useBookmarkMutations() as unknown as {
-    addBookmark: (payload: { url: string; workspaceId: string }) => void;
-  };
+  const { addBookmark } = useBookmarkMutations();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
     null,
   );
