@@ -2,8 +2,8 @@
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useEffect, useState } from "react";
-import { checkUsernameAvailability } from "~/app/action/setting";
+import { useCallback, useEffect, useState } from "react";
+import { checkUsernameAvailability } from "~/app/action/setting.action";
 import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import {
   Field,
@@ -16,7 +16,7 @@ import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
 import { useProfile } from "~/hooks/use-profile";
-import { usernameSchema } from "~/lib/schemas/profile";
+import { usernameSchema } from "~/lib/schemas/profile.schema";
 import { Textarea } from "../ui/textarea";
 
 interface SettingsProfileTabProps {
@@ -42,6 +42,25 @@ function extractWebsite(url: string | null | undefined): string {
   } catch {
     return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
   }
+}
+
+function UsernameStatusIcon({
+  status,
+}: {
+  status: "checking" | "available" | "taken" | "idle";
+}) {
+  if (status === "checking") {
+    return (
+      <SpinnerIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+    );
+  }
+  if (status === "available") {
+    return <CheckIcon className="h-4 w-4 text-green-500" weight="bold" />;
+  }
+  if (status === "taken") {
+    return <XIcon className="h-4 w-4 text-destructive" weight="bold" />;
+  }
+  return null;
 }
 
 export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
@@ -97,28 +116,21 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
     useStore(form.store, (state) => state.values.username) || "";
   const debouncedUsername = useDebounce(usernameValue.trim(), 500);
 
-  // Check username availability
-  useEffect(() => {
-    if (
-      !debouncedUsername ||
-      debouncedUsername.length < 3 ||
-      debouncedUsername === originalUsername
-    ) {
-      setUsernameStatus("idle");
-      return;
-    }
+  const checkUsername = useCallback(
+    async (username: string) => {
+      if (!username || username.length < 3 || username === originalUsername) {
+        setUsernameStatus("idle");
+        return;
+      }
 
-    const isValidFormat = /^[a-zA-Z0-9_]+$/.test(debouncedUsername);
-    if (!isValidFormat) {
-      setUsernameStatus("idle");
-      return;
-    }
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        setUsernameStatus("idle");
+        return;
+      }
 
-    const checkAvailability = async () => {
       setUsernameStatus("checking");
-
       const result = await checkUsernameAvailability({
-        username: debouncedUsername,
+        username,
         current_username: originalUsername,
       });
 
@@ -129,30 +141,15 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
       } else {
         setUsernameStatus("taken");
       }
-    };
+    },
+    [originalUsername],
+  );
 
-    checkAvailability();
-  }, [debouncedUsername, originalUsername]);
+  useEffect(() => {
+    checkUsername(debouncedUsername);
+  }, [debouncedUsername, checkUsername]);
 
-  // Helper to render username status icon
-  const renderUsernameStatusIcon = () => {
-    if (!usernameValue || usernameValue.length < 3) {
-      return null;
-    }
-
-    switch (usernameStatus) {
-      case "checking":
-        return (
-          <SpinnerIcon className="h-4 w-4 animate-spin text-muted-foreground" />
-        );
-      case "available":
-        return <CheckIcon className="h-4 w-4 text-green-500" weight="bold" />;
-      case "taken":
-        return <XIcon className="h-4 w-4 text-destructive" weight="bold" />;
-      default:
-        return null;
-    }
-  };
+  const showUsernameIcon = usernameValue && usernameValue.length >= 3;
 
   return (
     <form
@@ -210,7 +207,9 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
                     className="pr-10"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                    {renderUsernameStatusIcon()}
+                    {showUsernameIcon && (
+                      <UsernameStatusIcon status={usernameStatus} />
+                    )}
                   </div>
                 </div>
                 {hasError && <FieldError errors={field.state.meta.errors} />}

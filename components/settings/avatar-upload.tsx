@@ -28,11 +28,15 @@ export function AvatarUpload({
   onRemove,
   isUploading = false,
 }: AvatarUploadProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setPreviewUrl(currentAvatarUrl);
+  }, [currentAvatarUrl]);
 
   const hasAvatar = Boolean(previewUrl || currentAvatarUrl);
 

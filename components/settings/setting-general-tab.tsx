@@ -10,7 +10,7 @@ import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteAvatar, uploadAvatar } from "~/app/action/setting";
+import { deleteAvatar, uploadAvatar } from "~/app/action/setting.action";
 import { AvatarUpload } from "~/components/settings/avatar-upload";
 import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import { Button } from "~/components/ui/button";
@@ -31,7 +31,7 @@ import {
 } from "~/components/ui/select";
 import { useProfile } from "~/hooks/use-profile";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { updateProfileSchema } from "~/lib/schemas/profile";
+import { updateProfileSchema } from "~/lib/schemas/profile.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface SettingsGeneralTabProps {
@@ -205,14 +205,16 @@ export function SettingsGeneralTab({
                     className="w-2 h-2 rounded-full"
                     style={{
                       backgroundColor: getPastelColor(
-                        workspaces.find((ws) => ws.is_default)?.id ||
-                          workspaces[0]?.id,
+                        workspaces.find((ws) => ws.is_default)?.id ??
+                          workspaces[0]?.id ??
+                          "",
                       ),
                     }}
                   />
                   <span className="truncate">
-                    {workspaces.find((ws) => ws.is_default)?.name ||
-                      workspaces[0]?.name}
+                    {workspaces.find((ws) => ws.is_default)?.name ??
+                      workspaces[0]?.name ??
+                      ""}
                   </span>
                 </div>
               </SelectValue>

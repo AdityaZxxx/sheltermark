@@ -4,7 +4,7 @@ import { GearIcon, UserIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteAccount } from "~/app/action/setting";
+import { deleteAccount } from "~/app/action/setting.action";
 import { ExportDialog } from "~/components/import-export/export-dialog";
 import { ImportDialog } from "~/components/import-export/import-dialog";
 import {
