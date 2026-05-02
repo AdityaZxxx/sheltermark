@@ -1,7 +1,5 @@
 import { z } from "zod";
-
-const uuidSchema = z.uuid();
-const timestampSchema = z.iso.datetime();
+import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
 export const feedSchema = z.object({
   id: uuidSchema,

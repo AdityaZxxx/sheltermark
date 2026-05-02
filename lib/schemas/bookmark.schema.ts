@@ -1,8 +1,5 @@
 import { z } from "zod";
-
-const uuidSchema = z.uuid();
-
-const timestampSchema = z.iso.datetime();
+import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
 export const bookmarkSchema = z.object({
   id: uuidSchema,
@@ -52,6 +49,8 @@ export const bookmarkPreviewSchema = z.object({
   created_at: z.string(),
   updated_at: z.string().nullable(),
 });
+
+export type BookmarkPreview = z.infer<typeof bookmarkPreviewSchema>;
 
 export const workspaceWithBookmarksSchema = z.object({
   id: uuidSchema,
