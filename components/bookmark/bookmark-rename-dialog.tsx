@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { renameBookmark } from "~/app/action/bookmark";
+import { renameBookmark } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -32,44 +32,48 @@ export function BookmarkRenameDialog({
   onConfirm,
   silent = false,
 }: BookmarkRenameDialogProps) {
+  // Start with an empty title and reset whenever the bookmark prop changes.
   const [title, setTitle] = useState("");
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (bookmark) {
       setTitle(bookmark.title);
+    } else {
+      // Reset when no bookmark is provided
+      setTitle("");
     }
   }, [bookmark]);
 
-  const handleRename = async (e: React.SubmitEvent) => {
+  const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookmark || !title.trim() || title === bookmark.title) {
       onOpenChange(false);
       return;
     }
-
-    setIsPending(true);
-
-    if (onConfirm) {
-      await onConfirm(bookmark.id, title.trim());
-      setIsPending(false);
-      onSuccess();
-      onOpenChange(false);
-    } else {
-      const res = await renameBookmark({
-        id: bookmark.id,
-        title: title.trim(),
-      });
-      setIsPending(false);
-
-      if (res.success) {
-        if (!silent) toast.success("Bookmark renamed");
-        onSuccess();
-        onOpenChange(false);
-      } else {
-        toast.error(res.error || "Failed to rename bookmark");
+    startTransition(async () => {
+      try {
+        if (onConfirm) {
+          await onConfirm(bookmark.id, title.trim());
+          onSuccess();
+          onOpenChange(false);
+        } else {
+          const res = await renameBookmark({
+            id: bookmark.id,
+            title: title.trim(),
+          });
+          if (res.success) {
+            if (!silent) toast.success("Bookmark renamed");
+            onSuccess();
+            onOpenChange(false);
+          } else {
+            toast.error(res.error || "Failed to rename bookmark");
+          }
+        }
+      } catch (_err) {
+        toast.error("Failed to rename bookmark");
       }
-    }
+    });
   };
 
   return (
@@ -89,7 +93,6 @@ export function BookmarkRenameDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Bookmark title"
-              autoFocus
             />
           </div>
           <DialogFooter>

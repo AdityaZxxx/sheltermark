@@ -1,9 +1,9 @@
 "use client";
 
 import { CaretUpDownIcon } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { moveBookmarks } from "~/app/action/bookmark";
+import { moveBookmarks } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -50,7 +50,7 @@ export function BookmarkMoveDialog({
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
     null,
   );
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Filter out the current workspace
   const availableWorkspaces = useMemo(
@@ -61,56 +61,56 @@ export function BookmarkMoveDialog({
   // Preselect the first available workspace only when the dialog opens
   useEffect(() => {
     if (open && availableWorkspaces.length > 0) {
-      setTargetWorkspaceId((current) => current || availableWorkspaces[0].id);
+      setTargetWorkspaceId((current) =>
+        current != null ? current : (availableWorkspaces[0]?.id ?? null),
+      );
     }
     if (!open) {
       setTargetWorkspaceId(null);
     }
   }, [open, availableWorkspaces]);
 
-  const handleMove = async () => {
+  const handleMove = () => {
     if (ids.length === 0 || !targetWorkspaceId) return;
 
-    setIsPending(true);
-
-    if (onConfirm) {
-      await onConfirm(ids, targetWorkspaceId);
-      setIsPending(false);
-      onSuccess();
-      onOpenChange(false);
-    } else {
-      const res = await moveBookmarks({ ids, targetWorkspaceId });
-      setIsPending(false);
-
-      if (res.success) {
-        if (!silent) {
-          const workspaceName = selectedWorkspace?.name || "Target Workspace";
-          const { movedCount, skippedCount } = res.data;
-
-          if (movedCount > 0 && skippedCount > 0) {
-            toast.success(
-              `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
-            );
-          } else if (movedCount > 0) {
-            toast.success(
-              movedCount === 1
-                ? `Bookmark moved to ${workspaceName}`
-                : `${movedCount} bookmarks moved to ${workspaceName}`,
-            );
-          } else if (skippedCount > 0) {
-            toast.info(
-              skippedCount === 1
-                ? `Bookmark already exists in ${workspaceName}`
-                : `Bookmarks already exist in ${workspaceName}`,
-            );
-          }
-        }
+    startTransition(async () => {
+      if (onConfirm) {
+        await onConfirm(ids, targetWorkspaceId);
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error(res.error || "Failed to move bookmarks");
+        const res = await moveBookmarks({ ids, targetWorkspaceId });
+
+        if (res.success) {
+          if (!silent) {
+            const workspaceName = selectedWorkspace?.name || "Target Workspace";
+            const { movedCount, skippedCount } = res.data;
+
+            if (movedCount > 0 && skippedCount > 0) {
+              toast.success(
+                `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
+              );
+            } else if (movedCount > 0) {
+              toast.success(
+                movedCount === 1
+                  ? `Bookmark moved to ${workspaceName}`
+                  : `${movedCount} bookmarks moved to ${workspaceName}`,
+              );
+            } else if (skippedCount > 0) {
+              toast.info(
+                skippedCount === 1
+                  ? `Bookmark already exists in ${workspaceName}`
+                  : `Bookmarks already exist in ${workspaceName}`,
+              );
+            }
+          }
+          onSuccess();
+          onOpenChange(false);
+        } else {
+          toast.error(res.error || "Failed to move bookmarks");
+        }
       }
-    }
+    });
   };
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);

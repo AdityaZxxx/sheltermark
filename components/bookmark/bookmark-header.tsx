@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import type { BookmarkSort } from "../../lib/schemas/bookmark";
+import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
 import { BookmarkInput } from "./bookmark-input";
 import { BookmarkSortSelect } from "./bookmark-sort";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";

@@ -19,6 +19,8 @@ import {
 } from "~/components/ui/context-menu";
 import { getPastelColor } from "~/lib/utils";
 
+const EMPTY_WORKSPACES: { id: string; name: string }[] = [];
+
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
   id: string;
@@ -41,7 +43,7 @@ export function BookmarkContextMenu({
   id,
   url,
   isSelectionMode,
-  workspaces = [],
+  workspaces = EMPTY_WORKSPACES,
   currentWorkspaceId,
   onSelect,
   onRename,

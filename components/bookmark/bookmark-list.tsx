@@ -1,8 +1,8 @@
 "use client";
 
 import { BookmarkIcon } from "@phosphor-icons/react";
-import type { Bookmark } from "~/lib/schemas/bookmark";
-import type { Workspace } from "~/lib/schemas/workspace";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { Workspace } from "~/lib/schemas/workspace.schema";
 import { safeDomain } from "~/lib/utils";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkCardItemLoading } from "./bookmark-card-item-loading";
