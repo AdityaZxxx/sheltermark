@@ -45,14 +45,14 @@ function ShortcutButton({
 }) {
   const [open, setOpen] = useState(false);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const openShortcutsDialog = (e: React.MouseEvent) => {
     e.stopPropagation();
     setOpen(true);
   };
 
   return (
     <>
-      <button type="button" onClick={handleClick} className={className}>
+      <button type="button" onClick={openShortcutsDialog} className={className}>
         {children || (
           <span className="w-full flex items-center gap-2">
             <CommandIcon className="h-4 w-4" />
