@@ -68,7 +68,8 @@ export async function fetchWithTimeout(
 export function isPrivateIP(ip: string): boolean {
   const ipv4Match = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (ipv4Match) {
-    const [, p1, p2] = ipv4Match.map(Number);
+    const p1 = Number(ipv4Match[1]);
+    const p2 = Number(ipv4Match[2]);
     if (p1 === 10) return true;
     if (p1 === 127) return true;
     if (p1 === 169 && p2 === 254) return true;

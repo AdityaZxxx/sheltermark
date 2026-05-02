@@ -4,28 +4,67 @@ import { fallbackStrategy, fetchViaMicrolink } from "./strategies";
 import type { Metadata } from "./types";
 import { createBasicMetadata } from "./utils";
 
-export { isSafeUrl } from "./fetch";
-
 const CACHE_TTL = 24 * 60 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 500;
 
 interface CacheEntry {
   data: Metadata;
   expiry: number;
 }
 
-const metadataCache = new Map<string, CacheEntry>();
+class BoundedLRUCache {
+  private cache: Map<string, CacheEntry>;
+  private readonly maxSize: number;
+  private readonly ttl: number;
+
+  constructor(maxSize: number, ttl: number) {
+    this.cache = new Map<string, CacheEntry>();
+    this.maxSize = maxSize;
+    this.ttl = ttl;
+  }
+
+  get(url: string): Metadata | null {
+    const entry = this.cache.get(url);
+    if (!entry) return null;
+
+    if (entry.expiry <= Date.now()) {
+      this.cache.delete(url);
+      return null;
+    }
+
+    this.cache.delete(url);
+    this.cache.set(url, entry);
+    return entry.data;
+  }
+
+  set(url: string, data: Metadata): void {
+    this.cache.delete(url);
+    while (this.cache.size >= this.maxSize) {
+      const lruKey = this.cache.keys().next().value;
+      if (lruKey === undefined) break;
+      this.cache.delete(lruKey as string);
+    }
+
+    this.cache.set(url, { data, expiry: Date.now() + this.ttl });
+  }
+
+  get size(): number {
+    return this.cache.size;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const metadataCache = new BoundedLRUCache(MAX_CACHE_ENTRIES, CACHE_TTL);
 
 function getCachedMetadata(url: string): Metadata | null {
-  const cached = metadataCache.get(url);
-  if (cached && cached.expiry > Date.now()) {
-    return cached.data;
-  }
-  metadataCache.delete(url);
-  return null;
+  return metadataCache.get(url);
 }
 
 function setCachedMetadata(url: string, data: Metadata): void {
-  metadataCache.set(url, { data, expiry: Date.now() + CACHE_TTL });
+  metadataCache.set(url, data);
 }
 
 export async function fetchMetadata(url: string): Promise<Metadata> {
