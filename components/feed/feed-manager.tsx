@@ -21,7 +21,7 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { useFeeds } from "~/hooks/use-feeds";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { Feed } from "~/lib/schemas/feed";
+import type { Feed } from "~/lib/schemas/feed.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface FeedManagerProps {
@@ -35,21 +35,24 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
   const { subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } = feedsHook;
   const { workspaces } = useWorkspaces();
   const [url, setUrl] = useState("");
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  // Replace workspaceId with a selectedWorkspace object to reflect UI state without triggering extra renders
+  const [selectedWorkspace, setSelectedWorkspace] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (url.trim()) {
       subscribeToFeed({
         url: url.trim(),
-        workspaceId: workspaceId || undefined,
+        workspaceId: selectedWorkspace?.id ?? undefined,
       });
       setUrl("");
-      setWorkspaceId(null);
+      setSelectedWorkspace(null);
     }
   };
-
-  const selectedWorkspace = workspaces.find((ws) => ws.id === workspaceId);
+  // Use the selectedWorkspace state for rendering and UX
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,14 +85,15 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{
                             backgroundColor: getPastelColor(
-                              selectedWorkspace?.id || workspaces[0]?.id,
+                              selectedWorkspace?.id ?? workspaces[0]?.id ?? "",
                             ),
                           }}
                         />
                         <span className="truncate text-sm">
                           {selectedWorkspace
                             ? selectedWorkspace.name
-                            : workspaces.find((ws) => ws.is_default)?.name}
+                            : (workspaces.find((ws) => ws.is_default)?.name ??
+                              "")}
                         </span>
                       </div>
                       <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -101,7 +105,9 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                   {workspaces.map((ws) => (
                     <DropdownMenuItem
                       key={ws.id}
-                      onClick={() => setWorkspaceId(ws.id)}
+                      onClick={() =>
+                        setSelectedWorkspace({ id: ws.id, name: ws.name })
+                      }
                       className="flex items-center gap-2"
                     >
                       <div
