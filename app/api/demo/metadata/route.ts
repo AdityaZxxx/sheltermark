@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "~/lib/logger";
 import { fetchMetadata } from "~/lib/metadata";
 
 const requestSchema = z.object({
@@ -12,16 +13,19 @@ export async function POST(req: Request) {
     const validated = requestSchema.safeParse(body);
 
     if (!validated.success) {
-      return NextResponse.json(
-        { error: validated.error.issues[0].message },
-        { status: 400 },
-      );
+      const message =
+        validated.error?.issues?.[0]?.message ?? "Invalid request";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const metadata = await fetchMetadata(validated.data.url);
+    const url = validated.data?.url;
+    if (!url) {
+      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+    }
+    const metadata = await fetchMetadata(url);
     return NextResponse.json(metadata);
   } catch (error) {
-    console.error("Demo metadata fetch error:", error);
+    logger.error("Demo metadata fetch error", { error });
     return NextResponse.json(
       { error: "Failed to fetch metadata" },
       { status: 500 },

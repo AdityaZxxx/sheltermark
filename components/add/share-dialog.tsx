@@ -1,9 +1,8 @@
 "use client";
 
 import { CaretUpDownIcon, GlobeIcon, LinkIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { addBookmark as addBookmarkAction } from "~/app/action/bookmark";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -21,7 +20,8 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
+import { useBookmarkMutations } from "~/hooks/use-bookmarks";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface ShareDialogProps {
@@ -43,41 +43,25 @@ export function ShareDialog({
   currentWorkspaceId,
   onSuccess,
 }: ShareDialogProps) {
+  const { addBookmark } = useBookmarkMutations();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
-    null,
+    currentWorkspaceId || workspaces[0]?.id || null,
   );
   const [title, setTitle] = useState(initialTitle || "");
-  const [isPending, setIsPending] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setSelectedWorkspaceId(currentWorkspaceId || workspaces[0]?.id || null);
-      setTitle(initialTitle || "");
-    }
-  }, [open, currentWorkspaceId, workspaces, initialTitle]);
-
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!selectedWorkspaceId) {
       toast.error("Please select a workspace");
       return;
     }
 
-    setIsPending(true);
-
-    const result = await addBookmarkAction({
+    addBookmark({
       url,
       workspaceId: selectedWorkspaceId,
     });
 
-    setIsPending(false);
-
-    if (result.success) {
-      toast.success("Bookmark added");
-      onSuccess();
-      onOpenChange(false);
-    } else {
-      toast.error(result.error || "Failed to add bookmark");
-    }
+    onSuccess();
+    onOpenChange(false);
   };
 
   const displayUrl = url.length > 60 ? `${url.slice(0, 60)}...` : url;
@@ -109,7 +93,7 @@ export function ShareDialog({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Page title"
+            placeholder="Leave blank for autofill"
           />
         </div>
 
@@ -168,13 +152,8 @@ export function ShareDialog({
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isPending || !selectedWorkspaceId}
-          >
-            {isPending
-              ? "Saving..."
-              : `Save to ${workspaceName || "workspace"}`}
+          <Button onClick={handleSave} disabled={!selectedWorkspaceId}>
+            {`Save to ${workspaceName || "workspace"}`}
           </Button>
         </DialogFooter>
       </DialogContent>

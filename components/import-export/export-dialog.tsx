@@ -3,7 +3,7 @@
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { exportBookmarks } from "~/app/action/export";
+import { exportBookmarks } from "~/app/action/export.action";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -49,17 +49,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         return;
       }
 
-      const blob = new Blob([result.data], { type: result.contentType });
+      const blob = new Blob([result.data.content], {
+        type: result.data.contentType,
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = result.filename;
+      a.download = result.data.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Exported ${result.filename}`);
+      toast.success(`Exported ${result.data.filename}`);
       onOpenChange(false);
     } catch {
       toast.error("Export failed");

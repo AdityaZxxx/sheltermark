@@ -19,6 +19,8 @@ import {
 } from "~/components/ui/context-menu";
 import { getPastelColor } from "~/lib/utils";
 
+const EMPTY_WORKSPACES: { id: string; name: string }[] = [];
+
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
   id: string;
@@ -27,7 +29,7 @@ interface BookmarkContextMenuProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
-  onRename?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -41,10 +43,10 @@ export function BookmarkContextMenu({
   id,
   url,
   isSelectionMode,
-  workspaces = [],
+  workspaces = EMPTY_WORKSPACES,
   currentWorkspaceId,
   onSelect,
-  onRename,
+  onEdit,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -67,9 +69,9 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onRename?.(id)}>
+        <ContextMenuItem onClick={() => onEdit?.(id)}>
           <PencilIcon />
-          Rename
+          Edit
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>

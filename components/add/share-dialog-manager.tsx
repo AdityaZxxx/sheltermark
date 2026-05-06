@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { ShareDialog } from "./share-dialog";
 
@@ -10,35 +10,31 @@ export function ShareDialogManager() {
   const shareUrl = searchParams.get("share_url");
   const shareTitle = searchParams.get("share_title");
 
-  const [open, setOpen] = useState(false);
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-
   const { workspaces, currentWorkspace } = useWorkspaces();
 
-  useEffect(() => {
-    if (shareUrl) {
-      setUrl(shareUrl);
-      setTitle(shareTitle || "");
-      setOpen(true);
-    }
-  }, [shareUrl, shareTitle]);
+  // Derive URL and title directly from search params — there's no need
+  // to duplicate them into local state. Only keep `open` as local state
+  // because the user can dismiss the dialog independently of the URL.
+  const [open, setOpen] = useState(!!shareUrl);
 
   const handleSuccess = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("share_url");
-    url.searchParams.delete("share_title");
-    window.history.replaceState({}, "", url.pathname);
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete("share_url");
+    newUrl.searchParams.delete("share_title");
+    window.history.replaceState({}, "", newUrl.pathname);
   }, []);
-
-  if (!shareUrl) return null;
 
   return (
     <ShareDialog
       open={open}
-      onOpenChange={setOpen}
-      url={url}
-      title={title}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          handleSuccess();
+        }
+      }}
+      url={shareUrl || ""}
+      title={shareTitle || ""}
       workspaces={workspaces}
       currentWorkspaceId={currentWorkspace?.id}
       onSuccess={handleSuccess}

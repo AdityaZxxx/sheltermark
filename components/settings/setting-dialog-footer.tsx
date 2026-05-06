@@ -7,6 +7,7 @@ interface SettingsDialogFooterProps {
   isDirty: boolean;
   isDisabled?: boolean;
   onCancel: () => void;
+  onSubmit: () => void;
 }
 
 export function SettingsDialogFooter({
@@ -14,9 +15,10 @@ export function SettingsDialogFooter({
   isDirty,
   isDisabled = false,
   onCancel,
+  onSubmit,
 }: SettingsDialogFooterProps) {
   return (
-    <DialogFooter className="mt-6 pt-4 border-t shrink-0 sticky bottom-0 bg-background">
+    <DialogFooter className="shrink-0 border-t bg-background px-4 py-3">
       <Button
         type="button"
         variant="outline"
@@ -25,7 +27,11 @@ export function SettingsDialogFooter({
       >
         Cancel
       </Button>
-      <Button type="submit" disabled={isSubmitting || !isDirty || isDisabled}>
+      <Button
+        type="button"
+        onClick={onSubmit}
+        disabled={isSubmitting || !isDirty || isDisabled}
+      >
         {isSubmitting ? (
           <>
             <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
