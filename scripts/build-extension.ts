@@ -17,6 +17,7 @@ const entryPoints = [
   resolve(EXT_DIR, "options.ts"),
   resolve(EXT_DIR, "storage.ts"),
   resolve(EXT_DIR, "constants.ts"),
+  resolve(EXT_DIR, "logger.ts"),
   resolve(EXT_DIR, "x-capture.ts"),
 ];
 

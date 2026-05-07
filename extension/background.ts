@@ -7,6 +7,7 @@ import {
   type SaveResult,
   type Workspace,
 } from "./constants.js";
+import { logger } from "./logger.js";
 import { getBaseUrl, getLastWorkspace, setLastWorkspace } from "./storage.js";
 
 type NotificationType = "success" | "error" | "info";
@@ -346,7 +347,7 @@ async function handleXBookmark(url: string): Promise<SaveResult> {
     return result;
   } catch (error) {
     const e = error as { message?: string };
-    console.error("[Sheltermark] X bookmark error:", error);
+    logger.error("X bookmark error", { error, message: e.message });
     showNotification("Error", e.message || "Failed to save", "error");
     return { success: false, error: e.message };
   }
@@ -382,10 +383,9 @@ function showNotification(
     },
     (id) => {
       if (chrome.runtime.lastError) {
-        console.error(
-          "[Sheltermark] Notification failed:",
-          chrome.runtime.lastError.message,
-        );
+        logger.error("Notification failed", {
+          error: chrome.runtime.lastError.message,
+        });
         return;
       }
       setTimeout(() => chrome.notifications.clear(id), NOTIFICATION_DURATION);
