@@ -76,11 +76,10 @@
         url: tweetUrl,
       })
       .catch((error: unknown) => {
-        const timestamp = new Date().toISOString();
-        console.error(
-          `[${timestamp}] [SHELTERMARK] [ERROR] [x-capture] Failed to send message:`,
+        console.error(`[Sheltermark] Failed to send X bookmark message`, {
+          tweetUrl,
           error,
-        );
+        });
       });
   }
 
