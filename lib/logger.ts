@@ -25,7 +25,8 @@ function formatMessage(
   message: string,
   context?: LogContext,
 ): string {
-  const prefix = `[${level.toUpperCase()}]`;
+  const timestamp = new Date().toISOString();
+  const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
   const moduleTag = context?.module ? `[${context.module}]` : "";
   return `${prefix}${moduleTag} ${message}`;
 }
