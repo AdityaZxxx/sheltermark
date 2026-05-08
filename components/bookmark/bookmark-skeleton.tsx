@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Skeleton } from "~/components/ui/skeleton";
 
-export function BookmarkListItemSkeleton() {
+function BookmarkListItemSkeleton() {
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
       <Skeleton className="shrink-0 w-6 h-6 rounded-xs" />
@@ -14,7 +14,7 @@ export function BookmarkListItemSkeleton() {
   );
 }
 
-export function BookmarkCardItemSkeleton() {
+function BookmarkCardItemSkeleton() {
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       <Skeleton className="w-full h-32" />

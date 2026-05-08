@@ -36,7 +36,7 @@ const shortcuts: Shortcut[] = [
   { key: "Space", label: "Toggle", description: "Toggle selection" },
 ];
 
-function ShortcutButton({
+export function ShortcutButton({
   className,
   children,
 }: {
@@ -104,6 +104,3 @@ function ShortcutButton({
     </>
   );
 }
-
-export { ShortcutButton };
-export default ShortcutButton;
