@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "~/lib/logger";
 import { fetchMetadata } from "~/lib/metadata";
 import { parseFeed } from "~/lib/rss-parser";
 
@@ -7,7 +8,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error(
+  logger.error(
     "Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY",
   );
   process.exit(1);
@@ -30,13 +31,13 @@ export async function syncFeeds(): Promise<{
     .not("user_id", "is", null);
 
   if (usersError) {
-    console.error("Error fetching users:", usersError);
+    logger.error("Error fetching users", { error: usersError });
     return { success: false, synced: 0, errors: [usersError.message] };
   }
 
   const userIds = [...new Set(users.map((u) => u.user_id))];
 
-  console.log(`Found ${userIds.length} users with feeds to sync`);
+  logger.info(`Found ${userIds.length} users with feeds to sync`);
 
   for (const userId of userIds) {
     const result = await syncFeedsForUser(userId);
@@ -44,7 +45,7 @@ export async function syncFeeds(): Promise<{
     errors.push(...result.errors);
   }
 
-  console.log("Feed sync completed");
+  logger.info("Feed sync completed");
   return { success: true, synced, errors };
 }
 
@@ -61,23 +62,32 @@ async function syncFeedsForUser(
     .eq("user_id", userId);
 
   if (feedsError) {
-    console.error(`Error fetching feeds for user:`, feedsError);
+    logger.error("Error fetching feeds for user", {
+      userId,
+      error: feedsError,
+    });
     return { synced: 0, errors: [feedsError.message] };
   }
 
   if (!feeds || feeds.length === 0) {
-    console.log("No feeds found for this user");
+    logger.info("No feeds found for this user");
     return { synced: 0, errors: [] };
   }
 
-  console.log(`Syncing ${feeds.length} feeds...`);
+  logger.info(`Syncing ${feeds.length} feeds for user ${userId}`);
 
   for (const feed of feeds) {
     try {
       const parsed = await parseFeed(feed.url);
 
       const siteMeta = parsed.link
-        ? await fetchMetadata(parsed.link).catch(() => null)
+        ? await fetchMetadata(parsed.link).catch((err) => {
+            logger.warn("Failed to fetch metadata for feed site", {
+              url: parsed.link,
+              error: err,
+            });
+            return null;
+          })
         : null;
 
       // Update feed info
@@ -134,7 +144,13 @@ async function syncFeedsForUser(
         if (targetWorkspaceId) {
           const metadataResults = await Promise.all(
             newEntries.map((item) =>
-              fetchMetadata(item.link).catch(() => null),
+              fetchMetadata(item.link).catch((err) => {
+                logger.warn("Failed to fetch metadata for feed entry", {
+                  url: item.link,
+                  error: err,
+                });
+                return null;
+              }),
             ),
           );
 
@@ -159,7 +175,11 @@ async function syncFeedsForUser(
       synced++;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error syncing feed:", errorMsg);
+      logger.error("Error syncing feed", {
+        feedUrl: feed.url,
+        errorMsg,
+        error,
+      });
       errors.push(errorMsg);
       // Update feed with error?
       await supabase
@@ -177,7 +197,11 @@ async function syncFeedsForUser(
 // Run if executed directly
 if (require.main === module) {
   syncFeeds().then((result) => {
-    console.log("Sync result:", result);
+    logger.info("Feed sync result", {
+      success: result.success,
+      synced: result.synced,
+      errorCount: result.errors.length,
+    });
     process.exit(result.success ? 0 : 1);
   });
 }

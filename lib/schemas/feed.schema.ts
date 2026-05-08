@@ -26,11 +26,6 @@ export const feedCreateSchema = z.object({
   workspaceId: uuidSchema.optional().nullable(),
 });
 
-export const feedSubscribeSchema = z.object({
-  url: z.string().url("Please enter a valid URL"),
-  workspaceId: uuidSchema.optional().nullable(),
-});
-
 export const feedRefreshSchema = z.object({
   id: uuidSchema,
 });
@@ -40,6 +35,3 @@ export const feedDeleteSchema = z.object({
 });
 
 export type Feed = z.infer<typeof feedSchema>;
-export type FeedWithEntries = Feed & {
-  entries_count: number;
-};

@@ -6,6 +6,7 @@
 import { existsSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import * as esbuild from "esbuild";
+import { logger } from "~/lib/logger";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const EXT_DIR = resolve(ROOT, "extension");
@@ -17,7 +18,6 @@ const entryPoints = [
   resolve(EXT_DIR, "options.ts"),
   resolve(EXT_DIR, "storage.ts"),
   resolve(EXT_DIR, "constants.ts"),
-  resolve(EXT_DIR, "logger.ts"),
   resolve(EXT_DIR, "x-capture.ts"),
 ];
 
@@ -41,11 +41,11 @@ async function main() {
   if (watch) {
     const ctx = await esbuild.context(config);
     await ctx.watch();
-    console.log("[ext:watch] Watching for changes...");
+    logger.info("Watching extension for changes...");
   } else {
     await esbuild.build(config);
-    console.log("[ext:build] Built extension to extension/dist/");
+    logger.info("Extension built to extension/dist/");
   }
 }
 
-main().catch(console.error);
+main().catch((error) => logger.error("Build failed", { error }));

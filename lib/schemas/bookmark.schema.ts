@@ -78,7 +78,4 @@ const bookmarkSortSchemaBase = z.object({
 });
 
 export type BookmarkSortBy = z.infer<typeof bookmarkSortSchemaBase>["sortBy"];
-export type BookmarkSortOrder = z.infer<
-  typeof bookmarkSortSchemaBase
->["sortOrder"];
 export type BookmarkSort = z.infer<typeof bookmarkSortSchemaBase>;

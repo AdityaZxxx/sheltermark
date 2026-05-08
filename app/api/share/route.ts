@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "~/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -31,7 +32,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.redirect(dest, { status: 303 });
-  } catch {
+  } catch (error) {
+    logger.error("Share redirect failed", { error });
     return NextResponse.redirect(new URL("/dashboard", request.url), {
       status: 303,
     });

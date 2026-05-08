@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import { logger } from "~/lib/logger";
 import type {
   BookmarkPreview,
   WorkspaceWithBookmarks,
@@ -328,7 +329,8 @@ export async function uploadAvatar(
       return { success: false, error: profileError.message };
     }
     return { success: true, data: { avatarUrl } };
-  } catch (_error) {
+  } catch (error) {
+    logger.error("Failed to upload avatar", { error, userId });
     return { success: false, error: "Failed to upload avatar" };
   }
 }
@@ -357,7 +359,8 @@ export async function deleteAvatar(
       .eq("id", userId);
     if (profileError) return { success: false, error: profileError.message };
     return { success: true, data: null };
-  } catch {
+  } catch (error) {
+    logger.error("Failed to delete avatar", { error, userId });
     return { success: false, error: "Failed to delete avatar" };
   }
 }
@@ -402,7 +405,8 @@ export async function deleteAccount(
       };
     }
     return { success: true, data: null };
-  } catch {
+  } catch (error) {
+    logger.error("Failed to delete account", { error, userId });
     return { success: false, error: "Failed to delete account" };
   }
 }

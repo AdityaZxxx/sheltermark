@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { importBookmarks, previewImport } from "~/app/action/import.action";
 
-export type ImportStep = "upload" | "preview" | "importing" | "done";
+type ImportStep = "upload" | "preview" | "importing" | "done";
 
 export interface PreviewData {
   totalBookmarks: number;
@@ -20,14 +20,14 @@ export interface ImportResult {
   skipped: number;
 }
 
-export interface ImportOptions {
+interface ImportOptions {
   targetWorkspaceId: string | null;
   createWorkspace: boolean;
   newWorkspaceName?: string;
   duplicateStrategy?: "skip" | "replace";
 }
 
-export interface UseImportDialogReturn {
+interface UseImportDialogReturn {
   step: ImportStep;
   file: File | null;
   fileType: "json" | "csv";
