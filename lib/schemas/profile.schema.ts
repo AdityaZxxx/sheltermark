@@ -10,13 +10,13 @@ export const usernameSchema = z
       "Username must only contain lowercase letters, numbers, and underscores",
   });
 
-export const socialUsernameSchema = z
+const socialUsernameSchema = z
   .string()
   .regex(/^[a-zA-Z0-9_-]+$/, "Invalid username")
   .optional()
   .or(z.literal(""));
 
-export const websiteSchema = z
+const websiteSchema = z
   .string()
   .refine(
     (val) => {
@@ -85,23 +85,9 @@ export const importOptionsSchema = z.object({
   newWorkspaceName: z.string().min(1).max(35).optional(),
 });
 
-export const importPreviewSchema = z.object({
-  totalBookmarks: z.number(),
-  validBookmarks: z.number(),
-  duplicates: z.number(),
-  workspaces: z.array(
-    z.object({
-      name: z.string(),
-      count: z.number(),
-    }),
-  ),
-});
-
 export type Profile = z.infer<typeof profileSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePublicProfileInput = z.infer<
   typeof updatePublicProfileSchema
 >;
-export type ExportOptionsInput = z.infer<typeof exportOptionsSchema>;
 export type ImportOptionsInput = z.infer<typeof importOptionsSchema>;
-export type ImportPreviewOutput = z.infer<typeof importPreviewSchema>;

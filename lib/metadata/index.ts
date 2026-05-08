@@ -1,3 +1,4 @@
+import { logger } from "../logger";
 import { extractMetadataFromHtml } from "./extract";
 import { isSafeUrl, resolveFavicon, safeFetchHtml } from "./fetch";
 import { fallbackStrategy, fetchViaMicrolink } from "./strategies";
@@ -76,7 +77,10 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
 
   const [isSafe, fallbackResult] = await Promise.all([
     isSafeUrl(url),
-    fallbackStrategy(url, hostname).catch(() => null),
+    fallbackStrategy(url, hostname).catch((err) => {
+      logger.warn("Fallback strategy failed", { url, error: err });
+      return null;
+    }),
   ]);
 
   if (!isSafe) {
@@ -91,8 +95,14 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
   }
 
   const [fetchResult, microlinkPromise] = await Promise.all([
-    safeFetchHtml(url).catch(() => null),
-    fetchViaMicrolink(url).catch(() => null),
+    safeFetchHtml(url).catch((err) => {
+      logger.warn("Safe fetch HTML failed", { url, error: err });
+      return null;
+    }),
+    fetchViaMicrolink(url).catch((err) => {
+      logger.warn("Microlink fetch failed", { url, error: err });
+      return null;
+    }),
   ]);
 
   let finalMetadata: Metadata;

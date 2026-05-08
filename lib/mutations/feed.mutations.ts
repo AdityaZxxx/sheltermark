@@ -7,6 +7,7 @@ import {
   syncAllFeeds,
 } from "~/app/action/feed.action";
 import type { ActionResult } from "~/lib/action-result";
+import { logger } from "~/lib/logger";
 import { createOptimisticMutation } from "~/lib/mutations/base";
 import { feedKeys } from "~/lib/query-keys";
 import type { Feed } from "~/lib/schemas/feed.schema";
@@ -47,8 +48,8 @@ export function useSubscribeToFeed(userId: string | undefined) {
 
       return { previousFeeds };
     },
-    onError: (error, _variables, context) => {
-      console.error("[useFeeds] subscribeToFeed failed:", error);
+    onError: (error, variables, context) => {
+      logger.error("subscribeToFeed failed", { error, variables: variables });
       if (context?.previousFeeds) {
         queryClient.setQueryData(queryKey, context.previousFeeds);
       }
@@ -116,7 +117,7 @@ export function useSyncAllFeeds(userId: string | undefined) {
       }
     },
     onError: (error) => {
-      console.error("[useFeeds] syncAllFeeds failed:", error);
+      logger.error("syncAllFeeds failed", { error });
       toast.error("Failed to sync feeds");
     },
     onSettled: () => {

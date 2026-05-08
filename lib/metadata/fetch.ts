@@ -2,9 +2,9 @@ import dns from "node:dns/promises";
 import { isIP } from "node:net";
 import { getGoogleFavicon, isPrivateIP } from "./utils";
 
-export const MAX_REDIRECTS = 5;
-export const REQUEST_TIMEOUT = 10000;
-export const MAX_HTML_SIZE = 200 * 1024;
+const MAX_REDIRECTS = 5;
+const REQUEST_TIMEOUT = 10000;
+const MAX_HTML_SIZE = 200 * 1024;
 
 const DNS_TIMEOUT = 3000;
 
@@ -32,7 +32,7 @@ export async function isSafeUrl(url: string): Promise<boolean> {
   }
 }
 
-export async function fetchWithRetry(
+async function fetchWithRetry(
   url: string,
   options: RequestInit,
   maxRetries = 2,
@@ -70,7 +70,7 @@ export async function fetchWithRetry(
   throw lastError || new Error("Max retries exceeded");
 }
 
-export async function readHtmlWithLimit(
+async function readHtmlWithLimit(
   response: Response,
   maxBytes: number,
 ): Promise<string> {

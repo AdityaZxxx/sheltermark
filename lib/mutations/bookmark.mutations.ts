@@ -7,6 +7,7 @@ import {
   refetchBookmarkMetadata,
   renameBookmark,
 } from "~/app/action/bookmark.action";
+import { logger } from "~/lib/logger";
 import { createOptimisticMutation } from "~/lib/mutations/base";
 import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
 import type {
@@ -55,8 +56,8 @@ export function useAddBookmark(userId: string | undefined) {
 
       return { previousBookmarks };
     },
-    onError: (error, _variables, context) => {
-      console.error("[useBookmarks] addBookmark failed:", error);
+    onError: (error, variables, context) => {
+      logger.error("addBookmark failed", { error, variables: variables });
       if (context?.previousBookmarks) {
         queryClient.setQueryData(bookmarkKeys.all, context.previousBookmarks);
       }
@@ -110,6 +111,7 @@ export function useMoveBookmarks(userId: string | undefined) {
     mutationFn: moveBookmarks,
     queryKey: bookmarkKeys.all,
     dependentQueryKeys: userId ? [workspaceKeys.byUser(userId)] : [],
+    successMessage: null,
     errorMessage: "Failed to move bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
       const prev = oldData as Bookmark[];

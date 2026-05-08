@@ -44,7 +44,14 @@ async function getCachedCheck(
   const existing = checkCache.get(key);
   if (existing) return existing;
 
-  const promise = checkBookmark({ url, workspaceId }).catch(() => null);
+  const promise = checkBookmark({ url, workspaceId }).catch((err) => {
+    console.warn(`[Sheltermark] Cached check failed`, {
+      url,
+      workspaceId,
+      error: err,
+    });
+    return null;
+  });
   checkCache.set(key, promise);
 
   setTimeout(() => {
@@ -309,6 +316,10 @@ async function handleSaveBookmark({
   workspaceId,
 }: SaveBookmarkParams): Promise<SaveResult> {
   const baseUrl = await getBaseUrl();
+  console.info(`[Sheltermark] POST /api/extension/bookmark`, {
+    url,
+    workspaceId,
+  });
 
   const response = await fetch(`${baseUrl}/api/extension/bookmark`, {
     method: "POST",
@@ -319,6 +330,11 @@ async function handleSaveBookmark({
       title: title ?? null,
       workspace_id: workspaceId,
     }),
+  });
+
+  console.debug(`[Sheltermark] Bookmark API response`, {
+    status: response.status,
+    statusText: response.statusText,
   });
 
   if (response.status === 401) return { needsLogin: true };
@@ -340,13 +356,14 @@ async function handleSaveBookmark({
 
 async function handleXBookmark(url: string): Promise<SaveResult> {
   const workspaceId = await getLastWorkspace();
+  console.info(`[Sheltermark] X bookmark captured`, { url, workspaceId });
   try {
     const result = await handleSaveBookmark({ url, workspaceId });
     await handleSaveResult(result, workspaceId);
     return result;
   } catch (error) {
-    const e = error as { message?: string };
-    console.error("[Sheltermark] X bookmark error:", error);
+    const e = error as Error;
+    console.error(`[Sheltermark] X bookmark failed`, { url, error: e.message });
     showNotification("Error", e.message || "Failed to save", "error");
     return { success: false, error: e.message };
   }
@@ -382,10 +399,9 @@ function showNotification(
     },
     (id) => {
       if (chrome.runtime.lastError) {
-        console.error(
-          "[Sheltermark] Notification failed:",
-          chrome.runtime.lastError.message,
-        );
+        console.error(`[Sheltermark] Notification failed`, {
+          error: chrome.runtime.lastError.message,
+        });
         return;
       }
       setTimeout(() => chrome.notifications.clear(id), NOTIFICATION_DURATION);

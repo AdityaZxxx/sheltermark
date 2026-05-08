@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logger } from "~/lib/logger";
 
 export default function ErrorBoundary({
   error,
@@ -10,7 +11,7 @@ export default function ErrorBoundary({
   reset?: () => void;
 }) {
   useEffect(() => {
-    console.error("ErrorBoundary caught:", error);
+    logger.error("ErrorBoundary caught", { error, digest: error.digest });
   }, [error]);
 
   return (

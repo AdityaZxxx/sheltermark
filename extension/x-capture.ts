@@ -76,7 +76,10 @@
         url: tweetUrl,
       })
       .catch((error: unknown) => {
-        console.error("[Sheltermark] Failed to send message:", error);
+        console.error(`[Sheltermark] Failed to send X bookmark message`, {
+          tweetUrl,
+          error,
+        });
       });
   }
 

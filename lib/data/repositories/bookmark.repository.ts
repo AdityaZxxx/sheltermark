@@ -264,7 +264,7 @@ export async function refetchMetadata(
 // ----------------- Export bookmarks (query only) -----------------
 // This function queries Supabase for bookmarks along with their associated
 // workspaces. It returns raw data which will be formatted by the action layer.
-export type BookmarkWithWorkspace = {
+type BookmarkWithWorkspace = {
   id: string;
   url: string;
   title: string | null;
