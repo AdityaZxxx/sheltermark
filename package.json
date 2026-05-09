@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check:urls-health": "bun run .github/scripts/check-urls.js",
+    "check:urls-health": "bun run scripts/check-urls.ts",
     "check:types": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
