@@ -1,9 +1,6 @@
+import { httpFetch } from "~/lib/utils/http-fetch";
 import type { Metadata } from "./types";
-import {
-  decodeHtmlEntities,
-  fetchWithTimeout,
-  getGoogleFavicon,
-} from "./utils";
+import { decodeHtmlEntities, getGoogleFavicon } from "./utils";
 
 type Platform = "twitter" | "youtube" | "js-heavy" | "generic";
 
@@ -58,9 +55,7 @@ function extractYouTubeVideoId(url: string): string | null {
 
 async function fetchTwitter(url: string): Promise<Metadata | null> {
   const apiUrl = `https://api.fxtwitter.com${new URL(url).pathname}`;
-  const res = await fetchWithTimeout(apiUrl, {
-    headers: { "User-Agent": "Sheltermark/1.0" },
-  });
+  const { response: res } = await httpFetch(apiUrl);
   if (!res.ok) return null;
   const data = await res.json();
   if (data.tweet) {
@@ -92,7 +87,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
 
   for (const fetcher of [
     async () => {
-      const res = await fetchWithTimeout(
+      const { response: res } = await httpFetch(
         `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
         { headers: { Accept: "application/json" } },
       );
@@ -105,7 +100,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
       };
     },
     async () => {
-      const res = await fetchWithTimeout(
+      const { response: res } = await httpFetch(
         `https://noembed.com/embed?url=${encodeURIComponent(url)}`,
         { headers: { Accept: "application/json" } },
       );
@@ -140,7 +135,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
 }
 
 async function fetchJsHeavy(url: string): Promise<Metadata | null> {
-  const res = await fetchWithTimeout(
+  const { response: res } = await httpFetch(
     `https://api.microlink.io?url=${encodeURIComponent(url)}`,
     { headers: { Accept: "application/json" } },
   );
