@@ -111,37 +111,35 @@ export function WorkspaceMenu() {
               <DropdownMenuSeparator />
             </>
           )}
-          <div className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="sr-only">
-                Workspaces
-              </DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={currentWorkspace?.id ?? ""}
-                onValueChange={setActiveWorkspace}
-              >
-                {workspaces.map((ws) => (
-                  <DropdownMenuRadioItem value={ws.id} key={ws.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: getPastelColor(ws.id) }}
-                      />
-                      <span className="truncate">{ws.name}</span>
-                      {ws.is_public && (
-                        <GlobeIcon className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                    {currentWorkspace?.id !== ws.id && (
-                      <span className="absolute right-2 text-xs text-muted-foreground">
-                        {ws.bookmarks_count}
-                      </span>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="sr-only">
+              Workspaces
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={currentWorkspace?.id ?? ""}
+              onValueChange={setActiveWorkspace}
+            >
+              {workspaces.map((ws) => (
+                <DropdownMenuRadioItem value={ws.id} key={ws.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: getPastelColor(ws.id) }}
+                    />
+                    <span className="truncate">{ws.name}</span>
+                    {ws.is_public && (
+                      <GlobeIcon className="h-4 w-4 text-muted-foreground" />
                     )}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuGroup>
-          </div>
+                  </div>
+                  {currentWorkspace?.id !== ws.id && (
+                    <span className="absolute right-2 text-xs text-muted-foreground">
+                      {ws.bookmarks_count}
+                    </span>
+                  )}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
 
           <DropdownMenuItem

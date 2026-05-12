@@ -2,8 +2,9 @@
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer } from "react";
 import { checkUsernameAvailability } from "~/app/action/setting.action";
+import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import {
   Field,
   FieldContent,
@@ -20,12 +21,6 @@ import { Textarea } from "../ui/textarea";
 
 interface SettingsProfileTabProps {
   onCancel: () => void;
-  onRegisterFooter: (state: {
-    isSubmitting: boolean;
-    isDirty: boolean;
-    isDisabled: boolean;
-    onSubmit: () => void;
-  }) => void;
 }
 
 function extractUsername(url: string | null | undefined): string {
@@ -86,10 +81,7 @@ function usernameStatusReducer(
   }
 }
 
-export function SettingsProfileTab({
-  onCancel,
-  onRegisterFooter,
-}: SettingsProfileTabProps) {
+export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
   const { profile, updatePublicProfile } = useProfile();
 
   const initialValues = profile
@@ -183,31 +175,16 @@ export function SettingsProfileTab({
   }, [debouncedUsername, originalUsername]);
 
   const showUsernameIcon = usernameValue && usernameValue.length >= 3;
-  const footerDisabled =
-    usernameStatus === "taken" || usernameStatus === "checking";
-
-  const formRef = useRef(form);
-  formRef.current = form;
-
-  useEffect(() => {
-    onRegisterFooter({
-      isSubmitting,
-      isDirty,
-      isDisabled: footerDisabled,
-      onSubmit: () => formRef.current.handleSubmit(),
-    });
-  }, [isSubmitting, isDirty, footerDisabled, onRegisterFooter]);
 
   return (
     <form
-      id="settings-profile-form"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
       }}
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex flex-col"
     >
-      <FieldGroup className="scroll-fade flex-1 overflow-y-auto px-4 pb-4">
+      <FieldGroup>
         <form.Field name="is_public">
           {(field) => (
             <Field orientation="horizontal">
@@ -371,6 +348,13 @@ export function SettingsProfileTab({
           }}
         </form.Field>
       </FieldGroup>
+
+      <SettingsDialogFooter
+        isSubmitting={isSubmitting}
+        isDirty={isDirty}
+        isDisabled={usernameStatus === "taken" || usernameStatus === "checking"}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

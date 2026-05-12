@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
 import { useViewPreference } from "~/hooks/use-view-preference";
@@ -306,7 +306,7 @@ export function useBookmarkListManager(
   const handleDeleteTriggerRef = useRef(handleDeleteTrigger);
   handleDeleteTriggerRef.current = handleDeleteTrigger;
 
-  useEffect(() => {
+  useState(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (editDialogOpenRef.current || moveDialogOpenRef.current) return;
 
@@ -392,7 +392,7 @@ export function useBookmarkListManager(
       window.removeEventListener("keydown", handleGlobalKeyDown);
       window.removeEventListener("keydown", handleSelectionEscape);
     };
-  }, []);
+  });
 
   // ── Actions ──────────────────────────────────────────────────
   const handleCopyUrl = useCallback((url: string) => {

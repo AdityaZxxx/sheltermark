@@ -26,16 +26,8 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { SettingsDialogFooter } from "./setting-dialog-footer";
 import { SettingsGeneralTab } from "./setting-general-tab";
 import { SettingsProfileTab } from "./setting-profile-tab";
-
-interface SettingsFooterState {
-  isSubmitting: boolean;
-  isDirty: boolean;
-  isDisabled?: boolean;
-  onSubmit: () => void;
-}
 
 interface SettingsDialogProps {
   open: boolean;
@@ -53,9 +45,6 @@ export function SettingsDialog({
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [footerState, setFooterState] = useState<SettingsFooterState | null>(
-    null,
-  );
   const isChildDialogOpen =
     exportDialogOpen || importDialogOpen || deleteAlertOpen;
 
@@ -81,35 +70,32 @@ export function SettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex flex-col max-h-[95vh] gap-0 overflow-hidden p-0 transition-all duration-200"
+        className="flex flex-col max-h-[95vh] transition-all duration-200"
         style={{
           filter: isChildDialogOpen ? "blur(8px)" : undefined,
           opacity: isChildDialogOpen ? 0.5 : undefined,
         }}
       >
-        <DialogHeader className="px-4 pt-4 pb-3">
+        <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>Manage your account settings.</DialogDescription>
         </DialogHeader>
+        <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="w-full">
+            <TabsTrigger value="general" className="flex-1">
+              <GearIcon className="size-4" />
+              General
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex-1">
+              <UserIcon className="size-4" />
+              Profile
+            </TabsTrigger>
+          </TabsList>
 
-        <Tabs
-          defaultValue="general"
-          className="flex flex-1 flex-col min-h-0 gap-3"
-        >
-          <div className="px-4">
-            <TabsList className="w-full">
-              <TabsTrigger value="general">
-                <GearIcon className="size-4" />
-                General
-              </TabsTrigger>
-              <TabsTrigger value="profile">
-                <UserIcon className="size-4" />
-                Profile
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="general" className="flex flex-1 min-h-0 flex-col">
+          <TabsContent
+            value="general"
+            className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 my-6"
+          >
             <SettingsGeneralTab
               user={user}
               onCancel={() => onOpenChange(false)}
@@ -118,27 +104,16 @@ export function SettingsDialog({
               onOpenDeleteAlert={() => {
                 setDeleteAlertOpen(true);
               }}
-              onRegisterFooter={setFooterState}
             />
           </TabsContent>
 
-          <TabsContent value="profile" className="flex flex-1 min-h-0 flex-col">
-            <SettingsProfileTab
-              onCancel={() => onOpenChange(false)}
-              onRegisterFooter={setFooterState}
-            />
+          <TabsContent
+            value="profile"
+            className="flex-1 overflow-y-auto overflow-x-hidden -mx-2 px-2 my-6"
+          >
+            <SettingsProfileTab onCancel={() => onOpenChange(false)} />
           </TabsContent>
         </Tabs>
-
-        {footerState && (
-          <SettingsDialogFooter
-            isSubmitting={footerState.isSubmitting}
-            isDirty={footerState.isDirty}
-            isDisabled={footerState.isDisabled}
-            onCancel={() => onOpenChange(false)}
-            onSubmit={footerState.onSubmit}
-          />
-        )}
       </DialogContent>
 
       <ExportDialog

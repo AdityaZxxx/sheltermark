@@ -16,7 +16,6 @@ const entryPoints = [
   resolve(EXT_DIR, "background.ts"),
   resolve(EXT_DIR, "popup.ts"),
   resolve(EXT_DIR, "options.ts"),
-  resolve(EXT_DIR, "queue.ts"),
   resolve(EXT_DIR, "storage.ts"),
   resolve(EXT_DIR, "constants.ts"),
   resolve(EXT_DIR, "x-capture.ts"),

@@ -50,11 +50,11 @@ export function VirtualList<T extends { id: string }>({
       return h > 0 ? h : estimateSize;
     },
     overscan,
-    gap,
     getItemKey: (index) => items[index]?.id ?? index,
   });
 
   const virtualItems = virtualizer.getVirtualItems();
+  const totalGap = gap > 0 ? Math.max(0, items.length - 1) * gap : 0;
 
   return (
     <>
@@ -62,7 +62,6 @@ export function VirtualList<T extends { id: string }>({
       <div
         ref={parentRef}
         data-virtual-scroll
-        className="scroll-fade"
         style={{
           height: listHeight > 0 ? `${listHeight}px` : "auto",
           overflowY: "auto",
@@ -73,7 +72,7 @@ export function VirtualList<T extends { id: string }>({
       >
         <div
           style={{
-            height: `${virtualizer.getTotalSize()}px`,
+            height: `${virtualizer.getTotalSize() + totalGap}px`,
             position: "relative",
           }}
         >
@@ -90,7 +89,8 @@ export function VirtualList<T extends { id: string }>({
                   top: 0,
                   left: 0,
                   width: "100%",
-                  transform: `translateY(${virtualItem.start}px)`,
+                  transform: `translateY(${virtualItem.start + virtualItem.index * gap}px)`,
+                  marginBottom: gap > 0 ? `${gap}px` : undefined,
                 }}
               >
                 {renderItem(item, virtualItem.index)}

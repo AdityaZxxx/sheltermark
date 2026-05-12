@@ -1,6 +1,7 @@
 import {
+  type AuthResult,
+  type CheckResult,
   MESSAGE_TYPES,
-  type PopupInfo,
   type TabInfo,
   type Workspace,
 } from "./constants.js";
@@ -9,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const { getBaseUrl, getLastWorkspace, setLastWorkspace } = await import(
     "./storage.js"
   );
+  const baseUrl = await getBaseUrl();
 
   const authSection = document.getElementById("auth-section") as HTMLElement;
   const mainSection = document.getElementById("main-section") as HTMLElement;
@@ -23,86 +25,35 @@ document.addEventListener("DOMContentLoaded", async () => {
   let selectedWorkspaceId: string | null = null;
   let currentTabInfo: TabInfo | null = null;
   let isSaved = false;
-  let currentUrl: string | null = null;
+  let checkGeneration = 0;
 
   mainSection.classList.remove("hidden");
 
-  authBtn.addEventListener("click", async () => {
-    const baseUrl = await getBaseUrl();
-    void chrome.tabs.create({ url: `${baseUrl}/login` });
-  });
+  const [auth, tabInfo] = await Promise.all([checkAuth(), getCurrentTabInfo()]);
+  currentTabInfo = tabInfo;
+  updateSaveButton();
 
-  currentTabInfo = await getCurrentTabInfo();
-  currentUrl = currentTabInfo?.url ?? null;
+  if (!auth.authenticated) {
+    showAuthRequired();
+    authBtn.addEventListener("click", () => {
+      chrome.tabs.create({ url: `${baseUrl}/login` });
+    });
+    return;
+  }
 
-  await initPopup();
+  await Promise.all([loadWorkspaces(), checkAlreadySaved()]);
 
   updateSaveButton();
   saveBtn.focus();
 
-  async function initPopup(): Promise<void> {
-    const lastWorkspace = await getLastWorkspace();
-
-    let popupInfo: PopupInfo;
-    try {
-      popupInfo = (await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.GET_POPUP,
-        data: { url: currentUrl ?? "", workspaceId: lastWorkspace },
-      })) as PopupInfo;
-    } catch {
-      statusDiv.textContent = "Failed to load";
-      statusDiv.style.color = "#ef4444";
-      return;
-    }
-
-    if (!popupInfo.authenticated) {
-      showAuthRequired();
-      return;
-    }
-
-    workspaces = popupInfo.workspaces ?? [];
-
-    workspaceSelect.innerHTML = "";
-
-    if (workspaces.length === 0) {
-      workspaceSelect.classList.add("hidden");
-      return;
-    }
-
-    if (workspaces.length === 1) {
-      workspaceSelect.classList.add("hidden");
-      selectedWorkspaceId = workspaces[0]?.id ?? null;
-      await setLastWorkspace(selectedWorkspaceId);
-    } else {
-      const defaultWs = workspaces.find((w) => w.is_default);
-
-      workspaces.forEach((ws) => {
-        const option = document.createElement("option");
-        option.value = ws.id;
-        option.textContent = ws.name + (ws.is_default ? " (Default)" : "");
-        workspaceSelect.appendChild(option);
-      });
-
-      if (
-        popupInfo.lastWorkspace &&
-        workspaces.some((w) => w.id === popupInfo.lastWorkspace)
-      ) {
-        workspaceSelect.value = popupInfo.lastWorkspace;
-        selectedWorkspaceId = popupInfo.lastWorkspace;
-      } else if (defaultWs) {
-        workspaceSelect.value = defaultWs.id;
-        selectedWorkspaceId = defaultWs.id;
-      } else {
-        selectedWorkspaceId = workspaces[0]?.id ?? null;
-      }
-    }
-
-    isSaved = popupInfo.alreadySaved;
-    updateSaveButton();
-  }
-
   saveBtn.addEventListener("click", async () => {
-    if (isSaved || saveBtn.disabled || !currentUrl) return;
+    if (isSaved || saveBtn.disabled) return;
+
+    const url = currentTabInfo?.url;
+    if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) {
+      showError("Cannot save this page");
+      return;
+    }
 
     isSaved = true;
     saveBtn.disabled = true;
@@ -112,10 +63,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     chrome.runtime.sendMessage({
       type: MESSAGE_TYPES.SAVE_BOOKMARK,
       data: {
-        url: currentUrl,
+        url,
         title: currentTabInfo?.title ?? null,
         workspaceId: selectedWorkspaceId,
       },
+    });
+
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED,
+      data: { url, workspaceId: selectedWorkspaceId },
     });
 
     setTimeout(() => window.close(), 400);
@@ -128,20 +84,98 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     isSaved = false;
     updateSaveButton();
+    checkAlreadySaved();
+  });
 
-    if (!currentUrl || !selectedWorkspaceId) return;
+  async function checkAuth(): Promise<AuthResult> {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.CHECK_AUTH,
+      });
+      return (response as AuthResult) || { authenticated: false };
+    } catch {
+      return { authenticated: false };
+    }
+  }
+
+  async function loadWorkspaces(): Promise<void> {
+    try {
+      const response = (await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.GET_WORKSPACES,
+      })) as { workspaces?: Workspace[] };
+
+      workspaces = response.workspaces || [];
+
+      workspaceSelect.innerHTML = "";
+
+      if (workspaces.length === 0) {
+        workspaceSelect.classList.add("hidden");
+        return;
+      }
+
+      if (workspaces.length === 1) {
+        workspaceSelect.classList.add("hidden");
+        selectedWorkspaceId = workspaces[0]?.id ?? null;
+        await setLastWorkspace(selectedWorkspaceId);
+        return;
+      }
+
+      const defaultWs = workspaces.find((w) => w.is_default);
+      const lastUsed = await getLastWorkspace();
+
+      workspaces.forEach((ws) => {
+        const option = document.createElement("option");
+        option.value = ws.id;
+        option.textContent = ws.name + (ws.is_default ? " (Default)" : "");
+        workspaceSelect.appendChild(option);
+      });
+
+      if (lastUsed && workspaces.some((w) => w.id === lastUsed)) {
+        workspaceSelect.value = lastUsed;
+        selectedWorkspaceId = lastUsed;
+      } else if (defaultWs) {
+        workspaceSelect.value = defaultWs.id;
+        selectedWorkspaceId = defaultWs.id;
+      } else {
+        selectedWorkspaceId = workspaces[0]?.id ?? null;
+      }
+    } catch {
+      workspaceSelect.innerHTML = '<option value="">Error loading</option>';
+    }
+  }
+
+  async function checkAlreadySaved(): Promise<void> {
+    const url = currentTabInfo?.url;
+    if (!url || !selectedWorkspaceId) return;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) return;
+
+    const generation = ++checkGeneration;
 
     try {
-      const result = (await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.CHECK_BOOKMARK,
-        data: { url: currentUrl, workspaceId: selectedWorkspaceId },
-      })) as { saved?: boolean };
+      const cached = (await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.CHECK_BOOKMARK_CACHED,
+        data: { url, workspaceId: selectedWorkspaceId },
+      })) as CheckResult | undefined;
 
-      if (result.saved) {
-        isSaved = true;
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Already saved";
-        statusDiv.textContent = "";
+      if (generation !== checkGeneration) return;
+      if (cached?.saved) {
+        setAlreadySaved();
+        return;
+      }
+    } catch {
+      // fallback to network
+    }
+
+    try {
+      const response = (await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.CHECK_BOOKMARK,
+        data: { url, workspaceId: selectedWorkspaceId },
+      })) as CheckResult | undefined;
+
+      if (generation !== checkGeneration) return;
+
+      if (response?.saved) {
+        setAlreadySaved();
       } else {
         isSaved = false;
         saveBtn.disabled = false;
@@ -150,7 +184,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch {
       // silent
     }
-  });
+  }
+
+  function setAlreadySaved(): void {
+    isSaved = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Already saved";
+    statusDiv.textContent = "";
+  }
 
   function updateSaveButton(): void {
     if (isSaved) return;
@@ -185,11 +226,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function refreshAuthAndShowMain(): Promise<void> {
-    currentTabInfo = await getCurrentTabInfo();
-    currentUrl = currentTabInfo?.url ?? null;
-    await initPopup();
-    updateSaveButton();
-    saveBtn.focus();
+    const auth = await checkAuth();
+    if (auth.authenticated) {
+      authSection.classList.add("hidden");
+      mainSection.classList.remove("hidden");
+      await Promise.all([loadWorkspaces(), checkAlreadySaved()]);
+      updateSaveButton();
+      saveBtn.focus();
+    }
   }
 
   window.addEventListener("focus", refreshAuthAndShowMain);
@@ -198,6 +242,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       refreshAuthAndShowMain();
     }
   });
+
+  function showError(msg: string): void {
+    statusDiv.textContent = msg;
+    statusDiv.style.color = "#ef4444";
+  }
 
   function showSuccess(msg: string): void {
     statusDiv.textContent = msg;
