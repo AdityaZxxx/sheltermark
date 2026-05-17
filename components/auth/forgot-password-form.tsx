@@ -12,7 +12,6 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Button } from "../ui/button";
-import { AuthError } from "./auth-error";
 
 export function ForgotPasswordForm() {
   const [isPending, startTransition] = useTransition();
@@ -69,7 +68,15 @@ export function ForgotPasswordForm() {
         </p>
       </div>
 
-      {error && <AuthError error={error} id={forgotErrorId} />}
+      {error && (
+        <div
+          id={forgotErrorId}
+          aria-live="polite"
+          className="rounded-md border border-destructive/20 bg-destructive/5 p-3"
+        >
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <FieldGroup>

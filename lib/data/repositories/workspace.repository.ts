@@ -1,55 +1,36 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
-import type { DbClient } from "~/lib/data/db-client";
-import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type {
-  TrashedWorkspace,
-  WorkspaceWithCount,
-} from "~/lib/schemas/workspace.schema";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 import {
   workspaceCreateSchema,
   workspaceRenameSchema,
 } from "~/lib/schemas/workspace.schema";
 
 export async function getWorkspaces(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
 ): Promise<ActionResult<WorkspaceWithCount[]>> {
-  const [workspacesResult, countsResult] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("*")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("bookmarks")
-      .select("workspace_id")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .not("workspace_id", "is", null),
-  ]);
+  const { data, error } = await supabase
+    .from("workspaces")
+    .select(`*, bookmarks(count)`)
+    .order("created_at", { ascending: true })
+    .eq("user_id", userId);
 
-  if (workspacesResult.error)
-    return { success: false, error: workspacesResult.error.message };
+  if (error) return { success: false, error: error.message };
 
-  const countMap = new Map<string, number>();
-  for (const row of (countsResult.data ?? []) as { workspace_id: string }[]) {
-    countMap.set(row.workspace_id, (countMap.get(row.workspace_id) ?? 0) + 1);
-  }
-
-  const result = (
-    (workspacesResult.data ?? []) as Array<Record<string, unknown>>
-  ).map((workspace) => ({
+  const result = (data || []).map((workspace) => ({
     ...workspace,
-    bookmarks_count: countMap.get(workspace.id as string) ?? 0,
+    bookmarks_count:
+      (workspace as { bookmarks?: { count: number }[] }).bookmarks?.[0]
+        ?.count ?? 0,
+    bookmarks: undefined,
   }));
 
   return { success: true, data: result as WorkspaceWithCount[] };
 }
 
 export async function createWorkspace(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
@@ -84,78 +65,21 @@ export async function createWorkspace(
 }
 
 export async function deleteWorkspace(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
-  return deleteWorkspaceWithBookmarks(supabase, userId, id);
-}
+  // Check if it's default
+  const { data: ws } = await supabase
+    .from("workspaces")
+    .select("is_default")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
 
-export async function getTrashedWorkspaces(
-  supabase: DbClient,
-  userId: string,
-): Promise<ActionResult<TrashedWorkspace[]>> {
-  const [workspacesResult, bookmarksResult] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("*")
-      .eq("user_id", userId)
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false }),
-    supabase
-      .from("bookmarks")
-      .select("*")
-      .eq("user_id", userId)
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false }),
-  ]);
-
-  if (workspacesResult.error)
-    return { success: false, error: workspacesResult.error.message };
-
-  const trashedWorkspaceIds = new Set(
-    (workspacesResult.data ?? []).map((ws) => ws.id),
-  );
-
-  const bookmarksByWs = new Map<string, Bookmark[]>();
-  const standaloneBookmarks: Bookmark[] = [];
-  for (const bm of (bookmarksResult.data ?? []) as Bookmark[]) {
-    if (bm.workspace_id && trashedWorkspaceIds.has(bm.workspace_id)) {
-      const list = bookmarksByWs.get(bm.workspace_id) ?? [];
-      list.push(bm);
-      bookmarksByWs.set(bm.workspace_id, list);
-    } else {
-      standaloneBookmarks.push(bm);
-    }
+  if (ws?.is_default) {
+    return { success: false, error: "Cannot delete default workspace" };
   }
-
-  const result = (
-    (workspacesResult.data ?? []) as Array<Record<string, unknown>>
-  ).map((workspace) => ({
-    ...workspace,
-    bookmarks_count: bookmarksByWs.get(workspace.id as string)?.length ?? 0,
-    bookmarks: bookmarksByWs.get(workspace.id as string) ?? [],
-  }));
-
-  return {
-    success: true,
-    data: result as unknown as TrashedWorkspace[],
-  };
-}
-
-export async function permanentDeleteWorkspace(
-  supabase: DbClient,
-  userId: string,
-  id: string,
-): Promise<ActionResult<null>> {
-  // Hard-delete bookmarks first (avoids CASCADE issues with tracking)
-  const { error: bmError } = await supabase
-    .from("bookmarks")
-    .delete()
-    .eq("workspace_id", id)
-    .eq("user_id", userId);
-
-  if (bmError) return { success: false, error: bmError.message };
 
   const { error } = await supabase
     .from("workspaces")
@@ -167,32 +91,8 @@ export async function permanentDeleteWorkspace(
   return { success: true, data: null };
 }
 
-export async function emptyTrashWorkspaces(
-  supabase: DbClient,
-  userId: string,
-): Promise<ActionResult<null>> {
-  // Hard-delete all trashed bookmarks first
-  const { error: bmError } = await supabase
-    .from("bookmarks")
-    .delete()
-    .eq("user_id", userId)
-    .not("deleted_at", "is", null);
-
-  if (bmError) return { success: false, error: bmError.message };
-
-  // Then hard-delete trashed workspaces (CASCADE handles remaining bookmarks)
-  const { error } = await supabase
-    .from("workspaces")
-    .delete()
-    .eq("user_id", userId)
-    .not("deleted_at", "is", null);
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
-}
-
 export async function togglePublicStatus(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   id: string,
   isPublic: boolean,
@@ -208,16 +108,18 @@ export async function togglePublicStatus(
 }
 
 export async function setDefaultWorkspace(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
+  // First, unset all defaults
   const { error: unsetError } = await supabase
     .from("workspaces")
     .update({ is_default: false })
     .eq("user_id", userId);
   if (unsetError) return { success: false, error: unsetError.message };
 
+  // Then set the new default
   const { error: setError } = await supabase
     .from("workspaces")
     .update({ is_default: true })
@@ -228,7 +130,7 @@ export async function setDefaultWorkspace(
 }
 
 export async function toggleAutoCheckBroken(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   id: string,
   enabled: boolean,
@@ -243,7 +145,7 @@ export async function toggleAutoCheckBroken(
 }
 
 export async function createWorkspaceRaw(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   name: string,
 ): Promise<ActionResult<{ id: string }>> {
@@ -272,11 +174,11 @@ export async function createWorkspaceRaw(
     };
   }
 
-  return { success: true, data: { id: (data as { id: string }).id } };
+  return { success: true, data: { id: data.id } };
 }
 
 export async function getDefaultWorkspace(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
 ): Promise<ActionResult<{ id: string } | null>> {
   const { data, error } = await supabase
@@ -287,11 +189,11 @@ export async function getDefaultWorkspace(
     .maybeSingle();
 
   if (error) return { success: false, error: error.message };
-  return { success: true, data: data as { id: string } | null };
+  return { success: true, data: data ?? null };
 }
 
 export async function renameWorkspace(
-  supabase: DbClient,
+  supabase: SupabaseClient,
   userId: string,
   id: string,
   name: string,

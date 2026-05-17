@@ -18,10 +18,7 @@ const DEFAULT_TIMEOUT = 10_000;
 const DEFAULT_RETRIES = 2;
 const DEFAULT_USER_AGENT = "Sheltermark/1.0";
 const DEFAULT_MAX_HOPS = 5;
-// Retryable transient statuses. 504 (Gateway Timeout) is included because
-// it is RFC-defined as an upstream timeout — usually transient, like 502.
-// 504 was previously omitted, which meant a single 504 → confirmed_broken.
-const DEFAULT_RETRY_STATUSES = [429, 500, 502, 503, 504];
+const DEFAULT_RETRY_STATUSES = [429, 500, 502, 503];
 
 type HttpFetchOptions = {
   method?: "GET" | "HEAD" | "POST";

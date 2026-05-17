@@ -29,7 +29,7 @@ interface BookmarkContextMenuProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
-  onEdit?: (id: string) => void;
+  onRename?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -46,7 +46,7 @@ export function BookmarkContextMenu({
   workspaces = EMPTY_WORKSPACES,
   currentWorkspaceId,
   onSelect,
-  onEdit,
+  onRename,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -69,9 +69,9 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onEdit?.(id)}>
+        <ContextMenuItem onClick={() => onRename?.(id)}>
           <PencilIcon />
-          Edit
+          Rename
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>

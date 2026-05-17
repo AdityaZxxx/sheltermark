@@ -2,7 +2,7 @@
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { checkUsernameAvailability } from "~/app/action/setting.action";
 import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import {
@@ -63,24 +63,6 @@ function UsernameStatusIcon({
   return null;
 }
 
-type UsernameStatus = "idle" | "checking" | "available" | "taken";
-
-function usernameStatusReducer(
-  _state: UsernameStatus,
-  action: { type: "IDLE" | "CHECKING" | "AVAILABLE" | "TAKEN" },
-): UsernameStatus {
-  switch (action.type) {
-    case "IDLE":
-      return "idle";
-    case "CHECKING":
-      return "checking";
-    case "AVAILABLE":
-      return "available";
-    case "TAKEN":
-      return "taken";
-  }
-}
-
 export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
   const { profile, updatePublicProfile } = useProfile();
 
@@ -102,6 +84,10 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
         is_public: false,
       };
 
+  // Username availability state
+  const [usernameStatus, setUsernameStatus] = useState<
+    "idle" | "checking" | "available" | "taken"
+  >("idle");
   const originalUsername = profile?.username || "";
 
   const form = useForm({
@@ -130,49 +116,38 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
     useStore(form.store, (state) => state.values.username) || "";
   const debouncedUsername = useDebounce(usernameValue.trim(), 500);
 
-  // Use a reducer so the effect can dispatch state transitions
-  // (idle → checking → available|taken) without calling setState
-  // synchronously in the effect body. React Compiler can track
-  // dispatch because the reducer is a pure function.
-  const [usernameStatus, dispatch] = useReducer(usernameStatusReducer, "idle");
+  const checkUsername = useCallback(
+    async (username: string) => {
+      if (!username || username.length < 3 || username === originalUsername) {
+        setUsernameStatus("idle");
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        setUsernameStatus("idle");
+        return;
+      }
+
+      setUsernameStatus("checking");
+      const result = await checkUsernameAvailability({
+        username,
+        current_username: originalUsername,
+      });
+
+      if (!result.success) {
+        setUsernameStatus("idle");
+      } else if (result.data?.available) {
+        setUsernameStatus("available");
+      } else {
+        setUsernameStatus("taken");
+      }
+    },
+    [originalUsername],
+  );
 
   useEffect(() => {
-    if (
-      !debouncedUsername ||
-      debouncedUsername.length < 3 ||
-      debouncedUsername === originalUsername
-    ) {
-      dispatch({ type: "IDLE" });
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_]+$/.test(debouncedUsername)) {
-      dispatch({ type: "IDLE" });
-      return;
-    }
-
-    dispatch({ type: "CHECKING" });
-
-    let cancelled = false;
-
-    checkUsernameAvailability({
-      username: debouncedUsername,
-      current_username: originalUsername,
-    }).then((result) => {
-      if (cancelled) return;
-      if (!result.success) {
-        dispatch({ type: "IDLE" });
-      } else if (result.data?.available) {
-        dispatch({ type: "AVAILABLE" });
-      } else {
-        dispatch({ type: "TAKEN" });
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedUsername, originalUsername]);
+    checkUsername(debouncedUsername);
+  }, [debouncedUsername, checkUsername]);
 
   const showUsernameIcon = usernameValue && usernameValue.length >= 3;
 

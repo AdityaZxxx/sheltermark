@@ -6,19 +6,18 @@ import { useOptimisticMutation } from "~/lib/mutations/base";
 import { profileKeys } from "~/lib/query-keys";
 import type {
   Profile,
-  UpdateProfileInput,
   UpdatePublicProfileInput,
 } from "~/lib/schemas/profile.schema";
 
 export function useUpdateProfile(userId: string | undefined) {
-  return useOptimisticMutation<UpdateProfileInput, { message: string }>({
+  return useOptimisticMutation<{ name: string }, { message: string }>({
     mutationFn: updateProfile,
     queryKey: profileKeys.byUser(userId),
     successMessage: "Profile updated",
     errorMessage: "Failed to update profile",
-    prepareOptimisticData: (oldData, variables) => {
+    prepareOptimisticData: (oldData, { name }) => {
       const prev = oldData as Profile | null;
-      return prev ? { ...prev, ...variables } : prev;
+      return prev ? { ...prev, name } : prev;
     },
   });
 }

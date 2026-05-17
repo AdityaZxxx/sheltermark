@@ -49,7 +49,7 @@ export default async function DashboardPage() {
       <UserProvider user={user}>
         <main className="min-h-dvh bg-background">
           <Header user={user} />
-          <BookmarkView scope={{ type: "global" }} />
+          <BookmarkView />
           <Suspense>
             <ShareDialogManager />
           </Suspense>

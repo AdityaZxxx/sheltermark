@@ -133,105 +133,6 @@ export async function subscribeToFeed(
   return { success: true, data: feed as Feed };
 }
 
-type SyncFeedOptions = {
-  maxItems?: number;
-};
-
-async function syncSingleFeed(
-  supabase: SupabaseClient,
-  feed: Feed,
-  userId: string,
-  options?: SyncFeedOptions,
-): Promise<ActionResult<{ syncedCount: number }>> {
-  let feedData: ParsedFeed;
-  try {
-    feedData = await parseFeed(feed.url);
-  } catch (err) {
-    await supabase
-      .from("feeds")
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq("id", feed.id);
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Failed to parse feed",
-    };
-  }
-
-  const existingGuids = await supabase
-    .from("feed_entries")
-    .select("guid")
-    .eq("feed_id", feed.id)
-    .then((r) => new Set((r.data || []).map((e) => e.guid)));
-
-  let newItems = feedData.items.filter((item) => !existingGuids.has(item.guid));
-  if (options?.maxItems !== undefined) {
-    newItems = newItems.slice(0, options.maxItems);
-  }
-
-  if (newItems.length > 0) {
-    const entriesToInsert = newItems.map((item) => ({
-      feed_id: feed.id,
-      title: item.title,
-      link: item.link,
-      content: item.content,
-      summary: item.contentSnippet,
-      guid: item.guid,
-      published: item.pubDate ? new Date(item.pubDate).toISOString() : null,
-    }));
-    await supabase.from("feed_entries").insert(entriesToInsert);
-
-    let targetWorkspaceId = feed.workspace_id;
-    if (!targetWorkspaceId) {
-      const { data: wsData } = await supabase
-        .from("workspaces")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("is_default", true)
-        .single();
-      targetWorkspaceId = wsData?.id ?? null;
-    }
-
-    if (targetWorkspaceId) {
-      const metadataResults = await Promise.all(
-        newItems.map((item) => fetchMetadata(item.link).catch(() => null)),
-      );
-
-      const bookmarksToInsert = newItems.map((item, index) => {
-        const meta = metadataResults[index];
-        return {
-          user_id: userId,
-          workspace_id: targetWorkspaceId,
-          url: item.link,
-          title: item.title,
-          favicon_url: meta?.favicon_url || null,
-          og_image_url: meta?.og_image_url || null,
-        };
-      });
-
-      if (bookmarksToInsert.length > 0) {
-        await supabase.from("bookmarks").insert(bookmarksToInsert);
-      }
-    }
-  }
-
-  const siteMeta = feedData.link
-    ? await fetchMetadata(feedData.link).catch(() => null)
-    : null;
-
-  await supabase
-    .from("feeds")
-    .update({
-      title: feedData.title,
-      description: feedData.description,
-      site_url: feedData.link,
-      icon_url: siteMeta?.favicon_url || null,
-      last_synced_at: new Date().toISOString(),
-    })
-    .eq("id", feed.id);
-
-  return { success: true, data: { syncedCount: newItems.length } };
-}
-
 export async function refreshFeed(
   supabase: SupabaseClient,
   userId: string,
@@ -254,15 +155,96 @@ export async function refreshFeed(
     return { success: false, error: "Feed not found" };
   }
 
-  const result = await syncSingleFeed(supabase, feed as Feed, userId, {
-    maxItems: 20,
-  });
-  if (!result.success) return result;
+  let feedData: ParsedFeed | undefined;
+  try {
+    feedData = await parseFeed(feed.url);
+  } catch (err) {
+    await supabase
+      .from("feeds")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", id);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to parse feed",
+    };
+  }
 
-  return {
-    success: true,
-    data: { ...(feed as Feed), last_synced_at: new Date().toISOString() },
-  };
+  const existingGuids = await supabase
+    .from("feed_entries")
+    .select("guid")
+    .eq("feed_id", id)
+    .then((r) => new Set((r.data || []).map((e) => e.guid)));
+
+  const newItems = feedData.items
+    .filter((item) => !existingGuids.has(item.guid))
+    .slice(0, 20);
+
+  if (newItems.length > 0) {
+    const entriesToInsert = newItems.map((item) => ({
+      feed_id: id,
+      title: item.title,
+      link: item.link,
+      content: item.content,
+      summary: item.contentSnippet,
+      guid: item.guid,
+      published: item.pubDate ? new Date(item.pubDate).toISOString() : null,
+    }));
+    await supabase.from("feed_entries").insert(entriesToInsert);
+
+    const metadataResults = await Promise.all(
+      newItems.map((item) =>
+        fetchMetadata(item.link).catch((fetchErr) => {
+          logger.warn("Failed to fetch metadata for sync item", {
+            url: item.link,
+            error: fetchErr,
+          });
+          return null;
+        }),
+      ),
+    );
+
+    const bookmarksToInsert = newItems.map((item, index) => {
+      const meta = metadataResults[index];
+      return {
+        user_id: userId,
+        workspace_id: feed.workspace_id,
+        url: item.link,
+        title: item.title,
+        favicon_url: meta?.favicon_url || null,
+        og_image_url: meta?.og_image_url || null,
+      };
+    });
+
+    if (bookmarksToInsert.length > 0 && feed.workspace_id) {
+      await supabase.from("bookmarks").insert(bookmarksToInsert);
+    }
+  }
+
+  const siteMeta = feedData.link
+    ? await fetchMetadata(feedData.link).catch((fetchErr) => {
+        logger.warn("Failed to fetch metadata during feed sync", {
+          url: feedData.link,
+          error: fetchErr,
+        });
+        return null;
+      })
+    : null;
+  const { error: updateError } = await supabase
+    .from("feeds")
+    .update({
+      title: feedData.title,
+      description: feedData.description,
+      site_url: feedData.link,
+      icon_url: siteMeta?.favicon_url || null,
+      last_synced_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  return { success: true, data: { ...feed, title: feedData.title } as Feed };
 }
 
 export async function deleteFeed(
@@ -321,32 +303,4 @@ export async function syncAllFeeds(
   }
 
   return { success: true, data: { synced, errors } };
-}
-
-export async function syncAllFeedsGlobal(
-  supabase: SupabaseClient,
-): Promise<ActionResult<{ synced: number; errors: string[] }>> {
-  const { data: users, error } = await supabase
-    .from("feeds")
-    .select("user_id")
-    .not("user_id", "is", null);
-
-  if (error) return { success: false, error: error.message };
-
-  const userIds = [...new Set(users.map((u) => u.user_id))];
-
-  let totalSynced = 0;
-  const allErrors: string[] = [];
-
-  for (const userId of userIds) {
-    const result = await syncAllFeeds(supabase, userId);
-    if (result.success) {
-      totalSynced += result.data.synced;
-      allErrors.push(...result.data.errors);
-    } else {
-      allErrors.push(`User ${userId}: ${result.error}`);
-    }
-  }
-
-  return { success: true, data: { synced: totalSynced, errors: allErrors } };
 }

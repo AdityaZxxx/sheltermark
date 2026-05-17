@@ -20,7 +20,6 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
-import { AuthError } from "./auth-error";
 
 export function SignupForm({
   className,
@@ -131,7 +130,11 @@ export function SignupForm({
         </div>
       </div>
 
-      {error && <AuthError error={error} />}
+      {error && (
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleEmailSignup}>
         <FieldGroup>

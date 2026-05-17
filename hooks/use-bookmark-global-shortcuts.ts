@@ -3,67 +3,43 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
 
 interface UseBookmarkGlobalShortcutsProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
   filteredBookmarks: Bookmark[];
-  tagsByBookmarkId: Map<string, string[]>;
-  allTags: Tag[];
   focusedIndex: number;
   isSelectionMode: boolean;
-  editDialogOpen: boolean;
+  renameDialogOpen: boolean;
   deleteDialogOpen: boolean;
   selectAll: (ids: string[]) => void;
   toggleSelect: (id: string) => void;
   clearSelection: () => void;
-  handleEditTrigger: (
-    id: string,
-    bookmarks: Array<{
-      id: string;
-      title: string | null;
-      note: string | null;
-      tagsByBookmarkId: Map<string, string[]>;
-      allTags: Tag[];
-    }>,
-  ) => void;
+  handleRenameTrigger: (id: string, bookmarks: Bookmark[]) => void;
   handleBulkDeleteTrigger: (ids: string[]) => void;
 }
 
 export function useBookmarkGlobalShortcuts({
   inputRef,
   filteredBookmarks,
-  tagsByBookmarkId,
-  allTags,
   focusedIndex,
   isSelectionMode,
-  editDialogOpen,
+  renameDialogOpen,
   deleteDialogOpen,
   selectAll,
   toggleSelect,
   clearSelection,
-  handleEditTrigger,
+  handleRenameTrigger,
   handleBulkDeleteTrigger,
 }: UseBookmarkGlobalShortcutsProps) {
   const filteredBookmarksRef = useRef(filteredBookmarks);
-  const tagsByBookmarkIdRef = useRef(tagsByBookmarkId);
-  const allTagsRef = useRef(allTags);
   const isSelectionModeRef = useRef(isSelectionMode);
   const focusedIndexRef = useRef(focusedIndex);
   const deleteDialogOpenRef = useRef(deleteDialogOpen);
-  const editDialogOpenRef = useRef(editDialogOpen);
+  const renameDialogOpenRef = useRef(renameDialogOpen);
 
   useEffect(() => {
     filteredBookmarksRef.current = filteredBookmarks;
   }, [filteredBookmarks]);
-
-  useEffect(() => {
-    tagsByBookmarkIdRef.current = tagsByBookmarkId;
-  }, [tagsByBookmarkId]);
-
-  useEffect(() => {
-    allTagsRef.current = allTags;
-  }, [allTags]);
 
   useEffect(() => {
     isSelectionModeRef.current = isSelectionMode;
@@ -75,12 +51,12 @@ export function useBookmarkGlobalShortcuts({
 
   useEffect(() => {
     deleteDialogOpenRef.current = deleteDialogOpen;
-    editDialogOpenRef.current = editDialogOpen;
-  }, [deleteDialogOpen, editDialogOpen]);
+    renameDialogOpenRef.current = renameDialogOpen;
+  }, [deleteDialogOpen, renameDialogOpen]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (editDialogOpenRef.current) return;
+      if (renameDialogOpenRef.current) return;
 
       const activeElement = document.activeElement;
       const isInputFocused =
@@ -142,16 +118,7 @@ export function useBookmarkGlobalShortcuts({
 
         if ((e.metaKey || e.ctrlKey) && e.key === "e") {
           e.preventDefault();
-          handleEditTrigger(
-            item.id,
-            filteredBookmarksRef.current.map((b) => ({
-              id: b.id,
-              title: b.title,
-              note: b.note,
-              tagsByBookmarkId: tagsByBookmarkIdRef.current,
-              allTags: allTagsRef.current,
-            })),
-          );
+          handleRenameTrigger(item.id, filteredBookmarksRef.current);
           return;
         }
 
@@ -170,7 +137,7 @@ export function useBookmarkGlobalShortcuts({
     selectAll,
     toggleSelect,
     clearSelection,
-    handleEditTrigger,
+    handleRenameTrigger,
     handleBulkDeleteTrigger,
   ]);
 }

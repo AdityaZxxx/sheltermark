@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { useQueryState } from "nuqs";
 import { useCallback, useMemo } from "react";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
@@ -16,8 +16,7 @@ import {
 import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
 
 export function useWorkspaces() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const [activeWorkspaceId, setActiveWorkspaceId] = useQueryState("workspace");
   const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
   const serverUser = useUser();
   const userId = serverUser?.id ?? supabaseUser?.id;
@@ -26,31 +25,22 @@ export function useWorkspaces() {
     workspacesQueryOptions(userId),
   );
 
-  const routeWorkspaceId = useMemo(() => {
-    const match = pathname.match(/^\/workspace\/([^/]+)$/);
-    return match ? match[1] : null;
-  }, [pathname]);
-
   const currentWorkspace = useMemo(() => {
     if (workspaces.length === 0) return null;
-    if (!routeWorkspaceId) return null;
+    if (!activeWorkspaceId) {
+      return workspaces.find((ws) => ws.is_default) || workspaces[0];
+    }
     return (
-      workspaces.find((ws) => ws.id === routeWorkspaceId) ||
+      workspaces.find((ws) => ws.id === activeWorkspaceId) ||
       workspaces.find((ws) => ws.is_default) ||
       workspaces[0]
     );
-  }, [workspaces, routeWorkspaceId]);
+  }, [workspaces, activeWorkspaceId]);
 
   const setActiveWorkspace = useCallback(
-    (id: string) => {
-      router.push(`/workspace/${id}`);
-    },
-    [router],
+    (id: string) => setActiveWorkspaceId(id),
+    [setActiveWorkspaceId],
   );
-
-  const clearActiveWorkspace = useCallback(() => {
-    router.push("/dashboard");
-  }, [router]);
 
   const create = useCreateWorkspace(userId);
   const del = useDeleteWorkspace(userId);
@@ -64,7 +54,6 @@ export function useWorkspaces() {
     currentWorkspace,
     isLoading: isAuthLoading || isWsLoading,
     setActiveWorkspace,
-    clearActiveWorkspace,
     createWorkspace: create.mutate,
     isCreating: create.isPending,
     deleteWorkspace: del.mutate,

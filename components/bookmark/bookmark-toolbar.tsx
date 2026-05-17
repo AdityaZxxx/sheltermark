@@ -20,7 +20,6 @@ interface BookmarkToolbarProps {
   onDelete: () => void;
   onMove: () => void;
   onCopyUrls: () => void;
-  pendingAction?: "deleting" | "moving" | null;
 }
 
 export function BookmarkToolbar({
@@ -32,7 +31,6 @@ export function BookmarkToolbar({
   onDelete,
   onMove,
   onCopyUrls,
-  pendingAction = null,
 }: BookmarkToolbarProps) {
   if (!isSelectionMode) return null;
 
@@ -43,13 +41,13 @@ export function BookmarkToolbar({
         "animate-in fade-in slide-in-from-bottom-5 duration-280",
       )}
     >
-      <div className="flex flex-col items-center mb-2">
+      <div className="flex flex-col items-center mb-4">
         <Badge>{selectedCount} selected</Badge>
       </div>
 
       <div
         className={cn(
-          "bg-popover border border-border shadow-xl rounded-xl p-1.5 mb-2",
+          "bg-popover border border-border shadow-xl rounded-xl px-4 py-2",
           "flex flex-col items-center gap-2 w-full",
           "backdrop-blur-sm bg-popover/95",
         )}
@@ -58,17 +56,13 @@ export function BookmarkToolbar({
           <Button
             variant="ghost"
             className={cn(
-              "h-10 rounded-md gap-1.5",
+              "h-7 rounded-md gap-1.5",
               isAllSelected && "bg-accent text-accent-foreground",
             )}
             onClick={onToggleSelectAll}
             aria-label={isAllSelected ? "Deselect all" : "Select all"}
           >
-            {isAllSelected ? (
-              <XSquareIcon className="size-4.5" />
-            ) : (
-              <CheckSquareIcon className="size-4.5" />
-            )}
+            {isAllSelected ? <XSquareIcon /> : <CheckSquareIcon />}
             <span className="text-xs hidden md:block">
               {isAllSelected ? "Deselect All" : "Select All"}
             </span>
@@ -76,51 +70,47 @@ export function BookmarkToolbar({
 
           <Button
             variant="ghost"
-            className="h-10 rounded-md gap-1.5"
+            className="h-7 rounded-md gap-1.5"
             onClick={onCopyUrls}
             aria-label="Copy URLs"
             disabled={!selectedCount}
           >
-            <CopyIcon className="size-4.5" />
+            <CopyIcon />
             <span className="text-xs hidden md:block">
               {selectedCount > 1 ? "Copy URLs" : "Copy URL"}
             </span>
           </Button>
           <Button
             variant="ghost"
-            className="h-10 rounded-md gap-1.5"
+            className="h-7 rounded-md gap-1.5"
             onClick={onMove}
             aria-label="Move"
-            disabled={!selectedCount || pendingAction === "moving"}
+            disabled={!selectedCount}
           >
-            <FolderOpenIcon className="size-4.5" />
-            <span className="text-xs hidden md:block">
-              {pendingAction === "moving" ? "Moving…" : "Move"}
-            </span>
+            <FolderOpenIcon />
+            <span className="text-xs hidden md:block">Move</span>
           </Button>
 
           <Separator orientation="vertical" />
 
           <Button
             variant="ghost"
-            className="h-10 rounded-md gap-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+            className="h-7 rounded-md gap-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
             onClick={onDelete}
             aria-label="Delete"
-            disabled={!selectedCount || pendingAction === "deleting"}
+            disabled={!selectedCount}
           >
-            <TrashIcon className="size-4.5" />
-            <span className="text-xs hidden md:block">
-              {pendingAction === "deleting" ? "Deleting…" : "Delete"}
-            </span>
+            <TrashIcon />
+            <span className="text-xs hidden md:block">Delete</span>
           </Button>
           <Button
             variant="ghost"
-            size="icon-sm"
-            className="size-9 rounded-md"
+            size="icon-xs"
+            className="h-5 w-5 rounded"
             onClick={onClear}
             aria-label="Clear selection"
           >
-            <XIcon className="size-4.5" />
+            <XIcon />
           </Button>
         </div>
       </div>

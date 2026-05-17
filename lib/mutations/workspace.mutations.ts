@@ -6,13 +6,8 @@ import {
   toggleAutoCheckBroken,
   togglePublicStatus,
 } from "~/app/action/workspace.action";
-import {
-  optimisticAppend,
-  optimisticRemove,
-  optimisticUpdate,
-  useOptimisticMutation,
-} from "~/lib/mutations/base";
-import { trashKeys, workspaceKeys } from "~/lib/query-keys";
+import { useOptimisticMutation } from "~/lib/mutations/base";
+import { workspaceKeys } from "~/lib/query-keys";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 const generateTempId = () =>
@@ -25,21 +20,22 @@ export function useCreateWorkspace(userId: string | undefined) {
     successMessage: "Workspace created",
     errorMessage: "Failed to create workspace",
     prepareOptimisticData: (oldData, formData) => {
+      const prev = oldData as WorkspaceWithCount[];
       const name = (formData.get("name") as string) ?? "";
-      const prevLen =
-        (oldData as WorkspaceWithCount[] | undefined)?.length ?? 0;
-      return optimisticAppend<WorkspaceWithCount>(oldData, {
-        id: generateTempId(),
-        name,
-        is_public: false,
-        is_default: prevLen === 0,
-        auto_check_broken: false,
-        bookmarks_count: 0,
-        user_id: userId ?? "",
-        created_at: new Date().toISOString(),
-        updated_at: null,
-        deleted_at: null,
-      } satisfies WorkspaceWithCount);
+      return [
+        ...prev,
+        {
+          id: generateTempId(),
+          name,
+          is_public: false,
+          is_default: prev.length === 0,
+          auto_check_broken: false,
+          bookmarks_count: 0,
+          user_id: userId ?? "",
+          created_at: new Date().toISOString(),
+          updated_at: null,
+        } satisfies WorkspaceWithCount,
+      ];
     },
   });
 }
@@ -48,11 +44,11 @@ export function useDeleteWorkspace(userId: string | undefined) {
   return useOptimisticMutation<string, null>({
     mutationFn: deleteWorkspace,
     queryKey: workspaceKeys.byUser(userId),
-    dependentQueryKeys: [trashKeys.all],
-    successMessage: "Workspace moved to trash",
+    successMessage: "Workspace deleted",
     errorMessage: "Failed to delete workspace",
     prepareOptimisticData: (oldData, id) => {
-      return optimisticRemove<WorkspaceWithCount>(oldData, id);
+      const prev = oldData as WorkspaceWithCount[];
+      return prev.filter((ws) => ws.id !== id);
     },
   });
 }
@@ -64,10 +60,8 @@ export function useRenameWorkspace(userId: string | undefined) {
     successMessage: "Workspace renamed",
     errorMessage: "Failed to rename workspace",
     prepareOptimisticData: (oldData, { id, name }) => {
-      return optimisticUpdate<WorkspaceWithCount>(oldData, id, (ws) => ({
-        ...ws,
-        name,
-      }));
+      const prev = oldData as WorkspaceWithCount[];
+      return prev.map((ws) => (ws.id === id ? { ...ws, name } : ws));
     },
   });
 }
@@ -79,7 +73,7 @@ export function useSetDefaultWorkspace(userId: string | undefined) {
     successMessage: "Default workspace updated",
     errorMessage: "Failed to set default workspace",
     prepareOptimisticData: (oldData, id) => {
-      const prev = (oldData as WorkspaceWithCount[]) ?? [];
+      const prev = oldData as WorkspaceWithCount[];
       return prev.map((ws) => ({ ...ws, is_default: ws.id === id }));
     },
   });
@@ -92,10 +86,10 @@ export function useTogglePublicWorkspace(userId: string | undefined) {
     successMessage: "Workspace visibility toggled",
     errorMessage: "Failed to toggle visibility",
     prepareOptimisticData: (oldData, { id, isPublic }) => {
-      return optimisticUpdate<WorkspaceWithCount>(oldData, id, (ws) => ({
-        ...ws,
-        is_public: isPublic,
-      }));
+      const prev = oldData as WorkspaceWithCount[];
+      return prev.map((ws) =>
+        ws.id === id ? { ...ws, is_public: isPublic } : ws,
+      );
     },
   });
 }
@@ -107,10 +101,10 @@ export function useToggleAutoCheckWorkspace(userId: string | undefined) {
     successMessage: "Auto-check updated",
     errorMessage: "Failed to toggle auto check",
     prepareOptimisticData: (oldData, { id, enabled }) => {
-      return optimisticUpdate<WorkspaceWithCount>(oldData, id, (ws) => ({
-        ...ws,
-        auto_check_broken: enabled,
-      }));
+      const prev = oldData as WorkspaceWithCount[];
+      return prev.map((ws) =>
+        ws.id === id ? { ...ws, auto_check_broken: enabled } : ws,
+      );
     },
   });
 }

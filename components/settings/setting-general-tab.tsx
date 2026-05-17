@@ -8,7 +8,6 @@ import {
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
-import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting.action";
@@ -32,10 +31,7 @@ import {
 } from "~/components/ui/select";
 import { useProfile } from "~/hooks/use-profile";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import {
-  TRASH_CLEANUP_INTERVALS,
-  updateProfileSchema,
-} from "~/lib/schemas/profile.schema";
+import { updateProfileSchema } from "~/lib/schemas/profile.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface SettingsGeneralTabProps {
@@ -249,42 +245,6 @@ export function SettingsGeneralTab({
               <DownloadSimpleIcon className="size-4" />
               Export
             </Button>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border">
-          <FieldLabel className="pb-2">Trash</FieldLabel>
-          <p className="text-xs text-muted-foreground pb-3">
-            Auto-cleanup permanently deletes trashed items older than the
-            selected period.
-          </p>
-          <div className="flex justify-between items-center">
-            <Select
-              value={String(profile?.trash_cleanup_interval ?? 30)}
-              onValueChange={(value) => {
-                const interval = Number(value);
-                updateProfile({
-                  name: profile?.name ?? "",
-                  trash_cleanup_interval: interval,
-                });
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TRASH_CLEANUP_INTERVALS.map((days) => (
-                  <SelectItem key={days} value={String(days)}>
-                    <div className="flex items-center gap-2">
-                      <span>{days} days</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Link href="/trash" className="underline">
-              Manage trash
-            </Link>
           </div>
         </div>
 

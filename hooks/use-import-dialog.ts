@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { importBookmarks, previewImport } from "~/app/action/import.action";
-import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
 
 type ImportStep = "upload" | "preview" | "importing" | "done";
 
@@ -181,9 +180,9 @@ export function useImportDialog(): UseImportDialogReturn {
         return;
       }
 
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
       if (targetWorkspaceId === "new") {
-        queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       }
 
       const importedData = importResult.data;

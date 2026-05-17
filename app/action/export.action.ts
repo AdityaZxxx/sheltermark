@@ -3,9 +3,7 @@
 import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
 import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
-import { escapeCSV } from "~/lib/import/csv";
 import { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 
 interface WorkspaceInfo {
@@ -41,7 +39,7 @@ export async function exportBookmarks(
 
   // Delegate data retrieval to the repository
   const repoResult = await repoExportBookmarks(
-    supabase as unknown as DbClient,
+    supabase,
     user.id,
     validated.data,
   );
@@ -134,6 +132,14 @@ function groupBookmarksByWorkspace(bookmarks: BookmarkWithWorkspace[]) {
       createdAt: b.created_at,
     })),
   }));
+}
+
+function escapeCSV(value: string): string {
+  if (!value) return "";
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }
 
 function formatDate(date: Date): string {

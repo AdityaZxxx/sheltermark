@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 interface UseBookmarkKeyboardOptions {
   itemCount: number;
-  view: BookmarkViewVariant;
+  view: "list" | "card";
   onSelect?: (id: string) => void;
   onOpen?: (url: string) => void;
   isSelectionMode?: boolean;
@@ -31,6 +30,12 @@ export function useBookmarkKeyboardNavigation({
       e: React.KeyboardEvent,
       getItem?: (index: number) => { id: string; url: string } | undefined,
     ) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        focusInput();
+        return;
+      }
+
       if (
         document.activeElement === inputRef.current ||
         document.activeElement?.tagName === "INPUT" ||
@@ -68,7 +73,15 @@ export function useBookmarkKeyboardNavigation({
         }
       }
     },
-    [itemCount, view, focusedIndex, isSelectionMode, onSelect, onOpen],
+    [
+      itemCount,
+      view,
+      focusedIndex,
+      isSelectionMode,
+      onSelect,
+      onOpen,
+      focusInput,
+    ],
   );
 
   return {
