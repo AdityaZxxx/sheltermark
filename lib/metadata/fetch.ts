@@ -1,6 +1,8 @@
 import dns from "node:dns/promises";
 import { isIP } from "node:net";
+
 import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
+
 import { getGoogleFavicon, isPrivateIP } from "./utils";
 
 const DNS_TIMEOUT = 3000;
@@ -71,7 +73,7 @@ export async function resolveFavicon(
       return rootFavicon;
     }
   } catch {
-    // fall through to Google
+    // root /favicon.ico missing or unreachable: fall back to Google favicon
   }
 
   return getGoogleFavicon(hostname);

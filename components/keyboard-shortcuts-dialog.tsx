@@ -2,6 +2,7 @@
 
 import { CommandIcon, InfoIcon } from "@phosphor-icons/react";
 import { useState } from "react";
+
 import {
   Dialog,
   DialogContent,
@@ -12,8 +13,7 @@ import {
 import { Kbd } from "~/components/ui/kbd";
 
 const isMac =
-  typeof navigator !== "undefined" &&
-  /Mac|iPhone|iPad/.test(navigator.userAgent);
+  "navigator" in globalThis && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 const mod = isMac ? "⌘" : "Ctrl";
 

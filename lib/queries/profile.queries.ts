@@ -1,6 +1,7 @@
+import type { Profile } from "~/lib/schemas/profile.schema";
+
 import { getProfile } from "~/app/action/setting.action";
 import { profileKeys } from "~/lib/query-keys";
-import type { Profile } from "~/lib/schemas/profile.schema";
 
 export const profileQueryOptions = (userId: string | undefined) => ({
   queryKey: profileKeys.byUser(userId),

@@ -1,3 +1,5 @@
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
 import {
   createWorkspace,
   deleteWorkspace,
@@ -6,105 +8,121 @@ import {
   toggleAutoCheckBroken,
   togglePublicStatus,
 } from "~/app/action/workspace.action";
-import { useOptimisticMutation } from "~/lib/mutations/base";
-import { workspaceKeys } from "~/lib/query-keys";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+import {
+  optimisticAppend,
+  optimisticRemove,
+  optimisticUpdate,
+  useOptimisticMutation,
+} from "~/lib/mutations/base";
+import { trashKeys, workspaceKeys } from "~/lib/query-keys";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function useCreateWorkspace(userId: string | undefined) {
-  return useOptimisticMutation<FormData, { id: string }>({
+  return useOptimisticMutation<FormData, { id: string }, WorkspaceWithCount[]>({
     mutationFn: createWorkspace,
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Workspace created",
     errorMessage: "Failed to create workspace",
     prepareOptimisticData: (oldData, formData) => {
-      const prev = oldData as WorkspaceWithCount[];
-      const name = (formData.get("name") as string) ?? "";
-      return [
-        ...prev,
-        {
-          id: generateTempId(),
-          name,
-          is_public: false,
-          is_default: prev.length === 0,
-          auto_check_broken: false,
-          bookmarks_count: 0,
-          user_id: userId ?? "",
-          created_at: new Date().toISOString(),
-          updated_at: null,
-        } satisfies WorkspaceWithCount,
-      ];
+      const name = formData.get("name")?.toString() ?? "";
+      const prev = oldData ?? [];
+      return optimisticAppend(prev, {
+        id: generateTempId(),
+        name,
+        is_public: false,
+        is_default: prev.length === 0,
+        auto_check_broken: false,
+        bookmarks_count: 0,
+        user_id: userId ?? "",
+        created_at: new Date().toISOString(),
+        updated_at: null,
+        deleted_at: null,
+      });
     },
   });
 }
 
 export function useDeleteWorkspace(userId: string | undefined) {
-  return useOptimisticMutation<string, null>({
+  return useOptimisticMutation<string, null, WorkspaceWithCount[]>({
     mutationFn: deleteWorkspace,
     queryKey: workspaceKeys.byUser(userId),
-    successMessage: "Workspace deleted",
+    dependentQueryKeys: [trashKeys.all],
+    successMessage: "Workspace moved to trash",
     errorMessage: "Failed to delete workspace",
     prepareOptimisticData: (oldData, id) => {
-      const prev = oldData as WorkspaceWithCount[];
-      return prev.filter((ws) => ws.id !== id);
+      return optimisticRemove(oldData, id);
     },
   });
 }
 
 export function useRenameWorkspace(userId: string | undefined) {
-  return useOptimisticMutation<{ id: string; name: string }, null>({
+  return useOptimisticMutation<
+    { id: string; name: string },
+    null,
+    WorkspaceWithCount[]
+  >({
     mutationFn: ({ id, name }) => renameWorkspace(id, name),
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Workspace renamed",
     errorMessage: "Failed to rename workspace",
     prepareOptimisticData: (oldData, { id, name }) => {
-      const prev = oldData as WorkspaceWithCount[];
-      return prev.map((ws) => (ws.id === id ? { ...ws, name } : ws));
+      return optimisticUpdate(oldData, id, (ws) => ({
+        ...ws,
+        name,
+      }));
     },
   });
 }
 
 export function useSetDefaultWorkspace(userId: string | undefined) {
-  return useOptimisticMutation<string, null>({
+  return useOptimisticMutation<string, null, WorkspaceWithCount[]>({
     mutationFn: setDefaultWorkspace,
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Default workspace updated",
     errorMessage: "Failed to set default workspace",
     prepareOptimisticData: (oldData, id) => {
-      const prev = oldData as WorkspaceWithCount[];
+      const prev = oldData ?? [];
       return prev.map((ws) => ({ ...ws, is_default: ws.id === id }));
     },
   });
 }
 
 export function useTogglePublicWorkspace(userId: string | undefined) {
-  return useOptimisticMutation<{ id: string; isPublic: boolean }, null>({
+  return useOptimisticMutation<
+    { id: string; isPublic: boolean },
+    null,
+    WorkspaceWithCount[]
+  >({
     mutationFn: ({ id, isPublic }) => togglePublicStatus(id, isPublic),
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Workspace visibility toggled",
     errorMessage: "Failed to toggle visibility",
     prepareOptimisticData: (oldData, { id, isPublic }) => {
-      const prev = oldData as WorkspaceWithCount[];
-      return prev.map((ws) =>
-        ws.id === id ? { ...ws, is_public: isPublic } : ws,
-      );
+      return optimisticUpdate(oldData, id, (ws) => ({
+        ...ws,
+        is_public: isPublic,
+      }));
     },
   });
 }
 
 export function useToggleAutoCheckWorkspace(userId: string | undefined) {
-  return useOptimisticMutation<{ id: string; enabled: boolean }, null>({
+  return useOptimisticMutation<
+    { id: string; enabled: boolean },
+    null,
+    WorkspaceWithCount[]
+  >({
     mutationFn: ({ id, enabled }) => toggleAutoCheckBroken(id, enabled),
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Auto-check updated",
     errorMessage: "Failed to toggle auto check",
     prepareOptimisticData: (oldData, { id, enabled }) => {
-      const prev = oldData as WorkspaceWithCount[];
-      return prev.map((ws) =>
-        ws.id === id ? { ...ws, auto_check_broken: enabled } : ws,
-      );
+      return optimisticUpdate(oldData, id, (ws) => ({
+        ...ws,
+        auto_check_broken: enabled,
+      }));
     },
   });
 }

@@ -9,7 +9,7 @@ export const uuidSchema = z.uuid();
 
 export const timestampSchema = z.iso.datetime();
 
-export const urlSchema = z.string().url();
+export const urlSchema = z.url();
 
 /**
  * Slug: lowercase alphanumeric + hyphens, no leading/trailing hyphens
@@ -19,3 +19,10 @@ export const slugSchema = z
   .min(1)
   .max(200)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid slug format");
+
+export type BookmarkViewVariant = "list" | "card" | "comfort";
+export const bookmarkViewVariantSchema = z.enum(["list", "card", "comfort"]);
+
+export type BookmarkScope =
+  | { type: "global" }
+  | { type: "workspace"; id: string };

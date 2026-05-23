@@ -1,17 +1,21 @@
 "use client";
 
-import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
-import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
+import type { BookmarkScope } from "~/lib/schemas/common";
+
+import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
+
+import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
-import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
+import { TagManageDialog } from "./tag-manage-dialog";
 
-export function BookmarkView() {
-  const vm = useBookmarkViewModel();
+export function BookmarkView({ scope }: { scope: BookmarkScope }) {
+  const vm = useBookmarkListManager(scope);
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed
     <section
       aria-label="Bookmarks"
       className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
@@ -22,10 +26,16 @@ export function BookmarkView() {
         view={vm.view}
         searchQuery={vm.searchQuery}
         sort={vm.sort}
+        count={vm.bookmarks.length}
+        title={vm.currentWorkspace?.name ?? "All Bookmarks"}
+        selectedTagIds={vm.selectedTagIds}
+        workspaceId={vm.currentWorkspace?.id}
         onSearchChange={vm.setSearchQuery}
         onSubmit={vm.handleSubmit}
         onViewChange={vm.setView}
         onSortChange={vm.setSort}
+        onTagFilterChange={vm.setSelectedTagIds}
+        onManageTags={() => vm.setManageTagsDialogOpen(true)}
       />
 
       <BookmarkList
@@ -33,21 +43,24 @@ export function BookmarkView() {
         isLoading={vm.isLoading}
         searchQuery={vm.searchQuery}
         filteredBookmarks={vm.bookmarks}
-        pendingUrls={vm.pendingUrls}
         workspaces={vm.workspaces}
         currentWorkspaceId={vm.currentWorkspace?.id}
         selectedIds={vm.selection.selectedIds}
         isSelectionMode={vm.selection.isSelectionMode}
         focusedIndex={vm.focusedIndex}
         onSelect={vm.selection.toggleSelect}
-        onDelete={vm.onDeleteTrigger}
-        onRename={vm.handleRename}
+        onDelete={vm.dialogs.handleDeleteTrigger}
+        onEdit={vm.dialogs.handleEditTrigger}
+        onTagClick={(tagId) => vm.setSelectedTagIds([tagId])}
         onMove={vm.dialogs.handleMoveTrigger}
         onMoveToWorkspace={vm.handleMoveToWorkspace}
         onCopyUrl={vm.handleCopyUrl}
         onRefetch={vm.handleRefetchTrigger}
         onSelectionModeToggle={vm.selection.toggleSelectionMode}
         autoCheckBroken={vm.currentWorkspace?.auto_check_broken !== false}
+        tagsByBookmarkId={vm.tagsByBookmarkId}
+        allTags={vm.allTags}
+        refetchingId={vm.refetchingId}
       />
 
       <BookmarkToolbar
@@ -60,27 +73,18 @@ export function BookmarkView() {
             ? vm.selection.clearSelectionOnly
             : () => vm.selection.selectAll(vm.bookmarks.map((b) => b.id))
         }
-        onDelete={vm.onBulkDeleteTrigger}
-        onMove={vm.onBulkMoveTrigger}
+        onDelete={vm.dialogs.handleBulkDeleteTrigger}
+        onMove={vm.dialogs.handleBulkMoveTrigger}
         onCopyUrls={vm.handleBulkCopyUrls}
+        pendingAction={vm.toolbarPendingAction}
       />
 
-      <BookmarkRenameDialog
-        open={vm.dialogs.renameDialogOpen}
-        onOpenChange={vm.dialogs.setRenameDialogOpen}
+      <BookmarkEditDialog
+        open={vm.dialogs.editDialogOpen}
+        onOpenChange={vm.dialogs.setEditDialogOpen}
         bookmark={vm.dialogs.activeBookmark}
-        onSuccess={vm.invalidate}
-      />
-
-      <BookmarkDeleteDialog
-        open={vm.dialogs.deleteDialogOpen}
-        onOpenChange={vm.dialogs.setDeleteDialogOpen}
-        ids={vm.dialogs.bookmarksToDelete}
-        onSuccess={() => {
-          vm.invalidate();
-          if (vm.dialogs.bookmarksToDelete.length > 0)
-            vm.selection.clearSelection();
-        }}
+        updateBookmarkFields={vm.updateBookmarkFields}
+        isPending={vm.isUpdatingBookmarkFields}
       />
 
       <BookmarkMoveDialog
@@ -94,6 +98,12 @@ export function BookmarkView() {
           if (vm.dialogs.bookmarksToMove.length > 0)
             vm.selection.clearSelection();
         }}
+      />
+
+      <TagManageDialog
+        open={vm.manageTagsDialogOpen}
+        onOpenChange={vm.setManageTagsDialogOpen}
+        workspaceId={vm.currentWorkspace?.id}
       />
     </section>
   );

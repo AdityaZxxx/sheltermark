@@ -1,12 +1,13 @@
-import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import type React from "react";
-import { useEffect } from "react";
+
+import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+
 import { Input } from "~/components/ui/input";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 
 const isMac =
-  typeof navigator !== "undefined" &&
-  /Mac|iPhone|iPad/.test(navigator.userAgent);
+  "navigator" in globalThis && /Mac|iPhone|iPad/.test(navigator.userAgent);
 const mod = isMac ? "⌘" : "Ctrl";
 
 interface BookmarkInputProps {
@@ -25,14 +26,17 @@ export function BookmarkInput({
   ref,
 }: BookmarkInputProps) {
   const isAdding = value.includes(".") || value.startsWith("http");
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const input = ref && "current" in ref ? ref.current : null;
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        if (ref && "current" in ref && ref.current) {
-          ref.current.focus();
+        if (input && document.activeElement === input) {
+          return;
         }
+        e.preventDefault();
+        input?.focus();
       }
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
@@ -84,12 +88,16 @@ export function BookmarkInput({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
       />
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-        <KbdGroup>
-          <Kbd>{mod}</Kbd>
-          <Kbd>K</Kbd>
-        </KbdGroup>
+      <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 pointer-events-none md:block">
+        {!isFocused && (
+          <KbdGroup>
+            <Kbd>{mod}</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        )}
       </div>
     </div>
   );

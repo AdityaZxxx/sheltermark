@@ -1,34 +1,41 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import type { ActionResult } from "~/lib/action-result";
+import type { Feed } from "~/lib/schemas/feed.schema";
+
 import {
   deleteFeed,
   refreshFeed,
   subscribeToFeed,
   syncAllFeeds,
 } from "~/app/action/feed.action";
-import type { ActionResult } from "~/lib/action-result";
 import { logger } from "~/lib/logger";
-import { useOptimisticMutation } from "~/lib/mutations/base";
+import {
+  optimisticAppend,
+  optimisticRemove,
+  optimisticUpdate,
+  useOptimisticMutation,
+} from "~/lib/mutations/base";
 import { feedKeys } from "~/lib/query-keys";
-import type { Feed } from "~/lib/schemas/feed.schema";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function useSubscribeToFeed(userId: string | undefined) {
-  const queryClient = useQueryClient();
-  const queryKey = feedKeys.byUser(userId);
-
-  return useMutation({
-    mutationFn: ({ url, workspaceId }: { url: string; workspaceId?: string }) =>
-      subscribeToFeed(url, workspaceId),
-    onMutate: async ({ url }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previousFeeds = queryClient.getQueryData(queryKey);
-
-      const tempId = generateTempId();
-      const optimisticFeed = {
-        id: tempId,
+  return useOptimisticMutation<
+    { url: string; workspaceId?: string },
+    Feed,
+    Feed[]
+  >({
+    mutationFn: ({ url, workspaceId }) => subscribeToFeed(url, workspaceId),
+    mutationKey: ["subscribeToFeed"],
+    queryKey: feedKeys.byUser(userId),
+    successMessage: "Subscribed to feed",
+    errorMessage: "Failed to subscribe to feed",
+    prepareOptimisticData: (oldData, { url }) => {
+      return optimisticAppend(oldData, {
+        id: generateTempId(),
         url,
         user_id: userId || "",
         workspace_id: null,
@@ -39,60 +46,33 @@ export function useSubscribeToFeed(userId: string | undefined) {
         last_synced_at: null,
         created_at: new Date().toISOString(),
         updated_at: null,
-      } satisfies Feed;
-
-      queryClient.setQueryData(queryKey, (old: Feed[] = []) => [
-        ...old,
-        optimisticFeed,
-      ]);
-
-      return { previousFeeds };
-    },
-    onError: (error, variables, context) => {
-      logger.error("subscribeToFeed failed", { error, variables: variables });
-      if (context?.previousFeeds) {
-        queryClient.setQueryData(queryKey, context.previousFeeds);
-      }
-      toast.error("Failed to subscribe to feed");
-    },
-    onSuccess: (result: ActionResult<unknown>) => {
-      if (result.success) {
-        toast.success("Subscribed to feed");
-      } else {
-        toast.error(result.error);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      });
     },
   });
 }
 
 export function useRefreshFeed(userId: string | undefined) {
-  return useOptimisticMutation<string, Feed>({
+  return useOptimisticMutation<string, Feed, Feed[]>({
     mutationFn: refreshFeed,
     queryKey: feedKeys.byUser(userId),
     errorMessage: "Failed to refresh feed",
     prepareOptimisticData: (oldData, id) => {
-      const prev = oldData as Feed[];
-      return prev.map((feed) =>
-        feed.id === id
-          ? { ...feed, last_synced_at: new Date().toISOString() }
-          : feed,
-      );
+      return optimisticUpdate(oldData, id, (feed) => ({
+        ...feed,
+        last_synced_at: new Date().toISOString(),
+      }));
     },
   });
 }
 
 export function useDeleteFeed(userId: string | undefined) {
-  return useOptimisticMutation<string, null>({
+  return useOptimisticMutation<string, null, Feed[]>({
     mutationFn: deleteFeed,
     queryKey: feedKeys.byUser(userId),
     successMessage: "Feed deleted",
     errorMessage: "Failed to delete feed",
     prepareOptimisticData: (oldData, id) => {
-      const prev = oldData as Feed[];
-      return prev.filter((feed) => feed.id !== id);
+      return optimisticRemove(oldData, id);
     },
   });
 }

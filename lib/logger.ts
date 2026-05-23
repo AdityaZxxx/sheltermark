@@ -1,20 +1,57 @@
 type LogLevel = "debug" | "info" | "warn" | "error";
 
-interface LogContext {
+/**
+ * Structured context carried alongside a log line. Concrete optional fields
+ * only — callers name what they are logging, and the console transport prints
+ * whatever it receives.
+ */
+export interface LogContext {
   module?: string;
+  message?: string;
   error?: unknown;
-  [key: string]: unknown;
+  url?: string;
+  userId?: string;
+  bookmarkId?: string;
+  mutationKey?: readonly unknown[];
+  variables?: unknown;
+  digest?: string;
+  name?: string;
+  stack?: string;
+  status?: string;
+  success?: boolean;
+  written?: boolean;
+  synced?: number;
+  checked?: number;
+  broken?: number;
+  likely?: number;
+  unknown?: number;
+  updated?: number;
+  removedBookmarks?: number;
+  removedWorkspaces?: number;
+  errorCount?: number;
 }
 
-const LOG_LEVELS: Record<LogLevel, number> = {
+const LOG_LEVELS = {
   debug: 0,
   info: 1,
   warn: 2,
   error: 3,
-};
+} as const satisfies Record<LogLevel, number>;
 
+function isLogLevel(value: string): value is LogLevel {
+  return (
+    value === "debug" ||
+    value === "info" ||
+    value === "warn" ||
+    value === "error"
+  );
+}
+
+const configuredLevel = process.env.NEXT_PUBLIC_LOG_LEVEL;
 const currentLevel: LogLevel =
-  (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel) || "info";
+  configuredLevel !== undefined && isLogLevel(configuredLevel)
+    ? configuredLevel
+    : "info";
 
 function shouldLog(level: LogLevel): boolean {
   return LOG_LEVELS[level] >= LOG_LEVELS[currentLevel];

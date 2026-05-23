@@ -1,14 +1,22 @@
-import { UploadSimpleIcon } from "@phosphor-icons/react";
+"use client";
+
+import { SpinnerIcon, UploadSimpleIcon } from "@phosphor-icons/react";
+
+import { type DetectedFormat, formatDisplayName } from "~/lib/import/detect";
 
 interface UploadStepProps {
   file: File | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  detectedFormat: DetectedFormat | null;
+  isParsing: boolean;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function UploadStep({
   file,
   fileInputRef,
+  detectedFormat,
+  isParsing,
   onFileChange,
 }: UploadStepProps) {
   return (
@@ -17,14 +25,27 @@ export function UploadStep({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json,.csv"
+          accept=".json,.csv,.html,.htm"
           className="hidden"
           onChange={onFileChange}
         />
-        <UploadSimpleIcon className="size-8 mx-auto mb-2 text-muted-foreground" />
+        {isParsing ? (
+          <SpinnerIcon className="size-8 mx-auto mb-2 text-muted-foreground animate-spin" />
+        ) : (
+          <UploadSimpleIcon className="size-8 mx-auto mb-2 text-muted-foreground" />
+        )}
         <p className="text-sm text-muted-foreground">
-          {file ? file.name : "Click to upload JSON or CSV"}
+          {isParsing
+            ? "Parsing file…"
+            : file
+              ? file.name
+              : "Click to upload JSON, CSV, or browser bookmarks (.html)"}
         </p>
+        {detectedFormat && !isParsing && (
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Detected: {formatDisplayName(detectedFormat)}
+          </p>
+        )}
       </label>
     </div>
   );

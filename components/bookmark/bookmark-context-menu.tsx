@@ -6,6 +6,7 @@ import {
   SelectionPlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
+
 import {
   ContextMenu,
   ContextMenuContent,
@@ -29,7 +30,7 @@ interface BookmarkContextMenuProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
-  onRename?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -46,7 +47,7 @@ export function BookmarkContextMenu({
   workspaces = EMPTY_WORKSPACES,
   currentWorkspaceId,
   onSelect,
-  onRename,
+  onEdit,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -69,9 +70,9 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onRename?.(id)}>
+        <ContextMenuItem onClick={() => onEdit?.(id)}>
           <PencilIcon />
-          Rename
+          Edit
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
@@ -91,7 +92,7 @@ export function BookmarkContextMenu({
               Move to...
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuGroup>
+              <ContextMenuGroup className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
                 {availableWorkspaces.map((ws) => (
                   <ContextMenuItem
                     key={ws.id}

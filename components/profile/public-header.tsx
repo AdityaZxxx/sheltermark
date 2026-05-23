@@ -1,5 +1,7 @@
 import type { User } from "@supabase/supabase-js";
+
 import Link from "next/link";
+
 import Logo from "~/components/logo";
 import { Button } from "~/components/ui/button";
 
@@ -9,8 +11,8 @@ interface PublicHeaderProps {
 
 export async function PublicHeader({ user }: PublicHeaderProps) {
   return (
-    <header className="w-full bg-background">
-      <div className="mx-auto flex items-center py-4 justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-3">
         <Link
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"

@@ -4,12 +4,14 @@ import {
   CaretUpDownIcon,
   GlobeIcon,
   GlobeXIcon,
+  LayoutIcon,
   LinkBreakIcon,
   PencilSimpleIcon,
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +27,7 @@ import {
 import { Switch } from "~/components/ui/switch";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
+
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog";
 import { WorkspaceRenameDialog } from "./workspace-rename-dialog";
@@ -35,6 +38,7 @@ export function WorkspaceMenu() {
     workspaces,
     currentWorkspace,
     setActiveWorkspace,
+    clearActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
     isDeleting,
@@ -49,7 +53,8 @@ export function WorkspaceMenu() {
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
-  const activeWorkspaceName = currentWorkspace?.name || "Select workspace";
+  const isGlobalView = !currentWorkspace;
+  const activeWorkspaceName = currentWorkspace?.name || "Dashboard";
 
   const handleTogglePublic = () => {
     setIsVisibilityDialogOpen(true);
@@ -76,11 +81,11 @@ export function WorkspaceMenu() {
                   className="w-2.5 h-2.5 rounded-full"
                   style={{
                     backgroundColor: getPastelColor(
-                      currentWorkspace?.id || "default",
+                      currentWorkspace?.id || "dashboard",
                     ),
                   }}
                 />
-                <span className="truncate max-w-[100px] text-sm">
+                <span className="truncate max-w-32 text-sm">
                   {activeWorkspaceName}
                 </span>
               </div>
@@ -89,35 +94,56 @@ export function WorkspaceMenu() {
           }
         />
         <DropdownMenuContent align="start" sideOffset={8} className="w-56">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel className="sr-only">
-              Workspaces
-            </DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={currentWorkspace?.id}
-              onValueChange={setActiveWorkspace}
-            >
-              {workspaces.map((ws) => (
-                <DropdownMenuRadioItem value={ws.id} key={ws.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: getPastelColor(ws.id) }}
-                    />
-                    <span className="truncate">{ws.name}</span>
-                    {ws.is_public && (
-                      <GlobeIcon className="h-4 w-4 text-muted-foreground" />
+          {!isGlobalView && (
+            <>
+              <DropdownMenuItem
+                nativeButton
+                className="w-full gap-1.5"
+                render={(props) => (
+                  <button
+                    {...props}
+                    type="button"
+                    onClick={clearActiveWorkspace}
+                  >
+                    <LayoutIcon className="h-4 w-4" />
+                    All Bookmarks
+                  </button>
+                )}
+              />
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <div className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="sr-only">
+                Workspaces
+              </DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={currentWorkspace?.id ?? ""}
+                onValueChange={setActiveWorkspace}
+              >
+                {workspaces.map((ws) => (
+                  <DropdownMenuRadioItem value={ws.id} key={ws.id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: getPastelColor(ws.id) }}
+                      />
+                      <span className="truncate">{ws.name}</span>
+                      {ws.is_public && (
+                        <GlobeIcon className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                    {currentWorkspace?.id !== ws.id && (
+                      <span className="absolute right-2 text-xs text-muted-foreground">
+                        {ws.bookmarks_count}
+                      </span>
                     )}
-                  </div>
-                  {currentWorkspace?.id !== ws.id && (
-                    <span className="absolute right-2 text-xs text-muted-foreground">
-                      {ws.bookmarks_count}
-                    </span>
-                  )}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuGroup>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+          </div>
           <DropdownMenuSeparator />
 
           <DropdownMenuItem

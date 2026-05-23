@@ -2,20 +2,51 @@
  * URL health checker for Sheltermark bookmarks.
  * Runs as a GitHub Actions cronjob (weekly via check-urls-health.yml).
  *
- * Checks bookmarks for broken links, soft 404s, and server errors.
+ * This file is intentionally thin: classification, error categorisation,
+ * and soft-404 detection all live in `lib/link-health/checker.ts` so each
+ * rule is unit-testable in isolation.
  *
- * NOTE: This file was moved from .github/scripts/ to scripts/ so that
- * tsconfig include patterns (which skip dot-directories) can pick it up.
+ * Behavioural changes vs the previous version:
+ *
+ *   1. Removed the per-domain check cache. Cache poisoning meant one
+ *      bad path on a host silently flagged every bookmark on that host
+ *      as broken.
+ *
+ *   2. Errors thrown by the fetcher now become "unknown" — they no
+ *      longer get collapsed into "alive". Timeouts are clearly
+ *      distinguished from DNS failures so the cron summary can surface
+ *      them and the UI's "couldn't be reached — status unknown" message
+ *      renders them with the right severity.
+ *
+ *   3. Soft-404 detection requires multiple signals to fire. Body match
+ *      alone, or title match alone, are no longer enough.
+ *
+ *   4. The persisted record is `broken_status` (the enum) plus
+ *      `is_broken` (the legacy boolean, now derived). Backwards compat
+ *      for the legacy UI is preserved.
+ *
+ *   5. Per-host throttling: at most one concurrent request per hostname.
+ *      Prevents accidental DoS of a single domain and reduces 429s.
+ *      Global concurrency is still capped at CONCURRENCY.
  */
-import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
+import { config } from "dotenv";
+import { z } from "zod";
+
+import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
+
+import { checkUrl } from "~/lib/link-health/checker";
+import { logger } from "~/lib/logger";
+import { urlSchema, uuidSchema } from "~/lib/schemas/common";
+import { safeDomain } from "~/lib/utils";
+
+config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error(
+  logger.error(
     "Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY",
   );
   process.exit(1);
@@ -24,237 +55,83 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const CONCURRENCY = 10;
-const TIMEOUT_MS = 10000;
+const TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;
 const MAX_BOOKMARKS_PER_RUN = 500;
+const STALE_CHECK_DAYS = 7;
 
-const ALWAYS_ALIVE_DOMAINS = [
-  "twitter.com",
-  "x.com",
-  "nitter.net",
-  "youtube.com",
-  "youtu.be",
-  "instagram.com",
-  "tiktok.com",
-  "facebook.com",
-  "fb.com",
-];
+const bookmarkToCheckSchema = z.object({
+  id: uuidSchema,
+  url: urlSchema,
+  user_id: uuidSchema,
+});
 
-const VALID_HIGH_STATUS = [410, 451];
+type BookmarkToCheck = z.infer<typeof bookmarkToCheckSchema>;
 
-const SOFT_404_KEYWORDS = [
-  "page not found",
-  "doesn't exist",
-  "not available",
-  "content not found",
-  "this page doesn't exist",
-  "this content doesn't exist",
-];
-
-function getDomain(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
-
-function isAlwaysAliveDomain(url: string): boolean {
-  return ALWAYS_ALIVE_DOMAINS.some((d) => url.includes(d));
-}
-
-function getReason(status: number, soft404Reason?: string): string {
-  if (soft404Reason) return soft404Reason;
-  if (status === 0) return "unknown";
-  if (status === 403) return "blocked";
-  if (status === 404) return "not_found";
-  if (status >= 500) return "server_error";
-  if (status >= 400) return "client_error";
-  return "unknown";
-}
-
-type CheckResult = {
-  is_broken: boolean;
-  http_status: number;
-  reason: string;
-  cached?: boolean;
-};
-
-/**
- * Fallback to GET request when HEAD returns 403 or 405.
- */
-async function retryWithGET(
-  url: string,
-  retries: number,
-): Promise<CheckResult> {
-  try {
-    const { response } = await httpFetch(url, {
-      method: "GET",
-      timeout: TIMEOUT_MS,
-      retries,
-      headers: {
-        Accept: "text/html",
-      },
-    });
-
-    return {
-      is_broken: response.status >= 400,
-      http_status: response.status,
-      reason: "fallback_get",
-    };
-  } catch {
-    return { is_broken: false, http_status: 0, reason: "unknown" };
-  }
+interface RunSummary {
+  checked: number;
+  broken: number;
+  likely: number;
+  unknown: number;
+  updated: number;
 }
 
 /**
- * Detects soft 404 pages (pages that return 200 but show "not found" content).
+ * Run a batch of async tasks with a global concurrency limit AND a
+ * per-host limit of 1. Same-host tasks are serialised so we never
+ * issue two concurrent requests to the same hostname — this prevents
+ * accidental DoS and reduces 429s from rate-limiting servers.
+ *
+ * Implementation: each task awaits a per-host "previous task done"
+ * promise before starting. The global limit is enforced separately by
+ * tracking the set of in-flight tasks (waiting + running) and yielding
+ * when it reaches the cap.
  */
-async function checkSoft404(url: string): Promise<{
-  isSoft404: boolean;
-  reason?: string;
-}> {
-  try {
-    const { response } = await httpFetch(url, {
-      method: "GET",
-      timeout: TIMEOUT_MS,
-      retries: 0,
-      headers: {
-        Range: "bytes=0-8192",
-        Accept: "text/html",
-        "Accept-Encoding": "gzip, deflate, br",
-      },
-    });
-
-    let text: string;
-    try {
-      text = await readResponseBody(response, 8192);
-    } catch {
-      return { isSoft404: false };
-    }
-
-    if (text.length < 2000) {
-      const lower = text.toLowerCase();
-      const isSoft404 = SOFT_404_KEYWORDS.some((k) => lower.includes(k));
-
-      if (isSoft404) {
-        return { isSoft404: true, reason: "soft404" };
-      }
-    }
-
-    const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch) {
-      const title = (titleMatch[1] ?? "").trim().toLowerCase();
-      if (
-        title.includes("404") ||
-        title === "not found" ||
-        title === "page not found"
-      ) {
-        return { isSoft404: true, reason: "title_404" };
-      }
-    }
-
-    return { isSoft404: false };
-  } catch {
-    return { isSoft404: false };
-  }
-}
-
-/**
- * Main URL checking function with domain-level caching and soft 404 detection.
- * Uses HEAD request first, falls back to GET for 403/405 responses.
- */
-async function checkUrl(
-  url: string,
-  retries = MAX_RETRIES,
-  domainCache: Map<string, CheckResult>,
-): Promise<CheckResult> {
-  if (isAlwaysAliveDomain(url)) {
-    return { is_broken: false, http_status: 200, reason: "always_alive" };
-  }
-
-  const domain = getDomain(url);
-  const cached = domainCache.get(domain);
-  if (cached) {
-    return { ...cached, cached: true };
-  }
-
-  try {
-    const { response } = await httpFetch(url, {
-      method: "HEAD",
-      timeout: TIMEOUT_MS,
-      retries,
-      followRedirect: true,
-    });
-
-    const status = response.status;
-
-    if (status === 405 || status === 403) {
-      const getResult = await retryWithGET(url, retries);
-      domainCache.set(domain, getResult);
-      return getResult;
-    }
-
-    if (status >= 200 && status < 300) {
-      const soft404 = await checkSoft404(url);
-      if (soft404.isSoft404) {
-        const result: CheckResult = {
-          is_broken: true,
-          http_status: status,
-          reason: soft404.reason ?? "soft404",
-        };
-        domainCache.set(domain, result);
-        return result;
-      }
-
-      const result: CheckResult = {
-        is_broken: false,
-        http_status: status,
-        reason: "ok",
-      };
-      domainCache.set(domain, result);
-      return result;
-    }
-
-    const isBroken = status >= 400 && !VALID_HIGH_STATUS.includes(status);
-    const result: CheckResult = {
-      is_broken: isBroken,
-      http_status: status,
-      reason: getReason(status),
-    };
-    domainCache.set(domain, result);
-    return result;
-  } catch {
-    const result: CheckResult = {
-      is_broken: false,
-      http_status: 0,
-      reason: "unknown",
-    };
-    domainCache.set(domain, result);
-    return result;
-  }
-}
-
-/**
- * Executes an array of async tasks with a concurrency limit.
- */
-async function runWithConcurrency<T>(
-  tasks: (() => Promise<T>)[],
-  limit: number,
+async function runWithPerHostConcurrency<T>(
+  tasks: { host: string; run: () => Promise<T> }[],
+  globalLimit: number,
 ): Promise<T[]> {
+  const lastPerHost = new Map<string, Promise<void>>();
   const results: Promise<T>[] = [];
   const executing = new Set<Promise<void>>();
 
   for (const task of tasks) {
-    const promise = task().then((result) => {
-      executing.delete(promise as unknown as Promise<void>);
-      return result;
+    const prev = lastPerHost.get(task.host) ?? Promise.resolve();
+
+    // Deferred that resolves when THIS task finishes (success or fail).
+    // Used as the "previous" for the next same-host task.
+    let release!: () => void;
+    const done = new Promise<void>((resolve) => {
+      release = resolve;
     });
+    lastPerHost.set(task.host, done);
 
+    const promise = (async () => {
+      // Wait for the previous same-host task to finish before starting
+      // this one. Errors in the predecessor don't block — we just want
+      // to avoid concurrency, not propagate failures.
+      await prev;
+      try {
+        return await task.run();
+      } finally {
+        release();
+      }
+    })();
+
+    // Track in `executing` for the global limit. Use a separate tracker
+    // promise so we can remove it from the set when it settles.
+    const tracker = promise.then(
+      () => {
+        executing.delete(tracker);
+      },
+      () => {
+        executing.delete(tracker);
+      },
+    );
+    executing.add(tracker);
     results.push(promise);
-    executing.add(promise as unknown as Promise<void>);
 
-    if (executing.size >= limit) {
+    if (executing.size >= globalLimit) {
       await Promise.race(executing);
     }
   }
@@ -262,79 +139,112 @@ async function runWithConcurrency<T>(
   return Promise.all(results);
 }
 
-async function main(): Promise<void> {
-  console.log("Starting URL health check...");
+function isBrokenStatus(status: BrokenStatus): boolean {
+  return status === "confirmed_broken" || status === "likely_broken";
+}
 
+/**
+ * Persist a single check result.
+ */
+async function persistResult(
+  bookmark: BookmarkToCheck,
+  result: UrlHealthResult,
+): Promise<{ written: boolean }> {
+  const { error } = await supabase
+    .from("bookmarks")
+    .update({
+      is_broken: isBrokenStatus(result.brokenStatus),
+      broken_status: result.brokenStatus,
+      http_status: result.httpStatus,
+      last_checked_at: new Date().toISOString(),
+    })
+    .eq("id", bookmark.id)
+    .eq("user_id", bookmark.user_id);
+
+  if (error) {
+    logger.error("Update failed", {
+      bookmarkId: bookmark.id,
+      message: error.message,
+    });
+    return { written: false };
+  }
+  return { written: true };
+}
+
+async function main(): Promise<void> {
+  logger.info("Starting URL health check");
+
+  const cutoff = new Date(
+    Date.now() - STALE_CHECK_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const { data: bookmarks, error } = await supabase
     .from("bookmarks")
     .select("id, url, user_id, workspaces!inner(auto_check_broken)")
     .eq("workspaces.auto_check_broken", true)
-    .or(
-      "last_checked_at.is.null,last_checked_at.lt." +
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    )
+    .or(`last_checked_at.is.null,last_checked_at.lt.${cutoff}`)
     .limit(MAX_BOOKMARKS_PER_RUN);
 
   if (error) {
-    console.error("Fetch error:", error);
+    logger.error("Fetch error", { message: error.message });
     process.exit(1);
   }
-
   if (!bookmarks?.length) {
-    console.log("No bookmarks need checking");
+    logger.info("No bookmarks need checking");
     return;
   }
 
-  console.log(`Checking ${bookmarks.length} bookmarks`);
+  logger.info(`Checking ${bookmarks.length} bookmarks`);
 
-  const domainCache = new Map<string, CheckResult>();
-  let brokenCount = 0;
-  let unknownCount = 0;
+  type CheckOutcome = {
+    bookmark: BookmarkToCheck;
+    result: UrlHealthResult;
+    written: boolean;
+  };
 
-  const checks = await runWithConcurrency(
-    bookmarks.map(
-      (bm: { id: string; url: string; user_id: string }) => async () => {
-        const result = await checkUrl(bm.url, MAX_RETRIES, domainCache);
-        return { bookmark: bm, ...result };
+  const parsed = z.array(bookmarkToCheckSchema).safeParse(bookmarks ?? []);
+  if (!parsed.success) {
+    logger.error("Unexpected bookmark shape", {
+      message: parsed.error.message,
+    });
+    process.exit(1);
+  }
+  const outcomes = await runWithPerHostConcurrency<CheckOutcome>(
+    parsed.data.map((bm) => ({
+      host: safeDomain(bm.url),
+      run: async () => {
+        const result = await checkUrl(bm.url, {
+          retries: MAX_RETRIES,
+          timeoutMs: TIMEOUT_MS,
+        });
+        const { written } = await persistResult(
+          { id: bm.id, url: bm.url, user_id: bm.user_id },
+          result,
+        );
+        return {
+          bookmark: { id: bm.id, url: bm.url, user_id: bm.user_id },
+          result,
+          written,
+        };
       },
-    ),
+    })),
     CONCURRENCY,
   );
 
-  let updatedCount = 0;
-
-  for (const check of checks) {
-    const { bookmark, is_broken, http_status, reason } = check;
-
-    if (is_broken) {
-      brokenCount++;
-    } else if (reason === "unknown") {
-      unknownCount++;
-    }
-
-    const { error: updateError } = await supabase
-      .from("bookmarks")
-      .update({
-        is_broken,
-        http_status,
-        last_checked_at: new Date().toISOString(),
-      })
-      .eq("id", bookmark.id)
-      .eq("user_id", bookmark.user_id);
-
-    if (updateError) {
-      console.error(`Update failed for ${bookmark.id}:`, updateError.message);
-    } else {
-      updatedCount++;
-    }
-  }
-
-  console.log(
-    `Done. Checked: ${bookmarks.length}, Updated: ${updatedCount}, Broken: ${brokenCount}, Unknown: ${unknownCount}`,
-  );
+  const summary: RunSummary = {
+    checked: outcomes.length,
+    broken: outcomes.filter((o) => o.result.brokenStatus === "confirmed_broken")
+      .length,
+    likely: outcomes.filter((o) => o.result.brokenStatus === "likely_broken")
+      .length,
+    unknown: outcomes.filter((o) => o.result.brokenStatus === "unknown").length,
+    updated: outcomes.filter((o) => o.written).length,
+  };
+  logger.info("URL health check done", summary);
 }
 
 main().catch((err) => {
-  console.error("Fatal:", err);
+  logger.error("Fatal error", {
+    error: err instanceof Error ? err.message : String(err),
+  });
   process.exit(1);
 });

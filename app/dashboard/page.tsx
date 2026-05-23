@@ -1,5 +1,6 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
+
 import { getBookmarks } from "~/app/action/bookmark.action";
 import { getProfile } from "~/app/action/setting.action";
 import { getWorkspaces } from "~/app/action/workspace.action";
@@ -10,7 +11,6 @@ import { UserProvider } from "~/components/providers/user-context";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
 import { bookmarkKeys, profileKeys, workspaceKeys } from "~/lib/query-keys";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 export default async function DashboardPage() {
   const { user } = await requireAuth();
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
       queryFn: async () => {
         const result = await getWorkspaces();
         if (!result.success) throw new Error(result.error);
-        return result.data as WorkspaceWithCount[];
+        return result.data;
       },
     }),
     queryClient.prefetchQuery({
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
       <UserProvider user={user}>
         <main className="min-h-dvh bg-background">
           <Header user={user} />
-          <BookmarkView />
+          <BookmarkView scope={{ type: "global" }} />
           <Suspense>
             <ShareDialogManager />
           </Suspense>

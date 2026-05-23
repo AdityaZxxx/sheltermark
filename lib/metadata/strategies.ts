@@ -1,34 +1,33 @@
+import { isAlwaysAliveDomain } from "~/lib/link-health/domains";
 import { httpFetch } from "~/lib/utils/http-fetch";
+
 import type { Metadata } from "./types";
+
 import { decodeHtmlEntities, getGoogleFavicon } from "./utils";
 
 type Platform = "twitter" | "youtube" | "js-heavy" | "generic";
 
-const PLATFORMS: Record<Platform, (hostname: string) => boolean> = {
-  twitter: (h) =>
-    h === "twitter.com" ||
-    h.endsWith(".twitter.com") ||
-    h === "x.com" ||
-    h.endsWith(".x.com"),
-  youtube: (h) =>
-    h === "youtube.com" ||
-    h.endsWith(".youtube.com") ||
-    h === "youtu.be" ||
-    h.endsWith(".youtu.be") ||
-    h === "youtube-nocookie.com" ||
-    h.endsWith(".youtube-nocookie.com"),
-  "js-heavy": (h) =>
-    h === "instagram.com" ||
-    h.endsWith(".instagram.com") ||
-    h === "facebook.com" ||
-    h.endsWith(".facebook.com"),
-  generic: () => true,
-};
+const hostnameMatches = (h: string, domain: string) =>
+  h === domain || h.endsWith(`.${domain}`);
 
 function detectPlatform(hostname: string): Platform {
-  for (const [platform, check] of Object.entries(PLATFORMS)) {
-    if (check(hostname)) return platform as Platform;
-  }
+  if (!isAlwaysAliveDomain(`https://${hostname}`)) return "generic";
+  if (
+    hostnameMatches(hostname, "twitter.com") ||
+    hostnameMatches(hostname, "x.com")
+  )
+    return "twitter";
+  if (
+    hostnameMatches(hostname, "youtube.com") ||
+    hostnameMatches(hostname, "youtu.be") ||
+    hostnameMatches(hostname, "youtube-nocookie.com")
+  )
+    return "youtube";
+  if (
+    hostnameMatches(hostname, "instagram.com") ||
+    hostnameMatches(hostname, "facebook.com")
+  )
+    return "js-heavy";
   return "generic";
 }
 
@@ -61,6 +60,7 @@ async function fetchTwitter(url: string): Promise<Metadata | null> {
   if (data.tweet) {
     return {
       title: `${data.tweet.author?.name || "User"} on X: "${data.tweet.text?.substring(0, 50) || ""}..."`,
+      description: null,
       og_image_url:
         data.tweet.media?.photos?.[0]?.url ||
         data.tweet.author?.avatar_url ||
@@ -71,6 +71,7 @@ async function fetchTwitter(url: string): Promise<Metadata | null> {
   if (data.user) {
     return {
       title: `${data.user.name || "User"} (@${data.user.screen_name || "unknown"}) / X`,
+      description: null,
       og_image_url: data.user.avatar_url?.replace("_normal", "") || null,
       favicon_url: data.user.avatar_url || null,
     };
@@ -95,6 +96,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
       const data = await res.json();
       return {
         title: decodeHtmlEntities(data.title || url),
+        description: null,
         og_image_url: data.thumbnail_url,
         favicon_url: fallbackFavicon,
       };
@@ -110,6 +112,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
         ? null
         : {
             title: decodeHtmlEntities(data.title || url),
+            description: null,
             og_image_url: data.thumbnail_url,
             favicon_url: null,
           };
@@ -119,6 +122,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
     if (result) {
       return {
         title: result.title,
+        description: null,
         og_image_url: result.og_image_url || fallbackThumb,
         favicon_url: result.favicon_url || fallbackFavicon,
       };
@@ -128,6 +132,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
   if (videoId)
     return {
       title: "YouTube Video",
+      description: null,
       og_image_url: fallbackThumb,
       favicon_url: fallbackFavicon,
     };
@@ -144,6 +149,7 @@ async function fetchJsHeavy(url: string): Promise<Metadata | null> {
   if (!data.status || data.status !== "success") return null;
   return {
     title: decodeHtmlEntities(data.data?.title || url),
+    description: null,
     og_image_url: data.data?.image?.url || null,
     favicon_url: data.data?.logo?.url || null,
   };

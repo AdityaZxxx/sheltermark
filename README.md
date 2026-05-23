@@ -1,56 +1,74 @@
 # Sheltermark
 
-A clean, minimalist bookmark manager. Organize and access your bookmarks from anywhere.
+A cross-device bookmark manager. Save URLs that are auto-enriched with metadata, organize them into workspaces, and optionally share public collections.
+
+## Documentation
+
+| Doc                                            | For                                                                                 |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [docs/setup.md](./docs/setup.md)               | Local dev: env vars, install, DB migrations, extension loading.                     |
+| [docs/architecture.md](./docs/architecture.md) | Codebase shape: request flow, mutation pattern, cron scripts, extension↔web bridge. |
+| [docs/deployment.md](./docs/deployment.md)     | Vercel, GitHub Actions cron, extension build & package.                             |
+| [docs/domain-model.md](./docs/domain-model.md) | Bounded contexts, entities, invariants, domain events.                              |
+| [CONTEXT.md](./CONTEXT.md)                     | Glossary — the project's ubiquitous language.                                       |
+| [AGENT.md](./AGENT.md)                         | Conventions and working rules for AI agents (and humans).                           |
+| [docs/adr/](./docs/adr/)                       | Architectural Decision Records.                                                     |
 
 ## Features
 
-- **🔖 Smart Bookmarks** - Auto-fetch metadata (title, favicon, og:image) from any URL
-- **📁 Workspaces** - Organize bookmarks into collections (public or private)
-- **🔍 Quick Search** - Find bookmarks instantly by title or URL
-- **🌐 Public Profiles** - Share your curated collections at `/u/[username]`
-- **🎨 Clean UI** - Minimalist design focused on content
+- **Smart bookmarks** — auto-fetch title, favicon, and OG image from any URL via a multi-strategy metadata pipeline.
+- **Workspaces** — organize bookmarks into public or private collections; one default workspace per user.
+- **Tags** — lightweight, user-scoped labels via many-to-many junction. Cheap and disposable.
+- **Feeds** — subscribe to RSS/Atom; new items become bookmarks automatically (cron-synced every 30 min).
+- **Link health** — weekly cron checks saved URLs, classifies as `alive | confirmed_broken | likely_broken | unknown`. Soft-404 detection, per-host throttling, 401/403 treated as ambiguous.
+- **Trash & restore** — soft-delete with per-user cleanup interval (7 or 30 days, enforced by daily cron).
+- **Public profiles** — share curated collections at `/u/[username]`.
+- **Import/export** — JSON and CSV, with duplicate strategy (`skip` or `replace`) and a dry-run preview.
+- **Chrome extension** — one-click save (Ctrl+Shift+K) with workspace selector and X/Twitter-specific capture.
 
 ## Tech Stack
 
-- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui
-- **Backend:** Supabase (Auth, Database, Storage)
-- **State Management:** TanStack Query
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui with BaseUI
+- **Backend:** Supabase (Auth, Postgres, Storage)
+- **State:** TanStack Query + server actions
+- **Validation:** Zod
+- **Extension:** Manifest V3, TypeScript, esbuild
 - **Package Manager:** Bun
-- **Extension:** Chrome Extension Manifest V3
+- **Tests:** Vitest
+- **Lint/Format:** Biome
 
-## Features in Detail
+## Quickstart
 
-### Workspaces
-- Create unlimited workspaces
-- Toggle public/private visibility
-- Move bookmarks between workspaces
+```bash
+bun install
+cp .env.example .env   # then fill in the values (see docs/setup.md)
+bun run dev             # http://localhost:3000
+```
 
-### Bookmark Management
-- Add bookmarks via URL (auto-metadata fetch)
-- Edit title and move between workspaces
-- Bulk operations (move, delete, copy URLs)
-- View as list or card grid
-
-### Public Profiles
-- Share workspaces publicly
-- Beautiful profile pages at `/u/username`
-- Filter by workspace tabs
+For the extension, database migrations, and deployment, see [docs/setup.md](./docs/setup.md) and [docs/deployment.md](./docs/deployment.md).
 
 ## Browser Extension
 
-### Chrome / Edge / Brave
-- Download extension-chrome.zip from the latest GitHub release.
-- Unzip it somewhere on disk.
-- Open your browser and navigate to chrome://extensions.
-- Enable "Developer mode" in the top right corner.
-- Click "Load unpacked".
-- Select the unzipped extension-chrome folder.
+Chrome / Edge / Brave:
+
+1. Build the extension: `bun run ext:build`
+2. Open `chrome://extensions/`
+3. Enable **Developer mode** (top right)
+4. Click **Load unpacked** and select the `extension/` folder
+
+For local dev, set the web app URL via the extension's options page (chrome://extensions → Sheltermark → Details → Extension options). See [docs/setup.md](./docs/setup.md).
 
 ## Roadmap
 
 - [x] Web app with workspaces
 - [x] Public profile pages
 - [x] Auto-metadata fetching
-- [x] Chrome Extension (currently the extension is not yet available in the web store due to registration payment issues)
-- [x] Import/export bookmarks JSON and CSV support
+- [x] Chrome extension (not yet in the Web Store — registration payment issue)
+- [x] Import/export (JSON + CSV)
+- [x] Android PWA share intent
+- [x] RSS/Atom feed subscriptions
+- [x] Bookmark notes and tagging
+- [x] Trash with auto-cleanup
+- [x] Link health checks with manual override
 - [ ] Full-text search
+- [x] Import from browser bookmarks

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import { cn } from "~/lib/utils";
 
 interface ProgressiveImageProps {
@@ -33,7 +34,7 @@ export function ProgressiveImage({
           )}
         />
       )}
-      {/* biome-ignore lint/performance/noImgElement: external domain source */}
+      {/* oxlint-disable-next-line next/no-img-element -- dynamic-size external images, next/image is not beneficial */}
       <img
         src={src}
         alt={alt}

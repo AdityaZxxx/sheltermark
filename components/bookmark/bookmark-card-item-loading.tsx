@@ -1,5 +1,7 @@
 import { GlobeIcon } from "@phosphor-icons/react";
+
 import { safeDomain } from "~/lib/utils";
+
 import { MatrixFaviconLoader, TextDecrypt } from "./loading-animations";
 
 interface BookmarkCardItemLoadingProps {
@@ -10,17 +12,16 @@ export function BookmarkCardItemLoading({ url }: BookmarkCardItemLoadingProps) {
   const domain = safeDomain(url);
 
   return (
-    <div className="flex flex-col rounded-sm overflow-hidden h-full relative animate-pulse-subtle">
+    <div className="flex flex-col rounded-lg overflow-hidden h-full relative animate-pulse-subtle">
       {/* Image placeholder */}
       <div className="aspect-1200/628 w-full overflow-hidden relative">
         <div className="w-full h-full flex items-center justify-center bg-muted">
-          <GlobeIcon className="w-12 h-12 text-muted-foreground/20" />
+          <GlobeIcon className="w-12 h-12 text-muted-foreground/40" />
         </div>
-        {/* Title overlay - raw URL with decrypt */}
-        <div className="absolute bottom-0.5 left-1 right-1 bg-black/60 px-2 py-1 mx-auto">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-6 pb-1.5 px-2">
           <TextDecrypt
             text={url}
-            className="text-[10px] text-white/70 truncate leading-none font-medium"
+            className="text-xs text-white/80 truncate leading-tight font-medium tracking-tight"
             delay={400}
           />
         </div>
@@ -34,7 +35,7 @@ export function BookmarkCardItemLoading({ url }: BookmarkCardItemLoadingProps) {
           </div>
           <TextDecrypt
             text={domain}
-            className="text-xs font-medium text-muted-foreground/70 truncate"
+            className="text-xs text-muted-foreground/70 truncate"
             delay={600}
           />
         </div>

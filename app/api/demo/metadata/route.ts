@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
 import { logger } from "~/lib/logger";
 import { fetchMetadata } from "~/lib/metadata";
 

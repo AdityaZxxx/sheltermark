@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
+
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
   Workspace,
@@ -29,9 +30,6 @@ interface UseBookmarkActionsProps {
   refetchBookmarkMetadata: (data: { id: string }) => void;
   invalidate: () => void;
   setSearchQuery: (query: string) => void;
-  setPendingUrls: React.Dispatch<
-    React.SetStateAction<{ id: string; url: string }[]>
-  >;
 }
 
 export function useBookmarkActions({
@@ -44,7 +42,6 @@ export function useBookmarkActions({
   refetchBookmarkMetadata,
   invalidate,
   setSearchQuery,
-  setPendingUrls,
 }: UseBookmarkActionsProps) {
   const handleCopyUrl = useCallback((url: string) => {
     navigator.clipboard.writeText(url);
@@ -100,8 +97,12 @@ export function useBookmarkActions({
   const handleSubmit = useCallback(
     async (val: string) => {
       const trimmed = val.trim();
-      if (!currentWorkspace) {
-        toast.error("Please select a workspace first");
+      const targetWorkspace =
+        currentWorkspace ??
+        workspaces.find((ws) => ws.is_default) ??
+        workspaces[0];
+      if (!targetWorkspace) {
+        toast.error("Please create a workspace first");
         return;
       }
       if (trimmed.includes(".") || trimmed.startsWith("http")) {
@@ -109,27 +110,21 @@ export function useBookmarkActions({
           ? trimmed
           : `https://${trimmed}`;
 
-        const pendingId = `pending-${Date.now()}`;
-        setPendingUrls((prev) => [
-          ...prev,
-          { id: pendingId, url: normalizedUrl },
-        ]);
         setSearchQuery("");
         addBookmark(
-          { url: normalizedUrl, workspaceId: currentWorkspace.id },
+          { url: normalizedUrl, workspaceId: targetWorkspace.id },
           {
             onSuccess: () => {
               invalidate();
             },
             onError: (err) => {
-              setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
               toast.error(err.message || "Failed to add bookmark");
             },
           },
         );
       }
     },
-    [currentWorkspace, addBookmark, invalidate, setSearchQuery, setPendingUrls],
+    [currentWorkspace, workspaces, addBookmark, invalidate, setSearchQuery],
   );
 
   return {

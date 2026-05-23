@@ -1,4 +1,4 @@
-const HTML_ENTITIES: Record<string, string> = {
+const HTML_ENTITIES = {
   "&amp;": "&",
   "&lt;": "<",
   "&gt;": ">",
@@ -14,7 +14,7 @@ const HTML_ENTITIES: Record<string, string> = {
   "&copy;": "©",
   "&reg;": "®",
   "&trade;": "™",
-};
+} as const satisfies Record<string, string>;
 
 export function decodeHtmlEntities(text: string): string {
   let decoded = text;
@@ -80,6 +80,7 @@ export function createBasicMetadata(
 ): import("./types").Metadata {
   return {
     title: url,
+    description: null,
     og_image_url: null,
     favicon_url: getGoogleFavicon(hostname),
   };

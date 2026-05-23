@@ -1,8 +1,11 @@
 "use client";
 
 import { CaretUpDownIcon, GlobeIcon, LinkIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -21,7 +24,6 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useBookmarkMutations } from "~/hooks/use-bookmarks";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface ShareDialogProps {
@@ -45,16 +47,9 @@ export function ShareDialog({
 }: ShareDialogProps) {
   const { addBookmark } = useBookmarkMutations();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
-    null,
+    currentWorkspaceId || workspaces[0]?.id || null,
   );
   const [title, setTitle] = useState(initialTitle || "");
-
-  useEffect(() => {
-    if (open) {
-      setSelectedWorkspaceId(currentWorkspaceId || workspaces[0]?.id || null);
-      setTitle(initialTitle || "");
-    }
-  }, [open, currentWorkspaceId, workspaces, initialTitle]);
 
   const handleSave = () => {
     if (!selectedWorkspaceId) {
@@ -100,7 +95,7 @@ export function ShareDialog({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Page title"
+            placeholder="Leave blank for autofill"
           />
         </div>
 

@@ -1,7 +1,10 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
 import { requireAuth } from "~/lib/auth";
+import { getDb } from "~/lib/data/drizzle";
 import {
   createWorkspace as createWorkspaceRepo,
   deleteWorkspace as deleteWorkspaceRepo,
@@ -11,54 +14,58 @@ import {
   toggleAutoCheckBroken as toggleAutoCheckBrokenRepo,
   togglePublicStatus as togglePublicStatusRepo,
 } from "~/lib/data/repositories/workspace.repository";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
+async function auth() {
+  const { user } = await requireAuth();
+  return { user, db: getDb() };
+}
 
 export async function getWorkspaces(): Promise<
   ActionResult<WorkspaceWithCount[]>
 > {
-  const { user, supabase } = await requireAuth();
-  return getWorkspacesRepo(supabase, user.id);
+  const { user, db } = await auth();
+  return getWorkspacesRepo(db, user.id);
 }
 
 export async function createWorkspace(
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
-  const { user, supabase } = await requireAuth();
-  return createWorkspaceRepo(supabase, user.id, formData);
+  const { user, db } = await auth();
+  return createWorkspaceRepo(db, user.id, formData);
 }
 
 export async function deleteWorkspace(id: string): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return deleteWorkspaceRepo(supabase, user.id, id);
+  const { user, db } = await auth();
+  return deleteWorkspaceRepo(db, user.id, id);
 }
 
 export async function togglePublicStatus(
   id: string,
   isPublic: boolean,
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return togglePublicStatusRepo(supabase, user.id, id, isPublic);
+  const { user, db } = await auth();
+  return togglePublicStatusRepo(db, user.id, id, isPublic);
 }
 
 export async function setDefaultWorkspace(
   id: string,
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return setDefaultWorkspaceRepo(supabase, user.id, id);
+  const { user, db } = await auth();
+  return setDefaultWorkspaceRepo(db, user.id, id);
 }
 
 export async function toggleAutoCheckBroken(
   id: string,
   enabled: boolean,
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return toggleAutoCheckBrokenRepo(supabase, user.id, id, enabled);
+  const { user, db } = await auth();
+  return toggleAutoCheckBrokenRepo(db, user.id, id, enabled);
 }
 
 export async function renameWorkspace(
   id: string,
   name: string,
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return renameWorkspaceRepo(supabase, user.id, id, name);
+  const { user, db } = await auth();
+  return renameWorkspaceRepo(db, user.id, id, name);
 }

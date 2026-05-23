@@ -8,6 +8,7 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
 import {
@@ -21,7 +22,6 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { useFeeds } from "~/hooks/use-feeds";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { Feed } from "~/lib/schemas/feed.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface FeedManagerProps {
@@ -31,7 +31,7 @@ interface FeedManagerProps {
 
 export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
   const feedsHook = useFeeds();
-  const feeds = feedsHook.feeds as Feed[];
+  const { feeds } = feedsHook;
   const { subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } = feedsHook;
   const { workspaces } = useWorkspaces();
   const [url, setUrl] = useState("");
@@ -155,7 +155,7 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-6 h-6 shrink-0 rounded overflow-hidden flex items-center justify-center">
                       {feed.icon_url ? (
-                        // biome-ignore lint/performance/noImgElement: nothing to optimize
+                        // oxlint-disable-next-line next/no-img-element -- nothing to optimize
                         <img
                           src={feed.icon_url}
                           alt=""
@@ -177,10 +177,11 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                     </a>
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition">
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Sync feed"
                       onClick={() => refreshFeed(feed.id)}
                     >
                       <ArrowsClockwiseIcon className="h-4 w-4" />
@@ -188,6 +189,7 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Unsubscribe"
                       onClick={() => deleteFeed(feed.id)}
                     >
                       <TrashIcon className="h-4 w-4" />

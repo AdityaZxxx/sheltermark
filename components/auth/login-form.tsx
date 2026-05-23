@@ -3,6 +3,7 @@
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
+
 import { loginWithEmail, loginWithGoogle } from "~/app/action/login.action";
 import { GoogleIcon } from "~/components/google-icon";
 import { Button } from "~/components/ui/button";
@@ -14,6 +15,8 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
+
+import { AuthError } from "./auth-error";
 
 export function LoginForm({
   className,
@@ -84,15 +87,7 @@ export function LoginForm({
         </div>
       </div>
 
-      {error && (
-        <div
-          id={loginErrorId}
-          aria-live="polite"
-          className="rounded-md border border-destructive/20 bg-destructive/5 p-3"
-        >
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
+      {error && <AuthError error={error} id={loginErrorId} />}
 
       <form onSubmit={handleEmailLogin}>
         <FieldGroup>

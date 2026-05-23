@@ -3,6 +3,7 @@
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { exportBookmarks } from "~/app/action/export.action";
 import { Button } from "~/components/ui/button";
 import {
@@ -85,7 +86,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <Label className="text-xs font-medium">Format</Label>
             <RadioGroup
               value={format}
-              onValueChange={(value) => setFormat(value as "json" | "csv")}
+              onValueChange={(value) => {
+                if (value === "json" || value === "csv") setFormat(value);
+              }}
               className="flex gap-4"
             >
               <div className="flex items-center gap-2">
@@ -113,7 +116,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <Label className="text-xs font-medium">Workspace</Label>
             <Select
               value={workspaceId}
-              onValueChange={(value) => setWorkspaceId(value as "all" | string)}
+              onValueChange={(value) => {
+                if (value !== null) setWorkspaceId(value);
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue>

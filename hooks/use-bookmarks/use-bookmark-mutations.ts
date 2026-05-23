@@ -7,6 +7,8 @@ import {
   useMoveBookmarks,
   useRefetchBookmarkMetadata,
   useRenameBookmark,
+  useUpdateBookmarkFields,
+  useUpdateBookmarkNote,
 } from "~/lib/mutations/bookmark.mutations";
 
 export function useBookmarkMutations() {
@@ -17,6 +19,8 @@ export function useBookmarkMutations() {
   const rename = useRenameBookmark(user?.id);
   const move = useMoveBookmarks(user?.id);
   const refetch = useRefetchBookmarkMetadata(user?.id);
+  const note = useUpdateBookmarkNote(user?.id);
+  const fields = useUpdateBookmarkFields(user?.id);
 
   return {
     addBookmark: add.mutate,
@@ -29,5 +33,10 @@ export function useBookmarkMutations() {
     isMovingBookmarks: move.isPending,
     refetchBookmarkMetadata: refetch.mutate,
     isRefetchingMetadata: refetch.isPending,
+    refetchingId: refetch.isPending ? (refetch.variables?.id ?? null) : null,
+    updateBookmarkNote: note.mutate,
+    isUpdatingBookmarkNote: note.isPending,
+    updateBookmarkFields: fields.mutate,
+    isUpdatingBookmarkFields: fields.isPending,
   };
 }

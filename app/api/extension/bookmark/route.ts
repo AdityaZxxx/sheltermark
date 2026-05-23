@@ -1,12 +1,25 @@
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+
+import { getDb } from "~/lib/data/drizzle";
 import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
+import { workspaces } from "~/lib/data/schema";
 import { logger } from "~/lib/logger";
+import { extensionBookmarkSaveSchema } from "~/lib/schemas/extension.schema";
 import { createClient } from "~/utils/supabase/server";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { url, workspace_id, title: clientTitle } = body;
+    const validated = extensionBookmarkSaveSchema.safeParse(body);
+
+    if (!validated.success) {
+      const message =
+        validated.error?.issues?.[0]?.message ?? "Invalid request";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    const { url, workspace_id, title: clientTitle, tags } = validated.data;
 
     if (!url) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
@@ -38,17 +51,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Resolve workspace: if none provided, fall back to user's default
-    let workspaceId: string = workspace_id;
+    let workspaceId: string | null = workspace_id ?? null;
 
     if (!workspaceId) {
-      const { data: defaultWorkspace } = await supabase
-        .from("workspaces")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("is_default", true)
-        .maybeSingle();
+      const db = getDb();
+      const defaultWorkspaces = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(
+          and(eq(workspaces.userId, user.id), eq(workspaces.isDefault, true)),
+        )
+        .limit(1);
 
+      const defaultWorkspace = defaultWorkspaces[0];
       if (!defaultWorkspace) {
         return NextResponse.json(
           { error: "No workspace selected and no default workspace found" },
@@ -59,10 +74,11 @@ export async function POST(req: Request) {
       workspaceId = defaultWorkspace.id;
     }
 
-    const result = await insertBookmark(supabase, user.id, {
+    const result = await insertBookmark(getDb(), user.id, {
       url,
       workspaceId,
       clientTitle: clientTitle ?? null,
+      tagNames: tags,
     });
 
     if (!result.success) {
@@ -75,7 +91,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: result.data });
+    return NextResponse.json({
+      success: true,
+      data: { ...result.data, tags: result.tags },
+    });
   } catch (error) {
     logger.error("Extension bookmark error", { error });
     return NextResponse.json(

@@ -2,9 +2,9 @@
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
+
 import { checkUsernameAvailability } from "~/app/action/setting.action";
-import { SettingsDialogFooter } from "~/components/settings/setting-dialog-footer";
 import {
   Field,
   FieldContent,
@@ -17,10 +17,17 @@ import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
 import { useProfile } from "~/hooks/use-profile";
 import { usernameSchema } from "~/lib/schemas/profile.schema";
+
 import { Textarea } from "../ui/textarea";
 
 interface SettingsProfileTabProps {
   onCancel: () => void;
+  onRegisterFooter: (state: {
+    isSubmitting: boolean;
+    isDirty: boolean;
+    isDisabled: boolean;
+    onSubmit: () => void;
+  }) => void;
 }
 
 function extractUsername(url: string | null | undefined): string {
@@ -63,7 +70,28 @@ function UsernameStatusIcon({
   return null;
 }
 
-export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
+type UsernameStatus = "idle" | "checking" | "available" | "taken";
+
+function usernameStatusReducer(
+  _state: UsernameStatus,
+  action: { type: "IDLE" | "CHECKING" | "AVAILABLE" | "TAKEN" },
+): UsernameStatus {
+  switch (action.type) {
+    case "IDLE":
+      return "idle";
+    case "CHECKING":
+      return "checking";
+    case "AVAILABLE":
+      return "available";
+    case "TAKEN":
+      return "taken";
+  }
+}
+
+export function SettingsProfileTab({
+  onCancel,
+  onRegisterFooter,
+}: SettingsProfileTabProps) {
   const { profile, updatePublicProfile } = useProfile();
 
   const initialValues = profile
@@ -84,10 +112,6 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
         is_public: false,
       };
 
-  // Username availability state
-  const [usernameStatus, setUsernameStatus] = useState<
-    "idle" | "checking" | "available" | "taken"
-  >("idle");
   const originalUsername = profile?.username || "";
 
   const form = useForm({
@@ -116,50 +140,76 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
     useStore(form.store, (state) => state.values.username) || "";
   const debouncedUsername = useDebounce(usernameValue.trim(), 500);
 
-  const checkUsername = useCallback(
-    async (username: string) => {
-      if (!username || username.length < 3 || username === originalUsername) {
-        setUsernameStatus("idle");
-        return;
-      }
-
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        setUsernameStatus("idle");
-        return;
-      }
-
-      setUsernameStatus("checking");
-      const result = await checkUsernameAvailability({
-        username,
-        current_username: originalUsername,
-      });
-
-      if (!result.success) {
-        setUsernameStatus("idle");
-      } else if (result.data?.available) {
-        setUsernameStatus("available");
-      } else {
-        setUsernameStatus("taken");
-      }
-    },
-    [originalUsername],
-  );
+  // Use a reducer so the effect can dispatch state transitions
+  // (idle → checking → available|taken) without calling setState
+  // synchronously in the effect body. React Compiler can track
+  // dispatch because the reducer is a pure function.
+  const [usernameStatus, dispatch] = useReducer(usernameStatusReducer, "idle");
 
   useEffect(() => {
-    checkUsername(debouncedUsername);
-  }, [debouncedUsername, checkUsername]);
+    if (
+      !debouncedUsername ||
+      debouncedUsername.length < 3 ||
+      debouncedUsername === originalUsername
+    ) {
+      dispatch({ type: "IDLE" });
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(debouncedUsername)) {
+      dispatch({ type: "IDLE" });
+      return;
+    }
+
+    dispatch({ type: "CHECKING" });
+
+    let cancelled = false;
+
+    checkUsernameAvailability({
+      username: debouncedUsername,
+      current_username: originalUsername,
+    }).then((result) => {
+      if (cancelled) return;
+      if (!result.success) {
+        dispatch({ type: "IDLE" });
+      } else if (result.data?.available) {
+        dispatch({ type: "AVAILABLE" });
+      } else {
+        dispatch({ type: "TAKEN" });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedUsername, originalUsername]);
 
   const showUsernameIcon = usernameValue && usernameValue.length >= 3;
+  const footerDisabled =
+    usernameStatus === "taken" || usernameStatus === "checking";
+
+  const formRef = useRef(form);
+  formRef.current = form;
+
+  useEffect(() => {
+    onRegisterFooter({
+      isSubmitting,
+      isDirty,
+      isDisabled: footerDisabled,
+      onSubmit: () => formRef.current.handleSubmit(),
+    });
+  }, [isSubmitting, isDirty, footerDisabled, onRegisterFooter]);
 
   return (
     <form
+      id="settings-profile-form"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
       }}
-      className="flex flex-col"
+      className="flex min-h-0 flex-1 flex-col"
     >
-      <FieldGroup>
+      <FieldGroup className="scroll-fade flex-1 overflow-y-auto px-4 py-4">
         <form.Field name="is_public">
           {(field) => (
             <Field orientation="horizontal">
@@ -323,13 +373,6 @@ export function SettingsProfileTab({ onCancel }: SettingsProfileTabProps) {
           }}
         </form.Field>
       </FieldGroup>
-
-      <SettingsDialogFooter
-        isSubmitting={isSubmitting}
-        isDirty={isDirty}
-        isDisabled={usernameStatus === "taken" || usernameStatus === "checking"}
-        onCancel={onCancel}
-      />
     </form>
   );
 }

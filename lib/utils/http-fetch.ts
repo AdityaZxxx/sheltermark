@@ -18,7 +18,10 @@ const DEFAULT_TIMEOUT = 10_000;
 const DEFAULT_RETRIES = 2;
 const DEFAULT_USER_AGENT = "Sheltermark/1.0";
 const DEFAULT_MAX_HOPS = 5;
-const DEFAULT_RETRY_STATUSES = [429, 500, 502, 503];
+// Retryable transient statuses. 504 (Gateway Timeout) is included because
+// it is RFC-defined as an upstream timeout — usually transient, like 502.
+// 504 was previously omitted, which meant a single 504 → confirmed_broken.
+const DEFAULT_RETRY_STATUSES = [429, 500, 502, 503, 504];
 
 type HttpFetchOptions = {
   method?: "GET" | "HEAD" | "POST";
@@ -57,10 +60,6 @@ type HttpFetchResult = {
   /** Total elapsed time in ms. */
   duration: number;
 };
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Single fetch with timeout and external signal support.
@@ -129,18 +128,18 @@ async function attemptWithRetry(
       }
 
       return response;
-    } catch (error) {
-      lastError = error as Error;
+    } catch (cause) {
+      lastError = cause instanceof Error ? cause : new Error(String(cause));
       if (
         attempt < retries &&
         !externalSignal?.aborted &&
-        isRetryableError(error)
+        isRetryableError(cause)
       ) {
         const delay = Math.min(1000 * 2 ** attempt, 5000);
         await sleep(delay, externalSignal);
         continue;
       }
-      throw error;
+      throw cause;
     }
   }
 
@@ -241,10 +240,6 @@ async function followRedirectsManually(
   throw new Error(`Too many redirects (max ${maxHops})`);
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
 /**
  * Fetch a URL with configurable timeout, retries, and redirect handling.
  *
@@ -275,7 +270,7 @@ export async function httpFetch(
   const retryOnStatus = opts?.retryOnStatus ?? DEFAULT_RETRY_STATUSES;
   const userAgent = opts?.userAgent ?? DEFAULT_USER_AGENT;
 
-  const headers: Record<string, string> = {
+  const headers = {
     "User-Agent": userAgent,
     ...opts?.headers,
   };
@@ -287,13 +282,12 @@ export async function httpFetch(
 
   // Passthrough Next.js fetch cache config (e.g. next.revalidate)
   if (opts?.next) {
-    (baseOptions as Record<string, unknown>).next = opts.next;
+    baseOptions.next = opts.next;
   }
 
   const startTime = performance.now();
   const redirectConfig = opts?.followRedirect;
 
-  // --- Auto-follow via native fetch ---
   if (redirectConfig === undefined || redirectConfig === true) {
     baseOptions.redirect = "follow";
     const response = await attemptWithRetry(
@@ -311,7 +305,6 @@ export async function httpFetch(
     };
   }
 
-  // --- No redirect following ---
   if (redirectConfig === false) {
     baseOptions.redirect = "manual";
     const response = await attemptWithRetry(
@@ -329,7 +322,6 @@ export async function httpFetch(
     };
   }
 
-  // --- Manual redirect following with hop validation ---
   const maxHops = redirectConfig.maxHops ?? DEFAULT_MAX_HOPS;
   const { response, finalUrl } = await followRedirectsManually(
     url,
@@ -348,10 +340,6 @@ export async function httpFetch(
     duration: Math.round(performance.now() - startTime),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Companion utilities
-// ---------------------------------------------------------------------------
 
 /**
  * Read a response body with an optional byte limit.
@@ -374,10 +362,6 @@ export async function readResponseBody(
   return readStreamWithLimit(response, maxBytes);
 }
 
-// ---------------------------------------------------------------------------
-// Internal utilities
-// ---------------------------------------------------------------------------
-
 function externalAbortError(): Error {
   const err = new Error("The operation was aborted");
   err.name = "AbortError";
@@ -388,13 +372,13 @@ function externalAbortError(): Error {
  * Returns true for errors that are likely transient and worth retrying.
  * Permanent errors (invalid URL, bad TLS, unreachable host) return false.
  */
-function isRetryableError(error: unknown): boolean {
+function isRetryableError(cause: unknown): boolean {
   // Network-level failures from fetch() surface as TypeError in most runtimes
-  if (error instanceof TypeError) return true;
+  if (cause instanceof TypeError) return true;
   // Timeout from our own AbortController should be retried
-  if ((error as Error)?.name === "AbortError") return true;
+  if (cause instanceof Error && cause.name === "AbortError") return true;
   // DOMException covers some edge-runtime network errors
-  if (error instanceof DOMException) return true;
+  if (cause instanceof DOMException) return true;
   return false;
 }
 

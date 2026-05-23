@@ -8,6 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
+import { z } from "zod";
+
 import { loginWithGoogle } from "~/app/action/login.action";
 import { signupWithEmail } from "~/app/action/signup.action";
 import { GoogleIcon } from "~/components/google-icon";
@@ -20,6 +22,13 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
+
+import { AuthError } from "./auth-error";
+
+const passwordFieldsSchema = z.object({
+  password: z.string(),
+  confirmPassword: z.string(),
+});
 
 export function SignupForm({
   className,
@@ -47,10 +56,16 @@ export function SignupForm({
     if (next) {
       formData.append("next", next);
     }
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
+    const parsed = passwordFieldsSchema.safeParse(
+      Object.fromEntries(formData.entries()),
+    );
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid password input");
+      setIsLoadingEmail(false);
+      return;
+    }
 
-    if (password !== confirmPassword) {
+    if (parsed.data.password !== parsed.data.confirmPassword) {
       setError("Passwords do not match");
       setIsLoadingEmail(false);
       return;
@@ -130,11 +145,7 @@ export function SignupForm({
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
+      {error && <AuthError error={error} />}
 
       <form onSubmit={handleEmailSignup}>
         <FieldGroup>
