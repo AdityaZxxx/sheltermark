@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-
-import { logger } from "~/lib/logger";
 import { createClient } from "~/utils/supabase/server";
 
 export async function GET() {
@@ -28,7 +26,7 @@ export async function GET() {
 
     return NextResponse.json({ workspaces: workspaces || [] });
   } catch (error) {
-    logger.error("Extension workspaces error", { error });
+    console.error("Extension workspaces error:", error);
     return NextResponse.json(
       { error: "Failed to fetch workspaces" },
       { status: 500 },

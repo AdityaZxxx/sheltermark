@@ -6,7 +6,6 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -29,14 +28,13 @@ export function AvatarUpload({
   onRemove,
   isUploading = false,
 }: AvatarUploadProps) {
-  const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl);
   const [error, setError] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  const displayUrl = uploadPreviewUrl ?? currentAvatarUrl;
-  const hasAvatar = Boolean(displayUrl);
+  const hasAvatar = Boolean(previewUrl || currentAvatarUrl);
 
   useEffect(() => {
     return () => {
@@ -84,12 +82,12 @@ export function AvatarUpload({
 
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
-    setUploadPreviewUrl(objectUrl);
+    setPreviewUrl(objectUrl);
 
     try {
       await onUpload(file);
     } catch {
-      setUploadPreviewUrl(null);
+      setPreviewUrl(currentAvatarUrl);
       setError("Upload failed. Please try again.");
     }
   };
@@ -98,9 +96,12 @@ export function AvatarUpload({
     if (isUploading || isRemoving) return;
     setError(null);
     setIsRemoving(true);
-    setUploadPreviewUrl(null);
-    await onRemove();
-    setIsRemoving(false);
+    try {
+      setPreviewUrl(null);
+      await onRemove();
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   const isBusy = isUploading || isRemoving;
@@ -108,7 +109,10 @@ export function AvatarUpload({
   return (
     <div className="flex flex-col items-center pt-2 gap-3">
       <Avatar className={`h-24 w-24 ${error ? "ring-2 ring-destructive" : ""}`}>
-        <AvatarImage src={displayUrl || undefined} alt={fullName} />
+        <AvatarImage
+          src={previewUrl || currentAvatarUrl || undefined}
+          alt={fullName}
+        />
         <AvatarFallback className="text-2xl bg-muted">
           {fullName?.charAt(0)?.toUpperCase() || "U"}
         </AvatarFallback>

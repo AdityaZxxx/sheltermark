@@ -1,55 +1,48 @@
-import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
-import React from "react";
-
-import type { BrokenStatus } from "~/lib/link-health/types";
-import type { Tag } from "~/lib/schemas/tag.schema";
-
+import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
-import { cn } from "~/lib/utils";
-
+import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
-import { BrokenLinkWarning } from "./broken-link-warning";
 
 interface BookmarkItemProps {
   id: string;
   title: string;
   url: string;
   domain: string;
-  favicon_url?: string | undefined;
-  og_image_url?: string | undefined;
+  favicon_url?: string;
+  og_image_url?: string;
   created_at: string;
-  note?: string | null;
-  tags?: Tag[];
+  isBroken?: boolean;
   httpStatus?: number | null;
-  brokenStatus?: BrokenStatus | string | null;
-  autoCheckBroken?: boolean | undefined;
-  isSelected?: boolean | undefined;
-  isSelectionMode?: boolean | undefined;
-  bookmarkWorkspaceId?: string | null;
+  autoCheckBroken?: boolean;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string | undefined;
-  onSelect?: ((id: string) => void) | undefined;
-  onDelete?: ((id: string) => void) | undefined;
-  onEdit?: ((id: string) => void) | undefined;
-  onTagClick?: ((tagId: string) => void) | undefined;
-  onMove?: ((id: string) => void) | undefined;
-  onMoveToWorkspace?: ((id: string, workspaceId: string) => void) | undefined;
-  onCopyUrl?: ((url: string) => void) | undefined;
-  onRefetch?: ((id: string) => void) | undefined;
-  onSelectionModeToggle?: (() => void) | undefined;
-  tabIndex?: number | undefined;
-  disableContextMenu?: boolean | undefined;
-  refetchingId?: string | null;
+  currentWorkspaceId?: string;
+  onSelect?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onRename?: (id: string) => void;
+  onMove?: (id: string) => void;
+  onMoveToWorkspace?: (id: string, workspaceId: string) => void;
+  onCopyUrl?: (url: string) => void;
+  onRefetch?: (id: string) => void;
+  onSelectionModeToggle?: () => void;
+  tabIndex?: number;
+  disableContextMenu?: boolean;
 }
 
 interface BookmarkCardItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export const BookmarkCardItem = React.memo(function BookmarkCardItem({
+export function BookmarkCardItem({
   id,
   title,
   url,
@@ -57,17 +50,16 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   favicon_url,
   domain,
   created_at,
+  isBroken,
   httpStatus,
-  brokenStatus,
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
-  bookmarkWorkspaceId,
   workspaces = [],
   currentWorkspaceId,
   onSelect,
   onDelete,
-  onEdit,
+  onRename,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -75,12 +67,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
-  refetchingId,
 }: BookmarkCardItemProps) {
-  const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
-  const workspaceName = showWorkspaceBadge
-    ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
-    : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -94,8 +81,8 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex flex-col rounded-lg overflow-hidden hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
-        isSelected && "bg-primary/10",
+        "group flex flex-col rounded-sm overflow-hidden hover:bg-muted/50 h-full relative cursor-pointer transition-all text-left w-full  ",
+        isSelected && "bg-primary/5",
       )}
       onClick={() => {
         if (isSelectionMode) {
@@ -105,6 +92,9 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
         }
       }}
     >
+      {isSelected && (
+        <div className="absolute inset-0 rounded-sm pointer-events-none z-20" />
+      )}
       {isSelectionMode && (
         <div className="absolute top-2 right-2 z-10">
           <Checkbox
@@ -126,54 +116,54 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted">
-            <GlobeIcon className="w-12 h-12 text-muted-foreground/40" />
+            <GlobeIcon className="w-12 h-12 text-muted-foreground/20" />
           </div>
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-6 pb-1.5 px-2">
-          <h3 className="text-xs text-white/95 truncate leading-tight font-medium tracking-tight">
+        {isBroken && autoCheckBroken && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <div className="absolute top-2 left-2 z-10 cursor-help">
+                  <div className="w-6 h-6 rounded-full bg-red-500/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                    <WarningIcon
+                      className="w-3.5 h-3.5 text-white"
+                      weight="fill"
+                    />
+                  </div>
+                </div>
+              }
+            />
+            <TooltipContent>
+              <span>{getBrokenLinkMessage(httpStatus)}</span>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        <div className="absolute bottom-0.5 left-1 right-1 bg-black/60 px-2 py-1 mx-auto">
+          <h3 className="text-[10px] text-white truncate leading-none font-medium">
             {title}
           </h3>
         </div>
       </div>
-      <div className="flex items-center px-4 py-3 justify-between w-full border-t border-border">
+      <div className="flex items-center px-4 py-3 justify-between w-full">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
-          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center relative">
+          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
             {favicon_url ? (
-              // oxlint-disable-next-line next/no-img-element -- nothing to optimize
+              // biome-ignore lint/performance/noImgElement: nothing to optimize
               <img
                 src={favicon_url}
                 alt={`${domain} favicon`}
-                className={cn(
-                  "w-full h-full object-contain transition-opacity",
-                  refetchingId === id && "opacity-30",
-                )}
+                className="w-full h-full object-contain"
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
             )}
-            {refetchingId === id && (
-              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-2.5 text-muted-foreground animate-spin" />
-            )}
           </div>
-          <p className="text-xs text-muted-foreground truncate">{domain}</p>
-          {workspaceName && (
-            <>
-              <span className="text-xs text-muted-foreground/60">·</span>
-              <span className="text-xs text-muted-foreground/60 truncate shrink-0">
-                {workspaceName}
-              </span>
-            </>
-          )}
-          {autoCheckBroken && (
-            <BrokenLinkWarning
-              brokenStatus={brokenStatus}
-              httpStatus={httpStatus}
-              autoCheckBroken={autoCheckBroken}
-            />
-          )}
+          <p className="text-xs font-medium text-muted-foreground truncate">
+            {domain}
+          </p>
         </div>
-        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 w-fit">
-          <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 text-right w-full">
+        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 min-w-[80px]">
+          <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0 text-right w-full">
             {formatRelativeTime(created_at)}
           </span>
           <KbdGroup className="absolute right-3 col-start-1 row-start-1 text-xs transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none">
@@ -198,7 +188,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
-      onEdit={onEdit}
+      onRename={onRename}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}
@@ -212,4 +202,4 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       )}
     </BookmarkContextMenu>
   );
-});
+}

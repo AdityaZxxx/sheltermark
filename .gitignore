@@ -44,13 +44,5 @@ next-env.d.ts
 # development
 .vscode
 opencode.json
+AGENT.md
 prd.md
-trace-*.json
-
-lib/__tests__*
-
-# throwaway debug / probe scripts
-/.scratch/
-
-.opencode
-.agents

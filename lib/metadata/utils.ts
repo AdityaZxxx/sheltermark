@@ -1,4 +1,4 @@
-const HTML_ENTITIES = {
+const HTML_ENTITIES: Record<string, string> = {
   "&amp;": "&",
   "&lt;": "<",
   "&gt;": ">",
@@ -14,7 +14,7 @@ const HTML_ENTITIES = {
   "&copy;": "©",
   "&reg;": "®",
   "&trade;": "™",
-} as const satisfies Record<string, string>;
+};
 
 export function decodeHtmlEntities(text: string): string {
   let decoded = text;
@@ -44,6 +44,25 @@ export function resolveUrl(
 
 export function getGoogleFavicon(hostname: string): string {
   return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+}
+
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 5000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function isPrivateIP(ip: string): boolean {
@@ -80,7 +99,6 @@ export function createBasicMetadata(
 ): import("./types").Metadata {
   return {
     title: url,
-    description: null,
     og_image_url: null,
     favicon_url: getGoogleFavicon(hostname),
   };

@@ -23,18 +23,3 @@ export const feedKeys = {
   detail: (id: string) => ["feeds", "detail", id] as const,
   entries: (feedId: string) => ["feeds", "entries", feedId] as const,
 };
-
-export const trashKeys = {
-  all: ["trash"] as const,
-  bookmarks: ["trash", "bookmarks"] as const,
-  workspaces: ["trash", "workspaces"] as const,
-};
-
-export const tagKeys = {
-  all: ["tags"] as const,
-  links: ["tags", "links"] as const,
-  withCount: ["tags", "withCount"] as const,
-  byBookmark: (bookmarkId: string) => ["tags", "bookmark", bookmarkId] as const,
-  byWorkspace: (workspaceId: string) =>
-    ["tags", "byWorkspace", workspaceId] as const,
-};

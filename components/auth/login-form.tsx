@@ -3,8 +3,7 @@
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
-
-import { loginWithEmail, loginWithGoogle } from "~/app/action/login.action";
+import { loginWithEmail, loginWithGoogle } from "~/app/action/login";
 import { GoogleIcon } from "~/components/google-icon";
 import { Button } from "~/components/ui/button";
 import {
@@ -15,8 +14,6 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
-
-import { AuthError } from "./auth-error";
 
 export function LoginForm({
   className,
@@ -50,8 +47,6 @@ export function LoginForm({
     }
   };
 
-  // Persist accessibility improvements: connect errors to inputs via aria-describedby
-  const loginErrorId = error ? "login-error" : undefined;
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="flex flex-col gap-1">
@@ -87,7 +82,11 @@ export function LoginForm({
         </div>
       </div>
 
-      {error && <AuthError error={error} id={loginErrorId} />}
+      {error && (
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleEmailLogin}>
         <FieldGroup>
@@ -100,8 +99,6 @@ export function LoginForm({
                 type="email"
                 placeholder="hello@awesome.com"
                 required
-                aria-invalid={!!error}
-                aria-describedby={error ? loginErrorId : undefined}
                 className="pl-10"
               />
               <EnvelopeIcon
@@ -127,8 +124,6 @@ export function LoginForm({
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 required
-                aria-invalid={!!error}
-                aria-describedby={error ? loginErrorId : undefined}
                 className="pr-10"
               />
               <button

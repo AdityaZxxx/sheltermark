@@ -1,12 +1,6 @@
 "use client";
 
 import { ArrowDownIcon, ArrowUpIcon } from "@phosphor-icons/react";
-
-import type {
-  BookmarkSort,
-  BookmarkSortBy,
-} from "~/lib/schemas/bookmark.schema";
-
 import {
   Select,
   SelectContent,
@@ -14,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-
+import type { BookmarkSort, BookmarkSortBy } from "~/lib/schemas/bookmark";
 import { Button } from "../ui/button";
 
 interface BookmarkSortProps {
@@ -23,19 +17,17 @@ interface BookmarkSortProps {
 }
 
 const SORT_OPTIONS: { value: BookmarkSortBy; label: string }[] = [
-  { value: "created_at", label: "Created" },
   { value: "updated_at", label: "Updated" },
+  { value: "created_at", label: "Created" },
   { value: "title", label: "Title" },
   { value: "domain", label: "Domain" },
 ];
 
 export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
   const handleSortByChange = (value: string | null) => {
-    const matched = value
-      ? SORT_OPTIONS.find((o) => o.value === value)
-      : undefined;
-    if (!matched) return;
-    onSortChange({ ...sort, sortBy: matched.value });
+    if (value) {
+      onSortChange({ ...sort, sortBy: value as BookmarkSortBy });
+    }
   };
 
   const toggleSortOrder = () => {
@@ -52,7 +44,7 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
         value={sort.sortBy}
         onValueChange={handleSortByChange}
       >
-        <SelectTrigger className="border-0 bg-input/50 hover:bg-input">
+        <SelectTrigger>
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
         <SelectContent>
@@ -65,22 +57,13 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
       </Select>
       <Button
         variant="secondary"
-        className="bg-input/50 hover:bg-input"
         onClick={toggleSortOrder}
-        aria-label={
-          sort.sortOrder === "asc" ? "Sort ascending" : "Sort descending"
-        }
+        aria-label={sort.sortOrder === "asc" ? "Ascending" : "Descending"}
       >
         {sort.sortOrder === "asc" ? (
-          <>
-            <ArrowUpIcon className="size-3.5" />{" "}
-            <span className="md:hidden">Asc</span>
-          </>
+          <ArrowUpIcon className="size-3.5" />
         ) : (
-          <>
-            <ArrowDownIcon className="size-3.5" />{" "}
-            <span className="md:hidden">Desc</span>
-          </>
+          <ArrowDownIcon className="size-3.5" />
         )}
       </Button>
     </div>

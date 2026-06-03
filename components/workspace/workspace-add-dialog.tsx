@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -37,7 +36,7 @@ export function WorkspaceAddDialog({
         <DialogHeader>
           <DialogTitle>Add Workspace</DialogTitle>
           <DialogDescription>
-            Workspaces keep your bookmarks, tags, and shared links separate.
+            Add a new workspace to organize your bookmarks.
           </DialogDescription>
         </DialogHeader>
 
@@ -46,13 +45,12 @@ export function WorkspaceAddDialog({
             <Label htmlFor="workspace-name">Name</Label>
             <Input
               id="workspace-name"
-              placeholder="e.g. Research, Design, Inbox"
+              placeholder="Enter workspace name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSubmit();
               }}
-              maxLength={35}
             />
           </div>
         </div>

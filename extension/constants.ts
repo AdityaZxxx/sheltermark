@@ -4,44 +4,90 @@ export const NOTIFICATION_DURATION = 3000;
 export const MESSAGE_TYPES = {
   SAVE_BOOKMARK: "SAVE_BOOKMARK",
   GET_TAB_INFO: "GET_TAB_INFO",
+  CHECK_AUTH: "CHECK_AUTH",
+  GET_WORKSPACES: "GET_WORKSPACES",
   X_BOOKMARK_CAPTURED: "X_BOOKMARK_CAPTURED",
   CHECK_BOOKMARK: "CHECK_BOOKMARK",
-  GET_POPUP: "GET_POPUP",
-  GET_TAGS: "GET_TAGS",
+  CHECK_BOOKMARK_CACHED: "CHECK_BOOKMARK_CACHED",
+  CHECK_BOOKMARK_SETTLED: "CHECK_BOOKMARK_SETTLED",
 } as const;
 
-// Backoff: exponential with jitter, capped. Human-scale base (a flap is usually
-// seconds-to-minutes, not ms), capped to avoid retrying forever.
-export const QUEUE_BACKOFF_BASE_MS = 30_000; // 30s
-export const QUEUE_BACKOFF_MAX_MS = 30 * 60_000; // 30 min
-export const QUEUE_MAX_ATTEMPTS = 12; // ~6h wall clock of active retry
-export const QUEUE_MAX_HISTORY = 5; // bounded per-item retry log
-export const QUEUE_MAX_ERROR_LEN = 200;
-export const QUEUE_MAX_ITEMS = 500; // hard cap; evicts oldest pending
-export const QUEUE_DEAD_TTL_MS = 7 * 24 * 60 * 60_000; // 7 days
+type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 
-// Notification coalescing window: multiple offline failures within this interval
-// produce one "Saved offline — will sync" notification with a count.
-export const QUEUE_OFFLINE_NOTICE_DEBOUNCE_MS = 1500;
+interface MessageBase {
+  type: MessageType;
+}
 
-// Heartbeat alarm. MV3 `periodInMinutes` must be >= 1. Reused as the keep-alive.
-export const QUEUE_HEARTBEAT_ALARM = "keepAlive";
+interface SaveBookmarkMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.SAVE_BOOKMARK;
+  data: { url: string; title?: string | null; workspaceId?: string | null };
+}
 
-// All shape contracts live in schema.ts; the types below are the parsed forms
-// of those schemas so callers keep importing them from here.
-export type {
-  CheckResult,
-  ExtensionMessage,
-  FailureClass,
-  GetWorkspacesResult,
-  PopupInfo,
-  QueueItem,
-  QueueItemStatus,
-  QueueStoragePayload,
-  SaveEntrySource,
-  SaveResult,
-  TabInfo,
-  TagsResult,
-  TagWithCount,
-  Workspace,
-} from "./schema.js";
+interface GetTabInfoMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.GET_TAB_INFO;
+}
+
+interface CheckAuthMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.CHECK_AUTH;
+}
+
+interface GetWorkspacesMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.GET_WORKSPACES;
+}
+
+interface XBookmarkCapturedMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.X_BOOKMARK_CAPTURED;
+  url: string;
+}
+
+interface CheckBookmarkMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.CHECK_BOOKMARK;
+  data: { url: string; workspaceId?: string };
+}
+
+interface CheckBookmarkCachedMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.CHECK_BOOKMARK_CACHED;
+  data: { url: string; workspaceId: string };
+}
+
+interface CheckBookmarkSettledMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED;
+  data: { url: string; workspaceId: string };
+}
+
+export type ExtensionMessage =
+  | SaveBookmarkMessage
+  | GetTabInfoMessage
+  | CheckAuthMessage
+  | GetWorkspacesMessage
+  | XBookmarkCapturedMessage
+  | CheckBookmarkMessage
+  | CheckBookmarkCachedMessage
+  | CheckBookmarkSettledMessage;
+
+export interface SaveResult {
+  success?: boolean;
+  duplicate?: boolean;
+  needsLogin?: boolean;
+  error?: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  is_default?: boolean;
+}
+
+export interface TabInfo {
+  url?: string;
+  title?: string;
+  favIconUrl?: string;
+}
+
+export interface AuthResult {
+  authenticated?: boolean;
+}
+
+export interface CheckResult {
+  saved?: boolean;
+}

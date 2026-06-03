@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
-
 import Link from "next/link";
-
 import { Button } from "~/components/ui/button";
-
-export const metadata: Metadata = {
-  title: "Authentication Error - Sheltermark",
-  description: "The authentication link is invalid or has expired.",
-};
 
 export default function AuthCodeErrorPage() {
   return (

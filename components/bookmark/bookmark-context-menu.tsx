@@ -6,7 +6,6 @@ import {
   SelectionPlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,8 +19,6 @@ import {
 } from "~/components/ui/context-menu";
 import { getPastelColor } from "~/lib/utils";
 
-const EMPTY_WORKSPACES: { id: string; name: string }[] = [];
-
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
   id: string;
@@ -30,7 +27,7 @@ interface BookmarkContextMenuProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
-  onEdit?: (id: string) => void;
+  onRename?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -44,10 +41,10 @@ export function BookmarkContextMenu({
   id,
   url,
   isSelectionMode,
-  workspaces = EMPTY_WORKSPACES,
+  workspaces = [],
   currentWorkspaceId,
   onSelect,
-  onEdit,
+  onRename,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -70,9 +67,9 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onEdit?.(id)}>
+        <ContextMenuItem onClick={() => onRename?.(id)}>
           <PencilIcon />
-          Edit
+          Rename
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
@@ -92,7 +89,7 @@ export function BookmarkContextMenu({
               Move to...
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuGroup className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
+              <ContextMenuGroup>
                 {availableWorkspaces.map((ws) => (
                   <ContextMenuItem
                     key={ws.id}

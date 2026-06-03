@@ -2,13 +2,11 @@
 
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-
 import { makeQueryClient } from "~/lib/query-client";
 
 let browserQueryClient: QueryClient | undefined;
 
 function getQueryClient() {
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- standard Next.js SSR guard
   if (typeof window === "undefined") {
     return makeQueryClient();
   }

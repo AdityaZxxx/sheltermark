@@ -1,15 +1,14 @@
 "use server";
 
 import type { User } from "@supabase/supabase-js";
-
 import { createClient } from "~/utils/supabase/server";
 
-interface AuthResult {
+export interface AuthResult {
   user: User;
   supabase: Awaited<ReturnType<typeof createClient>>;
 }
 
-interface AuthSafeResult {
+export interface AuthSafeResult {
   user: User | null;
   supabase: Awaited<ReturnType<typeof createClient>>;
 }

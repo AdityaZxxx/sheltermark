@@ -11,7 +11,7 @@
     "noUncheckedSideEffectImports": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
-    "types": ["node", "bun"],
+    "types": ["node", "vitest/globals"],
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -34,5 +34,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "extension", "tools/oxlint/anti-slop"]
+  "exclude": ["node_modules", "extension"]
 }

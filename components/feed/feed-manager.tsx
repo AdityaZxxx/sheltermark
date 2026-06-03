@@ -8,7 +8,6 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
-
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
 import {
@@ -22,6 +21,7 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { useFeeds } from "~/hooks/use-feeds";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import type { Feed } from "~/lib/schemas/feed";
 import { getPastelColor } from "~/lib/utils";
 
 interface FeedManagerProps {
@@ -31,28 +31,25 @@ interface FeedManagerProps {
 
 export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
   const feedsHook = useFeeds();
-  const { feeds } = feedsHook;
+  const feeds = feedsHook.feeds as Feed[];
   const { subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } = feedsHook;
   const { workspaces } = useWorkspaces();
   const [url, setUrl] = useState("");
-  // Replace workspaceId with a selectedWorkspace object to reflect UI state without triggering extra renders
-  const [selectedWorkspace, setSelectedWorkspace] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     if (url.trim()) {
       subscribeToFeed({
         url: url.trim(),
-        workspaceId: selectedWorkspace?.id ?? undefined,
+        workspaceId: workspaceId || undefined,
       });
       setUrl("");
-      setSelectedWorkspace(null);
+      setWorkspaceId(null);
     }
   };
-  // Use the selectedWorkspace state for rendering and UX
+
+  const selectedWorkspace = workspaces.find((ws) => ws.id === workspaceId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,15 +82,14 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                           className="w-2 h-2 rounded-full shrink-0"
                           style={{
                             backgroundColor: getPastelColor(
-                              selectedWorkspace?.id ?? workspaces[0]?.id ?? "",
+                              selectedWorkspace?.id || workspaces[0]?.id,
                             ),
                           }}
                         />
                         <span className="truncate text-sm">
                           {selectedWorkspace
                             ? selectedWorkspace.name
-                            : (workspaces.find((ws) => ws.is_default)?.name ??
-                              "")}
+                            : workspaces.find((ws) => ws.is_default)?.name}
                         </span>
                       </div>
                       <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -105,9 +101,7 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                   {workspaces.map((ws) => (
                     <DropdownMenuItem
                       key={ws.id}
-                      onClick={() =>
-                        setSelectedWorkspace({ id: ws.id, name: ws.name })
-                      }
+                      onClick={() => setWorkspaceId(ws.id)}
                       className="flex items-center gap-2"
                     >
                       <div
@@ -155,7 +149,7 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-6 h-6 shrink-0 rounded overflow-hidden flex items-center justify-center">
                       {feed.icon_url ? (
-                        // oxlint-disable-next-line next/no-img-element -- nothing to optimize
+                        // biome-ignore lint/performance/noImgElement: nothing to optimize
                         <img
                           src={feed.icon_url}
                           alt=""
@@ -177,11 +171,10 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                     </a>
                   </div>
 
-                  <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Sync feed"
                       onClick={() => refreshFeed(feed.id)}
                     >
                       <ArrowsClockwiseIcon className="h-4 w-4" />
@@ -189,7 +182,6 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Unsubscribe"
                       onClick={() => deleteFeed(feed.id)}
                     >
                       <TrashIcon className="h-4 w-4" />

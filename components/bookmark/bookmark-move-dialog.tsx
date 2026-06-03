@@ -1,9 +1,9 @@
 "use client";
 
 import { CaretUpDownIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-
+import { moveBookmarks } from "~/app/action/bookmark";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -16,14 +16,11 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Label } from "~/components/ui/label";
-import { useBookmarkMutations } from "~/hooks/use-bookmarks";
 import { getPastelColor } from "~/lib/utils";
 
 interface BookmarkMoveDialogProps {
@@ -50,127 +47,118 @@ export function BookmarkMoveDialog({
   onConfirm,
   silent = false,
 }: BookmarkMoveDialogProps) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {open && (
-        <MoveForm
-          key={ids.join(",")}
-          ids={ids}
-          workspaces={workspaces}
-          currentWorkspaceId={currentWorkspaceId}
-          onOpenChange={onOpenChange}
-          onSuccess={onSuccess}
-          onConfirm={onConfirm}
-          silent={silent}
-        />
-      )}
-    </Dialog>
-  );
-}
-
-function MoveForm({
-  ids,
-  workspaces,
-  currentWorkspaceId,
-  onOpenChange,
-  onSuccess,
-  onConfirm,
-  silent,
-}: Omit<BookmarkMoveDialogProps, "open">) {
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
     null,
   );
-  const { moveBookmarks, isMovingBookmarks } = useBookmarkMutations();
-
-  const isPending = isMovingBookmarks;
+  const [isPending, setIsPending] = useState(false);
 
   // Filter out the current workspace
-  const availableWorkspaces = workspaces.filter(
-    (ws) => ws.id !== currentWorkspaceId,
+  const availableWorkspaces = useMemo(
+    () => workspaces.filter((ws) => ws.id !== currentWorkspaceId),
+    [workspaces, currentWorkspaceId],
   );
 
-  const handleMove = () => {
+  // Preselect the first available workspace only when the dialog opens
+  useEffect(() => {
+    if (open && availableWorkspaces.length > 0) {
+      setTargetWorkspaceId((current) => current || availableWorkspaces[0].id);
+    }
+    if (!open) {
+      setTargetWorkspaceId(null);
+    }
+  }, [open, availableWorkspaces]);
+
+  const handleMove = async () => {
     if (ids.length === 0 || !targetWorkspaceId) return;
 
+    setIsPending(true);
+
     if (onConfirm) {
-      // Parent-supplied handler (backward compat)
-      const result = onConfirm(ids, targetWorkspaceId);
-      if (result instanceof Promise) {
-        result.then(() => {
-          onSuccess();
-          onOpenChange(false);
-        });
-      } else {
+      await onConfirm(ids, targetWorkspaceId);
+      setIsPending(false);
+      onSuccess();
+      onOpenChange(false);
+    } else {
+      const res = await moveBookmarks({ ids, targetWorkspaceId });
+      setIsPending(false);
+
+      if (res.success) {
+        if (!silent) {
+          const workspaceName = selectedWorkspace?.name || "Target Workspace";
+          const { movedCount, skippedCount } = res.data;
+
+          if (movedCount > 0 && skippedCount > 0) {
+            toast.success(
+              `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
+            );
+          } else if (movedCount > 0) {
+            toast.success(
+              movedCount === 1
+                ? `Bookmark moved to ${workspaceName}`
+                : `${movedCount} bookmarks moved to ${workspaceName}`,
+            );
+          } else if (skippedCount > 0) {
+            toast.info(
+              skippedCount === 1
+                ? `Bookmark already exists in ${workspaceName}`
+                : `Bookmarks already exist in ${workspaceName}`,
+            );
+          }
+        }
         onSuccess();
         onOpenChange(false);
+      } else {
+        toast.error(res.error || "Failed to move bookmarks");
       }
-      return;
     }
-
-    // Optimistic move via the shared hook. Cache updates instantly; toast
-    // dialog closes immediately on click.
-    moveBookmarks({ ids, targetWorkspaceId });
-    if (!silent) {
-      const workspaceName =
-        workspaces.find((w) => w.id === targetWorkspaceId)?.name ||
-        "Target Workspace";
-      toast.success(
-        ids.length === 1
-          ? `Bookmark moved to ${workspaceName}`
-          : `${ids.length} bookmarks moved to ${workspaceName}`,
-      );
-    }
-    onSuccess();
-    onOpenChange(false);
   };
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const selectedWorkspace = workspaces.find(
+    (ws) => ws.id === targetWorkspaceId,
+  );
+
   return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>
-          Move {ids.length} Bookmark{ids.length > 1 ? "s" : ""}
-        </DialogTitle>
-        <DialogDescription>
-          Select a workspace to move{" "}
-          {ids.length === 1 ? "this bookmark" : "these bookmarks"} to.
-        </DialogDescription>
-      </DialogHeader>
-      <Label>Target Workspace</Label>
-      <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="outline"
-              className="w-full justify-between px-3 h-10 font-normal"
-              onClick={() => setIsMenuOpen(true)}
-              disabled={availableWorkspaces.length === 0 || isPending}
-            >
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: getPastelColor(
-                      targetWorkspaceId || "default",
-                    ),
-                  }}
-                />
-                <span className="truncate">
-                  {(targetWorkspaceId &&
-                    workspaces.find((w) => w.id === targetWorkspaceId)?.name) ||
-                    "Select workspace..."}
-                </span>
-              </div>
-              <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-            </Button>
-          }
-        />
-        <DropdownMenuContent>
-          <DropdownMenuGroup className="max-h-[30vh] overflow-y-auto overscroll-contain scroll-fade">
-            <DropdownMenuLabel className="sr-only">
-              Workspaces
-            </DropdownMenuLabel>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Move {ids.length} Bookmark{ids.length > 1 ? "s" : ""}
+          </DialogTitle>
+          <DialogDescription>
+            Select a workspace to move{" "}
+            {ids.length === 1 ? "this bookmark" : "these bookmarks"} to.
+          </DialogDescription>
+        </DialogHeader>
+        <Label>Target Workspace</Label>
+        <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                className="w-full justify-between px-3 h-10 font-normal"
+                onClick={() => setIsMenuOpen(true)}
+                disabled={availableWorkspaces.length === 0}
+              >
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <div
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: getPastelColor(
+                        targetWorkspaceId || "default",
+                      ),
+                    }}
+                  />
+                  <span className="truncate">
+                    {selectedWorkspace?.name || "Select workspace..."}
+                  </span>
+                </div>
+                <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent>
             <DropdownMenuRadioGroup
               value={targetWorkspaceId || ""}
               onValueChange={(val) => {
@@ -190,23 +178,25 @@ function MoveForm({
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <DialogFooter>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onOpenChange(false)}
-          disabled={isPending}
-        >
-          Cancel
-        </Button>
-        <Button onClick={handleMove} disabled={isPending || !targetWorkspaceId}>
-          {isPending ? "Moving…" : "Move"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleMove}
+            disabled={isPending || !targetWorkspaceId}
+          >
+            {isPending ? "Moving..." : "Move"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

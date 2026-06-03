@@ -15,7 +15,6 @@ Sheltermark is a personal bookmark manager that allows you to save, organize, an
 ## User Accounts
 
 To use the Service, you must create an account. You are responsible for:
-
 - Maintaining the security of your account
 - Notifying us immediately of any unauthorized access
 
@@ -29,7 +28,6 @@ To use the Service, you must create an account. You are responsible for:
 ## Acceptable Use
 
 You agree not to use Sheltermark to:
-
 - Save or share illegal content
 - Spam or harass other users
 - Attempt to breach security measures

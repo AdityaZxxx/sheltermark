@@ -18,6 +18,7 @@ export default function Logo({
       width={size}
       height={size}
       className={cn("text-foreground", className)}
+      role="img"
       aria-label="Sheltermark logo"
     >
       <g transform="scale(1, -1) translate(0, -1024)" fill={color}>

@@ -1,32 +1,35 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
-import type { Workspace } from "~/lib/schemas/workspace.schema";
-
 import { BookmarkCardItem } from "~/components/bookmark/bookmark-card-item";
-import { BookmarkComfortItem } from "~/components/bookmark/bookmark-comfort-item";
-import { BookmarkEditDialog } from "~/components/bookmark/bookmark-edit-dialog";
+import { BookmarkDeleteDialog } from "~/components/bookmark/bookmark-delete-dialog";
 import { BookmarkInput } from "~/components/bookmark/bookmark-input";
 import { BookmarkListItem } from "~/components/bookmark/bookmark-list-item";
 import { BookmarkMoveDialog } from "~/components/bookmark/bookmark-move-dialog";
+import { BookmarkRenameDialog } from "~/components/bookmark/bookmark-rename-dialog";
 import { BookmarkToolbar } from "~/components/bookmark/bookmark-toolbar";
-import { BookmarkTrash } from "~/components/bookmark/bookmark-trash";
 import { BookmarkViewToggle } from "~/components/bookmark/bookmark-view-toggle";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
+import type { Bookmark } from "~/lib/schemas/bookmark";
+import type { Workspace } from "~/lib/schemas/workspace";
 import { safeDomain } from "~/lib/utils";
-
-import {
-  DEMO_TAGS,
-  DEMO_WORKSPACES,
-  type DemoBookmark,
-  getBookmarkTags,
-  INITIAL_DEMO_BOOKMARKS,
-} from "./demo-data";
+import { DEMO_WORKSPACES, INITIAL_DEMO_BOOKMARKS } from "./demo-data";
 import { DemoHeader } from "./demo-header";
+
+type BookmarkDemo = Pick<
+  Bookmark,
+  | "id"
+  | "url"
+  | "title"
+  | "favicon_url"
+  | "og_image_url"
+  | "workspace_id"
+  | "created_at"
+> & {
+  domain?: string;
+};
 
 type WorkspaceDemo = Pick<
   Workspace,
@@ -34,13 +37,13 @@ type WorkspaceDemo = Pick<
 >;
 
 export function DemoBookmarkView() {
-  const [bookmarks, setBookmarks] = useState<DemoBookmark[]>(
+  const [bookmarks, setBookmarks] = useState<BookmarkDemo[]>(
     INITIAL_DEMO_BOOKMARKS,
   );
   const [workspaces] = useState<WorkspaceDemo[]>(DEMO_WORKSPACES);
   const [activeWorkspaceId, setActiveWorkspaceId] =
     useState<string>("personal");
-  const [view, setView] = useState<BookmarkViewVariant>("list");
+  const [view, setView] = useState<"list" | "card">("list");
   const [searchQuery, setSearchQuery] = useState("");
 
   const {
@@ -54,8 +57,8 @@ export function DemoBookmarkView() {
   } = useBookmarkSelection();
 
   const {
-    editDialogOpen,
-    setEditDialogOpen,
+    renameDialogOpen,
+    setRenameDialogOpen,
     deleteDialogOpen,
     setDeleteDialogOpen,
     moveDialogOpen,
@@ -65,7 +68,7 @@ export function DemoBookmarkView() {
     bookmarksToMove,
     handleDeleteTrigger,
     handleBulkDeleteTrigger,
-    handleEditTrigger,
+    handleRenameTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
   } = useBookmarkDialogs();
@@ -131,6 +134,12 @@ export function DemoBookmarkView() {
     [bookmarks],
   );
 
+  const handleConfirmRename = useCallback((id: string, title: string) => {
+    setBookmarks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, title } : b)),
+    );
+  }, []);
+
   const handleConfirmDelete = useCallback(
     (ids: string[]) => {
       setBookmarks((prev) => prev.filter((b) => !ids.includes(b.id)));
@@ -170,7 +179,7 @@ export function DemoBookmarkView() {
 
       const metadata = await res.json();
 
-      const newBookmark: DemoBookmark = {
+      const newBookmark: BookmarkDemo = {
         id: crypto.randomUUID(),
         title: metadata.title || url,
         url,
@@ -178,17 +187,12 @@ export function DemoBookmarkView() {
         og_image_url: metadata.og_image_url || null,
         workspace_id: activeWorkspaceId || "personal",
         created_at: new Date().toISOString(),
-        note: null,
-        is_broken: false,
-        broken_status: "alive" as const,
-        http_status: null,
-        last_checked_at: null,
       };
 
       setBookmarks((prev) => [newBookmark, ...prev]);
       setSearchQuery("");
     } catch {
-      const newBookmark: DemoBookmark = {
+      const newBookmark: BookmarkDemo = {
         id: crypto.randomUUID(),
         title: url,
         url,
@@ -196,11 +200,6 @@ export function DemoBookmarkView() {
         og_image_url: null,
         workspace_id: activeWorkspaceId || "personal",
         created_at: new Date().toISOString(),
-        note: null,
-        is_broken: false,
-        broken_status: "alive" as const,
-        http_status: null,
-        last_checked_at: null,
       };
 
       setBookmarks((prev) => [newBookmark, ...prev]);
@@ -208,27 +207,14 @@ export function DemoBookmarkView() {
     }
   };
 
-  const onEditTrigger = useCallback(
+  const onRenameTrigger = useCallback(
     (id: string) => {
       const bookmark = filteredBookmarks.find((b) => b.id === id);
       if (bookmark) {
-        handleEditTrigger(id, [
-          {
-            id: bookmark.id,
-            title: bookmark.title,
-            note: bookmark.note,
-            tagsByBookmarkId: new Map(
-              filteredBookmarks.map((b) => [
-                b.id,
-                getBookmarkTags(b.id).map((t) => t.id),
-              ]),
-            ),
-            allTags: DEMO_TAGS,
-          },
-        ]);
+        handleRenameTrigger(id, filteredBookmarks);
       }
     },
-    [filteredBookmarks, handleEditTrigger],
+    [filteredBookmarks, handleRenameTrigger],
   );
 
   const getItem = useCallback(
@@ -257,7 +243,6 @@ export function DemoBookmarkView() {
         onSelectWorkspace={setActiveWorkspaceId}
       />
 
-      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed */}
       <section
         aria-label="Demo Bookmarks"
         className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
@@ -286,58 +271,82 @@ export function DemoBookmarkView() {
               : "flex flex-col gap-1 max-w-2xl mx-auto"
           }
         >
-          {filteredBookmarks.map((bookmark, index) => {
-            const tags = getBookmarkTags(bookmark.id);
-            const commonProps = {
-              id: bookmark.id,
-              title: bookmark.title || "",
-              url: bookmark.url,
-              og_image_url: bookmark.og_image_url || undefined,
-              favicon_url: bookmark.favicon_url || undefined,
-              domain: safeDomain(bookmark.url),
-              created_at: bookmark.created_at,
-              note: bookmark.note,
-              tags,
-              brokenStatus: bookmark.broken_status,
-              httpStatus: bookmark.http_status,
-              autoCheckBroken: true,
-              isSelected:
-                selectedIds.includes(bookmark.id) ||
-                (!isSelectionMode && focusedIndex === index),
-              isSelectionMode,
-              workspaces,
-              currentWorkspaceId: bookmark.workspace_id ?? undefined,
-              onSelect: toggleSelect,
-              onDelete: handleDeleteTrigger,
-              onEdit: onEditTrigger,
-              onMove: handleMoveTrigger,
-              onMoveToWorkspace: (id: string, wsId: string) =>
-                handleConfirmMove([id], wsId),
-              onCopyUrl: handleCopyUrl,
-              onRefetch: handleRefetchTrigger,
-              onSelectionModeToggle: toggleSelectionMode,
-              tabIndex:
-                focusedIndex === index || (focusedIndex === -1 && index === 0)
-                  ? 0
-                  : -1,
-            };
-
-            return (
+          {filteredBookmarks.map((bookmark, index) =>
+            view === "card" ? (
               <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
-                {view === "card" ? (
-                  <BookmarkCardItem {...commonProps} />
-                ) : view === "comfort" ? (
-                  <BookmarkComfortItem {...commonProps} />
-                ) : (
-                  <BookmarkListItem {...commonProps} />
-                )}
+                <BookmarkCardItem
+                  id={bookmark.id}
+                  title={bookmark.title || ""}
+                  url={bookmark.url}
+                  og_image_url={bookmark.og_image_url || undefined}
+                  favicon_url={bookmark.favicon_url || undefined}
+                  domain={bookmark.domain || safeDomain(bookmark.url)}
+                  created_at={bookmark.created_at}
+                  isSelected={
+                    selectedIds.includes(bookmark.id) ||
+                    (!isSelectionMode && focusedIndex === index)
+                  }
+                  isSelectionMode={isSelectionMode}
+                  workspaces={workspaces}
+                  currentWorkspaceId={bookmark.workspace_id ?? undefined}
+                  onSelect={toggleSelect}
+                  onDelete={handleDeleteTrigger}
+                  onRename={onRenameTrigger}
+                  onMove={handleMoveTrigger}
+                  onMoveToWorkspace={(id, wsId) =>
+                    handleConfirmMove([id], wsId)
+                  }
+                  onCopyUrl={handleCopyUrl}
+                  onRefetch={handleRefetchTrigger}
+                  onSelectionModeToggle={toggleSelectionMode}
+                  tabIndex={
+                    focusedIndex === index ||
+                    (focusedIndex === -1 && index === 0)
+                      ? 0
+                      : -1
+                  }
+                />
               </div>
-            );
-          })}
+            ) : (
+              <div key={bookmark.id} id={`bookmark-${bookmark.id}`}>
+                <BookmarkListItem
+                  id={bookmark.id}
+                  title={bookmark.title || ""}
+                  url={bookmark.url}
+                  favicon_url={bookmark.favicon_url || undefined}
+                  domain={bookmark.domain || safeDomain(bookmark.url)}
+                  created_at={bookmark.created_at}
+                  isSelected={
+                    selectedIds.includes(bookmark.id) ||
+                    (!isSelectionMode && focusedIndex === index)
+                  }
+                  isSelectionMode={isSelectionMode}
+                  workspaces={workspaces}
+                  currentWorkspaceId={bookmark.workspace_id ?? undefined}
+                  onSelect={toggleSelect}
+                  onDelete={handleDeleteTrigger}
+                  onRename={onRenameTrigger}
+                  onMove={handleMoveTrigger}
+                  onMoveToWorkspace={(id, wsId) =>
+                    handleConfirmMove([id], wsId)
+                  }
+                  onCopyUrl={handleCopyUrl}
+                  onRefetch={handleRefetchTrigger}
+                  onSelectionModeToggle={toggleSelectionMode}
+                  tabIndex={
+                    focusedIndex === index ||
+                    (focusedIndex === -1 && index === 0)
+                      ? 0
+                      : -1
+                  }
+                />
+              </div>
+            ),
+          )}
         </div>
 
         {filteredBookmarks.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
+          <div className="text-center py-12 text-muted-foreground">
             {searchQuery
               ? "No bookmarks found"
               : "No bookmarks in this workspace"}
@@ -363,32 +372,22 @@ export function DemoBookmarkView() {
           onCopyUrls={handleBulkCopyUrls}
         />
 
-        <BookmarkEditDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          bookmark={
-            activeBookmark
-              ? {
-                  id: activeBookmark.id,
-                  title: activeBookmark.title,
-                  note: activeBookmark.note,
-                  tags: activeBookmark.tags,
-                }
-              : null
-          }
-          updateBookmarkFields={() => {
-            // Demo: no-op mock
-            setEditDialogOpen(false);
-          }}
-          isPending={false}
+        <BookmarkRenameDialog
+          open={renameDialogOpen}
+          onOpenChange={setRenameDialogOpen}
+          bookmark={activeBookmark}
+          onSuccess={() => setRenameDialogOpen(false)}
+          onConfirm={handleConfirmRename}
+          silent
         />
 
-        <BookmarkTrash
+        <BookmarkDeleteDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           ids={bookmarksToDelete}
           onSuccess={() => setDeleteDialogOpen(false)}
           onConfirm={handleConfirmDelete}
+          silent
         />
 
         <BookmarkMoveDialog
@@ -404,6 +403,7 @@ export function DemoBookmarkView() {
           }
           onSuccess={() => setMoveDialogOpen(false)}
           onConfirm={handleConfirmMove}
+          silent
         />
       </section>
     </div>

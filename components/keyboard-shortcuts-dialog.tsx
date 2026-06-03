@@ -2,7 +2,6 @@
 
 import { CommandIcon, InfoIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,8 @@ import {
 import { Kbd } from "~/components/ui/kbd";
 
 const isMac =
-  "navigator" in globalThis && /Mac|iPhone|iPad/.test(navigator.userAgent);
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 const mod = isMac ? "⌘" : "Ctrl";
 
@@ -36,7 +36,7 @@ const shortcuts: Shortcut[] = [
   { key: "Space", label: "Toggle", description: "Toggle selection" },
 ];
 
-export function ShortcutButton({
+function ShortcutButton({
   className,
   children,
 }: {
@@ -45,14 +45,14 @@ export function ShortcutButton({
 }) {
   const [open, setOpen] = useState(false);
 
-  const openShortcutsDialog = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setOpen(true);
   };
 
   return (
     <>
-      <button type="button" onClick={openShortcutsDialog} className={className}>
+      <button type="button" onClick={handleClick} className={className}>
         {children || (
           <span className="w-full flex items-center gap-2">
             <CommandIcon className="h-4 w-4" />
@@ -104,3 +104,6 @@ export function ShortcutButton({
     </>
   );
 }
+
+export { ShortcutButton };
+export default ShortcutButton;

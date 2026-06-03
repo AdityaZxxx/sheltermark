@@ -1,17 +1,13 @@
 "use server";
 
 import type { z } from "zod";
-
 import type { ActionResult } from "~/lib/action-result";
-
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
 import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
-import { escapeCSV } from "~/lib/import/csv";
 import { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 
 interface WorkspaceInfo {
-  id: string;
+  id: number;
   name: string;
 }
 
@@ -33,15 +29,17 @@ export async function exportBookmarks(
 > {
   const validated = exportOptionsSchema.safeParse(options);
   if (!validated.success) {
+    // Guard against potential undefined properties under strict mode
     const msg =
       validated.error?.issues?.[0]?.message ?? "Invalid export options";
     return { success: false, error: msg };
   }
 
-  const { user } = await requireAuth();
+  const { user, supabase } = await requireAuth();
 
+  // Delegate data retrieval to the repository
   const repoResult = await repoExportBookmarks(
-    getDb(),
+    supabase,
     user.id,
     validated.data,
   );
@@ -50,9 +48,12 @@ export async function exportBookmarks(
     return { success: false, error: repoResult.error };
   }
 
+  // Normalization: repository returns BookmarkWithWorkspace[]
   const bookmarksData = repoResult.data;
 
   const format = validated.data.format;
+  // Normalize data into strongly-typed bookmarks data
+  // (BookmarkWithWorkspace is defined in this module for formatting logic)
   if (format === "json") {
     const exportData = {
       version: "1.0",
@@ -131,6 +132,14 @@ function groupBookmarksByWorkspace(bookmarks: BookmarkWithWorkspace[]) {
       createdAt: b.created_at,
     })),
   }));
+}
+
+function escapeCSV(value: string): string {
+  if (!value) return "";
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }
 
 function formatDate(date: Date): string {

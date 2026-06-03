@@ -28,10 +28,10 @@
 
   function extractTweetUrl(url: string): string | null {
     const match = url.match(TWEET_URL_PATTERN);
-    // Groups 1-3 exist whenever the pattern matches (verified by the truthy
-    // guard), so the indices are safe without assertions.
-    if (!match || !match[1] || !match[2] || !match[3]) return null;
-    const [, domain, username, tweetId] = match;
+    if (!match) return null;
+    const domain = match[1] as string;
+    const username = match[2] as string;
+    const tweetId = match[3] as string;
     return `https://${domain}/${username}/status/${tweetId}`;
   }
 
@@ -75,11 +75,8 @@
         type: "X_BOOKMARK_CAPTURED",
         url: tweetUrl,
       })
-      .catch((error: Error) => {
-        console.error(`[Sheltermark] Failed to send X bookmark message`, {
-          tweetUrl,
-          error,
-        });
+      .catch((error: unknown) => {
+        console.error("[Sheltermark] Failed to send message:", error);
       });
   }
 
@@ -94,14 +91,13 @@
 
       btn.addEventListener(
         "click",
-        () => {
-          // The listener is registered on this button alone, so `btn` is the
-          // event target — no need to read it off the event.
+        (e: Event) => {
+          const target = e.currentTarget as Element;
           const isBookmarkAction =
-            btn.getAttribute("data-testid") === "bookmark";
+            target.getAttribute("data-testid") === "bookmark";
           if (!isBookmarkAction) return;
 
-          const article = findClosestTweetArticle(btn);
+          const article = findClosestTweetArticle(target);
           const tweetUrl = extractTweetUrlFromArticle(article);
           if (!tweetUrl) return;
 

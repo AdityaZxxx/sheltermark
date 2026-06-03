@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getDb } from "~/lib/data/drizzle";
-import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
-import { logger } from "~/lib/logger";
-
 export async function POST(request: Request) {
+  // Verify cron secret (optional but recommended)
   const authHeader = request.headers.get("authorization");
   const expectedSecret = process.env.CRON_SECRET;
 
@@ -12,31 +9,14 @@ export async function POST(request: Request) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  if (!process.env.DATABASE_URL) {
-    return NextResponse.json(
-      { success: false, error: "Server misconfigured" },
-      { status: 500 },
-    );
-  }
-
   try {
-    const result = await syncAllFeedsGlobal(getDb());
+    // Import and run the sync script
+    const { syncFeeds } = await import("~/scripts/sync-feeds");
+    await syncFeeds();
 
-    if (!result.success) {
-      logger.error("Feed sync failed", { error: result.error });
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      synced: result.data.synced,
-      errors: result.data.errors,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error("Feed sync failed", { error });
+    console.error("Feed sync failed:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 },

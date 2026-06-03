@@ -1,5 +1,4 @@
 import { safeDomain } from "~/lib/utils";
-
 import { MatrixFaviconLoader, TextDecrypt } from "./loading-animations";
 
 interface BookmarkListItemLoadingProps {

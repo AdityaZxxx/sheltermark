@@ -1,20 +1,4 @@
-import type { Metadata } from "next";
-
 import { SignupForm } from "~/components/auth/signup-form";
-
-export const metadata: Metadata = {
-  title: "Sign Up - Sheltermark",
-  description:
-    "Create your Sheltermark account to start organizing your bookmarks.",
-};
-
-// Next.js hands searchParams over as string | string[] | undefined. Normalize
-// to the single-value contract this page consumes (first value wins).
-function firstQueryParam(
-  raw: string | string[] | undefined,
-): string | undefined {
-  return Array.isArray(raw) ? raw[0] : raw;
-}
 
 export default async function SignupPage({
   searchParams,
@@ -22,7 +6,7 @@ export default async function SignupPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const next = firstQueryParam(params.next);
+  const next = typeof params.next === "string" ? params.next : undefined;
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">

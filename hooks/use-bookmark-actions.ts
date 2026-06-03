@@ -2,18 +2,14 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
-
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type {
-  Workspace,
-  WorkspaceWithCount,
-} from "~/lib/schemas/workspace.schema";
+import type { Bookmark } from "~/lib/schemas/bookmark";
+import type { Workspace } from "~/lib/schemas/workspace";
 
 interface UseBookmarkActionsProps {
   selectedIds: string[];
   filteredBookmarks: Bookmark[];
-  currentWorkspace: Workspace | WorkspaceWithCount | null | undefined;
-  workspaces: (Workspace | WorkspaceWithCount)[];
+  currentWorkspace: Workspace | null;
+  workspaces: Workspace[];
   addBookmark: (
     data: { url: string; workspaceId: string },
     options?: { onSuccess?: () => void; onError?: (err: Error) => void },
@@ -30,6 +26,9 @@ interface UseBookmarkActionsProps {
   refetchBookmarkMetadata: (data: { id: string }) => void;
   invalidate: () => void;
   setSearchQuery: (query: string) => void;
+  setPendingUrls: React.Dispatch<
+    React.SetStateAction<{ id: string; url: string }[]>
+  >;
 }
 
 export function useBookmarkActions({
@@ -42,6 +41,7 @@ export function useBookmarkActions({
   refetchBookmarkMetadata,
   invalidate,
   setSearchQuery,
+  setPendingUrls,
 }: UseBookmarkActionsProps) {
   const handleCopyUrl = useCallback((url: string) => {
     navigator.clipboard.writeText(url);
@@ -50,10 +50,8 @@ export function useBookmarkActions({
 
   const handleBulkCopyUrls = useCallback(() => {
     const urls = filteredBookmarks
-      .reduce<string[]>((acc, b) => {
-        if (selectedIds.includes(b.id)) acc.push(b.url);
-        return acc;
-      }, [])
+      .filter((b: Bookmark) => selectedIds.includes(b.id))
+      .map((b: Bookmark) => b.url)
       .join("\n");
     navigator.clipboard.writeText(urls);
     toast.success(`${selectedIds.length} URLs copied`);
@@ -97,12 +95,8 @@ export function useBookmarkActions({
   const handleSubmit = useCallback(
     async (val: string) => {
       const trimmed = val.trim();
-      const targetWorkspace =
-        currentWorkspace ??
-        workspaces.find((ws) => ws.is_default) ??
-        workspaces[0];
-      if (!targetWorkspace) {
-        toast.error("Please create a workspace first");
+      if (!currentWorkspace) {
+        toast.error("Please select a workspace first");
         return;
       }
       if (trimmed.includes(".") || trimmed.startsWith("http")) {
@@ -110,21 +104,27 @@ export function useBookmarkActions({
           ? trimmed
           : `https://${trimmed}`;
 
+        const pendingId = `pending-${Date.now()}`;
+        setPendingUrls((prev) => [
+          ...prev,
+          { id: pendingId, url: normalizedUrl },
+        ]);
         setSearchQuery("");
         addBookmark(
-          { url: normalizedUrl, workspaceId: targetWorkspace.id },
+          { url: normalizedUrl, workspaceId: currentWorkspace.id },
           {
             onSuccess: () => {
               invalidate();
             },
             onError: (err) => {
+              setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
               toast.error(err.message || "Failed to add bookmark");
             },
           },
         );
       }
     },
-    [currentWorkspace, workspaces, addBookmark, invalidate, setSearchQuery],
+    [currentWorkspace, addBookmark, invalidate, setSearchQuery, setPendingUrls],
   );
 
   return {

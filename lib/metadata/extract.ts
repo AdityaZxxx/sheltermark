@@ -1,7 +1,5 @@
 import { load } from "cheerio";
-
 import type { Metadata } from "./types";
-
 import { decodeHtmlEntities, resolveUrl } from "./utils";
 
 export function extractMetadataFromHtml(
@@ -18,12 +16,6 @@ export function extractMetadataFromHtml(
     }
     return null;
   };
-
-  const description = getMeta([
-    'meta[property="og:description"]',
-    'meta[name="description"]',
-    'meta[name="twitter:description"]',
-  ]);
 
   const title =
     getMeta([
@@ -55,7 +47,6 @@ export function extractMetadataFromHtml(
 
   return {
     title: decodeHtmlEntities(title.trim() || new URL(baseUrl).hostname),
-    description,
     og_image_url: ogImage,
     favicon_url: favicon,
   };

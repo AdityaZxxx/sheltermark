@@ -1,5 +1,4 @@
 import { SpinnerIcon } from "@phosphor-icons/react";
-
 import { Button } from "~/components/ui/button";
 import { DialogFooter } from "~/components/ui/dialog";
 
@@ -8,7 +7,6 @@ interface SettingsDialogFooterProps {
   isDirty: boolean;
   isDisabled?: boolean;
   onCancel: () => void;
-  onSubmit: () => void;
 }
 
 export function SettingsDialogFooter({
@@ -16,10 +14,9 @@ export function SettingsDialogFooter({
   isDirty,
   isDisabled = false,
   onCancel,
-  onSubmit,
 }: SettingsDialogFooterProps) {
   return (
-    <DialogFooter className="shrink-0 border-t bg-background px-4 py-3 flex-row justify-end">
+    <DialogFooter className="mt-6 pt-4 border-t shrink-0 sticky bottom-0 bg-background">
       <Button
         type="button"
         variant="outline"
@@ -28,11 +25,7 @@ export function SettingsDialogFooter({
       >
         Cancel
       </Button>
-      <Button
-        type="button"
-        onClick={onSubmit}
-        disabled={isSubmitting || !isDirty || isDisabled}
-      >
+      <Button type="submit" disabled={isSubmitting || !isDirty || isDisabled}>
         {isSubmitting ? (
           <>
             <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
