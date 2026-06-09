@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { insertBookmark } from "~/lib/bookmarks/insert";
+import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
+import { logger } from "~/lib/logger";
 import { createClient } from "~/utils/supabase/server";
 
 export async function POST(req: Request) {
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, data: result.data });
   } catch (error) {
-    console.error("Extension bookmark error:", error);
+    logger.error("Extension bookmark error", { error });
     return NextResponse.json(
       { error: "Failed to save bookmark" },
       { status: 500 },

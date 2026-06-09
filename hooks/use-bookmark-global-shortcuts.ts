@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import type { Bookmark } from "~/lib/schemas/bookmark";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 
 interface UseBookmarkGlobalShortcutsProps {
   inputRef: React.RefObject<HTMLInputElement | null>;

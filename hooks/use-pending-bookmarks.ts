@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Bookmark } from "~/lib/schemas/bookmark";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { normalizeUrl } from "~/lib/utils";
 
 export function usePendingBookmarks(filteredBookmarks: Bookmark[]) {
@@ -10,7 +10,6 @@ export function usePendingBookmarks(filteredBookmarks: Bookmark[]) {
   );
 
   useEffect(() => {
-    if (pendingUrls.length === 0) return;
     setPendingUrls((prev) =>
       prev.filter(
         (p) =>
@@ -19,7 +18,7 @@ export function usePendingBookmarks(filteredBookmarks: Bookmark[]) {
           ),
       ),
     );
-  }, [filteredBookmarks, pendingUrls.length]);
+  }, [filteredBookmarks]);
 
   return { pendingUrls, setPendingUrls };
 }

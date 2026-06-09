@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { LoginForm } from "~/components/auth/login-form";
+
+export const metadata: Metadata = {
+  title: "Login - Sheltermark",
+  description: "Sign in to your Sheltermark account to access your bookmarks.",
+};
 
 export default async function LoginPage({
   searchParams,

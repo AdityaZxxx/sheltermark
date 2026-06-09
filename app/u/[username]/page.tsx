@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPublicProfile } from "~/app/action/profile";
+import { getPublicProfile } from "~/app/action/profile.action";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
 import { Footer } from "~/components/footer";
 import { PublicHeader } from "~/components/profile/public-header";

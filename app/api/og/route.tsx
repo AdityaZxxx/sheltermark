@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
-import { getProfileDisplayName } from "~/app/action/profile";
+import { getProfileDisplayName } from "~/app/action/profile.action";
 import { OGImage } from "~/components/og/og-image";
 
 const interRegular = fs.readFileSync(

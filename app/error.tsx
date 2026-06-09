@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 export default function ErrorBoundary({
@@ -8,31 +7,25 @@ export default function ErrorBoundary({
   reset,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  reset?: () => void;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
   useEffect(() => {
-    if (error.message === "Unauthorized") {
-      const currentUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-      router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
-    }
-  }, [error, router, pathname, searchParams]);
-
-  if (error.message === "Unauthorized") {
-    return null;
-  }
+    console.error("ErrorBoundary caught:", error);
+  }, [error]);
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-xs text-center">
         <h2 className="text-lg font-semibold">Something went wrong!</h2>
+        {error.digest && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Error ID: {error.digest}
+          </p>
+        )}
         <button
           type="button"
           className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
-          onClick={() => reset()}
+          onClick={() => reset?.()}
         >
           Try again
         </button>

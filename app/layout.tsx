@@ -6,6 +6,8 @@ import { QueryProvider } from "~/components/providers/query-provider";
 import { SupabaseProvider } from "~/components/providers/supabase-provider";
 import { ThemeProvider } from "~/components/providers/theme-provider";
 import { getBaseUrl } from "~/lib/utils";
+// CSS imports are allowed in Next.js with TS config; suppress strict side-effect check
+// @ts-expect-error - CSS module
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });

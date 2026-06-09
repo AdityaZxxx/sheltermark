@@ -2,14 +2,17 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
-import type { Bookmark } from "~/lib/schemas/bookmark";
-import type { Workspace } from "~/lib/schemas/workspace";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type {
+  Workspace,
+  WorkspaceWithCount,
+} from "~/lib/schemas/workspace.schema";
 
 interface UseBookmarkActionsProps {
   selectedIds: string[];
   filteredBookmarks: Bookmark[];
-  currentWorkspace: Workspace | null;
-  workspaces: Workspace[];
+  currentWorkspace: Workspace | WorkspaceWithCount | null | undefined;
+  workspaces: (Workspace | WorkspaceWithCount)[];
   addBookmark: (
     data: { url: string; workspaceId: string },
     options?: { onSuccess?: () => void; onError?: (err: Error) => void },
