@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
 
 export interface FeedItem {
   title: string;
@@ -82,9 +83,8 @@ function parseAtomEntry(entryXml: string): FeedItem {
 }
 
 export async function parseFeed(url: string): Promise<ParsedFeed> {
-  const response = await fetch(url, {
+  const { response } = await httpFetch(url, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; Sheltermark/1.0)",
       Accept:
         "application/rss+xml, application/atom+xml, application/xml, text/xml",
     },
@@ -95,7 +95,7 @@ export async function parseFeed(url: string): Promise<ParsedFeed> {
     throw new Error(`Failed to fetch feed: ${response.statusText}`);
   }
 
-  const xml = await response.text();
+  const xml = await readResponseBody(response);
   const $ = cheerio.load(xml, { xmlMode: true });
 
   // Detect feed type

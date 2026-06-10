@@ -46,6 +46,8 @@ type HttpFetchOptions = {
   onRedirectHop?: (url: string) => Promise<boolean>;
   /** External abort signal. When aborted, stops retrying immediately. */
   signal?: AbortSignal;
+  /** Next.js fetch cache config (e.g. `{ revalidate: 300 }`). Passed directly to fetch(). */
+  next?: { revalidate: number };
 };
 
 type HttpFetchResult = {
@@ -92,7 +94,8 @@ async function executeWithTimeout(
 
 /**
  * fetch with retry + exponential backoff.
- * Retries on retryOnStatus codes AND transient network errors (AbortError included).
+ * Retries on retryOnStatus codes AND transient network errors.
+ * Honors Retry-After header for rate-limited responses.
  * Stops retrying if the external signal fires (caller-initiated abort).
  */
 async function attemptWithRetry(
@@ -119,17 +122,22 @@ async function attemptWithRetry(
       );
 
       if (attempt < retries && retryOnStatus.includes(response.status)) {
-        const delay = Math.min(1000 * 2 ** attempt, 5000);
-        await sleep(delay);
+        const delay =
+          parseRetryAfter(response) ?? Math.min(1000 * 2 ** attempt, 5000);
+        await sleep(delay, externalSignal);
         continue;
       }
 
       return response;
     } catch (error) {
       lastError = error as Error;
-      if (attempt < retries && !externalSignal?.aborted) {
+      if (
+        attempt < retries &&
+        !externalSignal?.aborted &&
+        isRetryableError(error)
+      ) {
         const delay = Math.min(1000 * 2 ** attempt, 5000);
-        await sleep(delay);
+        await sleep(delay, externalSignal);
         continue;
       }
       throw error;
@@ -137,6 +145,31 @@ async function attemptWithRetry(
   }
 
   throw lastError ?? new Error("Max retries exceeded");
+}
+
+/**
+ * Parse Retry-After header value (seconds or HTTP-date).
+ * Returns delay in ms, or null if header is absent or unparseable.
+ * Capped at 30s to prevent runaway waits.
+ */
+function parseRetryAfter(response: Response): number | null {
+  const header = response.headers.get("retry-after");
+  if (!header) return null;
+
+  // Try seconds first (most common)
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return Math.min(seconds * 1000, 30_000);
+  }
+
+  // Try HTTP-date format (rare but spec-compliant)
+  const date = new Date(header);
+  if (!Number.isNaN(date.getTime())) {
+    const delay = date.getTime() - Date.now();
+    return delay > 0 ? Math.min(delay, 30_000) : null;
+  }
+
+  return null;
 }
 
 /**
@@ -156,11 +189,19 @@ async function followRedirectsManually(
   const manualOptions: RequestInit = { ...options, redirect: "manual" };
   let currentUrl = url;
   let hops = 0;
+  const visited = new Set<string>();
 
   while (hops <= maxHops) {
     if (externalSignal?.aborted) {
       throw externalAbortError();
     }
+
+    // Normalize through URL constructor so trailing slashes etc. match
+    const normalizedUrl = new URL(currentUrl).toString();
+    if (visited.has(normalizedUrl)) {
+      throw new Error(`Redirect loop detected: ${currentUrl}`);
+    }
+    visited.add(normalizedUrl);
 
     const response = await attemptWithRetry(
       currentUrl,
@@ -177,6 +218,11 @@ async function followRedirectsManually(
     if (status >= 300 && status < 400 && location) {
       hops++;
       const nextUrl = new URL(location, currentUrl).toString();
+
+      // Catches A → B → A before making the third request
+      if (visited.has(nextUrl)) {
+        throw new Error(`Redirect loop detected: ${currentUrl} -> ${nextUrl}`);
+      }
 
       if (onRedirectHop) {
         const allowed = await onRedirectHop(nextUrl);
@@ -238,6 +284,11 @@ export async function httpFetch(
     method: opts?.method ?? "GET",
     headers,
   };
+
+  // Passthrough Next.js fetch cache config (e.g. next.revalidate)
+  if (opts?.next) {
+    (baseOptions as Record<string, unknown>).next = opts.next;
+  }
 
   const startTime = performance.now();
   const redirectConfig = opts?.followRedirect;
@@ -333,8 +384,36 @@ function externalAbortError(): Error {
   return err;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Returns true for errors that are likely transient and worth retrying.
+ * Permanent errors (invalid URL, bad TLS, unreachable host) return false.
+ */
+function isRetryableError(error: unknown): boolean {
+  // Network-level failures from fetch() surface as TypeError in most runtimes
+  if (error instanceof TypeError) return true;
+  // Timeout from our own AbortController should be retried
+  if ((error as Error)?.name === "AbortError") return true;
+  // DOMException covers some edge-runtime network errors
+  if (error instanceof DOMException) return true;
+  return false;
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(externalAbortError());
+      return;
+    }
+    const timeoutId = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      reject(externalAbortError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 async function readStreamWithLimit(
