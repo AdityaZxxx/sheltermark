@@ -60,45 +60,34 @@ export function SettingsGeneralTab({
 
   const handleAvatarUpload = async (file: File) => {
     setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const result = await uploadAvatar(formData);
+    const result = await uploadAvatar(formData);
 
-      if (!result.success) {
-        toast.error(result.error);
-        throw new Error(result.error);
-      }
-
+    if (!result.success) {
+      toast.error(result.error);
+    } else {
       const avatarUrl = result.data?.avatarUrl ?? null;
       if (avatarUrl) {
         setAvatarUrl(avatarUrl);
         toast.success("Avatar uploaded successfully");
       }
-    } finally {
-      setIsUploading(false);
     }
+    setIsUploading(false);
   };
 
   const handleAvatarRemove = async () => {
     setIsUploading(true);
-    try {
-      const result = await deleteAvatar();
+    const result = await deleteAvatar();
 
-      if (!result.success) {
-        toast.error(result.error);
-        throw new Error(result.error);
-      }
-
+    if (!result.success) {
+      toast.error(result.error);
+    } else {
       setAvatarUrl(null);
       toast.success("Avatar removed successfully");
-    } catch (error) {
-      // biome-ignore lint/complexity/noUselessCatch: Error already toasted, re-throw to propagate to caller
-      throw error;
-    } finally {
-      setIsUploading(false);
     }
+    setIsUploading(false);
   };
 
   const form = useForm({

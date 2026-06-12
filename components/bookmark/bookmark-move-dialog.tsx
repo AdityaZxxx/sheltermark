@@ -1,7 +1,7 @@
 "use client";
 
 import { CaretUpDownIcon } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { moveBookmarks } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
@@ -47,28 +47,42 @@ export function BookmarkMoveDialog({
   onConfirm,
   silent = false,
 }: BookmarkMoveDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <MoveForm
+          key={ids.join(",")}
+          ids={ids}
+          workspaces={workspaces}
+          currentWorkspaceId={currentWorkspaceId}
+          onOpenChange={onOpenChange}
+          onSuccess={onSuccess}
+          onConfirm={onConfirm}
+          silent={silent}
+        />
+      )}
+    </Dialog>
+  );
+}
+
+function MoveForm({
+  ids,
+  workspaces,
+  currentWorkspaceId,
+  onOpenChange,
+  onSuccess,
+  onConfirm,
+  silent,
+}: Omit<BookmarkMoveDialogProps, "open">) {
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
     null,
   );
   const [isPending, startTransition] = useTransition();
 
   // Filter out the current workspace
-  const availableWorkspaces = useMemo(
-    () => workspaces.filter((ws) => ws.id !== currentWorkspaceId),
-    [workspaces, currentWorkspaceId],
+  const availableWorkspaces = workspaces.filter(
+    (ws) => ws.id !== currentWorkspaceId,
   );
-
-  // Preselect the first available workspace only when the dialog opens
-  useEffect(() => {
-    if (open && availableWorkspaces.length > 0) {
-      setTargetWorkspaceId((current) =>
-        current != null ? current : (availableWorkspaces[0]?.id ?? null),
-      );
-    }
-    if (!open) {
-      setTargetWorkspaceId(null);
-    }
-  }, [open, availableWorkspaces]);
 
   const handleMove = () => {
     if (ids.length === 0 || !targetWorkspaceId) return;
@@ -120,83 +134,78 @@ export function BookmarkMoveDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Move {ids.length} Bookmark{ids.length > 1 ? "s" : ""}
-          </DialogTitle>
-          <DialogDescription>
-            Select a workspace to move{" "}
-            {ids.length === 1 ? "this bookmark" : "these bookmarks"} to.
-          </DialogDescription>
-        </DialogHeader>
-        <Label>Target Workspace</Label>
-        <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="outline"
-                className="w-full justify-between px-3 h-10 font-normal"
-                onClick={() => setIsMenuOpen(true)}
-                disabled={availableWorkspaces.length === 0}
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{
-                      backgroundColor: getPastelColor(
-                        targetWorkspaceId || "default",
-                      ),
-                    }}
-                  />
-                  <span className="truncate">
-                    {selectedWorkspace?.name || "Select workspace..."}
-                  </span>
-                </div>
-                <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-              </Button>
-            }
-          />
-          <DropdownMenuContent>
-            <DropdownMenuRadioGroup
-              value={targetWorkspaceId || ""}
-              onValueChange={(val) => {
-                setTargetWorkspaceId(val || null);
-                setIsMenuOpen(false);
-              }}
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>
+          Move {ids.length} Bookmark{ids.length > 1 ? "s" : ""}
+        </DialogTitle>
+        <DialogDescription>
+          Select a workspace to move{" "}
+          {ids.length === 1 ? "this bookmark" : "these bookmarks"} to.
+        </DialogDescription>
+      </DialogHeader>
+      <Label>Target Workspace</Label>
+      <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="outline"
+              className="w-full justify-between px-3 h-10 font-normal"
+              onClick={() => setIsMenuOpen(true)}
+              disabled={availableWorkspaces.length === 0}
             >
-              {availableWorkspaces.map((ws) => (
-                <DropdownMenuRadioItem key={ws.id} value={ws.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full "
-                      style={{ backgroundColor: getPastelColor(ws.id) }}
-                    />
-                    <span className="truncate">{ws.name}</span>
-                  </div>
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: getPastelColor(
+                      targetWorkspaceId || "default",
+                    ),
+                  }}
+                />
+                <span className="truncate">
+                  {selectedWorkspace?.name || "Select workspace..."}
+                </span>
+              </div>
+              <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent>
+          <DropdownMenuRadioGroup
+            value={targetWorkspaceId || ""}
+            onValueChange={(val) => {
+              setTargetWorkspaceId(val || null);
+              setIsMenuOpen(false);
+            }}
+          >
+            {availableWorkspaces.map((ws) => (
+              <DropdownMenuRadioItem key={ws.id} value={ws.id}>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full "
+                    style={{ backgroundColor: getPastelColor(ws.id) }}
+                  />
+                  <span className="truncate">{ws.name}</span>
+                </div>
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleMove}
-            disabled={isPending || !targetWorkspaceId}
-          >
-            {isPending ? "Moving..." : "Move"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => onOpenChange(false)}
+        >
+          Cancel
+        </Button>
+        <Button onClick={handleMove} disabled={isPending || !targetWorkspaceId}>
+          {isPending ? "Moving..." : "Move"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }

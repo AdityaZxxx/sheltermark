@@ -55,20 +55,16 @@ export function SettingsDialog({
     }
 
     setIsDeleting(true);
-    try {
-      const result = await deleteAccount();
+    const result = await deleteAccount();
 
-      if (!result.success) {
-        toast.error(result.error);
-        throw new Error(result.error);
-      }
-
+    if (!result.success) {
+      toast.error(result.error);
+    } else {
       toast.success("Account deleted successfully");
       window.location.href = "/";
-    } finally {
-      setIsDeleting(false);
-      setDeleteAlertOpen(false);
     }
+    setIsDeleting(false);
+    setDeleteAlertOpen(false);
   };
 
   return (

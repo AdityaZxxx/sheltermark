@@ -124,7 +124,11 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props} onClick={() => setIsAddDialogOpen(true)}>
+              <button
+                {...props}
+                type="button"
+                onClick={() => setIsAddDialogOpen(true)}
+              >
                 <PlusIcon className="h-4 w-4" />
                 Add Workspace
               </button>
@@ -135,7 +139,7 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props} onClick={handleTogglePublic}>
+              <button {...props} type="button" onClick={handleTogglePublic}>
                 {currentWorkspace?.is_public ? (
                   <>
                     <GlobeXIcon className="h-4 w-4" />
@@ -155,7 +159,11 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props} onClick={() => setIsRenameDialogOpen(true)}>
+              <button
+                {...props}
+                type="button"
+                onClick={() => setIsRenameDialogOpen(true)}
+              >
                 <PencilSimpleIcon className="h-4 w-4" />
                 Rename
               </button>
@@ -166,7 +174,7 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props}>
+              <button {...props} type="button">
                 <div className="flex items-center gap-2">
                   <LinkBreakIcon className="h-4 w-4" />
                   Weekly URL Check
@@ -195,7 +203,11 @@ export function WorkspaceMenu() {
               className="w-full gap-1.5"
               variant="destructive"
               render={(props) => (
-                <button {...props} onClick={() => setIsDeleteDialogOpen(true)}>
+                <button
+                  {...props}
+                  type="button"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
                   <TrashIcon className="h-4 w-4" />
                   Delete Workspace
                 </button>

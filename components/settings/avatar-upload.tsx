@@ -28,17 +28,14 @@ export function AvatarUpload({
   onRemove,
   isUploading = false,
 }: AvatarUploadProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    setPreviewUrl(currentAvatarUrl);
-  }, [currentAvatarUrl]);
-
-  const hasAvatar = Boolean(previewUrl || currentAvatarUrl);
+  const displayUrl = uploadPreviewUrl ?? currentAvatarUrl;
+  const hasAvatar = Boolean(displayUrl);
 
   useEffect(() => {
     return () => {
@@ -86,12 +83,12 @@ export function AvatarUpload({
 
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
-    setPreviewUrl(objectUrl);
+    setUploadPreviewUrl(objectUrl);
 
     try {
       await onUpload(file);
     } catch {
-      setPreviewUrl(currentAvatarUrl);
+      setUploadPreviewUrl(null);
       setError("Upload failed. Please try again.");
     }
   };
@@ -100,12 +97,9 @@ export function AvatarUpload({
     if (isUploading || isRemoving) return;
     setError(null);
     setIsRemoving(true);
-    try {
-      setPreviewUrl(null);
-      await onRemove();
-    } finally {
-      setIsRemoving(false);
-    }
+    setUploadPreviewUrl(null);
+    await onRemove();
+    setIsRemoving(false);
   };
 
   const isBusy = isUploading || isRemoving;
@@ -113,10 +107,7 @@ export function AvatarUpload({
   return (
     <div className="flex flex-col items-center pt-2 gap-3">
       <Avatar className={`h-24 w-24 ${error ? "ring-2 ring-destructive" : ""}`}>
-        <AvatarImage
-          src={previewUrl || currentAvatarUrl || undefined}
-          alt={fullName}
-        />
+        <AvatarImage src={displayUrl || undefined} alt={fullName} />
         <AvatarFallback className="text-2xl bg-muted">
           {fullName?.charAt(0)?.toUpperCase() || "U"}
         </AvatarFallback>

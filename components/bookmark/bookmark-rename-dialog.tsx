@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { renameBookmark } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
@@ -32,18 +32,31 @@ export function BookmarkRenameDialog({
   onConfirm,
   silent = false,
 }: BookmarkRenameDialogProps) {
-  // Start with an empty title and reset whenever the bookmark prop changes.
-  const [title, setTitle] = useState("");
-  const [isPending, startTransition] = useTransition();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <RenameForm
+          key={bookmark?.id ?? "none"}
+          bookmark={bookmark}
+          onOpenChange={onOpenChange}
+          onSuccess={onSuccess}
+          onConfirm={onConfirm}
+          silent={silent}
+        />
+      )}
+    </Dialog>
+  );
+}
 
-  useEffect(() => {
-    if (bookmark) {
-      setTitle(bookmark.title);
-    } else {
-      // Reset when no bookmark is provided
-      setTitle("");
-    }
-  }, [bookmark]);
+function RenameForm({
+  bookmark,
+  onOpenChange,
+  onSuccess,
+  onConfirm,
+  silent,
+}: Omit<BookmarkRenameDialogProps, "open">) {
+  const [title, setTitle] = useState(bookmark?.title ?? "");
+  const [isPending, startTransition] = useTransition();
 
   const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,38 +90,36 @@ export function BookmarkRenameDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Rename Bookmark</DialogTitle>
-          <DialogDescription>
-            Enter a new title for this bookmark.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleRename} className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Bookmark title"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Renaming..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Rename Bookmark</DialogTitle>
+        <DialogDescription>
+          Enter a new title for this bookmark.
+        </DialogDescription>
+      </DialogHeader>
+      <form onSubmit={handleRename} className="space-y-4 py-2">
+        <div className="space-y-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Bookmark title"
+          />
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Renaming..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
   );
 }

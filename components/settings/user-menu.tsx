@@ -110,6 +110,7 @@ export function UserMenu({ user }: UserMenuProps) {
             render={(props) => (
               <button
                 {...props}
+                type="button"
                 disabled={isPending}
                 onClick={(e) => {
                   props.onClick?.(e);
