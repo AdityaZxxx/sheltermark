@@ -53,8 +53,10 @@ export function useBookmarkActions({
 
   const handleBulkCopyUrls = useCallback(() => {
     const urls = filteredBookmarks
-      .filter((b: Bookmark) => selectedIds.includes(b.id))
-      .map((b: Bookmark) => b.url)
+      .reduce<string[]>((acc, b) => {
+        if (selectedIds.includes(b.id)) acc.push(b.url);
+        return acc;
+      }, [])
       .join("\n");
     navigator.clipboard.writeText(urls);
     toast.success(`${selectedIds.length} URLs copied`);
