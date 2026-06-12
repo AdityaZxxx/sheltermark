@@ -161,6 +161,3 @@ export async function fallbackStrategy(
 }
 
 export const fetchViaMicrolink = fetchJsHeavy;
-const _isTwitterUrl = PLATFORMS.twitter;
-const _isYouTubeUrl = PLATFORMS.youtube;
-const _isJsHeavySite = PLATFORMS["js-heavy"];
