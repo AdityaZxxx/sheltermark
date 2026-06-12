@@ -119,6 +119,7 @@ export function useBookmarkActions({
           { url: normalizedUrl, workspaceId: currentWorkspace.id },
           {
             onSuccess: () => {
+              setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
               invalidate();
             },
             onError: (err) => {

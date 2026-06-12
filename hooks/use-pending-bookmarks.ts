@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { normalizeUrl } from "~/lib/utils";
 
@@ -9,16 +9,18 @@ export function usePendingBookmarks(filteredBookmarks: Bookmark[]) {
     [],
   );
 
-  useEffect(() => {
-    setPendingUrls((prev) =>
-      prev.filter(
-        (p) =>
-          !filteredBookmarks.some(
-            (b: Bookmark) => normalizeUrl(b.url) === normalizeUrl(p.url),
-          ),
+  // Hanya filter pending URL yang URL-nya udah cocok sama bookmark
+  // REAL (bukan optimistic/temp). Optimistic bookmark dari useAddBookmark
+  // pake ID "temp-*", jadi loading card tetap kelihatan sampe
+  // invalidateQueries ngembaliin data beneran dari Supabase.
+  const visiblePendingUrls = pendingUrls.filter(
+    (p) =>
+      !filteredBookmarks.some(
+        (b) =>
+          !b.id.startsWith("temp-") &&
+          normalizeUrl(b.url) === normalizeUrl(p.url),
       ),
-    );
-  }, [filteredBookmarks]);
+  );
 
-  return { pendingUrls, setPendingUrls };
+  return { pendingUrls: visiblePendingUrls, setPendingUrls };
 }
