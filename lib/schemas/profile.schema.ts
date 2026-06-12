@@ -32,7 +32,7 @@ const websiteSchema = z
   .optional()
   .or(z.literal(""));
 
-export const profileSchema = z.object({
+const profileSchema = z.object({
   id: uuidSchema,
   username: usernameSchema,
   name: z.string().nullable(),

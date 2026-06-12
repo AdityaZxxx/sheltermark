@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
-export const workspaceSchema = z.object({
+const workspaceSchema = z.object({
   id: uuidSchema,
   user_id: uuidSchema,
   name: z.string().min(1),

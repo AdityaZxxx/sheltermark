@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
-export const bookmarkSchema = z.object({
+const bookmarkSchema = z.object({
   id: uuidSchema,
   user_id: uuidSchema,
   workspace_id: uuidSchema.nullable(),
@@ -17,7 +17,7 @@ export const bookmarkSchema = z.object({
   updated_at: timestampSchema.nullable(),
 });
 
-export const bookmarkCreateSchema = z.object({
+const bookmarkCreateSchema = z.object({
   url: z.url("Invalid URL format"),
   workspaceId: uuidSchema,
 });
@@ -40,7 +40,7 @@ export const bookmarkRefetchMetadataSchema = z.object({
   id: uuidSchema,
 });
 
-export const bookmarkPreviewSchema = z.object({
+const bookmarkPreviewSchema = z.object({
   id: z.string(),
   url: z.string(),
   title: z.string().nullable(),
@@ -52,7 +52,7 @@ export const bookmarkPreviewSchema = z.object({
 
 export type BookmarkPreview = z.infer<typeof bookmarkPreviewSchema>;
 
-export const workspaceWithBookmarksSchema = z.object({
+const workspaceWithBookmarksSchema = z.object({
   id: uuidSchema,
   name: z.string().min(1),
   bookmarks: z.array(bookmarkPreviewSchema),
