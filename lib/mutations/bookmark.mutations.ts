@@ -8,7 +8,7 @@ import {
   renameBookmark,
 } from "~/app/action/bookmark.action";
 import { logger } from "~/lib/logger";
-import { createOptimisticMutation } from "~/lib/mutations/base";
+import { useOptimisticMutation } from "~/lib/mutations/base";
 import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
 import type {
   Bookmark,
@@ -77,7 +77,7 @@ export function useAddBookmark(userId: string | undefined) {
 }
 
 export function useDeleteBookmarks(_userId: string | undefined) {
-  return createOptimisticMutation<BookmarkDeleteInput, null>({
+  return useOptimisticMutation<BookmarkDeleteInput, null>({
     mutationFn: deleteBookmarks,
     queryKey: bookmarkKeys.all,
     successMessage: "Bookmarks deleted",
@@ -91,7 +91,7 @@ export function useDeleteBookmarks(_userId: string | undefined) {
 }
 
 export function useRenameBookmark(_userId: string | undefined) {
-  return createOptimisticMutation<BookmarkRenameInput, null>({
+  return useOptimisticMutation<BookmarkRenameInput, null>({
     mutationFn: renameBookmark,
     queryKey: bookmarkKeys.all,
     successMessage: "Bookmark renamed",
@@ -104,7 +104,7 @@ export function useRenameBookmark(_userId: string | undefined) {
 }
 
 export function useMoveBookmarks(userId: string | undefined) {
-  return createOptimisticMutation<
+  return useOptimisticMutation<
     BookmarkMoveInput,
     { movedCount: number; skippedCount: number }
   >({
@@ -122,7 +122,7 @@ export function useMoveBookmarks(userId: string | undefined) {
 }
 
 export function useRefetchBookmarkMetadata(_userId: string | undefined) {
-  return createOptimisticMutation<{ id: string }, null>({
+  return useOptimisticMutation<{ id: string }, null>({
     mutationFn: refetchBookmarkMetadata,
     queryKey: bookmarkKeys.all,
     successMessage: "Metadata refreshed",

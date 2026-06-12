@@ -2,7 +2,7 @@ import {
   updateProfile,
   updatePublicProfile,
 } from "~/app/action/setting.action";
-import { createOptimisticMutation } from "~/lib/mutations/base";
+import { useOptimisticMutation } from "~/lib/mutations/base";
 import { profileKeys } from "~/lib/query-keys";
 import type {
   Profile,
@@ -10,7 +10,7 @@ import type {
 } from "~/lib/schemas/profile.schema";
 
 export function useUpdateProfile(userId: string | undefined) {
-  return createOptimisticMutation<{ name: string }, { message: string }>({
+  return useOptimisticMutation<{ name: string }, { message: string }>({
     mutationFn: updateProfile,
     queryKey: profileKeys.byUser(userId),
     successMessage: "Profile updated",
@@ -23,10 +23,7 @@ export function useUpdateProfile(userId: string | undefined) {
 }
 
 export function useUpdatePublicProfile(userId: string | undefined) {
-  return createOptimisticMutation<
-    UpdatePublicProfileInput,
-    { message: string }
-  >({
+  return useOptimisticMutation<UpdatePublicProfileInput, { message: string }>({
     mutationFn: updatePublicProfile,
     queryKey: profileKeys.byUser(userId),
     successMessage: "Public profile updated",

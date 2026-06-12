@@ -8,7 +8,7 @@ import {
 } from "~/app/action/feed.action";
 import type { ActionResult } from "~/lib/action-result";
 import { logger } from "~/lib/logger";
-import { createOptimisticMutation } from "~/lib/mutations/base";
+import { useOptimisticMutation } from "~/lib/mutations/base";
 import { feedKeys } from "~/lib/query-keys";
 import type { Feed } from "~/lib/schemas/feed.schema";
 
@@ -69,7 +69,7 @@ export function useSubscribeToFeed(userId: string | undefined) {
 }
 
 export function useRefreshFeed(userId: string | undefined) {
-  return createOptimisticMutation<string, Feed>({
+  return useOptimisticMutation<string, Feed>({
     mutationFn: refreshFeed,
     queryKey: feedKeys.byUser(userId),
     errorMessage: "Failed to refresh feed",
@@ -85,7 +85,7 @@ export function useRefreshFeed(userId: string | undefined) {
 }
 
 export function useDeleteFeed(userId: string | undefined) {
-  return createOptimisticMutation<string, null>({
+  return useOptimisticMutation<string, null>({
     mutationFn: deleteFeed,
     queryKey: feedKeys.byUser(userId),
     successMessage: "Feed deleted",

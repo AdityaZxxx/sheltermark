@@ -7,30 +7,20 @@ import { toast } from "sonner";
 import type { ActionResult } from "~/lib/action-result";
 import { logger } from "~/lib/logger";
 
-// Generic optimistic mutation options
 interface OptimisticMutationOptions<TVariables, TData> {
   mutationFn: (variables: TVariables) => Promise<ActionResult<TData>>;
   queryKey: QueryKey;
   dependentQueryKeys?: readonly QueryKey[];
   successMessage?: string | null;
   errorMessage?: string;
-  /** Optional: transform the current data with the incoming variables to create optimistic data */
   prepareOptimisticData?: (oldData: unknown, variables: TVariables) => unknown;
-  /** Optional: provide a function to access the current data (not required for mutation) */
   getCurrentData?: () => unknown;
 }
 
-/**
- * createOptimisticMutation
- * A fully-typed generic factory for optimistic mutations.
- * - Handles optimistic update in onMutate
- * - Reverts on error using context
- * - Shows toasts on success/error
- * - Invalidates queries on settled
- */
-export function createOptimisticMutation<TVariables, TData = unknown>(
+export function useOptimisticMutation<TVariables, TData = unknown>(
   options: OptimisticMutationOptions<TVariables, TData>,
 ) {
+  const queryClient = useQueryClient();
   const {
     mutationFn,
     queryKey,
@@ -40,9 +30,6 @@ export function createOptimisticMutation<TVariables, TData = unknown>(
     prepareOptimisticData,
   } = options;
 
-  const queryClient = useQueryClient();
-
-  // Return a mutation object created with TanStack Query
   return useMutation<
     ActionResult<TData>,
     Error,
