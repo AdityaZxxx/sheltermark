@@ -279,15 +279,26 @@ export async function syncAllFeeds(
     return { success: true, data: { synced: 0, errors: [] } };
   }
 
+  const results = await Promise.allSettled(
+    feeds.map((feed) => refreshFeed(supabase, userId, feed.id)),
+  );
+
   let synced = 0;
   const errors: string[] = [];
-
-  for (const feed of feeds) {
-    const result = await refreshFeed(supabase, userId, feed.id);
-    if (result.success) {
-      synced++;
+  for (let i = 0; i < results.length; i++) {
+    const feed = feeds[i];
+    const result = results[i];
+    if (!result || !feed) continue;
+    if (result.status === "fulfilled") {
+      if (result.value.success) {
+        synced++;
+      } else {
+        errors.push(`${feed.title || feed.url}: ${result.value.error}`);
+      }
     } else {
-      errors.push(`${feed.title || feed.url}: ${result.error}`);
+      errors.push(
+        `${feed.title || feed.url}: ${result.reason?.message ?? "Sync failed"}`,
+      );
     }
   }
 
