@@ -338,10 +338,9 @@ async function handleSaveBookmark({
   });
 
   if (response.status === 401) return { needsLogin: true };
+  if (response.status === 409) return { success: false, duplicate: true };
 
   const data = (await response.json()) as Record<string, unknown>;
-
-  if (response.status === 409) return { success: false, duplicate: true };
 
   if (!response.ok)
     throw new Error((data.error as string) || "Failed to save bookmark");
