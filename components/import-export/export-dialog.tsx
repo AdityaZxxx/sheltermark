@@ -3,7 +3,7 @@
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { exportBookmarks } from "~/app/action/export";
+import { exportBookmarks } from "~/app/action/export.action";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,

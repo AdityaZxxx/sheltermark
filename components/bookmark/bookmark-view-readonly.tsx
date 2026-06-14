@@ -3,7 +3,7 @@
 import { useQueryState } from "nuqs";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark";
+import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark.schema";
 import { getPastelColor, safeDomain, slugify } from "~/lib/utils";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkListItem } from "./bookmark-list-item";

@@ -1,4 +1,5 @@
 import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
+import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
@@ -16,33 +17,33 @@ interface BookmarkItemProps {
   title: string;
   url: string;
   domain: string;
-  favicon_url?: string;
-  og_image_url?: string;
+  favicon_url?: string | undefined;
+  og_image_url?: string | undefined;
   created_at: string;
-  isBroken?: boolean;
+  isBroken?: boolean | undefined;
   httpStatus?: number | null;
-  autoCheckBroken?: boolean;
-  isSelected?: boolean;
-  isSelectionMode?: boolean;
+  autoCheckBroken?: boolean | undefined;
+  isSelected?: boolean | undefined;
+  isSelectionMode?: boolean | undefined;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string;
-  onSelect?: (id: string) => void;
-  onDelete?: (id: string) => void;
-  onRename?: (id: string) => void;
-  onMove?: (id: string) => void;
-  onMoveToWorkspace?: (id: string, workspaceId: string) => void;
-  onCopyUrl?: (url: string) => void;
-  onRefetch?: (id: string) => void;
-  onSelectionModeToggle?: () => void;
-  tabIndex?: number;
-  disableContextMenu?: boolean;
+  currentWorkspaceId?: string | undefined;
+  onSelect?: ((id: string) => void) | undefined;
+  onDelete?: ((id: string) => void) | undefined;
+  onRename?: ((id: string) => void) | undefined;
+  onMove?: ((id: string) => void) | undefined;
+  onMoveToWorkspace?: ((id: string, workspaceId: string) => void) | undefined;
+  onCopyUrl?: ((url: string) => void) | undefined;
+  onRefetch?: ((id: string) => void) | undefined;
+  onSelectionModeToggle?: (() => void) | undefined;
+  tabIndex?: number | undefined;
+  disableContextMenu?: boolean | undefined;
 }
 
 interface BookmarkCardItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export function BookmarkCardItem({
+export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   id,
   title,
   url,
@@ -202,4 +203,4 @@ export function BookmarkCardItem({
       )}
     </BookmarkContextMenu>
   );
-}
+});

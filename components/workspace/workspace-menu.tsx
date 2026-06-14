@@ -34,7 +34,6 @@ export function WorkspaceMenu() {
   const {
     workspaces,
     currentWorkspace,
-    isLoading,
     setActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
@@ -50,23 +49,7 @@ export function WorkspaceMenu() {
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
-  if (isLoading) {
-    return (
-      <Button
-        variant="ghost"
-        className="gap-2 justify-between outline-none"
-        disabled
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-muted animate-pulse" />
-          <span className="truncate max-w-[100px]">Loading...</span>
-        </div>
-        <CaretUpDownIcon className="h-4 w-4 text-muted-foreground" />
-      </Button>
-    );
-  }
-
-  const activeWorkspaceName = currentWorkspace?.name || "";
+  const activeWorkspaceName = currentWorkspace?.name || "Select workspace";
 
   const handleTogglePublic = () => {
     setIsVisibilityDialogOpen(true);
@@ -97,7 +80,7 @@ export function WorkspaceMenu() {
                     ),
                   }}
                 />
-                <span className="truncate max-w-[100px] text-sm">
+                <span className="truncate max-w-32 text-sm">
                   {activeWorkspaceName}
                 </span>
               </div>
@@ -141,7 +124,11 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props} onClick={() => setIsAddDialogOpen(true)}>
+              <button
+                {...props}
+                type="button"
+                onClick={() => setIsAddDialogOpen(true)}
+              >
                 <PlusIcon className="h-4 w-4" />
                 Add Workspace
               </button>
@@ -152,7 +139,7 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props} onClick={handleTogglePublic}>
+              <button {...props} type="button" onClick={handleTogglePublic}>
                 {currentWorkspace?.is_public ? (
                   <>
                     <GlobeXIcon className="h-4 w-4" />
@@ -172,7 +159,11 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props} onClick={() => setIsRenameDialogOpen(true)}>
+              <button
+                {...props}
+                type="button"
+                onClick={() => setIsRenameDialogOpen(true)}
+              >
                 <PencilSimpleIcon className="h-4 w-4" />
                 Rename
               </button>
@@ -183,7 +174,7 @@ export function WorkspaceMenu() {
             nativeButton
             className="w-full gap-1.5"
             render={(props) => (
-              <button {...props}>
+              <button {...props} type="button">
                 <div className="flex items-center gap-2">
                   <LinkBreakIcon className="h-4 w-4" />
                   Weekly URL Check
@@ -212,7 +203,11 @@ export function WorkspaceMenu() {
               className="w-full gap-1.5"
               variant="destructive"
               render={(props) => (
-                <button {...props} onClick={() => setIsDeleteDialogOpen(true)}>
+                <button
+                  {...props}
+                  type="button"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
                   <TrashIcon className="h-4 w-4" />
                   Delete Workspace
                 </button>

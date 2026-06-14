@@ -35,6 +35,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!auth.authenticated) {
     showAuthRequired();
+    authBtn.addEventListener("click", () => {
+      chrome.tabs.create({ url: `${baseUrl}/login` });
+    });
     return;
   }
 
@@ -42,10 +45,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   updateSaveButton();
   saveBtn.focus();
-
-  authBtn.addEventListener("click", () => {
-    chrome.tabs.create({ url: `${baseUrl}/login` });
-  });
 
   saveBtn.addEventListener("click", async () => {
     if (isSaved || saveBtn.disabled) return;
@@ -225,6 +224,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     authSection.classList.remove("hidden");
     mainSection.classList.add("hidden");
   }
+
+  async function refreshAuthAndShowMain(): Promise<void> {
+    const auth = await checkAuth();
+    if (auth.authenticated) {
+      authSection.classList.add("hidden");
+      mainSection.classList.remove("hidden");
+      await Promise.all([loadWorkspaces(), checkAlreadySaved()]);
+      updateSaveButton();
+      saveBtn.focus();
+    }
+  }
+
+  window.addEventListener("focus", refreshAuthAndShowMain);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshAuthAndShowMain();
+    }
+  });
 
   function showError(msg: string): void {
     statusDiv.textContent = msg;

@@ -1,7 +1,8 @@
 import { z } from "zod";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
-export const workspaceSchema = z.object({
+const workspaceSchema = z.object({
   id: uuidSchema,
   user_id: uuidSchema,
   name: z.string().min(1),
@@ -10,6 +11,7 @@ export const workspaceSchema = z.object({
   auto_check_broken: z.boolean().default(true),
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
+  deleted_at: timestampSchema.nullable(),
 });
 
 export const workspaceCreateSchema = z.object({
@@ -29,6 +31,11 @@ export const workspaceRenameSchema = z.object({
 
 export type WorkspaceWithCount = Workspace & {
   bookmarks_count: number;
+};
+
+export type TrashedWorkspace = Workspace & {
+  bookmarks_count: number;
+  bookmarks: Bookmark[];
 };
 
 export type Workspace = z.infer<typeof workspaceSchema>;

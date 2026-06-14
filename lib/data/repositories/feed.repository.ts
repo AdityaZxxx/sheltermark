@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import { logger } from "~/lib/logger";
 import { fetchMetadata } from "~/lib/metadata";
 import { type ParsedFeed, parseFeed } from "~/lib/rss-parser";
 import type { Feed } from "~/lib/schemas/feed.schema";
@@ -60,7 +61,13 @@ export async function subscribeToFeed(
   }
 
   const siteMeta = feedData.link
-    ? await fetchMetadata(feedData.link).catch(() => null)
+    ? await fetchMetadata(feedData.link).catch((fetchErr) => {
+        logger.warn("Failed to fetch metadata for feed site", {
+          url: feedData.link,
+          error: fetchErr,
+        });
+        return null;
+      })
     : null;
 
   const { data: feed, error: feedError } = await supabase
@@ -96,7 +103,15 @@ export async function subscribeToFeed(
 
   const itemsToInsert = feedData.items.slice(0, 50);
   const metadataResults = await Promise.all(
-    itemsToInsert.map((item) => fetchMetadata(item.link).catch(() => null)),
+    itemsToInsert.map((item) =>
+      fetchMetadata(item.link).catch((fetchErr) => {
+        logger.warn("Failed to fetch metadata for feed item", {
+          url: item.link,
+          error: fetchErr,
+        });
+        return null;
+      }),
+    ),
   );
 
   const bookmarksToInsert = itemsToInsert.map((item, index) => {
@@ -177,7 +192,15 @@ export async function refreshFeed(
     await supabase.from("feed_entries").insert(entriesToInsert);
 
     const metadataResults = await Promise.all(
-      newItems.map((item) => fetchMetadata(item.link).catch(() => null)),
+      newItems.map((item) =>
+        fetchMetadata(item.link).catch((fetchErr) => {
+          logger.warn("Failed to fetch metadata for sync item", {
+            url: item.link,
+            error: fetchErr,
+          });
+          return null;
+        }),
+      ),
     );
 
     const bookmarksToInsert = newItems.map((item, index) => {
@@ -198,7 +221,13 @@ export async function refreshFeed(
   }
 
   const siteMeta = feedData.link
-    ? await fetchMetadata(feedData.link).catch(() => null)
+    ? await fetchMetadata(feedData.link).catch((fetchErr) => {
+        logger.warn("Failed to fetch metadata during feed sync", {
+          url: feedData.link,
+          error: fetchErr,
+        });
+        return null;
+      })
     : null;
   const { error: updateError } = await supabase
     .from("feeds")
@@ -250,15 +279,26 @@ export async function syncAllFeeds(
     return { success: true, data: { synced: 0, errors: [] } };
   }
 
+  const results = await Promise.allSettled(
+    feeds.map((feed) => refreshFeed(supabase, userId, feed.id)),
+  );
+
   let synced = 0;
   const errors: string[] = [];
-
-  for (const feed of feeds) {
-    const result = await refreshFeed(supabase, userId, feed.id);
-    if (result.success) {
-      synced++;
+  for (let i = 0; i < results.length; i++) {
+    const feed = feeds[i];
+    const result = results[i];
+    if (!result || !feed) continue;
+    if (result.status === "fulfilled") {
+      if (result.value.success) {
+        synced++;
+      } else {
+        errors.push(`${feed.title || feed.url}: ${result.value.error}`);
+      }
     } else {
-      errors.push(`${feed.title || feed.url}: ${result.error}`);
+      errors.push(
+        `${feed.title || feed.url}: ${result.reason?.message ?? "Sync failed"}`,
+      );
     }
   }
 

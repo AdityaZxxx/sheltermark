@@ -19,8 +19,10 @@ export async function generateMetadata({
   params,
   searchParams,
 }: PublicProfilePageProps): Promise<Metadata> {
-  const { username } = await params;
-  const { workspace } = await searchParams;
+  const [{ username }, { workspace }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const result = await getPublicProfile(username);
 
   if (!result.success || !result.data) {
@@ -92,8 +94,10 @@ export default async function PublicProfilePage({
   params,
 }: PublicProfilePageProps) {
   const { username } = await params;
-  const result = await getPublicProfile(username);
-  const { user } = await requireAuthSafe();
+  const [result, { user }] = await Promise.all([
+    getPublicProfile(username),
+    requireAuthSafe(),
+  ]);
 
   if (!result.success || !result.data || !result.data.profile) {
     return (

@@ -1,16 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useBookmarkActions } from "~/hooks/use-bookmark-actions";
-import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
-import { useBookmarkGlobalShortcuts } from "~/hooks/use-bookmark-global-shortcuts";
-import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
-import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
-import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
-import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
-import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { Bookmark } from "~/lib/schemas/bookmark";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
+import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
 import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
@@ -19,191 +9,90 @@ import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 
 export function BookmarkView() {
-  const [view, setView] = useState<"list" | "card">("list");
-
-  const { workspaces, currentWorkspace } = useWorkspaces();
-  const {
-    filteredBookmarks,
-    isLoading,
-    searchQuery,
-    setSearchQuery,
-    sort,
-    setSort,
-    invalidate,
-  } = useBookmarks(currentWorkspace?.id);
-
-  // Ensure mutation return shape is correctly typed
-  const mutations = useBookmarkMutations();
-  const { addBookmark, moveBookmarks, refetchBookmarkMetadata } =
-    mutations as unknown as {
-      addBookmark: (payload: { url: string; workspaceId: string }) => void;
-      moveBookmarks: (payload: {
-        ids: string[];
-        targetWorkspaceId: string;
-      }) => void;
-      refetchBookmarkMetadata: (payload: { id: string }) => void;
-    };
-
-  const selection = useBookmarkSelection();
-  const dialogs = useBookmarkDialogs();
-  const { focusedIndex, inputRef, handleKeyDown } =
-    useBookmarkKeyboardNavigation({
-      itemCount: filteredBookmarks.length,
-      view,
-      isSelectionMode: selection.isSelectionMode,
-      onSelect: selection.toggleSelect,
-      onOpen: (url) => window.open(url, "_blank"),
-    });
-
-  const { pendingUrls, setPendingUrls } =
-    usePendingBookmarks(filteredBookmarks);
-
-  const {
-    handleCopyUrl,
-    handleBulkCopyUrls,
-    handleRefetchTrigger,
-    handleMoveToWorkspace,
-    handleSubmit,
-  } = useBookmarkActions({
-    selectedIds: selection.selectedIds,
-    filteredBookmarks,
-    currentWorkspace,
-    // Cast to the expected type to satisfy TS after hook fixes
-    workspaces: workspaces as WorkspaceWithCount[],
-    addBookmark,
-    moveBookmarks,
-    refetchBookmarkMetadata,
-    invalidate,
-    setSearchQuery,
-    setPendingUrls,
-  });
-
-  useBookmarkGlobalShortcuts({
-    inputRef,
-    filteredBookmarks,
-    focusedIndex,
-    isSelectionMode: selection.isSelectionMode,
-    renameDialogOpen: dialogs.renameDialogOpen,
-    deleteDialogOpen: dialogs.deleteDialogOpen,
-    selectAll: selection.selectAll,
-    toggleSelect: selection.toggleSelect,
-    clearSelection: selection.clearSelection,
-    handleRenameTrigger: dialogs.handleRenameTrigger,
-    handleBulkDeleteTrigger: dialogs.handleBulkDeleteTrigger,
-  });
-
-  const handleRename = useCallback(
-    (id: string) => {
-      dialogs.handleRenameTrigger(id, filteredBookmarks);
-    },
-    [filteredBookmarks, dialogs.handleRenameTrigger],
-  );
-
-  const getItem = useCallback(
-    (index: number) => {
-      const bookmark = filteredBookmarks[index];
-      if (bookmark) {
-        return { id: bookmark.id, url: bookmark.url };
-      }
-      return undefined;
-    },
-    [filteredBookmarks],
-  );
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      handleKeyDown(e, getItem);
-    },
-    [handleKeyDown, getItem],
-  );
-
-  const isAllSelected =
-    selection.selectedIds.length === filteredBookmarks.length &&
-    filteredBookmarks.length > 0;
+  const vm = useBookmarkViewModel();
 
   return (
     <section
       aria-label="Bookmarks"
       className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
-      onKeyDown={onKeyDown}
+      onKeyDown={vm.onKeyDown}
     >
       <BookmarkHeader
-        inputRef={inputRef}
-        view={view}
-        searchQuery={searchQuery}
-        sort={sort}
-        onSearchChange={setSearchQuery}
-        onSubmit={handleSubmit}
-        onViewChange={setView}
-        onSortChange={setSort}
+        inputRef={vm.inputRef}
+        view={vm.view}
+        searchQuery={vm.searchQuery}
+        sort={vm.sort}
+        onSearchChange={vm.setSearchQuery}
+        onSubmit={vm.handleSubmit}
+        onViewChange={vm.setView}
+        onSortChange={vm.setSort}
       />
 
       <BookmarkList
-        view={view}
-        isLoading={isLoading}
-        searchQuery={searchQuery}
-        filteredBookmarks={filteredBookmarks}
-        pendingUrls={pendingUrls}
-        workspaces={workspaces}
-        currentWorkspaceId={currentWorkspace?.id}
-        selectedIds={selection.selectedIds}
-        isSelectionMode={selection.isSelectionMode}
-        focusedIndex={focusedIndex}
-        onSelect={selection.toggleSelect}
-        onDelete={dialogs.handleDeleteTrigger}
-        onRename={handleRename}
-        onMove={dialogs.handleMoveTrigger}
-        onMoveToWorkspace={handleMoveToWorkspace}
-        onCopyUrl={handleCopyUrl}
-        onRefetch={handleRefetchTrigger}
-        onSelectionModeToggle={selection.toggleSelectionMode}
-        autoCheckBroken={currentWorkspace?.auto_check_broken !== false}
+        view={vm.view}
+        isLoading={vm.isLoading}
+        searchQuery={vm.searchQuery}
+        filteredBookmarks={vm.bookmarks}
+        pendingUrls={vm.pendingUrls}
+        workspaces={vm.workspaces}
+        currentWorkspaceId={vm.currentWorkspace?.id}
+        selectedIds={vm.selection.selectedIds}
+        isSelectionMode={vm.selection.isSelectionMode}
+        focusedIndex={vm.focusedIndex}
+        onSelect={vm.selection.toggleSelect}
+        onDelete={vm.onDeleteTrigger}
+        onRename={vm.handleRename}
+        onMove={vm.dialogs.handleMoveTrigger}
+        onMoveToWorkspace={vm.handleMoveToWorkspace}
+        onCopyUrl={vm.handleCopyUrl}
+        onRefetch={vm.handleRefetchTrigger}
+        onSelectionModeToggle={vm.selection.toggleSelectionMode}
+        autoCheckBroken={vm.currentWorkspace?.auto_check_broken !== false}
       />
 
       <BookmarkToolbar
-        selectedCount={selection.selectedIds.length}
-        isSelectionMode={selection.isSelectionMode}
-        isAllSelected={isAllSelected}
-        onClear={selection.clearSelection}
+        selectedCount={vm.selection.selectedIds.length}
+        isSelectionMode={vm.selection.isSelectionMode}
+        isAllSelected={vm.isAllSelected}
+        onClear={vm.selection.clearSelection}
         onToggleSelectAll={
-          isAllSelected
-            ? selection.clearSelectionOnly
-            : () =>
-                selection.selectAll(
-                  filteredBookmarks.map((b: Bookmark) => b.id),
-                )
+          vm.isAllSelected
+            ? vm.selection.clearSelectionOnly
+            : () => vm.selection.selectAll(vm.bookmarks.map((b) => b.id))
         }
-        onDelete={() => dialogs.handleBulkDeleteTrigger(selection.selectedIds)}
-        onMove={() => dialogs.handleBulkMoveTrigger(selection.selectedIds)}
-        onCopyUrls={handleBulkCopyUrls}
+        onDelete={vm.onBulkDeleteTrigger}
+        onMove={vm.onBulkMoveTrigger}
+        onCopyUrls={vm.handleBulkCopyUrls}
       />
 
       <BookmarkRenameDialog
-        open={dialogs.renameDialogOpen}
-        onOpenChange={dialogs.setRenameDialogOpen}
-        bookmark={dialogs.activeBookmark}
-        onSuccess={invalidate}
+        open={vm.dialogs.renameDialogOpen}
+        onOpenChange={vm.dialogs.setRenameDialogOpen}
+        bookmark={vm.dialogs.activeBookmark}
+        onSuccess={vm.invalidate}
       />
 
       <BookmarkDeleteDialog
-        open={dialogs.deleteDialogOpen}
-        onOpenChange={dialogs.setDeleteDialogOpen}
-        ids={dialogs.bookmarksToDelete}
+        open={vm.dialogs.deleteDialogOpen}
+        onOpenChange={vm.dialogs.setDeleteDialogOpen}
+        ids={vm.dialogs.bookmarksToDelete}
         onSuccess={() => {
-          invalidate();
-          if (dialogs.bookmarksToDelete.length > 0) selection.clearSelection();
+          vm.invalidate();
+          if (vm.dialogs.bookmarksToDelete.length > 0)
+            vm.selection.clearSelection();
         }}
       />
 
       <BookmarkMoveDialog
-        open={dialogs.moveDialogOpen}
-        onOpenChange={dialogs.setMoveDialogOpen}
-        ids={dialogs.bookmarksToMove}
-        workspaces={workspaces}
-        currentWorkspaceId={currentWorkspace?.id}
+        open={vm.dialogs.moveDialogOpen}
+        onOpenChange={vm.dialogs.setMoveDialogOpen}
+        ids={vm.dialogs.bookmarksToMove}
+        workspaces={vm.workspaces}
+        currentWorkspaceId={vm.currentWorkspace?.id}
         onSuccess={() => {
-          invalidate();
-          if (dialogs.bookmarksToMove.length > 0) selection.clearSelection();
+          vm.invalidate();
+          if (vm.dialogs.bookmarksToMove.length > 0)
+            vm.selection.clearSelection();
         }}
       />
     </section>

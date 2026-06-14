@@ -51,6 +51,7 @@ export function WorkspaceAddDialog({
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSubmit();
               }}
+              maxLength={35}
             />
           </div>
         </div>

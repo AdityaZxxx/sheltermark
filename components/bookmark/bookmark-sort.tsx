@@ -8,7 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import type { BookmarkSort, BookmarkSortBy } from "~/lib/schemas/bookmark";
+import type {
+  BookmarkSort,
+  BookmarkSortBy,
+} from "~/lib/schemas/bookmark.schema";
 import { Button } from "../ui/button";
 
 interface BookmarkSortProps {

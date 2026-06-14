@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
-export const feedSchema = z.object({
+const feedSchema = z.object({
   id: uuidSchema,
   user_id: uuidSchema,
   workspace_id: uuidSchema.nullable(),
-  url: z.string().url(),
+  url: z.url(),
   title: z.string().nullable(),
   description: z.string().nullable(),
   site_url: z.string().nullable(),
@@ -17,17 +17,11 @@ export const feedSchema = z.object({
 
 export const feedCreateSchema = z.object({
   url: z
-    .string()
     .url("Please enter a valid URL")
     .refine(
       (url) => url.includes(".") || url.includes("localhost"),
       "Please enter a valid feed URL",
     ),
-  workspaceId: uuidSchema.optional().nullable(),
-});
-
-export const feedSubscribeSchema = z.object({
-  url: z.string().url("Please enter a valid URL"),
   workspaceId: uuidSchema.optional().nullable(),
 });
 
@@ -40,6 +34,3 @@ export const feedDeleteSchema = z.object({
 });
 
 export type Feed = z.infer<typeof feedSchema>;
-export type FeedWithEntries = Feed & {
-  entries_count: number;
-};

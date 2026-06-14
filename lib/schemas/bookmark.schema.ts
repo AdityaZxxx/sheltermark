@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
-export const bookmarkSchema = z.object({
+const bookmarkSchema = z.object({
   id: uuidSchema,
   user_id: uuidSchema,
   workspace_id: uuidSchema.nullable(),
@@ -15,9 +15,10 @@ export const bookmarkSchema = z.object({
   http_status: z.number().int().nullable(),
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
+  deleted_at: timestampSchema.nullable(),
 });
 
-export const bookmarkCreateSchema = z.object({
+const bookmarkCreateSchema = z.object({
   url: z.url("Invalid URL format"),
   workspaceId: uuidSchema,
 });
@@ -40,7 +41,18 @@ export const bookmarkRefetchMetadataSchema = z.object({
   id: uuidSchema,
 });
 
-export const bookmarkPreviewSchema = z.object({
+const workspaceNameSchema = z
+  .string()
+  .min(1, "Workspace name is required")
+  .max(35, "Workspace name too long");
+
+export const bookmarkRestoreSchema = z.object({
+  ids: z.array(uuidSchema).min(1, "At least one bookmark ID required"),
+  targetWorkspaceId: uuidSchema.nullable().optional(),
+  newWorkspaceName: workspaceNameSchema.optional(),
+});
+
+const bookmarkPreviewSchema = z.object({
   id: z.string(),
   url: z.string(),
   title: z.string().nullable(),
@@ -52,7 +64,7 @@ export const bookmarkPreviewSchema = z.object({
 
 export type BookmarkPreview = z.infer<typeof bookmarkPreviewSchema>;
 
-export const workspaceWithBookmarksSchema = z.object({
+const workspaceWithBookmarksSchema = z.object({
   id: uuidSchema,
   name: z.string().min(1),
   bookmarks: z.array(bookmarkPreviewSchema),
@@ -61,6 +73,7 @@ export const workspaceWithBookmarksSchema = z.object({
 export type Bookmark = z.infer<typeof bookmarkSchema>;
 export type BookmarkCreateInput = z.infer<typeof bookmarkCreateSchema>;
 export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
+export type BookmarkRestoreInput = z.infer<typeof bookmarkRestoreSchema>;
 export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;
 export type BookmarkRenameInput = z.infer<typeof bookmarkRenameSchema>;
 export type BookmarkRefetchMetadataInput = z.infer<
@@ -78,7 +91,4 @@ const bookmarkSortSchemaBase = z.object({
 });
 
 export type BookmarkSortBy = z.infer<typeof bookmarkSortSchemaBase>["sortBy"];
-export type BookmarkSortOrder = z.infer<
-  typeof bookmarkSortSchemaBase
->["sortOrder"];
 export type BookmarkSort = z.infer<typeof bookmarkSortSchemaBase>;

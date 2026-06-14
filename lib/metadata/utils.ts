@@ -46,25 +46,6 @@ export function getGoogleFavicon(hostname: string): string {
   return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
 }
 
-export async function fetchWithTimeout(
-  url: string,
-  init: RequestInit = {},
-  timeoutMs = 5000,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...init,
-      signal: controller.signal,
-    });
-    return response;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 export function isPrivateIP(ip: string): boolean {
   const ipv4Match = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (ipv4Match) {

@@ -1,23 +1,32 @@
 /**
- * @fileoverview URL health checker for Sheltermark bookmarks.
+ * URL health checker for Sheltermark bookmarks.
+ * Runs as a GitHub Actions cronjob (weekly via check-urls-health.yml).
+ *
  * Checks bookmarks for broken links, soft 404s, and server errors.
- * @module check-urls
+ *
+ * NOTE: This file was moved from .github/scripts/ to scripts/ so that
+ * tsconfig include patterns (which skip dot-directories) can pick it up.
  */
-
-require("dotenv").config();
-const { createClient } = require("@supabase/supabase-js");
+import "dotenv/config";
+import { createClient } from "@supabase/supabase-js";
+import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error(
+    "Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY",
+  );
+  process.exit(1);
+}
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const CONCURRENCY = 10;
 const TIMEOUT_MS = 10000;
 const MAX_RETRIES = 2;
 const MAX_BOOKMARKS_PER_RUN = 500;
-
-const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const ALWAYS_ALIVE_DOMAINS = [
   "twitter.com",
@@ -42,12 +51,7 @@ const SOFT_404_KEYWORDS = [
   "this content doesn't exist",
 ];
 
-/**
- * Extracts the hostname from a URL.
- * @param {string} url - The URL to parse.
- * @returns {string} The hostname or the original string if parsing fails.
- */
-function getDomain(url) {
+function getDomain(url: string): string {
   try {
     return new URL(url).hostname;
   } catch {
@@ -55,22 +59,11 @@ function getDomain(url) {
   }
 }
 
-/**
- * Checks if a URL belongs to a domain known to always be alive (social media, etc.).
- * @param {string} url - The URL to check.
- * @returns {boolean} True if the domain is in the always-alive list.
- */
-function isAlwaysAliveDomain(url) {
+function isAlwaysAliveDomain(url: string): boolean {
   return ALWAYS_ALIVE_DOMAINS.some((d) => url.includes(d));
 }
 
-/**
- * Determines the reason string based on HTTP status code.
- * @param {number} status - The HTTP status code.
- * @param {string} [soft404Reason] - Optional soft404 reason override.
- * @returns {string} The reason string (e.g., "blocked", "not_found", "server_error").
- */
-function getReason(status, soft404Reason) {
+function getReason(status: number, soft404Reason?: string): string {
   if (soft404Reason) return soft404Reason;
   if (status === 0) return "unknown";
   if (status === 403) return "blocked";
@@ -80,101 +73,62 @@ function getReason(status, soft404Reason) {
   return "unknown";
 }
 
-/**
- * Promise-based delay.
- * @param {number} ms - Milliseconds to sleep.
- * @returns {Promise<void>}
- */
-async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Fetches a URL with an AbortController timeout.
- * @param {string} url - The URL to fetch.
- * @param {RequestInit} options - Fetch options.
- * @param {number} [timeout=TIMEOUT_MS] - Timeout in milliseconds.
- * @returns {Promise<Response>} The fetch Response object.
- * @throws {Error} If the request times out or fails.
- */
-async function fetchWithTimeout(url, options, timeout = TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
+type CheckResult = {
+  is_broken: boolean;
+  http_status: number;
+  reason: string;
+  cached?: boolean;
+};
 
 /**
  * Fallback to GET request when HEAD returns 403 or 405.
- * Retries with exponential backoff on failure.
- * @param {string} url - The URL to fetch.
- * @param {number} retries - Number of retry attempts remaining.
- * @returns {Promise<{is_broken: boolean, http_status: number, reason: string}>}
  */
-async function retryWithGET(url, retries) {
+async function retryWithGET(
+  url: string,
+  retries: number,
+): Promise<CheckResult> {
   try {
-    const res = await fetchWithTimeout(
-      url,
-      {
-        method: "GET",
-        redirect: "follow",
-        headers: {
-          "User-Agent": USER_AGENT,
-          Accept: "text/html",
-        },
+    const { response } = await httpFetch(url, {
+      method: "GET",
+      timeout: TIMEOUT_MS,
+      retries,
+      headers: {
+        Accept: "text/html",
       },
-      TIMEOUT_MS,
-    );
+    });
 
     return {
-      is_broken: res.status >= 400,
-      http_status: res.status,
+      is_broken: response.status >= 400,
+      http_status: response.status,
       reason: "fallback_get",
     };
   } catch {
-    if (retries > 0) {
-      await sleep(2000);
-      return retryWithGET(url, retries - 1);
-    }
     return { is_broken: false, http_status: 0, reason: "unknown" };
   }
 }
 
 /**
  * Detects soft 404 pages (pages that return 200 but show "not found" content).
- * Checks page size (< 2000 chars) and presence of 404-related keywords or titles.
- * @param {string} url - The URL to check.
- * @returns {Promise<{isSoft404: boolean, reason?: string}>}
  */
-async function checkSoft404(url) {
+async function checkSoft404(url: string): Promise<{
+  isSoft404: boolean;
+  reason?: string;
+}> {
   try {
-    const res = await fetchWithTimeout(
-      url,
-      {
-        method: "GET",
-        headers: {
-          "User-Agent": USER_AGENT,
-          Range: "bytes=0-8192",
-          Accept: "text/html",
-          "Accept-Encoding": "gzip, deflate, br",
-        },
+    const { response } = await httpFetch(url, {
+      method: "GET",
+      timeout: TIMEOUT_MS,
+      retries: 0,
+      headers: {
+        Range: "bytes=0-8192",
+        Accept: "text/html",
+        "Accept-Encoding": "gzip, deflate, br",
       },
-      TIMEOUT_MS,
-    );
+    });
 
-    let text;
+    let text: string;
     try {
-      text = await res.text();
+      text = await readResponseBody(response, 8192);
     } catch {
       return { isSoft404: false };
     }
@@ -190,7 +144,7 @@ async function checkSoft404(url) {
 
     const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
     if (titleMatch) {
-      const title = titleMatch[1].trim().toLowerCase();
+      const title = (titleMatch[1] ?? "").trim().toLowerCase();
       if (
         title.includes("404") ||
         title === "not found" ||
@@ -207,39 +161,33 @@ async function checkSoft404(url) {
 }
 
 /**
- * Main URL checking function with caching and soft 404 detection.
+ * Main URL checking function with domain-level caching and soft 404 detection.
  * Uses HEAD request first, falls back to GET for 403/405 responses.
- * @param {string} url - The URL to check.
- * @param {number} [retries=MAX_RETRIES] - Number of retry attempts.
- * @param {Map<string, object>} domainCache - Domain-level result cache.
- * @returns {Promise<{is_broken: boolean, http_status: number, reason: string, cached?: boolean}>}
  */
-async function checkUrl(url, retries = MAX_RETRIES, domainCache) {
+async function checkUrl(
+  url: string,
+  retries = MAX_RETRIES,
+  domainCache: Map<string, CheckResult>,
+): Promise<CheckResult> {
   if (isAlwaysAliveDomain(url)) {
     return { is_broken: false, http_status: 200, reason: "always_alive" };
   }
 
   const domain = getDomain(url);
-  if (domainCache.has(domain)) {
-    const cached = domainCache.get(domain);
+  const cached = domainCache.get(domain);
+  if (cached) {
     return { ...cached, cached: true };
   }
 
   try {
-    const res = await fetchWithTimeout(
-      url,
-      {
-        method: "HEAD",
-        redirect: "follow",
-        headers: {
-          "User-Agent": USER_AGENT,
-          Accept: "text/html,*/*",
-        },
-      },
-      TIMEOUT_MS,
-    );
+    const { response } = await httpFetch(url, {
+      method: "HEAD",
+      timeout: TIMEOUT_MS,
+      retries,
+      followRedirect: true,
+    });
 
-    const status = res.status;
+    const status = response.status;
 
     if (status === 405 || status === 403) {
       const getResult = await retryWithGET(url, retries);
@@ -250,16 +198,16 @@ async function checkUrl(url, retries = MAX_RETRIES, domainCache) {
     if (status >= 200 && status < 300) {
       const soft404 = await checkSoft404(url);
       if (soft404.isSoft404) {
-        const result = {
+        const result: CheckResult = {
           is_broken: true,
           http_status: status,
-          reason: soft404.reason,
+          reason: soft404.reason ?? "soft404",
         };
         domainCache.set(domain, result);
         return result;
       }
 
-      const result = {
+      const result: CheckResult = {
         is_broken: false,
         http_status: status,
         reason: "ok",
@@ -269,21 +217,15 @@ async function checkUrl(url, retries = MAX_RETRIES, domainCache) {
     }
 
     const isBroken = status >= 400 && !VALID_HIGH_STATUS.includes(status);
-
-    const result = {
+    const result: CheckResult = {
       is_broken: isBroken,
       http_status: status,
       reason: getReason(status),
     };
     domainCache.set(domain, result);
     return result;
-  } catch (error) {
-    if (retries > 0 && error.name === "AbortError") {
-      await sleep(2000);
-      return checkUrl(url, retries - 1, domainCache);
-    }
-
-    const result = {
+  } catch {
+    const result: CheckResult = {
       is_broken: false,
       http_status: 0,
       reason: "unknown",
@@ -295,23 +237,22 @@ async function checkUrl(url, retries = MAX_RETRIES, domainCache) {
 
 /**
  * Executes an array of async tasks with a concurrency limit.
- * @template T
- * @param {Array<() => Promise<T>>} tasks - Array of task functions.
- * @param {number} limit - Maximum concurrent tasks.
- * @returns {Promise<T[]>} Array of results in the same order as input tasks.
  */
-async function runWithConcurrency(tasks, limit) {
-  const results = [];
-  const executing = new Set();
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number,
+): Promise<T[]> {
+  const results: Promise<T>[] = [];
+  const executing = new Set<Promise<void>>();
 
   for (const task of tasks) {
     const promise = task().then((result) => {
-      executing.delete(promise);
+      executing.delete(promise as unknown as Promise<void>);
       return result;
     });
 
     results.push(promise);
-    executing.add(promise);
+    executing.add(promise as unknown as Promise<void>);
 
     if (executing.size >= limit) {
       await Promise.race(executing);
@@ -321,11 +262,7 @@ async function runWithConcurrency(tasks, limit) {
   return Promise.all(results);
 }
 
-/**
- * Main entry point. Fetches bookmarks with auto_check_broken enabled,
- * checks each URL concurrently, and updates the database.
- */
-async function main() {
+async function main(): Promise<void> {
   console.log("Starting URL health check...");
 
   const { data: bookmarks, error } = await supabase
@@ -350,15 +287,17 @@ async function main() {
 
   console.log(`Checking ${bookmarks.length} bookmarks`);
 
-  const domainCache = new Map();
+  const domainCache = new Map<string, CheckResult>();
   let brokenCount = 0;
   let unknownCount = 0;
 
   const checks = await runWithConcurrency(
-    bookmarks.map((bm) => async () => {
-      const result = await checkUrl(bm.url, MAX_RETRIES, domainCache);
-      return { bookmark: bm, ...result };
-    }),
+    bookmarks.map(
+      (bm: { id: string; url: string; user_id: string }) => async () => {
+        const result = await checkUrl(bm.url, MAX_RETRIES, domainCache);
+        return { bookmark: bm, ...result };
+      },
+    ),
     CONCURRENCY,
   );
 

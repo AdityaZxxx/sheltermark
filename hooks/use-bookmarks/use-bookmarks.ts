@@ -40,7 +40,7 @@ export function useBookmarks(workspaceId?: string) {
   }, [filteredBookmarks, searchQuery]);
 
   const bookmarks = useMemo(() => {
-    return [...searchedBookmarks].sort((a, b) => {
+    return searchedBookmarks.toSorted((a, b) => {
       const asc = sort.sortOrder === "asc";
       const cmp = (x: string, y: string) =>
         asc ? x.localeCompare(y) : y.localeCompare(x);

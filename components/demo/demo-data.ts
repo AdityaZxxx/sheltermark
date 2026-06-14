@@ -1,5 +1,5 @@
-import type { Bookmark } from "~/lib/schemas/bookmark";
-import type { Workspace } from "~/lib/schemas/workspace";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { Workspace } from "~/lib/schemas/workspace.schema";
 
 export const DEMO_WORKSPACES: Pick<
   Workspace,

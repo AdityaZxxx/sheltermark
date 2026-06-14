@@ -168,6 +168,7 @@ export async function importBookmarks(
 
   const errors: string[] = [];
   const toInsert: BookmarkInsertInput[] = [];
+  const replaceUrls: string[] = [];
 
   for (const bookmark of parsed.bookmarks ?? []) {
     try {
@@ -185,12 +186,7 @@ export async function importBookmarks(
         continue;
       }
 
-      await supabase
-        .from("bookmarks")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("url", normalizedUrl)
-        .eq("workspace_id", targetWorkspaceId);
+      replaceUrls.push(normalizedUrl);
     }
 
     toInsert.push({
@@ -201,6 +197,19 @@ export async function importBookmarks(
       favicon_url: bookmark.favicon_url || null,
       og_image_url: bookmark.og_image_url || null,
     });
+  }
+
+  if (replaceUrls.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("bookmarks")
+      .delete()
+      .eq("user_id", user.id)
+      .in("url", replaceUrls)
+      .eq("workspace_id", targetWorkspaceId);
+
+    if (deleteError) {
+      errors.push(`Replace deletions: ${deleteError.message}`);
+    }
   }
 
   if (toInsert.length === 0) {
@@ -215,16 +224,33 @@ export async function importBookmarks(
   }
 
   const batchSize = 100;
-  let imported = 0;
-
+  const batches: { batch: BookmarkInsertInput[]; index: number }[] = [];
   for (let i = 0; i < toInsert.length; i += batchSize) {
-    const batch = toInsert.slice(i, i + batchSize);
-    const { error } = await supabase.from("bookmarks").insert(batch);
+    batches.push({
+      batch: toInsert.slice(i, i + batchSize),
+      index: Math.floor(i / batchSize),
+    });
+  }
 
-    if (error) {
-      errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
+  const batchResults = await Promise.allSettled(
+    batches.map(({ batch }) => supabase.from("bookmarks").insert(batch)),
+  );
+
+  let imported = 0;
+  for (let i = 0; i < batchResults.length; i++) {
+    const result = batchResults[i];
+    if (!result) continue;
+    const batchLabel = batches[i]?.index ?? i + 1;
+    if (result.status === "fulfilled") {
+      if (!result.value.error) {
+        imported += batches[i]?.batch.length ?? 0;
+      } else {
+        errors.push(`Batch ${batchLabel + 1}: ${result.value.error.message}`);
+      }
     } else {
-      imported += batch.length;
+      errors.push(
+        `Batch ${batchLabel + 1}: ${result.reason?.message ?? "Insert failed"}`,
+      );
     }
   }
 

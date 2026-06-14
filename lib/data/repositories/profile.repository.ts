@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import { logger } from "~/lib/logger";
 import type {
   BookmarkPreview,
   WorkspaceWithBookmarks,
@@ -49,7 +50,7 @@ export async function updateProfile(
     return { success: false, error: msg };
   }
 
-  const { name } = validated.data;
+  const { name, trash_cleanup_interval } = validated.data;
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { name },
@@ -59,9 +60,14 @@ export async function updateProfile(
     return { success: false, error: authError.message };
   }
 
+  const profileUpdate: Record<string, unknown> = { name };
+  if (trash_cleanup_interval !== undefined) {
+    profileUpdate.trash_cleanup_interval = trash_cleanup_interval;
+  }
+
   const { error: updateProfileError } = await supabase
     .from("profiles")
-    .update({ name: name })
+    .update(profileUpdate)
     .eq("id", userId);
 
   if (updateProfileError) {
@@ -238,6 +244,7 @@ export async function getPublicProfile(
     x_url: profile.x_url,
     website_url: profile.website_url,
     is_public: profile.is_public,
+    trash_cleanup_interval: profile.trash_cleanup_interval,
     created_at: profile.created_at,
     updated_at: profile.updated_at,
   };
@@ -328,7 +335,8 @@ export async function uploadAvatar(
       return { success: false, error: profileError.message };
     }
     return { success: true, data: { avatarUrl } };
-  } catch (_error) {
+  } catch (error) {
+    logger.error("Failed to upload avatar", { error, userId });
     return { success: false, error: "Failed to upload avatar" };
   }
 }
@@ -357,7 +365,8 @@ export async function deleteAvatar(
       .eq("id", userId);
     if (profileError) return { success: false, error: profileError.message };
     return { success: true, data: null };
-  } catch {
+  } catch (error) {
+    logger.error("Failed to delete avatar", { error, userId });
     return { success: false, error: "Failed to delete avatar" };
   }
 }
@@ -402,7 +411,8 @@ export async function deleteAccount(
       };
     }
     return { success: true, data: null };
-  } catch {
+  } catch (error) {
+    logger.error("Failed to delete account", { error, userId });
     return { success: false, error: "Failed to delete account" };
   }
 }

@@ -10,13 +10,13 @@ export const usernameSchema = z
       "Username must only contain lowercase letters, numbers, and underscores",
   });
 
-export const socialUsernameSchema = z
+const socialUsernameSchema = z
   .string()
   .regex(/^[a-zA-Z0-9_-]+$/, "Invalid username")
   .optional()
   .or(z.literal(""));
 
-export const websiteSchema = z
+const websiteSchema = z
   .string()
   .refine(
     (val) => {
@@ -32,7 +32,10 @@ export const websiteSchema = z
   .optional()
   .or(z.literal(""));
 
-export const profileSchema = z.object({
+export const TRASH_CLEANUP_INTERVALS = [1, 7, 14, 30] as const;
+export type TrashCleanupInterval = (typeof TRASH_CLEANUP_INTERVALS)[number];
+
+const profileSchema = z.object({
   id: uuidSchema,
   username: usernameSchema,
   name: z.string().nullable(),
@@ -46,6 +49,7 @@ export const profileSchema = z.object({
   github_url: z.url().nullable(),
   x_url: z.url().nullable(),
   is_public: z.boolean(),
+  trash_cleanup_interval: z.number().int().default(30),
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
 });
@@ -71,6 +75,7 @@ export const getProfileByUsernameSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  trash_cleanup_interval: z.number().int().optional(),
 });
 
 export const exportOptionsSchema = z.object({
@@ -85,23 +90,9 @@ export const importOptionsSchema = z.object({
   newWorkspaceName: z.string().min(1).max(35).optional(),
 });
 
-export const importPreviewSchema = z.object({
-  totalBookmarks: z.number(),
-  validBookmarks: z.number(),
-  duplicates: z.number(),
-  workspaces: z.array(
-    z.object({
-      name: z.string(),
-      count: z.number(),
-    }),
-  ),
-});
-
 export type Profile = z.infer<typeof profileSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePublicProfileInput = z.infer<
   typeof updatePublicProfileSchema
 >;
-export type ExportOptionsInput = z.infer<typeof exportOptionsSchema>;
 export type ImportOptionsInput = z.infer<typeof importOptionsSchema>;
-export type ImportPreviewOutput = z.infer<typeof importPreviewSchema>;

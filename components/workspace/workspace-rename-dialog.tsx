@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -30,12 +30,8 @@ export function WorkspaceRenameDialog({
 }: WorkspaceRenameDialogProps) {
   const [name, setName] = useState(currentName);
 
-  useEffect(() => {
-    if (isOpen) setName(currentName);
-  }, [isOpen, currentName]);
-
   const handleOpenChange = (open: boolean) => {
-    if (!open) setName(currentName);
+    if (!open) setName("");
     onOpenChange(open);
   };
 

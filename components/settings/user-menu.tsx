@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArchiveIcon,
   CaretUpDownIcon,
   GearIcon,
   RssIcon,
@@ -10,7 +11,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { logout } from "~/app/action/login";
+import { logout } from "~/app/action/login.action";
 import { FeedManager } from "~/components/feed/feed-manager";
 import { ShortcutButton } from "~/components/keyboard-shortcuts-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -49,13 +50,13 @@ export function UserMenu({ user }: UserMenuProps) {
               variant="ghost"
               className="gap-2 px-2 py-2 md:px-2 md:py-1 -m-2 md:m-0 rounded-full md:rounded-md h-auto"
             >
-              <Avatar size="sm">
+              <Avatar>
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
-                  alt={profile.name ?? undefined}
+                  alt={profile.name ?? ""}
                 />
                 <AvatarFallback>
-                  {profile.name?.charAt(0).toUpperCase() ?? undefined}
+                  {profile.name?.charAt(0).toUpperCase() ?? "?"}
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm hidden md:block">{profile.name}</span>
@@ -89,10 +90,18 @@ export function UserMenu({ user }: UserMenuProps) {
             </span>
           </DropdownMenuItem>
 
-          {profile?.is_public && (
+          <DropdownMenuItem className="w-full">
+            <Link href="/trash" className="w-full">
+              <span className="w-full flex items-center gap-2">
+                <ArchiveIcon className="h-4 w-4" /> Trash
+              </span>
+            </Link>
+          </DropdownMenuItem>
+
+          {profile.is_public && (
             <DropdownMenuItem className="w-full">
               <Link
-                href={`/u/${profile?.username}`}
+                href={`/u/${profile.username}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -110,6 +119,7 @@ export function UserMenu({ user }: UserMenuProps) {
             render={(props) => (
               <button
                 {...props}
+                type="button"
                 disabled={isPending}
                 onClick={(e) => {
                   props.onClick?.(e);

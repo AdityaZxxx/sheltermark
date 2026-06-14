@@ -7,8 +7,9 @@ import {
   refetchBookmarkMetadata,
   renameBookmark,
 } from "~/app/action/bookmark.action";
-import { createOptimisticMutation } from "~/lib/mutations/base";
-import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
+import { logger } from "~/lib/logger";
+import { useOptimisticMutation } from "~/lib/mutations/base";
+import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
 import type {
   Bookmark,
   BookmarkDeleteInput,
@@ -55,8 +56,8 @@ export function useAddBookmark(userId: string | undefined) {
 
       return { previousBookmarks };
     },
-    onError: (error, _variables, context) => {
-      console.error("[useBookmarks] addBookmark failed:", error);
+    onError: (error, variables, context) => {
+      logger.error("addBookmark failed", { error, variables: variables });
       if (context?.previousBookmarks) {
         queryClient.setQueryData(bookmarkKeys.all, context.previousBookmarks);
       }
@@ -76,10 +77,11 @@ export function useAddBookmark(userId: string | undefined) {
 }
 
 export function useDeleteBookmarks(_userId: string | undefined) {
-  return createOptimisticMutation<BookmarkDeleteInput, null>({
+  return useOptimisticMutation<BookmarkDeleteInput, null>({
     mutationFn: deleteBookmarks,
     queryKey: bookmarkKeys.all,
-    successMessage: "Bookmarks deleted",
+    dependentQueryKeys: [trashKeys.all],
+    successMessage: "Bookmarks moved to trash",
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
       const prev = oldData as Bookmark[];
@@ -90,7 +92,7 @@ export function useDeleteBookmarks(_userId: string | undefined) {
 }
 
 export function useRenameBookmark(_userId: string | undefined) {
-  return createOptimisticMutation<BookmarkRenameInput, null>({
+  return useOptimisticMutation<BookmarkRenameInput, null>({
     mutationFn: renameBookmark,
     queryKey: bookmarkKeys.all,
     successMessage: "Bookmark renamed",
@@ -103,13 +105,14 @@ export function useRenameBookmark(_userId: string | undefined) {
 }
 
 export function useMoveBookmarks(userId: string | undefined) {
-  return createOptimisticMutation<
+  return useOptimisticMutation<
     BookmarkMoveInput,
     { movedCount: number; skippedCount: number }
   >({
     mutationFn: moveBookmarks,
     queryKey: bookmarkKeys.all,
     dependentQueryKeys: userId ? [workspaceKeys.byUser(userId)] : [],
+    successMessage: null,
     errorMessage: "Failed to move bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
       const prev = oldData as Bookmark[];
@@ -120,7 +123,7 @@ export function useMoveBookmarks(userId: string | undefined) {
 }
 
 export function useRefetchBookmarkMetadata(_userId: string | undefined) {
-  return createOptimisticMutation<{ id: string }, null>({
+  return useOptimisticMutation<{ id: string }, null>({
     mutationFn: refetchBookmarkMetadata,
     queryKey: bookmarkKeys.all,
     successMessage: "Metadata refreshed",

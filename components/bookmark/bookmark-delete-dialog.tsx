@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
-import { deleteBookmarks } from "~/app/action/bookmark";
+import { deleteBookmarks } from "~/app/action/bookmark.action";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,36 +31,35 @@ export function BookmarkDeleteDialog({
   onConfirm,
   silent = false,
 }: BookmarkDeleteDialogProps) {
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (ids.length === 0) return;
 
-    setIsPending(true);
-
-    if (onConfirm) {
-      await onConfirm(ids);
-      setIsPending(false);
-      onSuccess();
-      onOpenChange(false);
-    } else {
-      const res = await deleteBookmarks({ ids });
-      setIsPending(false);
-
-      if (res.success) {
-        if (!silent) {
-          toast.success(
-            ids.length === 1
-              ? "Bookmark deleted"
-              : `${ids.length} bookmarks deleted`,
-          );
+    startTransition(async () => {
+      try {
+        if (onConfirm) {
+          await onConfirm(ids);
+        } else {
+          const res = await deleteBookmarks({ ids });
+          if (res.success) {
+            if (!silent) {
+              toast.success(
+                ids.length === 1
+                  ? "Bookmark deleted"
+                  : `${ids.length} bookmarks deleted`,
+              );
+            }
+          } else {
+            toast.error(res.error || "Failed to delete bookmarks");
+          }
         }
         onSuccess();
         onOpenChange(false);
-      } else {
-        toast.error(res.error || "Failed to delete bookmarks");
+      } catch {
+        toast.error("Failed to delete bookmarks");
       }
-    }
+    });
   };
 
   return (
@@ -69,13 +68,12 @@ export function BookmarkDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>
             {ids.length === 1
-              ? "Delete Bookmark"
-              : `Delete ${ids.length} Bookmarks`}
+              ? "Trash Bookmark"
+              : `Trash ${ids.length} Bookmarks`}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete{" "}
-            {ids.length === 1 ? "this bookmark" : "these bookmarks"}? This
-            action cannot be undone.
+            Move {ids.length === 1 ? "this bookmark" : "these bookmarks"} to
+            trash? You can restore them later from the Trash.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -88,7 +86,7 @@ export function BookmarkDeleteDialog({
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Moving to trash..." : "Move to trash"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

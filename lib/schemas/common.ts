@@ -9,7 +9,7 @@ export const uuidSchema = z.uuid();
 
 export const timestampSchema = z.iso.datetime();
 
-export const urlSchema = z.string().url();
+export const urlSchema = z.url();
 
 /**
  * Slug: lowercase alphanumeric + hyphens, no leading/trailing hyphens

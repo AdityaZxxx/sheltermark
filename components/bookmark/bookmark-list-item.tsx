@@ -1,4 +1,5 @@
 import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
+import React from "react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import {
@@ -41,7 +42,7 @@ interface BookmarkListItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export function BookmarkListItem({
+export const BookmarkListItem = React.memo(function BookmarkListItem({
   id,
   title,
   url,
@@ -184,4 +185,4 @@ export function BookmarkListItem({
       {(triggerProps) => <div {...triggerProps}>{buttonContent}</div>}
     </BookmarkContextMenu>
   );
-}
+});

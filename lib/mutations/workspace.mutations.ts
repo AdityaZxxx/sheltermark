@@ -6,15 +6,15 @@ import {
   toggleAutoCheckBroken,
   togglePublicStatus,
 } from "~/app/action/workspace.action";
-import { createOptimisticMutation } from "~/lib/mutations/base";
-import { workspaceKeys } from "~/lib/query-keys";
+import { useOptimisticMutation } from "~/lib/mutations/base";
+import { trashKeys, workspaceKeys } from "~/lib/query-keys";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function useCreateWorkspace(userId: string | undefined) {
-  return createOptimisticMutation<FormData, { id: string }>({
+  return useOptimisticMutation<FormData, { id: string }>({
     mutationFn: createWorkspace,
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Workspace created",
@@ -34,6 +34,7 @@ export function useCreateWorkspace(userId: string | undefined) {
           user_id: userId ?? "",
           created_at: new Date().toISOString(),
           updated_at: null,
+          deleted_at: null,
         } satisfies WorkspaceWithCount,
       ];
     },
@@ -41,10 +42,11 @@ export function useCreateWorkspace(userId: string | undefined) {
 }
 
 export function useDeleteWorkspace(userId: string | undefined) {
-  return createOptimisticMutation<string, null>({
+  return useOptimisticMutation<string, null>({
     mutationFn: deleteWorkspace,
     queryKey: workspaceKeys.byUser(userId),
-    successMessage: "Workspace deleted",
+    dependentQueryKeys: [trashKeys.all],
+    successMessage: "Workspace moved to trash",
     errorMessage: "Failed to delete workspace",
     prepareOptimisticData: (oldData, id) => {
       const prev = oldData as WorkspaceWithCount[];
@@ -54,7 +56,7 @@ export function useDeleteWorkspace(userId: string | undefined) {
 }
 
 export function useRenameWorkspace(userId: string | undefined) {
-  return createOptimisticMutation<{ id: string; name: string }, null>({
+  return useOptimisticMutation<{ id: string; name: string }, null>({
     mutationFn: ({ id, name }) => renameWorkspace(id, name),
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Workspace renamed",
@@ -67,7 +69,7 @@ export function useRenameWorkspace(userId: string | undefined) {
 }
 
 export function useSetDefaultWorkspace(userId: string | undefined) {
-  return createOptimisticMutation<string, null>({
+  return useOptimisticMutation<string, null>({
     mutationFn: setDefaultWorkspace,
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Default workspace updated",
@@ -80,7 +82,7 @@ export function useSetDefaultWorkspace(userId: string | undefined) {
 }
 
 export function useTogglePublicWorkspace(userId: string | undefined) {
-  return createOptimisticMutation<{ id: string; isPublic: boolean }, null>({
+  return useOptimisticMutation<{ id: string; isPublic: boolean }, null>({
     mutationFn: ({ id, isPublic }) => togglePublicStatus(id, isPublic),
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Workspace visibility toggled",
@@ -95,7 +97,7 @@ export function useTogglePublicWorkspace(userId: string | undefined) {
 }
 
 export function useToggleAutoCheckWorkspace(userId: string | undefined) {
-  return createOptimisticMutation<{ id: string; enabled: boolean }, null>({
+  return useOptimisticMutation<{ id: string; enabled: boolean }, null>({
     mutationFn: ({ id, enabled }) => toggleAutoCheckBroken(id, enabled),
     queryKey: workspaceKeys.byUser(userId),
     successMessage: "Auto-check updated",

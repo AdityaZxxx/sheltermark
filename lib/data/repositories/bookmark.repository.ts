@@ -8,10 +8,12 @@ import {
   type BookmarkMoveInput,
   type BookmarkRefetchMetadataInput,
   type BookmarkRenameInput,
+  type BookmarkRestoreInput,
   bookmarkDeleteSchema,
   bookmarkMoveSchema,
   bookmarkRefetchMetadataSchema,
   bookmarkRenameSchema,
+  bookmarkRestoreSchema,
 } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 import { normalizeUrl } from "~/lib/utils";
@@ -38,7 +40,8 @@ export async function insertBookmark(
     .from("bookmarks")
     .select("id")
     .eq("user_id", userId)
-    .eq("url", normalizedUrl);
+    .eq("url", normalizedUrl)
+    .is("deleted_at", null);
 
   if (workspaceId) {
     existingQuery = existingQuery.eq("workspace_id", workspaceId);
@@ -84,22 +87,24 @@ export async function getBookmarks(
   userId: string,
   workspaceId?: string,
 ): Promise<ActionResult<Bookmark[]>> {
-  const { data: bookmarks, error } = await supabase
+  let query = supabase
     .from("bookmarks")
     .select("*")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .then((r) => ({ data: r.data, error: r.error }));
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (workspaceId) {
+    query = query.eq("workspace_id", workspaceId);
+  }
+
+  const { data: bookmarks, error } = await query;
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  let result = (bookmarks as Bookmark[]) ?? [];
-  if (workspaceId) {
-    result = result.filter((b) => b.workspace_id === workspaceId);
-  }
-  return { success: true, data: result };
+  return { success: true, data: (bookmarks as Bookmark[]) ?? [] };
 }
 
 export async function deleteBookmarks(
@@ -114,8 +119,186 @@ export async function deleteBookmarks(
 
   const { error } = await supabase
     .from("bookmarks")
+    .update({
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", validated.data.ids)
+    .eq("user_id", userId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}
+
+export async function getTrashedBookmarks(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ActionResult<Bookmark[]>> {
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select("*")
+    .eq("user_id", userId)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: (data as Bookmark[]) ?? [] };
+}
+
+export async function restoreBookmarks(
+  supabase: SupabaseClient,
+  userId: string,
+  input: BookmarkRestoreInput,
+): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
+  const validated = bookmarkRestoreSchema.safeParse(input);
+  if (!validated.success) {
+    return { success: false, error: validated.error.message };
+  }
+
+  const { ids, targetWorkspaceId, newWorkspaceName } = validated.data;
+
+  let resolvedWorkspaceId: string | null | undefined = targetWorkspaceId;
+
+  if (newWorkspaceName) {
+    const { createWorkspaceRaw } = await import(
+      "~/lib/data/repositories/workspace.repository"
+    );
+    const result = await createWorkspaceRaw(supabase, userId, newWorkspaceName);
+    if (!result.success) return result;
+    resolvedWorkspaceId = result.data.id;
+  }
+
+  const now = new Date().toISOString();
+
+  if (resolvedWorkspaceId === undefined) {
+    const { data: bookmarks } = await supabase
+      .from("bookmarks")
+      .select("id, workspace_id")
+      .in("id", ids)
+      .eq("user_id", userId);
+
+    const wsIds = [
+      ...new Set(
+        (bookmarks ?? [])
+          .filter((b) => b.workspace_id)
+          .map((b) => b.workspace_id as string),
+      ),
+    ];
+
+    if (wsIds.length > 0) {
+      const { data: trashed } = await supabase
+        .from("workspaces")
+        .select("id")
+        .in("id", wsIds)
+        .not("deleted_at", "is", null);
+
+      if (trashed && trashed.length > 0) {
+        return {
+          success: false,
+          error:
+            "Cannot restore bookmarks to a trashed workspace. Restore the workspace first, or choose a different destination.",
+        };
+      }
+    }
+  }
+
+  const { data: toRestore } = await supabase
+    .from("bookmarks")
+    .select("id, url")
+    .in("id", ids)
+    .eq("user_id", userId);
+
+  if (!toRestore || toRestore.length === 0) {
+    return { success: false, error: "No bookmarks found to restore" };
+  }
+
+  const urls = toRestore.map((b) => b.url);
+
+  let existingQuery = supabase
+    .from("bookmarks")
+    .select("url")
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .in("url", urls);
+
+  if (resolvedWorkspaceId) {
+    existingQuery = existingQuery.eq("workspace_id", resolvedWorkspaceId);
+  } else if (resolvedWorkspaceId === null) {
+    existingQuery = existingQuery.is("workspace_id", null);
+  } else {
+    existingQuery = existingQuery.not("workspace_id", "is", null);
+  }
+
+  const { data: existing } = await existingQuery;
+  const existingUrls = new Set(existing?.map((b) => b.url) ?? []);
+
+  const toRestoreIds: string[] = [];
+  let skippedCount = 0;
+
+  for (const bm of toRestore) {
+    if (existingUrls.has(bm.url)) {
+      skippedCount++;
+    } else {
+      toRestoreIds.push(bm.id);
+    }
+  }
+
+  const updateData: Record<string, unknown> = {
+    deleted_at: null,
+    updated_at: now,
+  };
+
+  if (resolvedWorkspaceId !== undefined) {
+    updateData.workspace_id = resolvedWorkspaceId;
+  }
+
+  if (toRestoreIds.length > 0) {
+    const { error } = await supabase
+      .from("bookmarks")
+      .update(updateData)
+      .in("id", toRestoreIds)
+      .eq("user_id", userId);
+
+    if (error) return { success: false, error: error.message };
+  }
+
+  return {
+    success: true,
+    data: {
+      restoredCount: toRestoreIds.length,
+      skippedCount,
+    },
+  };
+}
+
+export async function permanentDeleteBookmarks(
+  supabase: SupabaseClient,
+  userId: string,
+  { ids }: BookmarkDeleteInput,
+): Promise<ActionResult<null>> {
+  const validated = bookmarkDeleteSchema.safeParse({ ids });
+  if (!validated.success) {
+    return { success: false, error: validated.error.message };
+  }
+
+  const { error } = await supabase
+    .from("bookmarks")
     .delete()
     .in("id", validated.data.ids)
+    .eq("user_id", userId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}
+
+export async function emptyTrashBookmarks(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ActionResult<null>> {
+  const { error } = await supabase
+    .from("bookmarks")
+    .delete()
+    .not("deleted_at", "is", null)
     .eq("user_id", userId);
 
   if (error) return { success: false, error: error.message };
@@ -152,11 +335,12 @@ export async function moveBookmarks(
 
   const sourceUrls = sourceBookmarks.map((b) => b.url);
 
-  // 2. Check for existing URLs in the target workspace
+  // 2. Check for existing (non-trashed) URLs in the target workspace
   let existingQuery = supabase
     .from("bookmarks")
     .select("url")
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .in("url", sourceUrls);
 
   if (targetId) {
@@ -264,7 +448,7 @@ export async function refetchMetadata(
 // ----------------- Export bookmarks (query only) -----------------
 // This function queries Supabase for bookmarks along with their associated
 // workspaces. It returns raw data which will be formatted by the action layer.
-export type BookmarkWithWorkspace = {
+type BookmarkWithWorkspace = {
   id: string;
   url: string;
   title: string | null;
@@ -293,7 +477,8 @@ export async function exportBookmarks(
       workspace_id,
       workspaces!inner(id, name)
     `)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .is("deleted_at", null);
 
   // Optional workspace filter
   if (options.workspaceId) {
