@@ -93,7 +93,7 @@ export function ShareDialog({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Page title"
+            placeholder="Leave blank for autofill"
           />
         </div>
 
