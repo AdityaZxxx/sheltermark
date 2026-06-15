@@ -23,3 +23,9 @@ export const feedKeys = {
   detail: (id: string) => ["feeds", "detail", id] as const,
   entries: (feedId: string) => ["feeds", "entries", feedId] as const,
 };
+
+export const trashKeys = {
+  all: ["trash"] as const,
+  bookmarks: ["trash", "bookmarks"] as const,
+  workspaces: ["trash", "workspaces"] as const,
+};
