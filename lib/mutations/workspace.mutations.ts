@@ -7,7 +7,7 @@ import {
   togglePublicStatus,
 } from "~/app/action/workspace.action";
 import { useOptimisticMutation } from "~/lib/mutations/base";
-import { workspaceKeys } from "~/lib/query-keys";
+import { trashKeys, workspaceKeys } from "~/lib/query-keys";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 const generateTempId = () =>
@@ -34,6 +34,7 @@ export function useCreateWorkspace(userId: string | undefined) {
           user_id: userId ?? "",
           created_at: new Date().toISOString(),
           updated_at: null,
+          deleted_at: null,
         } satisfies WorkspaceWithCount,
       ];
     },
@@ -44,7 +45,8 @@ export function useDeleteWorkspace(userId: string | undefined) {
   return useOptimisticMutation<string, null>({
     mutationFn: deleteWorkspace,
     queryKey: workspaceKeys.byUser(userId),
-    successMessage: "Workspace deleted",
+    dependentQueryKeys: [trashKeys.all],
+    successMessage: "Workspace moved to trash",
     errorMessage: "Failed to delete workspace",
     prepareOptimisticData: (oldData, id) => {
       const prev = oldData as WorkspaceWithCount[];
