@@ -68,13 +68,12 @@ export function BookmarkDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>
             {ids.length === 1
-              ? "Delete Bookmark"
-              : `Delete ${ids.length} Bookmarks`}
+              ? "Trash Bookmark"
+              : `Trash ${ids.length} Bookmarks`}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete{" "}
-            {ids.length === 1 ? "this bookmark" : "these bookmarks"}? This
-            action cannot be undone.
+            Move {ids.length === 1 ? "this bookmark" : "these bookmarks"} to
+            trash? You can restore them later from the Trash.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -87,7 +86,7 @@ export function BookmarkDeleteDialog({
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Moving to trash..." : "Move to trash"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

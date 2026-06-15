@@ -80,7 +80,7 @@ export function WorkspaceMenu() {
                     ),
                   }}
                 />
-                <span className="truncate max-w-[100px] text-sm">
+                <span className="truncate max-w-32 text-sm">
                   {activeWorkspaceName}
                 </span>
               </div>
