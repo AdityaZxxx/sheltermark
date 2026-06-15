@@ -244,6 +244,7 @@ export async function getPublicProfile(
     x_url: profile.x_url,
     website_url: profile.website_url,
     is_public: profile.is_public,
+    trash_cleanup_interval: profile.trash_cleanup_interval,
     created_at: profile.created_at,
     updated_at: profile.updated_at,
   };

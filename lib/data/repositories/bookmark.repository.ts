@@ -192,18 +192,11 @@ export async function restoreBookmarks(
         .not("deleted_at", "is", null);
 
       if (trashed && trashed.length > 0) {
-        const trashedSet = new Set(trashed.map((w) => w.id));
-        const orphanIds = (bookmarks ?? [])
-          .filter((b) => b.workspace_id && trashedSet.has(b.workspace_id))
-          .map((b) => b.id);
-
-        if (orphanIds.length > 0) {
-          await supabase
-            .from("bookmarks")
-            .update({ workspace_id: null, updated_at: now })
-            .in("id", orphanIds)
-            .eq("user_id", userId);
-        }
+        return {
+          success: false,
+          error:
+            "Cannot restore bookmarks to a trashed workspace. Restore the workspace first, or choose a different destination.",
+        };
       }
     }
   }

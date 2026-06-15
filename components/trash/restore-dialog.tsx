@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,9 @@ interface RestoreDialogProps {
   onOpenChange: (open: boolean) => void;
   bookmarkCount: number;
   hasTrashedOrigin: boolean;
+  trashedWorkspaceName?: string | null;
+  onRestoreWorkspace?: () => void;
+  isRestoringWorkspace?: boolean;
   onConfirm: (options: {
     targetWorkspaceId?: string | null;
     newWorkspaceName?: string;
@@ -38,6 +42,9 @@ export function RestoreDialog({
   onOpenChange,
   bookmarkCount,
   hasTrashedOrigin,
+  trashedWorkspaceName,
+  onRestoreWorkspace,
+  isRestoringWorkspace,
   onConfirm,
 }: RestoreDialogProps) {
   const { workspaces } = useWorkspaces();
@@ -45,6 +52,15 @@ export function RestoreDialog({
     hasTrashedOrigin ? "new" : "original",
   );
   const [newName, setNewName] = useState("Restored");
+
+  // Sync selection when hasTrashedOrigin changes (e.g. after workspace restore)
+  useEffect(() => {
+    if (hasTrashedOrigin && selection === "original") {
+      setSelection("new");
+    } else if (!hasTrashedOrigin && selection === "new") {
+      setSelection("original");
+    }
+  }, [hasTrashedOrigin, selection]);
 
   const isNewWorkspace = selection === "new";
 
@@ -68,7 +84,7 @@ export function RestoreDialog({
           </DialogTitle>
           <DialogDescription>
             {hasTrashedOrigin
-              ? "The original workspace is in the trash. Choose a destination for the restored bookmark" +
+              ? "Choose a destination for the restored bookmark" +
                 (bookmarkCount !== 1 ? "s" : "") +
                 "."
               : "Choose where to restore " +
@@ -77,6 +93,29 @@ export function RestoreDialog({
                 (bookmarkCount !== 1 ? "s" : "") +
                 "."}
           </DialogDescription>
+          {hasTrashedOrigin && trashedWorkspaceName && (
+            <div className="space-y-1.5 -mt-1">
+              <p className="text-sm text-muted-foreground">
+                The original workspace &ldquo;{trashedWorkspaceName}
+                &rdquo; is in the trash. Restore it first, or choose a different
+                destination below.
+              </p>
+              {onRestoreWorkspace && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-primary"
+                  disabled={isRestoringWorkspace}
+                  onClick={onRestoreWorkspace}
+                >
+                  <ArrowCounterClockwiseIcon className="size-3 mr-1" />
+                  {isRestoringWorkspace
+                    ? "Restoring workspace..."
+                    : "Restore workspace first"}
+                </Button>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="space-y-4 py-2">
