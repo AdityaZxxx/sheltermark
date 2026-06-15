@@ -50,7 +50,7 @@ export async function updateProfile(
     return { success: false, error: msg };
   }
 
-  const { name } = validated.data;
+  const { name, trash_cleanup_interval } = validated.data;
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { name },
@@ -60,9 +60,14 @@ export async function updateProfile(
     return { success: false, error: authError.message };
   }
 
+  const profileUpdate: Record<string, unknown> = { name };
+  if (trash_cleanup_interval !== undefined) {
+    profileUpdate.trash_cleanup_interval = trash_cleanup_interval;
+  }
+
   const { error: updateProfileError } = await supabase
     .from("profiles")
-    .update({ name: name })
+    .update(profileUpdate)
     .eq("id", userId);
 
   if (updateProfileError) {

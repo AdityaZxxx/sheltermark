@@ -17,6 +17,7 @@
     "prepare": "husky",
     "knip": "knip",
     "sync-feeds": "bun run scripts/sync-feeds.ts",
+    "cleanup-trash": "bun run scripts/cleanup-trash.ts",
     "ext:build": "bun run scripts/build-extension.ts",
     "ext:watch": "bun run scripts/build-extension.ts --watch"
   },

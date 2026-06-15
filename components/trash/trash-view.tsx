@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { useProfile } from "~/hooks/use-profile";
 import { useTrash } from "~/hooks/use-trash";
 import {
   useEmptyTrash,
@@ -38,6 +39,7 @@ export function TrashView() {
   const router = useRouter();
   const { trashedBookmarks, trashedWorkspaces, isLoading, totalCount } =
     useTrash();
+  const { profile } = useProfile();
   const restoreBm = useRestoreBookmarks();
   const restoreWs = useRestoreWorkspace();
   const permanentDeleteBm = usePermanentDeleteBookmarks();
@@ -122,15 +124,20 @@ export function TrashView() {
               )}
             </div>
           </div>
-          {totalCount > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setEmptyTrashOpen(true)}
-            >
-              <TrashIcon className="size-3.5 mr-1" />
-              Empty trash
-            </Button>
+          {totalCount > 0 && profile && (
+            <div className="flex gap-4 items-center">
+              <p className="text-[11px] text-muted-foreground/60">
+                Auto-clear: {profile.trash_cleanup_interval} days
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setEmptyTrashOpen(true)}
+              >
+                <TrashIcon className="size-3.5 mr-1" />
+                Empty trash
+              </Button>
+            </div>
           )}
         </div>
 
