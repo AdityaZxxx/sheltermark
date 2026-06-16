@@ -54,6 +54,7 @@ export function TrashView() {
     hasTrashedOrigin: boolean;
     trashedWorkspaceName: string | null;
     trashedWorkspaceId: string | null;
+    originalWorkspaceName: string | null;
   } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
   const [pendingRestoreWs, setPendingRestoreWs] = useState<{
@@ -91,11 +92,21 @@ export function TrashView() {
       }
     }
 
+    let originalWorkspaceName: string | null = null;
+    if (!hasTrashedOrigin && ids.length > 0) {
+      const bm = trashedBookmarks.find((b) => b.id === ids[0]);
+      if (bm?.workspace_id) {
+        const ws = activeWorkspaces.find((w) => w.id === bm.workspace_id);
+        if (ws) originalWorkspaceName = ws.name;
+      }
+    }
+
     setRestoreTarget({
       ids,
       hasTrashedOrigin,
       trashedWorkspaceName,
       trashedWorkspaceId,
+      originalWorkspaceName,
     });
   };
 
@@ -284,6 +295,7 @@ export function TrashView() {
         bookmarkCount={restoreTarget?.ids.length ?? 0}
         hasTrashedOrigin={restoreTarget?.hasTrashedOrigin ?? false}
         trashedWorkspaceName={restoreTarget?.trashedWorkspaceName ?? null}
+        originalWorkspaceName={restoreTarget?.originalWorkspaceName ?? null}
         onRestoreWorkspace={
           restoreTarget?.trashedWorkspaceId
             ? handleRestoreWorkspaceFirst

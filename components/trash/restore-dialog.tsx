@@ -29,6 +29,7 @@ interface RestoreDialogProps {
   bookmarkCount: number;
   hasTrashedOrigin: boolean;
   trashedWorkspaceName?: string | null;
+  originalWorkspaceName?: string | null;
   onRestoreWorkspace?: () => void;
   isRestoringWorkspace?: boolean;
   onConfirm: (options: {
@@ -43,24 +44,28 @@ export function RestoreDialog({
   bookmarkCount,
   hasTrashedOrigin,
   trashedWorkspaceName,
+  originalWorkspaceName,
   onRestoreWorkspace,
   isRestoringWorkspace,
   onConfirm,
 }: RestoreDialogProps) {
   const { workspaces } = useWorkspaces();
+
+  const originalWs = originalWorkspaceName
+    ? workspaces.find((ws) => ws.name === originalWorkspaceName)
+    : undefined;
+
   const [selection, setSelection] = useState<string | "original" | "new">(
-    hasTrashedOrigin ? "new" : "original",
+    hasTrashedOrigin ? "new" : (originalWs?.id ?? "original"),
   );
   const [newName, setNewName] = useState("Restored");
 
-  // Sync selection when hasTrashedOrigin changes (e.g. after workspace restore)
   useEffect(() => {
-    if (hasTrashedOrigin && selection === "original") {
-      setSelection("new");
-    } else if (!hasTrashedOrigin && selection === "new") {
-      setSelection("original");
+    if (open) {
+      setSelection(hasTrashedOrigin ? "new" : (originalWs?.id ?? "original"));
+      setNewName("Restored");
     }
-  }, [hasTrashedOrigin, selection]);
+  }, [open, hasTrashedOrigin, originalWs?.id]);
 
   const isNewWorkspace = selection === "new";
 
@@ -131,8 +136,8 @@ export function RestoreDialog({
                 <SelectValue>
                   {selection === "new" ? (
                     "+ New workspace"
-                  ) : selection === "original" ? (
-                    "Original workspace"
+                  ) : selection === "original" && originalWorkspaceName ? (
+                    <span>Original workspace ({originalWorkspaceName})</span>
                   ) : (
                     <div className="flex items-center gap-2">
                       <div
@@ -149,8 +154,10 @@ export function RestoreDialog({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {!hasTrashedOrigin && (
-                  <SelectItem value="original">Original workspace</SelectItem>
+                {!hasTrashedOrigin && originalWorkspaceName && !originalWs && (
+                  <SelectItem value="original">
+                    <span>Original workspace ({originalWorkspaceName})</span>
+                  </SelectItem>
                 )}
                 <SelectItem value="new">+ New workspace</SelectItem>
                 {workspaces.map((ws) => (
