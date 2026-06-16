@@ -54,3 +54,7 @@ A clean, minimalist bookmark manager. Organize and access your bookmarks from an
 - [x] Chrome Extension (currently the extension is not yet available in the web store due to registration payment issues)
 - [x] Import/export bookmarks JSON and CSV support
 - [ ] Full-text search
+- [x] Android PWA share intent
+- [x] RSS/Feed Subscriptions
+- [ ] Bookmark note and tagging
+- [ ] Import browser bookmark
