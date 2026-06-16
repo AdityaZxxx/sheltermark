@@ -22,7 +22,16 @@ export function useRestoreBookmarks() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success("Bookmarks restored");
+        const { restoredCount, skippedCount } = result.data;
+        if (restoredCount > 0 && skippedCount > 0) {
+          toast.success(
+            `${restoredCount} restored, ${skippedCount} already exists`,
+          );
+        } else if (restoredCount > 0) {
+          toast.success("Bookmarks restored");
+        } else if (skippedCount > 0) {
+          toast.info("Bookmarks already exist in target workspace");
+        }
       } else {
         toast.error(result.error ?? "Failed to restore bookmarks");
       }
@@ -45,7 +54,16 @@ export function useRestoreWorkspace() {
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success("Workspace restored");
+        const { restoredCount, skippedCount } = result.data;
+        if (restoredCount > 0 && skippedCount > 0) {
+          toast.success(
+            `Workspace restored, ${skippedCount} bookmark${skippedCount !== 1 ? "s" : ""} already exist`,
+          );
+        } else if (restoredCount > 0 || skippedCount === 0) {
+          toast.success("Workspace restored");
+        } else {
+          toast.info("All bookmarks already exist in workspace");
+        }
       } else {
         toast.error(result.error ?? "Failed to restore workspace");
       }

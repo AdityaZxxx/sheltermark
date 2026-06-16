@@ -40,7 +40,8 @@ export async function insertBookmark(
     .from("bookmarks")
     .select("id")
     .eq("user_id", userId)
-    .eq("url", normalizedUrl);
+    .eq("url", normalizedUrl)
+    .is("deleted_at", null);
 
   if (workspaceId) {
     existingQuery = existingQuery.eq("workspace_id", workspaceId);
@@ -148,7 +149,7 @@ export async function restoreBookmarks(
   supabase: SupabaseClient,
   userId: string,
   input: BookmarkRestoreInput,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
   const validated = bookmarkRestoreSchema.safeParse(input);
   if (!validated.success) {
     return { success: false, error: validated.error.message };
@@ -201,6 +202,47 @@ export async function restoreBookmarks(
     }
   }
 
+  const { data: toRestore } = await supabase
+    .from("bookmarks")
+    .select("id, url")
+    .in("id", ids)
+    .eq("user_id", userId);
+
+  if (!toRestore || toRestore.length === 0) {
+    return { success: false, error: "No bookmarks found to restore" };
+  }
+
+  const urls = toRestore.map((b) => b.url);
+
+  let existingQuery = supabase
+    .from("bookmarks")
+    .select("url")
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .in("url", urls);
+
+  if (resolvedWorkspaceId) {
+    existingQuery = existingQuery.eq("workspace_id", resolvedWorkspaceId);
+  } else if (resolvedWorkspaceId === null) {
+    existingQuery = existingQuery.is("workspace_id", null);
+  } else {
+    existingQuery = existingQuery.not("workspace_id", "is", null);
+  }
+
+  const { data: existing } = await existingQuery;
+  const existingUrls = new Set(existing?.map((b) => b.url) ?? []);
+
+  const toRestoreIds: string[] = [];
+  let skippedCount = 0;
+
+  for (const bm of toRestore) {
+    if (existingUrls.has(bm.url)) {
+      skippedCount++;
+    } else {
+      toRestoreIds.push(bm.id);
+    }
+  }
+
   const updateData: Record<string, unknown> = {
     deleted_at: null,
     updated_at: now,
@@ -210,14 +252,23 @@ export async function restoreBookmarks(
     updateData.workspace_id = resolvedWorkspaceId;
   }
 
-  const { error } = await supabase
-    .from("bookmarks")
-    .update(updateData)
-    .in("id", ids)
-    .eq("user_id", userId);
+  if (toRestoreIds.length > 0) {
+    const { error } = await supabase
+      .from("bookmarks")
+      .update(updateData)
+      .in("id", toRestoreIds)
+      .eq("user_id", userId);
 
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
+    if (error) return { success: false, error: error.message };
+  }
+
+  return {
+    success: true,
+    data: {
+      restoredCount: toRestoreIds.length,
+      skippedCount,
+    },
+  };
 }
 
 export async function permanentDeleteBookmarks(

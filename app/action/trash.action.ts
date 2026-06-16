@@ -32,14 +32,14 @@ export async function getTrashedWorkspaces(): Promise<
 
 export async function restoreBookmarks(
   input: BookmarkRestoreInput,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
   const { user, supabase } = await requireAuth();
   return restoreBookmarksRepo(supabase, user.id, input);
 }
 
 export async function restoreWorkspace(
   id: string,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
   const { user, supabase } = await requireAuth();
   return restoreWorkspaceRepo(supabase, user.id, id);
 }

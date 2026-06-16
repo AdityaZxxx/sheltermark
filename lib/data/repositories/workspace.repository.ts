@@ -177,7 +177,7 @@ export async function restoreWorkspace(
   supabase: SupabaseClient,
   userId: string,
   id: string,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
   const now = new Date().toISOString();
 
   const { error: wsError } = await supabase
@@ -188,17 +188,54 @@ export async function restoreWorkspace(
 
   if (wsError) return { success: false, error: wsError.message };
 
-  // Restore all bookmarks that were soft-deleted with this workspace
-  const { error: bmError } = await supabase
+  const { data: trashedBookmarks } = await supabase
     .from("bookmarks")
-    .update({ deleted_at: null, updated_at: now })
+    .select("id, url")
     .eq("workspace_id", id)
     .eq("user_id", userId)
     .not("deleted_at", "is", null);
 
-  if (bmError) return { success: false, error: bmError.message };
+  if (!trashedBookmarks || trashedBookmarks.length === 0) {
+    return { success: true, data: { restoredCount: 0, skippedCount: 0 } };
+  }
 
-  return { success: true, data: null };
+  const urls = trashedBookmarks.map((b) => b.url);
+
+  const { data: existing } = await supabase
+    .from("bookmarks")
+    .select("url")
+    .eq("user_id", userId)
+    .eq("workspace_id", id)
+    .is("deleted_at", null)
+    .in("url", urls);
+
+  const existingUrls = new Set(existing?.map((b) => b.url) ?? []);
+
+  const toRestoreIds: string[] = [];
+  let skippedCount = 0;
+
+  for (const bm of trashedBookmarks) {
+    if (existingUrls.has(bm.url)) {
+      skippedCount++;
+    } else {
+      toRestoreIds.push(bm.id);
+    }
+  }
+
+  if (toRestoreIds.length > 0) {
+    const { error: bmError } = await supabase
+      .from("bookmarks")
+      .update({ deleted_at: null, updated_at: now })
+      .in("id", toRestoreIds)
+      .eq("user_id", userId);
+
+    if (bmError) return { success: false, error: bmError.message };
+  }
+
+  return {
+    success: true,
+    data: { restoredCount: toRestoreIds.length, skippedCount },
+  };
 }
 
 export async function permanentDeleteWorkspace(
