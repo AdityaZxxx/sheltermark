@@ -31,7 +31,7 @@ export function WorkspaceRestoreDialog({
 }: WorkspaceRestoreDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="sm">
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
             Restore workspace &ldquo;{workspaceName}&rdquo;?

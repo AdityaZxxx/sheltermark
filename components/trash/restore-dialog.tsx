@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { getPastelColor } from "~/lib/utils";
+import { cn, getPastelColor } from "~/lib/utils";
 
 interface RestoreDialogProps {
   open: boolean;
@@ -38,6 +38,8 @@ interface RestoreDialogProps {
   }) => void;
 }
 
+type Destination = "original" | "other" | "new";
+
 export function RestoreDialog({
   open,
   onOpenChange,
@@ -51,31 +53,39 @@ export function RestoreDialog({
 }: RestoreDialogProps) {
   const { workspaces } = useWorkspaces();
 
-  const originalWs = originalWorkspaceName
-    ? workspaces.find((ws) => ws.name === originalWorkspaceName)
-    : undefined;
-
-  const [selection, setSelection] = useState<string | "original" | "new">(
-    hasTrashedOrigin ? "new" : (originalWs?.id ?? "original"),
+  const originalWs = useMemo(
+    () =>
+      originalWorkspaceName
+        ? (workspaces.find((ws) => ws.name === originalWorkspaceName) ?? null)
+        : null,
+    [originalWorkspaceName, workspaces],
   );
-  const [newName, setNewName] = useState("Restored");
+
+  const workspaceItems = useMemo(
+    () => workspaces.map((ws) => ({ value: ws.id, label: ws.name })),
+    [workspaces],
+  );
+
+  const [destination, setDestination] = useState<Destination>("other");
+  const [selectedWsId, setSelectedWsId] = useState("");
+  const [newWsName, setNewWsName] = useState("Restored");
 
   useEffect(() => {
-    if (open) {
-      setSelection(hasTrashedOrigin ? "new" : (originalWs?.id ?? "original"));
-      setNewName("Restored");
-    }
-  }, [open, hasTrashedOrigin, originalWs?.id]);
-
-  const isNewWorkspace = selection === "new";
+    if (!open) return;
+    setDestination(
+      hasTrashedOrigin ? "other" : originalWs ? "original" : "other",
+    );
+    setSelectedWsId(workspaces[0]?.id ?? "");
+    setNewWsName("Restored");
+  }, [open, hasTrashedOrigin, originalWs, workspaces]);
 
   const handleConfirm = () => {
-    if (selection === "new") {
-      onConfirm({ newWorkspaceName: newName });
-    } else if (selection === "original") {
+    if (destination === "new") {
+      onConfirm({ newWorkspaceName: newWsName });
+    } else if (destination === "original") {
       onConfirm({});
     } else {
-      onConfirm({ targetWorkspaceId: selection });
+      onConfirm({ targetWorkspaceId: selectedWsId });
     }
     onOpenChange(false);
   };
@@ -85,109 +95,139 @@ export function RestoreDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Restore {bookmarkCount} bookmark{bookmarkCount !== 1 ? "s" : ""}
+            Restore {bookmarkCount} bookmark
+            {bookmarkCount !== 1 ? "s" : ""}
           </DialogTitle>
           <DialogDescription>
-            {hasTrashedOrigin
-              ? "Choose a destination for the restored bookmark" +
-                (bookmarkCount !== 1 ? "s" : "") +
-                "."
-              : "Choose where to restore " +
-                (bookmarkCount === 1 ? "this" : "these") +
-                " bookmark" +
-                (bookmarkCount !== 1 ? "s" : "") +
-                "."}
+            Choose where to restore {bookmarkCount === 1 ? "this" : "these"}{" "}
+            bookmark
+            {bookmarkCount !== 1 ? "s" : ""}.
           </DialogDescription>
-          {hasTrashedOrigin && trashedWorkspaceName && (
-            <div className="space-y-1.5 -mt-1">
-              <p className="text-sm text-muted-foreground">
-                The original workspace &ldquo;{trashedWorkspaceName}
-                &rdquo; is in the trash. Restore it first, or choose a different
-                destination below.
-              </p>
-              {onRestoreWorkspace && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-primary"
-                  disabled={isRestoringWorkspace}
-                  onClick={onRestoreWorkspace}
-                >
-                  <ArrowCounterClockwiseIcon className="size-3 mr-1" />
-                  {isRestoringWorkspace
-                    ? "Restoring workspace..."
-                    : "Restore workspace first"}
-                </Button>
-              )}
-            </div>
-          )}
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="space-y-3">
-            <Label className="text-xs font-medium">Restore to workspace</Label>
-            <Select
-              value={selection}
-              onValueChange={(val) =>
-                setSelection(val as string | "original" | "new")
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  {selection === "new" ? (
-                    "+ New workspace"
-                  ) : selection === "original" && originalWorkspaceName ? (
-                    <span>Original workspace ({originalWorkspaceName})</span>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="size-2 rounded-full"
-                        style={{
-                          backgroundColor: getPastelColor(selection),
-                        }}
-                      />
-                      <span className="truncate">
-                        {workspaces.find((ws) => ws.id === selection)?.name}
-                      </span>
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {!hasTrashedOrigin && originalWorkspaceName && !originalWs && (
-                  <SelectItem value="original">
-                    <span>Original workspace ({originalWorkspaceName})</span>
-                  </SelectItem>
-                )}
-                <SelectItem value="new">+ New workspace</SelectItem>
-                {workspaces.map((ws) => (
-                  <SelectItem key={ws.id} value={ws.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: getPastelColor(ws.id) }}
-                      />
-                      <span className="truncate">{ws.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {hasTrashedOrigin && trashedWorkspaceName && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              Original workspace is in Trash
+            </p>
+            <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+              &ldquo;{trashedWorkspaceName}&rdquo; is in the trash. Restore it
+              first, or choose a different destination below.
+            </p>
+            {onRestoreWorkspace && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                disabled={isRestoringWorkspace}
+                onClick={onRestoreWorkspace}
+              >
+                <ArrowCounterClockwiseIcon className="size-3 mr-1.5" />
+                {isRestoringWorkspace ? "Restoring\u2026" : "Restore workspace"}
+              </Button>
+            )}
           </div>
+        )}
 
-          {isNewWorkspace && (
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Workspace name</Label>
-              <Input
-                type="text"
-                placeholder="Workspace name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                maxLength={35}
-              />
-            </div>
+        <RadioGroup
+          value={destination}
+          onValueChange={(v) => setDestination(v as Destination)}
+          className="gap-2"
+        >
+          {!hasTrashedOrigin && (originalWs || originalWorkspaceName) && (
+            <Row
+              selected={destination === "original"}
+              onClick={() => setDestination("original")}
+            >
+              <RadioGroupItem value="original" />
+              <div>
+                <p className="text-sm font-medium">Original workspace</p>
+                <p className="text-sm text-muted-foreground">
+                  {originalWs?.name ?? originalWorkspaceName}
+                </p>
+              </div>
+            </Row>
           )}
-        </div>
+
+          <Row
+            selected={destination === "other"}
+            onClick={() => setDestination("other")}
+          >
+            <RadioGroupItem value="other" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Other workspace</p>
+              {destination === "other" && (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only; keyboard irrelevant for this wrapper
+                // biome-ignore lint/a11y/noStaticElementInteractions: prevents Select click from toggling radio parent
+                <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={selectedWsId}
+                    onValueChange={(v) => {
+                      if (v) setSelectedWsId(v);
+                    }}
+                    items={workspaceItems}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a workspace">
+                        {(value: string | null) => {
+                          if (!value) return null;
+                          const ws = workspaces.find((w) => w.id === value);
+                          if (!ws) return null;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="size-2 rounded-full"
+                                style={{
+                                  backgroundColor: getPastelColor(ws.id),
+                                }}
+                              />
+                              <span className="truncate">{ws.name}</span>
+                            </div>
+                          );
+                        }}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workspaces.map((ws) => (
+                        <SelectItem key={ws.id} value={ws.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="size-2 rounded-full"
+                              style={{
+                                backgroundColor: getPastelColor(ws.id),
+                              }}
+                            />
+                            <span className="truncate">{ws.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </Row>
+
+          <Row
+            selected={destination === "new"}
+            onClick={() => setDestination("new")}
+          >
+            <RadioGroupItem value="new" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">New workspace</p>
+              {destination === "new" && (
+                <Input
+                  className="mt-2"
+                  placeholder="Workspace name"
+                  value={newWsName}
+                  onChange={(e) => setNewWsName(e.target.value)}
+                  maxLength={35}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+            </div>
+          </Row>
+        </RadioGroup>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -195,12 +235,39 @@ export function RestoreDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isNewWorkspace && !newName.trim()}
+            disabled={
+              (destination === "new" && !newWsName.trim()) ||
+              (destination === "other" && !selectedWsId)
+            }
           >
             Restore
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Row({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: row toggles radio for convenience; keyboard handled by RadioGroupItem natively
+    // biome-ignore lint/a11y/noStaticElementInteractions: RadioGroupItem inside provides the interactive radio element
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer",
+        selected && "border-primary bg-accent",
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </div>
   );
 }
