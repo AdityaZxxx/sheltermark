@@ -10,7 +10,6 @@ import {
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { logout } from "~/app/action/login.action";
 import { FeedManager } from "~/components/feed/feed-manager";
@@ -33,7 +32,6 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user }: UserMenuProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedsOpen, setFeedsOpen] = useState(false);
@@ -92,13 +90,12 @@ export function UserMenu({ user }: UserMenuProps) {
             </span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem
-            onClick={() => router.push("/dashboard/trash")}
-            className="w-full"
-          >
-            <span className="w-full flex items-center gap-2">
-              <ArchiveIcon className="h-4 w-4" /> Trash
-            </span>
+          <DropdownMenuItem className="w-full">
+            <Link href="/dashboard/trash" className="w-full">
+              <span className="w-full flex items-center gap-2">
+                <ArchiveIcon className="h-4 w-4" /> Trash
+              </span>
+            </Link>
           </DropdownMenuItem>
 
           {profile.is_public && (
