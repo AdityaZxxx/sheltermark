@@ -37,25 +37,19 @@ export function WorkspaceRestoreDialog({
             Restore workspace &ldquo;{workspaceName}&rdquo;?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <div className="space-y-2">
-              <p>
-                This will restore the workspace and{" "}
-                <span className="font-medium text-foreground">
-                  {bookmarkCount}
-                </span>{" "}
-                bookmark{bookmarkCount !== 1 ? "s" : ""} inside it.
-              </p>
-              {hasDuplicateName && (
-                <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-amber-600 dark:text-amber-400">
-                  <WarningIcon className="size-4 mt-0.5 shrink-0" />
-                  <span className="text-sm">
-                    An active workspace with the same name already exists.
-                    Consider renaming it after restore.
-                  </span>
-                </div>
-              )}
-            </div>
+            This will restore the workspace and{" "}
+            <span className="font-medium text-foreground">{bookmarkCount}</span>{" "}
+            bookmark{bookmarkCount !== 1 ? "s" : ""} inside it.
           </AlertDialogDescription>
+          {hasDuplicateName && (
+            <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-amber-600 dark:text-amber-400">
+              <WarningIcon className="size-4 mt-0.5 shrink-0" />
+              <span className="text-sm">
+                An active workspace with the same name already exists. Consider
+                renaming it after restore.
+              </span>
+            </div>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

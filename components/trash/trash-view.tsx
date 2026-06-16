@@ -1,7 +1,6 @@
 "use client";
 
-import { ArchiveIcon, ArrowLeftIcon, TrashIcon } from "@phosphor-icons/react";
-import { useRouter } from "next/navigation";
+import { ArchiveIcon, TrashIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { BulkActionBar } from "~/components/trash/bulk-action-bar";
@@ -38,7 +37,6 @@ import {
 } from "~/lib/mutations/trash.mutations";
 
 export function TrashView() {
-  const router = useRouter();
   const { trashedBookmarks, trashedWorkspaces, isLoading, totalCount } =
     useTrash();
   const { profile } = useProfile();
@@ -165,39 +163,31 @@ export function TrashView() {
   return (
     <>
       <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => router.push("/dashboard")}
-            >
-              <ArrowLeftIcon className="size-4" />
-            </Button>
-            <div>
-              <h1 className="text-lg font-semibold flex items-center gap-2">
-                <ArchiveIcon className="size-5" />
-                Trash
-              </h1>
-              {totalCount > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {totalCount} item{totalCount !== 1 ? "s" : ""}
-                </p>
-              )}
-            </div>
+            <h1 className="text-lg font-semibold flex items-center-safe gap-2">
+              <ArchiveIcon className="size-5" />
+              Trash
+            </h1>
+            {totalCount > 0 && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {totalCount} item{totalCount !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
           {totalCount > 0 && profile && (
-            <div className="flex gap-4 items-center">
-              <p className="text-[11px] text-muted-foreground/60">
-                Auto-clear: {profile.trash_cleanup_interval} days
-              </p>
+            <div className="flex items-center gap-3 justify-between sm:justify-end w-full sm:w-auto">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                Auto-delete {profile.trash_cleanup_interval}d
+              </span>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => setEmptyTrashOpen(true)}
               >
                 <TrashIcon className="size-3.5 mr-1" />
-                Empty trash
+                <span className="hidden sm:inline">Empty trash</span>
+                <span className="sm:hidden">Empty</span>
               </Button>
             </div>
           )}
