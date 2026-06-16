@@ -32,6 +32,9 @@ const websiteSchema = z
   .optional()
   .or(z.literal(""));
 
+export const TRASH_CLEANUP_INTERVALS = [1, 7, 14, 30] as const;
+export type TrashCleanupInterval = (typeof TRASH_CLEANUP_INTERVALS)[number];
+
 const profileSchema = z.object({
   id: uuidSchema,
   username: usernameSchema,
@@ -46,6 +49,7 @@ const profileSchema = z.object({
   github_url: z.url().nullable(),
   x_url: z.url().nullable(),
   is_public: z.boolean(),
+  trash_cleanup_interval: z.number().int().default(30),
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
 });
@@ -71,6 +75,7 @@ export const getProfileByUsernameSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  trash_cleanup_interval: z.number().int().optional(),
 });
 
 export const exportOptionsSchema = z.object({

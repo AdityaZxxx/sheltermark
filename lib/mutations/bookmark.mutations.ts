@@ -9,7 +9,7 @@ import {
 } from "~/app/action/bookmark.action";
 import { logger } from "~/lib/logger";
 import { useOptimisticMutation } from "~/lib/mutations/base";
-import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
+import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
 import type {
   Bookmark,
   BookmarkDeleteInput,
@@ -80,7 +80,8 @@ export function useDeleteBookmarks(_userId: string | undefined) {
   return useOptimisticMutation<BookmarkDeleteInput, null>({
     mutationFn: deleteBookmarks,
     queryKey: bookmarkKeys.all,
-    successMessage: "Bookmarks deleted",
+    dependentQueryKeys: [trashKeys.all],
+    successMessage: "Bookmarks moved to trash",
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
       const prev = oldData as Bookmark[];

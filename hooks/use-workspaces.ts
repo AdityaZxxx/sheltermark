@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { useQueryState } from "nuqs";
 import { useCallback, useMemo } from "react";
 import { useSupabase } from "~/components/providers/supabase-provider";
@@ -16,6 +17,7 @@ import {
 import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
 
 export function useWorkspaces() {
+  const pathname = usePathname();
   const [activeWorkspaceId, setActiveWorkspaceId] = useQueryState("workspace");
   const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
   const serverUser = useUser();
@@ -38,8 +40,14 @@ export function useWorkspaces() {
   }, [workspaces, activeWorkspaceId]);
 
   const setActiveWorkspace = useCallback(
-    (id: string) => setActiveWorkspaceId(id),
-    [setActiveWorkspaceId],
+    (id: string) => {
+      if (pathname !== "/dashboard") {
+        window.location.href = `/dashboard?workspace=${id}`;
+      } else {
+        setActiveWorkspaceId(id);
+      }
+    },
+    [pathname, setActiveWorkspaceId],
   );
 
   const create = useCreateWorkspace(userId);
