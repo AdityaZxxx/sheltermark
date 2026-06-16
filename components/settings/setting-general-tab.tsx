@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArchiveIcon,
   DownloadSimpleIcon,
   EnvelopeIcon,
   TrashIcon,
@@ -9,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useForm, useStore } from "@tanstack/react-form";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting.action";
@@ -258,32 +258,36 @@ export function SettingsGeneralTab({
             Auto-cleanup permanently deletes trashed items older than the
             selected period.
           </p>
-          <Select
-            value={String(profile?.trash_cleanup_interval ?? 30)}
-            onValueChange={(value) => {
-              const interval = Number(value);
-              updateProfile({
-                name: profile?.name ?? "",
-                trash_cleanup_interval: interval,
-              });
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TRASH_CLEANUP_INTERVALS.map((days) => (
-                <SelectItem key={days} value={String(days)}>
-                  <div className="flex items-center gap-2">
-                    <ArchiveIcon className="size-3.5 text-muted-foreground" />
-                    <span>
-                      {days} day{days !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex justify-between items-center">
+            <Select
+              value={String(profile?.trash_cleanup_interval ?? 30)}
+              onValueChange={(value) => {
+                const interval = Number(value);
+                updateProfile({
+                  name: profile?.name ?? "",
+                  trash_cleanup_interval: interval,
+                });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRASH_CLEANUP_INTERVALS.map((days) => (
+                  <SelectItem key={days} value={String(days)}>
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {days} day{days !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Link href="/trash" className="underline">
+              Manage trash
+            </Link>
+          </div>
         </div>
 
         <div className="pt-4 border-t border-border">

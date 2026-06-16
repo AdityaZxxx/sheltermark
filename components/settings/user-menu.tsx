@@ -91,7 +91,7 @@ export function UserMenu({ user }: UserMenuProps) {
           </DropdownMenuItem>
 
           <DropdownMenuItem className="w-full">
-            <Link href="/dashboard/trash" className="w-full">
+            <Link href="/trash" className="w-full">
               <span className="w-full flex items-center gap-2">
                 <ArchiveIcon className="h-4 w-4" /> Trash
               </span>
