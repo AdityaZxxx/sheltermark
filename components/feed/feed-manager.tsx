@@ -177,10 +177,11 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                     </a>
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition">
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Sync feed"
                       onClick={() => refreshFeed(feed.id)}
                     >
                       <ArrowsClockwiseIcon className="h-4 w-4" />
@@ -188,6 +189,7 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Unsubscribe"
                       onClick={() => deleteFeed(feed.id)}
                     >
                       <TrashIcon className="h-4 w-4" />
