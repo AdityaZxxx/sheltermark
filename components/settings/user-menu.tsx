@@ -4,6 +4,7 @@ import {
   ArchiveIcon,
   CaretUpDownIcon,
   GearIcon,
+  MailboxIcon,
   RssIcon,
   SignOutIcon,
   UserCircleIcon,
@@ -64,7 +65,11 @@ export function UserMenu({ user }: UserMenuProps) {
             </Button>
           }
         />
-        <DropdownMenuContent className="rounded-xl" align="end" sideOffset={8}>
+        <DropdownMenuContent
+          className="rounded-xl w-full"
+          align="end"
+          sideOffset={8}
+        >
           <ThemeMode variant="tabs" />
           <DropdownMenuSeparator className="my-1" />
 
@@ -75,27 +80,6 @@ export function UserMenu({ user }: UserMenuProps) {
             <span className="w-full flex items-center gap-2">
               <GearIcon className="h-4 w-4" /> Settings
             </span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem>
-            <ShortcutButton />
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => setFeedsOpen(true)}
-            className="w-full"
-          >
-            <span className="w-full flex items-center gap-2">
-              <RssIcon className="h-4 w-4" /> Subscriptions
-            </span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem className="w-full">
-            <Link href="/trash" className="w-full">
-              <span className="w-full flex items-center gap-2">
-                <ArchiveIcon className="h-4 w-4" /> Trash
-              </span>
-            </Link>
           </DropdownMenuItem>
 
           {profile.is_public && (
@@ -111,6 +95,39 @@ export function UserMenu({ user }: UserMenuProps) {
               </Link>
             </DropdownMenuItem>
           )}
+
+          <DropdownMenuItem
+            onClick={() => setFeedsOpen(true)}
+            className="w-full"
+          >
+            <span className="w-full flex items-center gap-2">
+              <RssIcon className="h-4 w-4" /> Subscriptions
+            </span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem>
+            <ShortcutButton />
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            className="w-full"
+            onClick={() => {
+              window.open("mailto:adityaofficial7142gmail.com", "_blank");
+            }}
+          >
+            <span className="w-full flex items-center gap-2">
+              <MailboxIcon className="h-4 w-4" /> Send Feedback
+            </span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem className="w-full">
+            <Link href="/trash" className="w-full">
+              <span className="w-full flex items-center gap-2">
+                <ArchiveIcon className="h-4 w-4" /> Trash
+              </span>
+            </Link>
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             variant="destructive"
             className="w-full"
