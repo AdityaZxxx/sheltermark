@@ -1,7 +1,7 @@
 "use client";
 
 import { ArchiveIcon, TrashIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { BulkActionBar } from "~/components/trash/bulk-action-bar";
 import {
@@ -48,6 +48,7 @@ export function TrashView() {
   const emptyTrashMut = useEmptyTrash();
 
   const [selectedBmIds, setSelectedBmIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<{
     ids: string[];
@@ -145,18 +146,59 @@ export function TrashView() {
     setSelectedBmIds(next);
   };
 
-  const clearSelection = () => setSelectedBmIds(new Set());
+  const clearSelection = () => {
+    setSelectedBmIds(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const toggleSelectionMode = () => {
+    if (isSelectionMode) {
+      clearSelection();
+    } else {
+      setIsSelectionMode(true);
+    }
+  };
+
+  const selectAll = () => {
+    const allIds = [
+      ...standaloneBookmarks.map((bm) => bm.id),
+      ...trashedWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
+    ];
+    setSelectedBmIds(new Set(allIds));
+  };
 
   const trashedWorkspaceIds = new Set(trashedWorkspaces.map((ws) => ws.id));
   const standaloneBookmarks = trashedBookmarks.filter(
     (bm) => !bm.workspace_id || !trashedWorkspaceIds.has(bm.workspace_id),
   );
 
+  const allVisibleIds = useMemo(() => {
+    const ids = [
+      ...standaloneBookmarks.map((bm) => bm.id),
+      ...trashedWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
+    ];
+    return new Set(ids);
+  }, [standaloneBookmarks, trashedWorkspaces]);
+
+  const isAllSelected =
+    allVisibleIds.size > 0 && allVisibleIds.size === selectedBmIds.size;
+
   const pendingRestoreWsHasDuplicate = pendingRestoreWs
     ? activeWorkspaces.some(
         (ws) => ws.name.toLowerCase() === pendingRestoreWs.name.toLowerCase(),
       )
     : false;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isSelectionMode) {
+        setSelectedBmIds(new Set());
+        setIsSelectionMode(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSelectionMode]);
 
   if (isLoading) return <LoadingSkeleton />;
 
@@ -174,8 +216,8 @@ export function TrashView() {
   return (
     <>
       <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col justify-between gap-3 mb-8">
+          <div className="flex items-center justify-start gap-3">
             <h1 className="text-lg font-semibold flex items-center-safe gap-2">
               <ArchiveIcon className="size-5" />
               Trash
@@ -187,9 +229,12 @@ export function TrashView() {
             )}
           </div>
           {totalCount > 0 && profile && (
-            <div className="flex items-center gap-3 justify-between sm:justify-end w-full sm:w-auto">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                Auto-delete {profile.trash_cleanup_interval}d
+            <div className="flex items-center gap-3 justify-between w-full sm:w-auto">
+              <span className="text-xs text-muted-foreground text-balance">
+                Once a page has been in Trash for{" "}
+                {profile.trash_cleanup_interval}{" "}
+                {profile.trash_cleanup_interval === 1 ? "day" : "days"}, it will
+                be automatically deleted
               </span>
               <Button
                 variant="destructive"
@@ -240,6 +285,8 @@ export function TrashView() {
                       onPermanentDeleteBookmark={(id) =>
                         setPendingDelete({ kind: "bookmark", ids: [id] })
                       }
+                      isSelectionMode={isSelectionMode}
+                      onSelectionModeToggle={toggleSelectionMode}
                     />
                   ))}
                 </div>
@@ -263,6 +310,11 @@ export function TrashView() {
                       onPermanentDelete={(id) =>
                         setPendingDelete({ kind: "bookmark", ids: [id] })
                       }
+                      showCheckbox={isSelectionMode}
+                      onSelectionModeToggle={() => {
+                        toggleSelect(bm.id);
+                        toggleSelectionMode();
+                      }}
                     />
                   ))}
                 </div>
@@ -272,18 +324,21 @@ export function TrashView() {
         )}
       </div>
 
-      {selectedBmIds.size > 0 && (
+      {isSelectionMode && selectedBmIds.size > 0 && (
         <BulkActionBar
           count={selectedBmIds.size}
+          totalCount={allVisibleIds.size}
           onRestore={() => openRestoreDialog(Array.from(selectedBmIds))}
           onPermanentDelete={() => {
-            // Bulk bar only tracks standalone bookmarks;
-            // bookmarks inside trashed workspaces are not individually selectable via bulk
             setPendingDelete({
               kind: "bookmark",
               ids: Array.from(selectedBmIds),
             });
           }}
+          onSelectAll={selectAll}
+          onClearSelection={() => setSelectedBmIds(new Set())}
+          isAllSelected={isAllSelected}
+          onExitSelectionMode={clearSelection}
         />
       )}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ArrowCounterClockwiseIcon,
+  ArrowBendUpLeftIcon,
   CaretDownIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -24,6 +24,8 @@ export function WorkspaceCard({
   onPermanentDelete,
   onRestoreBookmark,
   onPermanentDeleteBookmark,
+  isSelectionMode,
+  onSelectionModeToggle,
 }: {
   workspace: TrashedWorkspace;
   selectedBmIds: Set<string>;
@@ -32,6 +34,8 @@ export function WorkspaceCard({
   onPermanentDelete: (id: string) => void;
   onRestoreBookmark: (id: string) => void;
   onPermanentDeleteBookmark: (id: string) => void;
+  isSelectionMode?: boolean;
+  onSelectionModeToggle?: () => void;
 }) {
   return (
     <Collapsible className="border border-border rounded-lg overflow-hidden bg-card transition-shadow hover:shadow-sm">
@@ -67,7 +71,7 @@ export function WorkspaceCard({
               onClick={() => onRestore(workspace.id)}
               title="Restore workspace"
             >
-              <ArrowCounterClockwiseIcon className="size-2.5" />
+              <ArrowBendUpLeftIcon className="size-2.5" />
             </Button>
             <Button
               variant="ghost"
@@ -85,7 +89,7 @@ export function WorkspaceCard({
               size="sm"
               onClick={() => onRestore(workspace.id)}
             >
-              <ArrowCounterClockwiseIcon className="size-3 sm:mr-1.5" />
+              <ArrowBendUpLeftIcon className="size-3 sm:mr-1.5" />
               <span>Restore</span>
             </Button>
             <Button
@@ -111,7 +115,8 @@ export function WorkspaceCard({
                 onSelect={onSelectBookmark}
                 onRestore={onRestoreBookmark}
                 onPermanentDelete={onPermanentDeleteBookmark}
-                compact
+                showCheckbox={isSelectionMode}
+                onSelectionModeToggle={onSelectionModeToggle}
               />
             ))}
           </div>
