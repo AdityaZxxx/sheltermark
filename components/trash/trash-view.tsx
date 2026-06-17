@@ -260,10 +260,9 @@ export function TrashView() {
           {totalCount > 0 && profile && (
             <div className="flex items-center gap-3 justify-between w-full sm:w-auto">
               <span className="text-xs text-muted-foreground text-balance">
-                Once a page has been in Trash for{" "}
-                {profile.trash_cleanup_interval}{" "}
-                {profile.trash_cleanup_interval === 1 ? "day" : "days"}, it will
-                be automatically deleted
+                Once a data has been in Trash for{" "}
+                {profile.trash_cleanup_interval} days, it will be automatically
+                deleted
               </span>
               <Button
                 variant="destructive"
