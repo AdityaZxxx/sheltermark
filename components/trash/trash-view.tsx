@@ -1,6 +1,11 @@
 "use client";
 
-import { ArchiveIcon, TrashIcon } from "@phosphor-icons/react";
+import {
+  ArchiveIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { BulkActionBar } from "~/components/trash/bulk-action-bar";
@@ -49,6 +54,7 @@ export function TrashView() {
 
   const [selectedBmIds, setSelectedBmIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [emptyTrashOpen, setEmptyTrashOpen] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<{
     ids: string[];
@@ -160,11 +166,7 @@ export function TrashView() {
   };
 
   const selectAll = () => {
-    const allIds = [
-      ...standaloneBookmarks.map((bm) => bm.id),
-      ...trashedWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
-    ];
-    setSelectedBmIds(new Set(allIds));
+    setSelectedBmIds(new Set(allVisibleIds));
   };
 
   const trashedWorkspaceIds = new Set(trashedWorkspaces.map((ws) => ws.id));
@@ -172,13 +174,40 @@ export function TrashView() {
     (bm) => !bm.workspace_id || !trashedWorkspaceIds.has(bm.workspace_id),
   );
 
+  const filteredStandaloneBookmarks = useMemo(() => {
+    if (!searchQuery.trim()) return standaloneBookmarks;
+    const q = searchQuery.toLowerCase();
+    return standaloneBookmarks.filter(
+      (bm) =>
+        (bm.title || "").toLowerCase().includes(q) ||
+        bm.url.toLowerCase().includes(q),
+    );
+  }, [standaloneBookmarks, searchQuery]);
+
+  const filteredWorkspaces = useMemo(() => {
+    if (!searchQuery.trim()) return trashedWorkspaces;
+    const q = searchQuery.toLowerCase();
+    return trashedWorkspaces
+      .map((ws) => ({
+        ...ws,
+        bookmarks: ws.bookmarks.filter(
+          (bm) =>
+            (bm.title || "").toLowerCase().includes(q) ||
+            bm.url.toLowerCase().includes(q),
+        ),
+      }))
+      .filter(
+        (ws) => ws.bookmarks.length > 0 || ws.name.toLowerCase().includes(q),
+      );
+  }, [trashedWorkspaces, searchQuery]);
+
   const allVisibleIds = useMemo(() => {
     const ids = [
-      ...standaloneBookmarks.map((bm) => bm.id),
-      ...trashedWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
+      ...filteredStandaloneBookmarks.map((bm) => bm.id),
+      ...filteredWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
     ];
     return new Set(ids);
-  }, [standaloneBookmarks, trashedWorkspaces]);
+  }, [filteredStandaloneBookmarks, filteredWorkspaces]);
 
   const isAllSelected =
     allVisibleIds.size > 0 && allVisibleIds.size === selectedBmIds.size;
@@ -249,18 +278,40 @@ export function TrashView() {
           )}
         </div>
 
-        {totalCount === 0 ? (
+        {totalCount > 0 && (
+          <div className="relative mb-4">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search trash..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex h-9 w-full rounded-lg border border-border bg-transparent pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <XIcon className="size-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {totalCount === 0 && !searchQuery ? (
           <EmptyState />
         ) : (
           <div className="space-y-8">
-            {trashedWorkspaces.length > 0 && (
+            {filteredWorkspaces.length > 0 && (
               <section className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <SectionHeader
                   title="Workspaces"
-                  count={trashedWorkspaces.length}
+                  count={filteredWorkspaces.length}
                 />
                 <div className="space-y-2">
-                  {trashedWorkspaces.map((ws) => (
+                  {filteredWorkspaces.map((ws) => (
                     <WorkspaceCard
                       key={ws.id}
                       workspace={ws}
@@ -293,14 +344,14 @@ export function TrashView() {
               </section>
             )}
 
-            {standaloneBookmarks.length > 0 && (
+            {filteredStandaloneBookmarks.length > 0 && (
               <section className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <SectionHeader
                   title="Bookmarks"
-                  count={standaloneBookmarks.length}
+                  count={filteredStandaloneBookmarks.length}
                 />
                 <div className="border border-border rounded-lg overflow-hidden">
-                  {standaloneBookmarks.map((bm) => (
+                  {filteredStandaloneBookmarks.map((bm) => (
                     <BookmarkRow
                       key={bm.id}
                       bookmark={bm}
@@ -320,6 +371,17 @@ export function TrashView() {
                 </div>
               </section>
             )}
+
+            {searchQuery &&
+              filteredWorkspaces.length === 0 &&
+              filteredStandaloneBookmarks.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <MagnifyingGlassIcon className="size-8 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground text-sm">
+                    No results found for "{searchQuery}"
+                  </p>
+                </div>
+              )}
           </div>
         )}
       </div>
