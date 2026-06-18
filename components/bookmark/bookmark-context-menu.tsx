@@ -5,6 +5,7 @@ import {
   NotePencilIcon,
   PencilIcon,
   SelectionPlusIcon,
+  TagIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import {
@@ -32,6 +33,7 @@ interface BookmarkContextMenuProps {
   onSelect?: (id: string) => void;
   onRename?: (id: string) => void;
   onNote?: (id: string) => void;
+  onTag?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -50,6 +52,7 @@ export function BookmarkContextMenu({
   onSelect,
   onRename,
   onNote,
+  onTag,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -80,6 +83,11 @@ export function BookmarkContextMenu({
         <ContextMenuItem onClick={() => onNote?.(id)}>
           <NotePencilIcon />
           Edit Note
+        </ContextMenuItem>
+
+        <ContextMenuItem onClick={() => onTag?.(id)}>
+          <TagIcon />
+          Edit Tags
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>

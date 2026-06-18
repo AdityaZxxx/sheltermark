@@ -29,3 +29,9 @@ export const trashKeys = {
   bookmarks: ["trash", "bookmarks"] as const,
   workspaces: ["trash", "workspaces"] as const,
 };
+
+export const tagKeys = {
+  all: ["tags"] as const,
+  withCount: ["tags", "withCount"] as const,
+  byBookmark: (bookmarkId: string) => ["tags", "bookmark", bookmarkId] as const,
+};

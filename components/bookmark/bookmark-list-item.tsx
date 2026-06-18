@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
+import type { Tag } from "~/lib/schemas/tag.schema";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BookmarkNoteText } from "./bookmark-note-text";
@@ -21,6 +22,7 @@ interface BookmarkItemProps {
   og_image_url?: string;
   created_at: string;
   note?: string | null;
+  tags?: Tag[];
   isBroken?: boolean;
   httpStatus?: number | null;
   autoCheckBroken?: boolean;
@@ -32,6 +34,8 @@ interface BookmarkItemProps {
   onDelete?: (id: string) => void;
   onRename?: (id: string) => void;
   onNote?: (id: string) => void;
+  onTag?: (id: string) => void;
+  onTagClick?: (tagId: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -63,6 +67,8 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onDelete,
   onRename,
   onNote,
+  onTag,
+  onTagClick,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -71,6 +77,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   tabIndex,
   disableContextMenu = false,
   note,
+  tags = [],
 }: BookmarkListItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -136,6 +143,23 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
                 <BookmarkNoteText text={note} />
               </p>
             )}
+            {tags.length > 0 && (
+              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTagClick?.(tag.id);
+                    }}
+                    className="text-[10px] text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    #{tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {isBroken && autoCheckBroken ? (
             <Tooltip>
@@ -189,6 +213,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       onDelete={onDelete}
       onRename={onRename}
       onNote={onNote}
+      onTag={onTag}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}

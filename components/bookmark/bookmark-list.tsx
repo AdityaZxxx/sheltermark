@@ -2,6 +2,7 @@
 
 import { BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
 import type { Workspace } from "~/lib/schemas/workspace.schema";
 import { safeDomain } from "~/lib/utils";
 import { BookmarkCardItem } from "./bookmark-card-item";
@@ -30,12 +31,16 @@ interface BookmarkListProps {
   onDelete: (id: string) => void;
   onRename: (id: string) => void;
   onNote: (id: string) => void;
+  onTag: (id: string) => void;
+  onTagClick: (tagId: string) => void;
   onMove: (id: string) => void;
   onMoveToWorkspace: (id: string, workspaceId: string) => void;
   onCopyUrl: (url: string) => void;
   onRefetch: (id: string) => void;
   onSelectionModeToggle: () => void;
   autoCheckBroken?: boolean;
+  tagsByBookmarkId: Map<string, string[]>;
+  allTags: Tag[];
 }
 
 export function BookmarkList({
@@ -53,12 +58,16 @@ export function BookmarkList({
   onDelete,
   onRename,
   onNote,
+  onTag,
+  onTagClick,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
   onRefetch,
   onSelectionModeToggle,
   autoCheckBroken = true,
+  tagsByBookmarkId,
+  allTags,
 }: BookmarkListProps) {
   const isEmpty = filteredBookmarks.length === 0 && pendingUrls.length === 0;
 
@@ -104,11 +113,17 @@ export function BookmarkList({
             ? 0
             : -1;
 
+        const bookmarkTagIds = tagsByBookmarkId.get(bookmark.id) ?? [];
+        const bookmarkTags = bookmarkTagIds
+          .map((tagId) => allTags.find((t) => t.id === tagId))
+          .filter((t): t is Tag => t !== undefined);
+
         const commonProps = {
           id: bookmark.id,
           title: bookmark.title || "",
           url: bookmark.url,
           note: bookmark.note,
+          tags: bookmarkTags,
           og_image_url: bookmark.og_image_url || undefined,
           favicon_url: bookmark.favicon_url || undefined,
           domain: safeDomain(bookmark.url),
@@ -124,6 +139,8 @@ export function BookmarkList({
           onDelete,
           onRename,
           onNote,
+          onTag,
+          onTagClick,
           onMove,
           onMoveToWorkspace,
           onCopyUrl,

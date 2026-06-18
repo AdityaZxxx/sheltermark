@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { Tag } from "~/lib/schemas/tag.schema";
 
 interface ActiveBookmark {
   id: string;
   title: string;
   note: string | null;
+  tags?: Tag[];
 }
 
 export function useBookmarkDialogs() {
@@ -13,6 +15,7 @@ export function useBookmarkDialogs() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [activeBookmark, setActiveBookmark] = useState<ActiveBookmark | null>(
     null,
   );
@@ -62,6 +65,36 @@ export function useBookmarkDialogs() {
     [],
   );
 
+  const handleTagTrigger = useCallback(
+    (
+      id: string,
+      bookmarks: {
+        id: string;
+        title: string | null;
+        tags: Tag[];
+      }[],
+      tagsByBookmarkId: Map<string, string[]>,
+      allTags: Tag[],
+    ) => {
+      const bookmark = bookmarks.find((b) => b.id === id);
+      if (!bookmark) return;
+
+      const tagIds = tagsByBookmarkId.get(id) ?? [];
+      const tags = tagIds
+        .map((tagId) => allTags.find((t) => t.id === tagId))
+        .filter((t): t is Tag => t !== undefined);
+
+      setActiveBookmark({
+        id: bookmark.id,
+        title: bookmark.title || "",
+        note: null,
+        tags,
+      });
+      setTagDialogOpen(true);
+    },
+    [],
+  );
+
   const handleMoveTrigger = useCallback((id: string) => {
     setBookmarksToMove([id]);
     setMoveDialogOpen(true);
@@ -92,6 +125,11 @@ export function useBookmarkDialogs() {
     setNoteDialogOpen(false);
   }, []);
 
+  const resetTag = useCallback(() => {
+    setActiveBookmark(null);
+    setTagDialogOpen(false);
+  }, []);
+
   return {
     renameDialogOpen,
     setRenameDialogOpen,
@@ -101,6 +139,8 @@ export function useBookmarkDialogs() {
     setMoveDialogOpen,
     noteDialogOpen,
     setNoteDialogOpen,
+    tagDialogOpen,
+    setTagDialogOpen,
     activeBookmark,
     bookmarksToDelete,
     bookmarksToMove,
@@ -108,11 +148,13 @@ export function useBookmarkDialogs() {
     handleBulkDeleteTrigger,
     handleRenameTrigger,
     handleNoteTrigger,
+    handleTagTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
     resetDelete,
     resetRename,
     resetMove,
     resetNote,
+    resetTag,
   };
 }
