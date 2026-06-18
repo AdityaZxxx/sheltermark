@@ -10,6 +10,7 @@ import {
 import { formatRelativeTime } from "~/lib/format";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
+import { BookmarkNoteText } from "./bookmark-note-text";
 
 interface BookmarkItemProps {
   id: string;
@@ -19,6 +20,7 @@ interface BookmarkItemProps {
   favicon_url?: string;
   og_image_url?: string;
   created_at: string;
+  note?: string | null;
   isBroken?: boolean;
   httpStatus?: number | null;
   autoCheckBroken?: boolean;
@@ -29,6 +31,7 @@ interface BookmarkItemProps {
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRename?: (id: string) => void;
+  onNote?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -59,6 +62,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onSelect,
   onDelete,
   onRename,
+  onNote,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -66,6 +70,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  note,
 }: BookmarkListItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -117,14 +122,21 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
 
       <div className="flex-1 flex items-center justify-between min-w-0">
         <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
-          <p
-            className={cn(
-              "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors min-w-0",
-              isSelected && "text-primary",
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors",
+                isSelected && "text-primary",
+              )}
+            >
+              {title}
+            </p>
+            {note && (
+              <p className="text-[11px] text-muted-foreground/60 truncate italic leading-tight mt-0.5">
+                <BookmarkNoteText text={note} />
+              </p>
             )}
-          >
-            {title}
-          </p>
+          </div>
           {isBroken && autoCheckBroken ? (
             <Tooltip>
               <TooltipTrigger
@@ -176,6 +188,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       onSelect={onSelect}
       onDelete={onDelete}
       onRename={onRename}
+      onNote={onNote}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}

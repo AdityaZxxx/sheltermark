@@ -30,11 +30,13 @@ export function useBookmarks(workspaceId?: string) {
   }, [allBookmarks, workspaceId]);
 
   const searchedBookmarks = useMemo(() => {
-    return searchQuery.trim()
+    const q = searchQuery.trim().toLowerCase();
+    return q
       ? filteredBookmarks.filter(
           (b) =>
-            (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-            b.url.toLowerCase().includes(searchQuery.toLowerCase()),
+            (b.title || "").toLowerCase().includes(q) ||
+            b.url.toLowerCase().includes(q) ||
+            (b.note || "").toLowerCase().includes(q),
         )
       : filteredBookmarks;
   }, [filteredBookmarks, searchQuery]);

@@ -5,12 +5,14 @@ import { useCallback, useState } from "react";
 interface ActiveBookmark {
   id: string;
   title: string;
+  note: string | null;
 }
 
 export function useBookmarkDialogs() {
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [activeBookmark, setActiveBookmark] = useState<ActiveBookmark | null>(
     null,
   );
@@ -31,8 +33,30 @@ export function useBookmarkDialogs() {
     (id: string, bookmarks: { id: string; title: string | null }[]) => {
       const bookmark = bookmarks.find((b) => b.id === id);
       if (bookmark) {
-        setActiveBookmark({ id: bookmark.id, title: bookmark.title || "" });
+        setActiveBookmark({
+          id: bookmark.id,
+          title: bookmark.title || "",
+          note: null,
+        });
         setRenameDialogOpen(true);
+      }
+    },
+    [],
+  );
+
+  const handleNoteTrigger = useCallback(
+    (
+      id: string,
+      bookmarks: { id: string; title: string | null; note: string | null }[],
+    ) => {
+      const bookmark = bookmarks.find((b) => b.id === id);
+      if (bookmark) {
+        setActiveBookmark({
+          id: bookmark.id,
+          title: bookmark.title || "",
+          note: bookmark.note ?? null,
+        });
+        setNoteDialogOpen(true);
       }
     },
     [],
@@ -63,6 +87,11 @@ export function useBookmarkDialogs() {
     setMoveDialogOpen(false);
   }, []);
 
+  const resetNote = useCallback(() => {
+    setActiveBookmark(null);
+    setNoteDialogOpen(false);
+  }, []);
+
   return {
     renameDialogOpen,
     setRenameDialogOpen,
@@ -70,16 +99,20 @@ export function useBookmarkDialogs() {
     setDeleteDialogOpen,
     moveDialogOpen,
     setMoveDialogOpen,
+    noteDialogOpen,
+    setNoteDialogOpen,
     activeBookmark,
     bookmarksToDelete,
     bookmarksToMove,
     handleDeleteTrigger,
     handleBulkDeleteTrigger,
     handleRenameTrigger,
+    handleNoteTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
     resetDelete,
     resetRename,
     resetMove,
+    resetNote,
   };
 }

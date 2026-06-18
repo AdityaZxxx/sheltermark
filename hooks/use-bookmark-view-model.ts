@@ -80,6 +80,13 @@ export function useBookmarkViewModel() {
     [bookmarks, dialogs.handleRenameTrigger],
   );
 
+  const handleNote = useCallback(
+    (id: string) => {
+      dialogs.handleNoteTrigger(id, bookmarks);
+    },
+    [bookmarks, dialogs.handleNoteTrigger],
+  );
+
   const getItem = useCallback(
     (index: number) => {
       const bookmark = bookmarks[index];
@@ -127,6 +134,7 @@ export function useBookmarkViewModel() {
     handleRefetchTrigger,
     handleMoveToWorkspace,
     handleRename,
+    handleNote,
     onKeyDown,
     onDeleteTrigger: dialogs.handleDeleteTrigger,
     onBulkDeleteTrigger: () =>

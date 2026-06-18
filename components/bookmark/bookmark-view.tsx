@@ -5,6 +5,7 @@ import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
+import { BookmarkNoteDialog } from "./bookmark-note-dialog";
 import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 
@@ -42,6 +43,7 @@ export function BookmarkView() {
         onSelect={vm.selection.toggleSelect}
         onDelete={vm.onDeleteTrigger}
         onRename={vm.handleRename}
+        onNote={vm.handleNote}
         onMove={vm.dialogs.handleMoveTrigger}
         onMoveToWorkspace={vm.handleMoveToWorkspace}
         onCopyUrl={vm.handleCopyUrl}
@@ -68,6 +70,13 @@ export function BookmarkView() {
       <BookmarkRenameDialog
         open={vm.dialogs.renameDialogOpen}
         onOpenChange={vm.dialogs.setRenameDialogOpen}
+        bookmark={vm.dialogs.activeBookmark}
+        onSuccess={vm.invalidate}
+      />
+
+      <BookmarkNoteDialog
+        open={vm.dialogs.noteDialogOpen}
+        onOpenChange={vm.dialogs.setNoteDialogOpen}
         bookmark={vm.dialogs.activeBookmark}
         onSuccess={vm.invalidate}
       />

@@ -9,11 +9,13 @@ import {
   type BookmarkRefetchMetadataInput,
   type BookmarkRenameInput,
   type BookmarkRestoreInput,
+  type BookmarkUpdateNoteInput,
   bookmarkDeleteSchema,
   bookmarkMoveSchema,
   bookmarkRefetchMetadataSchema,
   bookmarkRenameSchema,
   bookmarkRestoreSchema,
+  bookmarkUpdateNoteSchema,
 } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 import { normalizeUrl } from "~/lib/utils";
@@ -398,6 +400,29 @@ export async function renameBookmark(
     .from("bookmarks")
     .update({
       title: validated.data.title,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", validated.data.id)
+    .eq("user_id", userId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}
+
+export async function updateBookmarkNote(
+  supabase: SupabaseClient,
+  userId: string,
+  { id, note }: BookmarkUpdateNoteInput,
+): Promise<ActionResult<null>> {
+  const validated = bookmarkUpdateNoteSchema.safeParse({ id, note });
+  if (!validated.success) {
+    return { success: false, error: validated.error.message };
+  }
+
+  const { error } = await supabase
+    .from("bookmarks")
+    .update({
+      note: validated.data.note,
       updated_at: new Date().toISOString(),
     })
     .eq("id", validated.data.id)

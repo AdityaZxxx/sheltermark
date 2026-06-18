@@ -16,6 +16,7 @@ const bookmarkSchema = z.object({
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
   deleted_at: timestampSchema.nullable(),
+  note: z.string().nullable().default(null),
 });
 
 const bookmarkCreateSchema = z.object({
@@ -35,6 +36,11 @@ export const bookmarkMoveSchema = z.object({
 export const bookmarkRenameSchema = z.object({
   id: uuidSchema,
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
+});
+
+export const bookmarkUpdateNoteSchema = z.object({
+  id: uuidSchema,
+  note: z.string().max(2000, "Note too long").nullable(),
 });
 
 export const bookmarkRefetchMetadataSchema = z.object({
@@ -76,6 +82,7 @@ export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
 export type BookmarkRestoreInput = z.infer<typeof bookmarkRestoreSchema>;
 export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;
 export type BookmarkRenameInput = z.infer<typeof bookmarkRenameSchema>;
+export type BookmarkUpdateNoteInput = z.infer<typeof bookmarkUpdateNoteSchema>;
 export type BookmarkRefetchMetadataInput = z.infer<
   typeof bookmarkRefetchMetadataSchema
 >;

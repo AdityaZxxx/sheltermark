@@ -29,6 +29,7 @@ interface BookmarkListProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onRename: (id: string) => void;
+  onNote: (id: string) => void;
   onMove: (id: string) => void;
   onMoveToWorkspace: (id: string, workspaceId: string) => void;
   onCopyUrl: (url: string) => void;
@@ -51,6 +52,7 @@ export function BookmarkList({
   onSelect,
   onDelete,
   onRename,
+  onNote,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -106,6 +108,7 @@ export function BookmarkList({
           id: bookmark.id,
           title: bookmark.title || "",
           url: bookmark.url,
+          note: bookmark.note,
           og_image_url: bookmark.og_image_url || undefined,
           favicon_url: bookmark.favicon_url || undefined,
           domain: safeDomain(bookmark.url),
@@ -120,6 +123,7 @@ export function BookmarkList({
           onSelect,
           onDelete,
           onRename,
+          onNote,
           onMove,
           onMoveToWorkspace,
           onCopyUrl,

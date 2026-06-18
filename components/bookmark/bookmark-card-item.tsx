@@ -11,6 +11,7 @@ import {
 import { formatRelativeTime } from "~/lib/format";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
+import { BookmarkNoteText } from "./bookmark-note-text";
 
 interface BookmarkItemProps {
   id: string;
@@ -20,6 +21,7 @@ interface BookmarkItemProps {
   favicon_url?: string | undefined;
   og_image_url?: string | undefined;
   created_at: string;
+  note?: string | null;
   isBroken?: boolean | undefined;
   httpStatus?: number | null;
   autoCheckBroken?: boolean | undefined;
@@ -30,6 +32,7 @@ interface BookmarkItemProps {
   onSelect?: ((id: string) => void) | undefined;
   onDelete?: ((id: string) => void) | undefined;
   onRename?: ((id: string) => void) | undefined;
+  onNote?: ((id: string) => void) | undefined;
   onMove?: ((id: string) => void) | undefined;
   onMoveToWorkspace?: ((id: string, workspaceId: string) => void) | undefined;
   onCopyUrl?: ((url: string) => void) | undefined;
@@ -51,6 +54,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   favicon_url,
   domain,
   created_at,
+  note,
   isBroken,
   httpStatus,
   autoCheckBroken = true,
@@ -61,6 +65,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelect,
   onDelete,
   onRename,
+  onNote,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -145,6 +150,13 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
           </h3>
         </div>
       </div>
+      {note && (
+        <div className="px-4 pt-1 pb-0">
+          <p className="text-[11px] text-muted-foreground/60 line-clamp-2 italic leading-snug">
+            <BookmarkNoteText text={note} />
+          </p>
+        </div>
+      )}
       <div className="flex items-center px-4 py-3 justify-between w-full">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
           <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
@@ -190,6 +202,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       onSelect={onSelect}
       onDelete={onDelete}
       onRename={onRename}
+      onNote={onNote}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}

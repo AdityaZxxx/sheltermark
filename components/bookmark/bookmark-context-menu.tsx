@@ -2,6 +2,7 @@ import {
   ArrowClockwiseIcon,
   CopyIcon,
   FolderOpenIcon,
+  NotePencilIcon,
   PencilIcon,
   SelectionPlusIcon,
   TrashIcon,
@@ -30,6 +31,7 @@ interface BookmarkContextMenuProps {
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onRename?: (id: string) => void;
+  onNote?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -47,6 +49,7 @@ export function BookmarkContextMenu({
   currentWorkspaceId,
   onSelect,
   onRename,
+  onNote,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -72,6 +75,11 @@ export function BookmarkContextMenu({
         <ContextMenuItem onClick={() => onRename?.(id)}>
           <PencilIcon />
           Rename
+        </ContextMenuItem>
+
+        <ContextMenuItem onClick={() => onNote?.(id)}>
+          <NotePencilIcon />
+          Edit Note
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>

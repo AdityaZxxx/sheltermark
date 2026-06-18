@@ -9,6 +9,7 @@ import {
   moveBookmarks as moveBookmarksRepo,
   refetchMetadata as refetchMetadataRepo,
   renameBookmark as renameBookmarkRepo,
+  updateBookmarkNote as updateBookmarkNoteRepo,
 } from "~/lib/data/repositories/bookmark.repository";
 import type {
   Bookmark,
@@ -17,6 +18,7 @@ import type {
   BookmarkMoveInput,
   BookmarkRefetchMetadataInput,
   BookmarkRenameInput,
+  BookmarkUpdateNoteInput,
 } from "~/lib/schemas/bookmark.schema";
 
 export async function addBookmark(
@@ -58,6 +60,14 @@ export async function renameBookmark({
 }: BookmarkRenameInput): Promise<ActionResult<null>> {
   const { user, supabase } = await requireAuth();
   return renameBookmarkRepo(supabase, user.id, { id, title });
+}
+
+export async function updateBookmarkNote({
+  id,
+  note,
+}: BookmarkUpdateNoteInput): Promise<ActionResult<null>> {
+  const { user, supabase } = await requireAuth();
+  return updateBookmarkNoteRepo(supabase, user.id, { id, note });
 }
 
 export async function refetchBookmarkMetadata(
