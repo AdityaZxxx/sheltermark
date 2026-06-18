@@ -47,6 +47,20 @@ export const bookmarkRefetchMetadataSchema = z.object({
   id: uuidSchema,
 });
 
+export const bookmarkEditSchema = z.object({
+  id: uuidSchema,
+  title: z.string().min(1, "Title is required").max(200, "Title too long"),
+  note: z.string().max(2000, "Note too long").nullable(),
+  tags: z
+    .array(
+      z.object({
+        id: uuidSchema.optional(),
+        name: z.string().min(1).max(50).optional(),
+      }),
+    )
+    .max(50, "Too many tags"),
+});
+
 const workspaceNameSchema = z
   .string()
   .min(1, "Workspace name is required")
@@ -86,6 +100,10 @@ export type BookmarkUpdateNoteInput = z.infer<typeof bookmarkUpdateNoteSchema>;
 export type BookmarkRefetchMetadataInput = z.infer<
   typeof bookmarkRefetchMetadataSchema
 >;
+export type BookmarkEditInput = z.infer<typeof bookmarkEditSchema>;
+export type BookmarkEditTagEntry = z.infer<
+  typeof bookmarkEditSchema
+>["tags"][number];
 export type WorkspaceWithBookmarks = z.infer<
   typeof workspaceWithBookmarksSchema
 >;

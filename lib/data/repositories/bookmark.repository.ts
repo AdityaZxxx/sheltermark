@@ -1,16 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
+import { upsertTag as upsertTagRepo } from "~/lib/data/repositories/tag.repository";
 import { fetchMetadata } from "~/lib/metadata";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import {
   type BookmarkDeleteInput,
+  type BookmarkEditInput,
   type BookmarkMoveInput,
   type BookmarkRefetchMetadataInput,
   type BookmarkRenameInput,
   type BookmarkRestoreInput,
   type BookmarkUpdateNoteInput,
   bookmarkDeleteSchema,
+  bookmarkEditSchema,
   bookmarkMoveSchema,
   bookmarkRefetchMetadataSchema,
   bookmarkRenameSchema,
@@ -18,6 +21,7 @@ import {
   bookmarkUpdateNoteSchema,
 } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
 import { normalizeUrl } from "~/lib/utils";
 
 type InsertBookmarkParams = {
@@ -430,6 +434,75 @@ export async function updateBookmarkNote(
 
   if (error) return { success: false, error: error.message };
   return { success: true, data: null };
+}
+
+export async function updateBookmarkFields(
+  supabase: SupabaseClient,
+  userId: string,
+  input: BookmarkEditInput,
+): Promise<ActionResult<Tag[]>> {
+  const validated = bookmarkEditSchema.safeParse(input);
+  if (!validated.success) {
+    return { success: false, error: validated.error.message };
+  }
+
+  const { id, title, note, tags } = validated.data;
+  const now = new Date().toISOString();
+
+  const { error: bookmarkError } = await supabase
+    .from("bookmarks")
+    .update({ title, note, updated_at: now })
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (bookmarkError) {
+    return { success: false, error: bookmarkError.message };
+  }
+
+  const resolvedTags: Tag[] = [];
+
+  for (const entry of tags) {
+    if (entry.id) {
+      const { data: tag, error } = await supabase
+        .from("tags")
+        .select("*")
+        .eq("id", entry.id)
+        .eq("user_id", userId)
+        .single();
+      if (error || !tag) {
+        return { success: false, error: "One or more tags not found" };
+      }
+      resolvedTags.push(tag as Tag);
+    } else if (entry.name) {
+      const upsertResult = await upsertTagRepo(supabase, userId, entry.name);
+      if (!upsertResult.success) return upsertResult;
+      resolvedTags.push(upsertResult.data);
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from("bookmark_tags")
+    .delete()
+    .eq("bookmark_id", id);
+
+  if (deleteError) {
+    return { success: false, error: deleteError.message };
+  }
+
+  if (resolvedTags.length > 0) {
+    const { error: insertError } = await supabase.from("bookmark_tags").insert(
+      resolvedTags.map((tag) => ({
+        bookmark_id: id,
+        tag_id: tag.id,
+      })),
+    );
+
+    if (insertError) {
+      return { success: false, error: insertError.message };
+    }
+  }
+
+  return { success: true, data: resolvedTags };
 }
 
 export async function refetchMetadata(

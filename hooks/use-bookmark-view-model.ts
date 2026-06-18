@@ -9,8 +9,6 @@ import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
 import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 export function useBookmarkViewModel() {
@@ -68,43 +66,31 @@ export function useBookmarkViewModel() {
   useBookmarkGlobalShortcuts({
     inputRef,
     filteredBookmarks: bookmarks,
+    tagsByBookmarkId,
+    allTags,
     focusedIndex,
     isSelectionMode: selection.isSelectionMode,
-    renameDialogOpen: dialogs.renameDialogOpen,
+    editDialogOpen: dialogs.editDialogOpen,
     deleteDialogOpen: dialogs.deleteDialogOpen,
     selectAll: selection.selectAll,
     toggleSelect: selection.toggleSelect,
     clearSelection: selection.clearSelection,
-    handleRenameTrigger: dialogs.handleRenameTrigger,
+    handleEditTrigger: dialogs.handleEditTrigger,
     handleBulkDeleteTrigger: dialogs.handleBulkDeleteTrigger,
   });
 
-  const handleRename = useCallback(
+  const handleEdit = useCallback(
     (id: string) => {
-      dialogs.handleRenameTrigger(id, bookmarks);
-    },
-    [bookmarks, dialogs.handleRenameTrigger],
-  );
-
-  const handleNote = useCallback(
-    (id: string) => {
-      dialogs.handleNoteTrigger(id, bookmarks);
-    },
-    [bookmarks, dialogs.handleNoteTrigger],
-  );
-
-  const handleTag = useCallback(
-    (id: string) => {
-      const bookmarksForTag = (
-        bookmarks as Array<Bookmark & { tags?: Tag[] }>
-      ).map((b) => ({
-        id: b.id,
-        title: b.title,
-        tags: (tagsByBookmarkId.get(b.id) ?? [])
-          .map((tagId) => allTags.find((t) => t.id === tagId))
-          .filter((t): t is Tag => t !== undefined),
-      }));
-      dialogs.handleTagTrigger(id, bookmarksForTag, tagsByBookmarkId, allTags);
+      dialogs.handleEditTrigger(
+        id,
+        bookmarks.map((b) => ({
+          id: b.id,
+          title: b.title,
+          note: b.note,
+          tagsByBookmarkId,
+          allTags,
+        })),
+      );
     },
     [bookmarks, tagsByBookmarkId, allTags, dialogs],
   );
@@ -151,9 +137,7 @@ export function useBookmarkViewModel() {
     handleBulkCopyUrls,
     handleRefetchTrigger,
     handleMoveToWorkspace,
-    handleRename,
-    handleNote,
-    handleTag,
+    handleEdit,
     onKeyDown,
     onDeleteTrigger: dialogs.handleDeleteTrigger,
     onBulkDeleteTrigger: () =>

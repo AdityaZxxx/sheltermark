@@ -56,5 +56,5 @@ A clean, minimalist bookmark manager. Organize and access your bookmarks from an
 - [ ] Full-text search
 - [x] Android PWA share intent
 - [x] RSS/Feed Subscriptions
-- [ ] Bookmark note and tagging
+- [x] Bookmark note and tagging
 - [ ] Import browser bookmark

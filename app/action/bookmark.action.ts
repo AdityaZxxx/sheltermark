@@ -9,17 +9,20 @@ import {
   moveBookmarks as moveBookmarksRepo,
   refetchMetadata as refetchMetadataRepo,
   renameBookmark as renameBookmarkRepo,
+  updateBookmarkFields as updateBookmarkFieldsRepo,
   updateBookmarkNote as updateBookmarkNoteRepo,
 } from "~/lib/data/repositories/bookmark.repository";
 import type {
   Bookmark,
   BookmarkCreateInput,
   BookmarkDeleteInput,
+  BookmarkEditInput,
   BookmarkMoveInput,
   BookmarkRefetchMetadataInput,
   BookmarkRenameInput,
   BookmarkUpdateNoteInput,
 } from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
 
 export async function addBookmark(
   data: BookmarkCreateInput,
@@ -82,4 +85,11 @@ export async function getBookmarks(
 ): Promise<ActionResult<Bookmark[]>> {
   const { user, supabase } = await requireAuth();
   return getBookmarksRepo(supabase, user.id, workspaceId);
+}
+
+export async function updateBookmarkFields(
+  input: BookmarkEditInput,
+): Promise<ActionResult<Tag[]>> {
+  const { user, supabase } = await requireAuth();
+  return updateBookmarkFieldsRepo(supabase, user.id, input);
 }

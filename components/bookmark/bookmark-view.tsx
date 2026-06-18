@@ -2,12 +2,10 @@
 
 import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
 import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
+import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
-import { BookmarkNoteDialog } from "./bookmark-note-dialog";
-import { BookmarkRenameDialog } from "./bookmark-rename-dialog";
-import { BookmarkTagDialog } from "./bookmark-tag-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 
 export function BookmarkView() {
@@ -45,9 +43,7 @@ export function BookmarkView() {
         focusedIndex={vm.focusedIndex}
         onSelect={vm.selection.toggleSelect}
         onDelete={vm.onDeleteTrigger}
-        onRename={vm.handleRename}
-        onNote={vm.handleNote}
-        onTag={vm.handleTag}
+        onEdit={vm.handleEdit}
         onTagClick={(tagId) => vm.setSelectedTagIds([tagId])}
         onMove={vm.dialogs.handleMoveTrigger}
         onMoveToWorkspace={vm.handleMoveToWorkspace}
@@ -74,32 +70,10 @@ export function BookmarkView() {
         onCopyUrls={vm.handleBulkCopyUrls}
       />
 
-      <BookmarkRenameDialog
-        open={vm.dialogs.renameDialogOpen}
-        onOpenChange={vm.dialogs.setRenameDialogOpen}
+      <BookmarkEditDialog
+        open={vm.dialogs.editDialogOpen}
+        onOpenChange={vm.dialogs.setEditDialogOpen}
         bookmark={vm.dialogs.activeBookmark}
-        onSuccess={vm.invalidate}
-      />
-
-      <BookmarkNoteDialog
-        open={vm.dialogs.noteDialogOpen}
-        onOpenChange={vm.dialogs.setNoteDialogOpen}
-        bookmark={vm.dialogs.activeBookmark}
-        onSuccess={vm.invalidate}
-      />
-
-      <BookmarkTagDialog
-        open={vm.dialogs.tagDialogOpen}
-        onOpenChange={vm.dialogs.setTagDialogOpen}
-        bookmark={
-          vm.dialogs.activeBookmark
-            ? {
-                id: vm.dialogs.activeBookmark.id,
-                title: vm.dialogs.activeBookmark.title,
-                tags: vm.dialogs.activeBookmark.tags ?? [],
-              }
-            : null
-        }
         onSuccess={vm.invalidate}
       />
 

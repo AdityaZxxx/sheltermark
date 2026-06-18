@@ -7,15 +7,13 @@ interface ActiveBookmark {
   id: string;
   title: string;
   note: string | null;
-  tags?: Tag[];
+  tags: Tag[];
 }
 
 export function useBookmarkDialogs() {
-  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
-  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
-  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [activeBookmark, setActiveBookmark] = useState<ActiveBookmark | null>(
     null,
   );
@@ -32,65 +30,32 @@ export function useBookmarkDialogs() {
     setDeleteDialogOpen(true);
   }, []);
 
-  const handleRenameTrigger = useCallback(
-    (id: string, bookmarks: { id: string; title: string | null }[]) => {
-      const bookmark = bookmarks.find((b) => b.id === id);
-      if (bookmark) {
-        setActiveBookmark({
-          id: bookmark.id,
-          title: bookmark.title || "",
-          note: null,
-        });
-        setRenameDialogOpen(true);
-      }
-    },
-    [],
-  );
-
-  const handleNoteTrigger = useCallback(
-    (
-      id: string,
-      bookmarks: { id: string; title: string | null; note: string | null }[],
-    ) => {
-      const bookmark = bookmarks.find((b) => b.id === id);
-      if (bookmark) {
-        setActiveBookmark({
-          id: bookmark.id,
-          title: bookmark.title || "",
-          note: bookmark.note ?? null,
-        });
-        setNoteDialogOpen(true);
-      }
-    },
-    [],
-  );
-
-  const handleTagTrigger = useCallback(
+  const handleEditTrigger = useCallback(
     (
       id: string,
       bookmarks: {
         id: string;
         title: string | null;
-        tags: Tag[];
+        note: string | null;
+        tagsByBookmarkId: Map<string, string[]>;
+        allTags: Tag[];
       }[],
-      tagsByBookmarkId: Map<string, string[]>,
-      allTags: Tag[],
     ) => {
       const bookmark = bookmarks.find((b) => b.id === id);
       if (!bookmark) return;
 
-      const tagIds = tagsByBookmarkId.get(id) ?? [];
+      const tagIds = bookmark.tagsByBookmarkId.get(id) ?? [];
       const tags = tagIds
-        .map((tagId) => allTags.find((t) => t.id === tagId))
+        .map((tagId) => bookmark.allTags.find((t) => t.id === tagId))
         .filter((t): t is Tag => t !== undefined);
 
       setActiveBookmark({
         id: bookmark.id,
         title: bookmark.title || "",
-        note: null,
+        note: bookmark.note ?? null,
         tags,
       });
-      setTagDialogOpen(true);
+      setEditDialogOpen(true);
     },
     [],
   );
@@ -110,9 +75,9 @@ export function useBookmarkDialogs() {
     setDeleteDialogOpen(false);
   }, []);
 
-  const resetRename = useCallback(() => {
+  const resetEdit = useCallback(() => {
     setActiveBookmark(null);
-    setRenameDialogOpen(false);
+    setEditDialogOpen(false);
   }, []);
 
   const resetMove = useCallback(() => {
@@ -120,41 +85,23 @@ export function useBookmarkDialogs() {
     setMoveDialogOpen(false);
   }, []);
 
-  const resetNote = useCallback(() => {
-    setActiveBookmark(null);
-    setNoteDialogOpen(false);
-  }, []);
-
-  const resetTag = useCallback(() => {
-    setActiveBookmark(null);
-    setTagDialogOpen(false);
-  }, []);
-
   return {
-    renameDialogOpen,
-    setRenameDialogOpen,
+    editDialogOpen,
+    setEditDialogOpen,
     deleteDialogOpen,
     setDeleteDialogOpen,
     moveDialogOpen,
     setMoveDialogOpen,
-    noteDialogOpen,
-    setNoteDialogOpen,
-    tagDialogOpen,
-    setTagDialogOpen,
     activeBookmark,
     bookmarksToDelete,
     bookmarksToMove,
     handleDeleteTrigger,
     handleBulkDeleteTrigger,
-    handleRenameTrigger,
-    handleNoteTrigger,
-    handleTagTrigger,
+    handleEditTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
     resetDelete,
-    resetRename,
+    resetEdit,
     resetMove,
-    resetNote,
-    resetTag,
   };
 }

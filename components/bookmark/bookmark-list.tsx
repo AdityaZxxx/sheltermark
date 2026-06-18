@@ -29,9 +29,7 @@ interface BookmarkListProps {
   focusedIndex: number;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
-  onRename: (id: string) => void;
-  onNote: (id: string) => void;
-  onTag: (id: string) => void;
+  onEdit: (id: string) => void;
   onTagClick: (tagId: string) => void;
   onMove: (id: string) => void;
   onMoveToWorkspace: (id: string, workspaceId: string) => void;
@@ -56,9 +54,7 @@ export function BookmarkList({
   focusedIndex,
   onSelect,
   onDelete,
-  onRename,
-  onNote,
-  onTag,
+  onEdit,
   onTagClick,
   onMove,
   onMoveToWorkspace,
@@ -137,9 +133,7 @@ export function BookmarkList({
           currentWorkspaceId,
           onSelect,
           onDelete,
-          onRename,
-          onNote,
-          onTag,
+          onEdit,
           onTagClick,
           onMove,
           onMoveToWorkspace,

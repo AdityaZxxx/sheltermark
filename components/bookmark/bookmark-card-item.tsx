@@ -33,9 +33,7 @@ interface BookmarkItemProps {
   currentWorkspaceId?: string | undefined;
   onSelect?: ((id: string) => void) | undefined;
   onDelete?: ((id: string) => void) | undefined;
-  onRename?: ((id: string) => void) | undefined;
-  onNote?: ((id: string) => void) | undefined;
-  onTag?: ((id: string) => void) | undefined;
+  onEdit?: ((id: string) => void) | undefined;
   onTagClick?: ((tagId: string) => void) | undefined;
   onMove?: ((id: string) => void) | undefined;
   onMoveToWorkspace?: ((id: string, workspaceId: string) => void) | undefined;
@@ -68,9 +66,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   currentWorkspaceId,
   onSelect,
   onDelete,
-  onRename,
-  onNote,
-  onTag,
+  onEdit,
   onTagClick,
   onMove,
   onMoveToWorkspace,
@@ -230,9 +226,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
-      onRename={onRename}
-      onNote={onNote}
-      onTag={onTag}
+      onEdit={onEdit}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}

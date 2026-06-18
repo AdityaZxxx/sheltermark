@@ -2,10 +2,8 @@ import {
   ArrowClockwiseIcon,
   CopyIcon,
   FolderOpenIcon,
-  NotePencilIcon,
   PencilIcon,
   SelectionPlusIcon,
-  TagIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import {
@@ -31,9 +29,7 @@ interface BookmarkContextMenuProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
-  onRename?: (id: string) => void;
-  onNote?: (id: string) => void;
-  onTag?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -50,9 +46,7 @@ export function BookmarkContextMenu({
   workspaces = EMPTY_WORKSPACES,
   currentWorkspaceId,
   onSelect,
-  onRename,
-  onNote,
-  onTag,
+  onEdit,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -75,19 +69,9 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onRename?.(id)}>
+        <ContextMenuItem onClick={() => onEdit?.(id)}>
           <PencilIcon />
-          Rename
-        </ContextMenuItem>
-
-        <ContextMenuItem onClick={() => onNote?.(id)}>
-          <NotePencilIcon />
-          Edit Note
-        </ContextMenuItem>
-
-        <ContextMenuItem onClick={() => onTag?.(id)}>
-          <TagIcon />
-          Edit Tags
+          Edit
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
