@@ -16,6 +16,7 @@ const bookmarkSchema = z.object({
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
   deleted_at: timestampSchema.nullable(),
+  note: z.string().nullable().default(null),
 });
 
 const bookmarkCreateSchema = z.object({
@@ -37,8 +38,31 @@ export const bookmarkRenameSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
 });
 
+export const bookmarkUpdateNoteSchema = z.object({
+  id: uuidSchema,
+  note: z.string().max(2000, "Note too long").nullable(),
+});
+
 export const bookmarkRefetchMetadataSchema = z.object({
   id: uuidSchema,
+});
+
+export const generateAiTitleSchema = z.object({
+  bookmarkId: uuidSchema,
+});
+
+export const bookmarkEditSchema = z.object({
+  id: uuidSchema,
+  title: z.string().min(1, "Title is required").max(200, "Title too long"),
+  note: z.string().max(2000, "Note too long").nullable(),
+  tags: z
+    .array(
+      z.object({
+        id: uuidSchema.optional(),
+        name: z.string().min(1).max(50).optional(),
+      }),
+    )
+    .max(50, "Too many tags"),
 });
 
 const workspaceNameSchema = z
@@ -76,9 +100,15 @@ export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
 export type BookmarkRestoreInput = z.infer<typeof bookmarkRestoreSchema>;
 export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;
 export type BookmarkRenameInput = z.infer<typeof bookmarkRenameSchema>;
+export type BookmarkUpdateNoteInput = z.infer<typeof bookmarkUpdateNoteSchema>;
 export type BookmarkRefetchMetadataInput = z.infer<
   typeof bookmarkRefetchMetadataSchema
 >;
+export type BookmarkEditInput = z.infer<typeof bookmarkEditSchema>;
+export type GenerateAiTitleInput = z.infer<typeof generateAiTitleSchema>;
+export type BookmarkEditTagEntry = z.infer<
+  typeof bookmarkEditSchema
+>["tags"][number];
 export type WorkspaceWithBookmarks = z.infer<
   typeof workspaceWithBookmarksSchema
 >;

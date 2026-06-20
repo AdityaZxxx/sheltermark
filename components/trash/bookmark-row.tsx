@@ -1,13 +1,20 @@
 "use client";
 
 import {
-  ArrowCounterClockwiseIcon,
+  ArrowBendUpLeftIcon,
   GlobeIcon,
+  SelectionPlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { ProgressiveImage } from "~/components/progressive-image";
-import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "~/components/ui/context-menu";
 import { formatRelativeTime } from "~/lib/format";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { cn, safeDomain } from "~/lib/utils";
@@ -18,30 +25,50 @@ export function BookmarkRow({
   onSelect,
   onRestore,
   onPermanentDelete,
-  compact,
+  showCheckbox,
+  onSelectionModeToggle,
 }: {
   bookmark: Bookmark;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onRestore: (id: string) => void;
   onPermanentDelete: (id: string) => void;
-  compact?: boolean;
+  showCheckbox?: boolean;
+  onSelectionModeToggle?: () => void;
 }) {
   const domain = safeDomain(bookmark.url);
 
-  return (
+  const rowContent = (
+    // biome-ignore lint/a11y/useSemanticElements: must be <div> to avoid <button> inside <button> hydration error; inner action buttons need a non-button parent
     <div
+      role="button"
+      tabIndex={showCheckbox ? 0 : -1}
       className={cn(
-        "flex items-center gap-2.5 sm:gap-3 border-b border-border last:border-0 transition-colors",
+        "flex w-full items-center gap-2.5 border-b border-border px-3 py-2.5 text-left transition-colors last:border-0 sm:gap-3 sm:px-4 sm:py-3",
         isSelected && "bg-muted/30",
-        compact ? "px-3 sm:px-4 py-2" : "px-3 sm:px-4 py-2.5 sm:py-3",
+        showCheckbox && "cursor-pointer",
       )}
+      onClick={() => {
+        if (showCheckbox) {
+          onSelect(bookmark.id);
+        } else {
+          window.open(bookmark.url, "_blank");
+        }
+      }}
+      onKeyDown={(e) => {
+        if (showCheckbox && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onSelect(bookmark.id);
+        }
+      }}
     >
-      <Checkbox
-        checked={isSelected}
-        onCheckedChange={() => onSelect(bookmark.id)}
-        className="shrink-0"
-      />
+      {showCheckbox && (
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onSelect(bookmark.id)}
+          className="shrink-0"
+        />
+      )}
       <div className="size-7 sm:size-8 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center">
         {bookmark.favicon_url ? (
           <ProgressiveImage
@@ -55,24 +82,11 @@ export function BookmarkRow({
       </div>
 
       <div className="flex-1 min-w-0">
-        <p
-          className={cn(
-            "font-medium truncate leading-snug",
-            compact ? "text-xs" : "text-sm",
-          )}
-        >
+        <p className="truncate text-sm font-medium leading-snug">
           {bookmark.title || "Untitled"}
         </p>
-        <p
-          className={cn(
-            "text-muted-foreground truncate flex items-center gap-1.5",
-            compact ? "text-[11px]" : "text-xs",
-          )}
-        >
+        <p className="flex items-center justify-between truncate text-xs text-muted-foreground">
           <span>{domain}</span>
-          <span className="text-muted-foreground/40" aria-hidden="true">
-            ·
-          </span>
           <span className="shrink-0" suppressHydrationWarning>
             {bookmark.deleted_at
               ? formatRelativeTime(bookmark.deleted_at)
@@ -82,87 +96,62 @@ export function BookmarkRow({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        {compact ? (
-          <>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRestore(bookmark.id);
-              }}
-              title="Restore"
-            >
-              <ArrowCounterClockwiseIcon className="size-2.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPermanentDelete(bookmark.id);
-              }}
-              className="text-destructive hover:text-destructive"
-              title="Delete forever"
-            >
-              <TrashIcon className="size-2.5" />
-            </Button>
-          </>
-        ) : (
-          <>
-            <div className="flex sm:hidden items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRestore(bookmark.id);
-                }}
-                title="Restore"
-              >
-                <ArrowCounterClockwiseIcon className="size-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPermanentDelete(bookmark.id);
-                }}
-                className="text-destructive hover:text-destructive"
-                title="Delete forever"
-              >
-                <TrashIcon className="size-3" />
-              </Button>
-            </div>
-            <div className="hidden sm:flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRestore(bookmark.id);
-                }}
-              >
-                <ArrowCounterClockwiseIcon className="size-3 sm:mr-1.5" />
-                <span className="hidden sm:inline">Restore</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPermanentDelete(bookmark.id);
-                }}
-                className="text-destructive hover:text-destructive"
-                title="Delete forever"
-              >
-                <TrashIcon className="size-3" />
-              </Button>
-            </div>
-          </>
-        )}
+        <button
+          type="button"
+          className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:w-auto sm:px-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRestore(bookmark.id);
+          }}
+          title="Restore"
+        >
+          <ArrowBendUpLeftIcon className="size-4" />
+        </button>
+        <button
+          type="button"
+          className="inline-flex size-7 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPermanentDelete(bookmark.id);
+          }}
+          title="Delete forever"
+        >
+          <TrashIcon className="size-4" />
+        </button>
       </div>
     </div>
+  );
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={(props) => <div {...props}>{rowContent}</div>}
+      />
+      <ContextMenuContent>
+        <ContextMenuItem
+          onClick={() => {
+            if (!showCheckbox) {
+              onSelect(bookmark.id);
+              onSelectionModeToggle?.();
+            }
+          }}
+        >
+          <SelectionPlusIcon />
+          Select Multiple
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={() => onRestore(bookmark.id)}>
+          <ArrowBendUpLeftIcon />
+          Restore
+        </ContextMenuItem>
+        <ContextMenuItem
+          variant="destructive"
+          onClick={() => onPermanentDelete(bookmark.id)}
+        >
+          <TrashIcon />
+          Delete forever
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

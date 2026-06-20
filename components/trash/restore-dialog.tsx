@@ -123,7 +123,7 @@ export function RestoreDialog({
                 onClick={onRestoreWorkspace}
               >
                 <ArrowCounterClockwiseIcon className="size-3 mr-1.5" />
-                {isRestoringWorkspace ? "Restoring\u2026" : "Restore workspace"}
+                {isRestoringWorkspace ? "Restoring" : "Restore workspace"}
               </Button>
             )}
           </div>

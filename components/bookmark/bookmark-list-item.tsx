@@ -8,8 +8,10 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
+import type { Tag } from "~/lib/schemas/tag.schema";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
+import { BookmarkNoteText } from "./bookmark-note-text";
 
 interface BookmarkItemProps {
   id: string;
@@ -19,6 +21,8 @@ interface BookmarkItemProps {
   favicon_url?: string;
   og_image_url?: string;
   created_at: string;
+  note?: string | null;
+  tags?: Tag[];
   isBroken?: boolean;
   httpStatus?: number | null;
   autoCheckBroken?: boolean;
@@ -28,7 +32,8 @@ interface BookmarkItemProps {
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onRename?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onTagClick?: (tagId: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -58,7 +63,8 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   currentWorkspaceId,
   onSelect,
   onDelete,
-  onRename,
+  onEdit,
+  onTagClick,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -66,6 +72,8 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  note,
+  tags = [],
 }: BookmarkListItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -117,14 +125,38 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
 
       <div className="flex-1 flex items-center justify-between min-w-0">
         <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
-          <p
-            className={cn(
-              "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors min-w-0",
-              isSelected && "text-primary",
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors",
+                isSelected && "text-primary",
+              )}
+            >
+              {title}
+            </p>
+            {note && (
+              <p className="text-[11px] text-muted-foreground/60 truncate italic leading-tight mt-0.5">
+                <BookmarkNoteText text={note} />
+              </p>
             )}
-          >
-            {title}
-          </p>
+            {tags.length > 0 && (
+              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTagClick?.(tag.id);
+                    }}
+                    className="text-[10px] text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    #{tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {isBroken && autoCheckBroken ? (
             <Tooltip>
               <TooltipTrigger
@@ -175,7 +207,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
-      onRename={onRename}
+      onEdit={onEdit}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}

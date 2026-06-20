@@ -32,7 +32,7 @@ const websiteSchema = z
   .optional()
   .or(z.literal(""));
 
-export const TRASH_CLEANUP_INTERVALS = [1, 7, 14, 30] as const;
+export const TRASH_CLEANUP_INTERVALS = [7, 30] as const;
 export type TrashCleanupInterval = (typeof TRASH_CLEANUP_INTERVALS)[number];
 
 const profileSchema = z.object({

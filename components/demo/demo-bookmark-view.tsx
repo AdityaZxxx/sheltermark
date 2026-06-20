@@ -3,10 +3,10 @@
 import { useCallback, useState } from "react";
 import { BookmarkCardItem } from "~/components/bookmark/bookmark-card-item";
 import { BookmarkDeleteDialog } from "~/components/bookmark/bookmark-delete-dialog";
+import { BookmarkEditDialog } from "~/components/bookmark/bookmark-edit-dialog";
 import { BookmarkInput } from "~/components/bookmark/bookmark-input";
 import { BookmarkListItem } from "~/components/bookmark/bookmark-list-item";
 import { BookmarkMoveDialog } from "~/components/bookmark/bookmark-move-dialog";
-import { BookmarkRenameDialog } from "~/components/bookmark/bookmark-rename-dialog";
 import { BookmarkToolbar } from "~/components/bookmark/bookmark-toolbar";
 import { BookmarkViewToggle } from "~/components/bookmark/bookmark-view-toggle";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
@@ -57,8 +57,8 @@ export function DemoBookmarkView() {
   } = useBookmarkSelection();
 
   const {
-    renameDialogOpen,
-    setRenameDialogOpen,
+    editDialogOpen,
+    setEditDialogOpen,
     deleteDialogOpen,
     setDeleteDialogOpen,
     moveDialogOpen,
@@ -68,7 +68,7 @@ export function DemoBookmarkView() {
     bookmarksToMove,
     handleDeleteTrigger,
     handleBulkDeleteTrigger,
-    handleRenameTrigger,
+    handleEditTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
   } = useBookmarkDialogs();
@@ -133,12 +133,6 @@ export function DemoBookmarkView() {
     },
     [bookmarks],
   );
-
-  const handleConfirmRename = useCallback((id: string, title: string) => {
-    setBookmarks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, title } : b)),
-    );
-  }, []);
 
   const handleConfirmDelete = useCallback(
     (ids: string[]) => {
@@ -207,14 +201,22 @@ export function DemoBookmarkView() {
     }
   };
 
-  const onRenameTrigger = useCallback(
+  const onEditTrigger = useCallback(
     (id: string) => {
       const bookmark = filteredBookmarks.find((b) => b.id === id);
       if (bookmark) {
-        handleRenameTrigger(id, filteredBookmarks);
+        handleEditTrigger(id, [
+          {
+            id: bookmark.id,
+            title: bookmark.title,
+            note: null,
+            tagsByBookmarkId: new Map(),
+            allTags: [],
+          },
+        ]);
       }
     },
-    [filteredBookmarks, handleRenameTrigger],
+    [filteredBookmarks, handleEditTrigger],
   );
 
   const getItem = useCallback(
@@ -291,7 +293,7 @@ export function DemoBookmarkView() {
                   currentWorkspaceId={bookmark.workspace_id ?? undefined}
                   onSelect={toggleSelect}
                   onDelete={handleDeleteTrigger}
-                  onRename={onRenameTrigger}
+                  onEdit={onEditTrigger}
                   onMove={handleMoveTrigger}
                   onMoveToWorkspace={(id, wsId) =>
                     handleConfirmMove([id], wsId)
@@ -325,7 +327,7 @@ export function DemoBookmarkView() {
                   currentWorkspaceId={bookmark.workspace_id ?? undefined}
                   onSelect={toggleSelect}
                   onDelete={handleDeleteTrigger}
-                  onRename={onRenameTrigger}
+                  onEdit={onEditTrigger}
                   onMove={handleMoveTrigger}
                   onMoveToWorkspace={(id, wsId) =>
                     handleConfirmMove([id], wsId)
@@ -372,13 +374,20 @@ export function DemoBookmarkView() {
           onCopyUrls={handleBulkCopyUrls}
         />
 
-        <BookmarkRenameDialog
-          open={renameDialogOpen}
-          onOpenChange={setRenameDialogOpen}
-          bookmark={activeBookmark}
-          onSuccess={() => setRenameDialogOpen(false)}
-          onConfirm={handleConfirmRename}
-          silent
+        <BookmarkEditDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          bookmark={
+            activeBookmark
+              ? {
+                  id: activeBookmark.id,
+                  title: activeBookmark.title,
+                  note: activeBookmark.note,
+                  tags: activeBookmark.tags,
+                }
+              : null
+          }
+          onSuccess={() => setEditDialogOpen(false)}
         />
 
         <BookmarkDeleteDialog

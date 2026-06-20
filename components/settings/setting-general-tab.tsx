@@ -276,9 +276,7 @@ export function SettingsGeneralTab({
                 {TRASH_CLEANUP_INTERVALS.map((days) => (
                   <SelectItem key={days} value={String(days)}>
                     <div className="flex items-center gap-2">
-                      <span>
-                        {days} day{days !== 1 ? "s" : ""}
-                      </span>
+                      <span>{days} days</span>
                     </div>
                   </SelectItem>
                 ))}
