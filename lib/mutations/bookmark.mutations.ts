@@ -6,6 +6,7 @@ import {
   moveBookmarks,
   refetchBookmarkMetadata,
   renameBookmark,
+  updateBookmarkNote,
 } from "~/app/action/bookmark.action";
 import { logger } from "~/lib/logger";
 import { useOptimisticMutation } from "~/lib/mutations/base";
@@ -15,6 +16,7 @@ import type {
   BookmarkDeleteInput,
   BookmarkMoveInput,
   BookmarkRenameInput,
+  BookmarkUpdateNoteInput,
 } from "~/lib/schemas/bookmark.schema";
 
 const generateTempId = () =>
@@ -47,6 +49,7 @@ export function useAddBookmark(userId: string | undefined) {
         user_id: userId || "",
         updated_at: null,
         created_at: new Date().toISOString(),
+        note: null,
       } as Bookmark;
 
       queryClient.setQueryData<Bookmark[]>(bookmarkKeys.all, (old = []) => [
@@ -133,6 +136,19 @@ export function useRefetchBookmarkMetadata(_userId: string | undefined) {
       return prev.map((b) =>
         b.id === id ? { ...b, last_checked_at: new Date().toISOString() } : b,
       );
+    },
+  });
+}
+
+export function useUpdateBookmarkNote(_userId: string | undefined) {
+  return useOptimisticMutation<BookmarkUpdateNoteInput, null>({
+    mutationFn: updateBookmarkNote,
+    queryKey: bookmarkKeys.all,
+    successMessage: "Note saved",
+    errorMessage: "Failed to save note",
+    prepareOptimisticData: (oldData, { id, note }) => {
+      const prev = oldData as Bookmark[];
+      return prev.map((b) => (b.id === id ? { ...b, note } : b));
     },
   });
 }

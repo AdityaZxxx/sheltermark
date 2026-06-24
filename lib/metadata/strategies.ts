@@ -61,6 +61,7 @@ async function fetchTwitter(url: string): Promise<Metadata | null> {
   if (data.tweet) {
     return {
       title: `${data.tweet.author?.name || "User"} on X: "${data.tweet.text?.substring(0, 50) || ""}..."`,
+      description: null,
       og_image_url:
         data.tweet.media?.photos?.[0]?.url ||
         data.tweet.author?.avatar_url ||
@@ -71,6 +72,7 @@ async function fetchTwitter(url: string): Promise<Metadata | null> {
   if (data.user) {
     return {
       title: `${data.user.name || "User"} (@${data.user.screen_name || "unknown"}) / X`,
+      description: null,
       og_image_url: data.user.avatar_url?.replace("_normal", "") || null,
       favicon_url: data.user.avatar_url || null,
     };
@@ -95,6 +97,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
       const data = await res.json();
       return {
         title: decodeHtmlEntities(data.title || url),
+        description: null,
         og_image_url: data.thumbnail_url,
         favicon_url: fallbackFavicon,
       };
@@ -110,6 +113,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
         ? null
         : {
             title: decodeHtmlEntities(data.title || url),
+            description: null,
             og_image_url: data.thumbnail_url,
             favicon_url: null,
           };
@@ -119,6 +123,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
     if (result) {
       return {
         title: result.title,
+        description: null,
         og_image_url: result.og_image_url || fallbackThumb,
         favicon_url: result.favicon_url || fallbackFavicon,
       };
@@ -128,6 +133,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
   if (videoId)
     return {
       title: "YouTube Video",
+      description: null,
       og_image_url: fallbackThumb,
       favicon_url: fallbackFavicon,
     };
@@ -144,6 +150,7 @@ async function fetchJsHeavy(url: string): Promise<Metadata | null> {
   if (!data.status || data.status !== "success") return null;
   return {
     title: decodeHtmlEntities(data.data?.title || url),
+    description: null,
     og_image_url: data.data?.image?.url || null,
     favicon_url: data.data?.logo?.url || null,
   };

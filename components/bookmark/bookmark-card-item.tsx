@@ -9,8 +9,10 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
+import type { Tag } from "~/lib/schemas/tag.schema";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
+import { BookmarkNoteText } from "./bookmark-note-text";
 
 interface BookmarkItemProps {
   id: string;
@@ -20,6 +22,8 @@ interface BookmarkItemProps {
   favicon_url?: string | undefined;
   og_image_url?: string | undefined;
   created_at: string;
+  note?: string | null;
+  tags?: Tag[];
   isBroken?: boolean | undefined;
   httpStatus?: number | null;
   autoCheckBroken?: boolean | undefined;
@@ -29,7 +33,8 @@ interface BookmarkItemProps {
   currentWorkspaceId?: string | undefined;
   onSelect?: ((id: string) => void) | undefined;
   onDelete?: ((id: string) => void) | undefined;
-  onRename?: ((id: string) => void) | undefined;
+  onEdit?: ((id: string) => void) | undefined;
+  onTagClick?: ((tagId: string) => void) | undefined;
   onMove?: ((id: string) => void) | undefined;
   onMoveToWorkspace?: ((id: string, workspaceId: string) => void) | undefined;
   onCopyUrl?: ((url: string) => void) | undefined;
@@ -51,6 +56,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   favicon_url,
   domain,
   created_at,
+  note,
   isBroken,
   httpStatus,
   autoCheckBroken = true,
@@ -60,7 +66,8 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   currentWorkspaceId,
   onSelect,
   onDelete,
-  onRename,
+  onEdit,
+  onTagClick,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -68,6 +75,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  tags = [],
 }: BookmarkCardItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -145,6 +153,35 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
           </h3>
         </div>
       </div>
+      {note && (
+        <div className="px-4 pt-1 pb-0">
+          <p className="text-[11px] text-muted-foreground/60 line-clamp-2 italic leading-snug">
+            <BookmarkNoteText text={note} />
+          </p>
+        </div>
+      )}
+      {tags.length > 0 && (
+        <div className="px-4 pt-1 flex items-center gap-1 flex-wrap">
+          {tags.slice(0, 4).map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTagClick?.(tag.id);
+              }}
+              className="text-[10px] text-muted-foreground/70 hover:text-foreground transition-colors"
+            >
+              #{tag.name}
+            </button>
+          ))}
+          {tags.length > 4 && (
+            <span className="text-[10px] text-muted-foreground/50">
+              +{tags.length - 4}
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex items-center px-4 py-3 justify-between w-full">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
           <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
@@ -189,7 +226,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
-      onRename={onRename}
+      onEdit={onEdit}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}

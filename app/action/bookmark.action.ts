@@ -4,20 +4,27 @@ import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
 import {
   deleteBookmarks as deleteBookmarksRepo,
+  generateAiTitleRepo,
   getBookmarks as getBookmarksRepo,
   insertBookmark as insertBookmarkRepo,
   moveBookmarks as moveBookmarksRepo,
   refetchMetadata as refetchMetadataRepo,
   renameBookmark as renameBookmarkRepo,
+  updateBookmarkFields as updateBookmarkFieldsRepo,
+  updateBookmarkNote as updateBookmarkNoteRepo,
 } from "~/lib/data/repositories/bookmark.repository";
 import type {
   Bookmark,
   BookmarkCreateInput,
   BookmarkDeleteInput,
+  BookmarkEditInput,
   BookmarkMoveInput,
   BookmarkRefetchMetadataInput,
   BookmarkRenameInput,
+  BookmarkUpdateNoteInput,
+  GenerateAiTitleInput,
 } from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
 
 export async function addBookmark(
   data: BookmarkCreateInput,
@@ -33,6 +40,13 @@ export async function addBookmark(
     };
   }
   return { success: true, data: result.data };
+}
+
+export async function generateAiTitle(
+  input: GenerateAiTitleInput,
+): Promise<ActionResult<{ suggestion: string }>> {
+  const { user, supabase } = await requireAuth();
+  return generateAiTitleRepo(supabase, user.id, input);
 }
 
 export async function deleteBookmarks({
@@ -60,6 +74,14 @@ export async function renameBookmark({
   return renameBookmarkRepo(supabase, user.id, { id, title });
 }
 
+export async function updateBookmarkNote({
+  id,
+  note,
+}: BookmarkUpdateNoteInput): Promise<ActionResult<null>> {
+  const { user, supabase } = await requireAuth();
+  return updateBookmarkNoteRepo(supabase, user.id, { id, note });
+}
+
 export async function refetchBookmarkMetadata(
   id: BookmarkRefetchMetadataInput,
 ): Promise<ActionResult<null>> {
@@ -72,4 +94,11 @@ export async function getBookmarks(
 ): Promise<ActionResult<Bookmark[]>> {
   const { user, supabase } = await requireAuth();
   return getBookmarksRepo(supabase, user.id, workspaceId);
+}
+
+export async function updateBookmarkFields(
+  input: BookmarkEditInput,
+): Promise<ActionResult<Tag[]>> {
+  const { user, supabase } = await requireAuth();
+  return updateBookmarkFieldsRepo(supabase, user.id, input);
 }

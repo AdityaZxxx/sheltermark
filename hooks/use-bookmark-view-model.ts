@@ -23,6 +23,10 @@ export function useBookmarkViewModel() {
     sort,
     setSort,
     invalidate,
+    allTags,
+    tagsByBookmarkId,
+    selectedTagIds,
+    setSelectedTagIds,
   } = useBookmarks(currentWorkspace?.id);
 
   const mutations = useBookmarkMutations();
@@ -62,22 +66,33 @@ export function useBookmarkViewModel() {
   useBookmarkGlobalShortcuts({
     inputRef,
     filteredBookmarks: bookmarks,
+    tagsByBookmarkId,
+    allTags,
     focusedIndex,
     isSelectionMode: selection.isSelectionMode,
-    renameDialogOpen: dialogs.renameDialogOpen,
+    editDialogOpen: dialogs.editDialogOpen,
     deleteDialogOpen: dialogs.deleteDialogOpen,
     selectAll: selection.selectAll,
     toggleSelect: selection.toggleSelect,
     clearSelection: selection.clearSelection,
-    handleRenameTrigger: dialogs.handleRenameTrigger,
+    handleEditTrigger: dialogs.handleEditTrigger,
     handleBulkDeleteTrigger: dialogs.handleBulkDeleteTrigger,
   });
 
-  const handleRename = useCallback(
+  const handleEdit = useCallback(
     (id: string) => {
-      dialogs.handleRenameTrigger(id, bookmarks);
+      dialogs.handleEditTrigger(
+        id,
+        bookmarks.map((b) => ({
+          id: b.id,
+          title: b.title,
+          note: b.note,
+          tagsByBookmarkId,
+          allTags,
+        })),
+      );
     },
-    [bookmarks, dialogs.handleRenameTrigger],
+    [bookmarks, tagsByBookmarkId, allTags, dialogs],
   );
 
   const getItem = useCallback(
@@ -102,7 +117,6 @@ export function useBookmarkViewModel() {
     selection.selectedIds.length === bookmarks.length && bookmarks.length > 0;
 
   return {
-    // state
     view,
     setView,
     isLoading,
@@ -110,23 +124,20 @@ export function useBookmarkViewModel() {
     setSearchQuery,
     sort,
     setSort,
-    // data
     bookmarks,
     workspaces,
     currentWorkspace,
     pendingUrls,
-    // selection
     selection,
     isAllSelected,
     focusedIndex,
     inputRef,
-    // actions
     handleSubmit,
     handleCopyUrl,
     handleBulkCopyUrls,
     handleRefetchTrigger,
     handleMoveToWorkspace,
-    handleRename,
+    handleEdit,
     onKeyDown,
     onDeleteTrigger: dialogs.handleDeleteTrigger,
     onBulkDeleteTrigger: () =>
@@ -134,7 +145,10 @@ export function useBookmarkViewModel() {
     onBulkMoveTrigger: () =>
       dialogs.handleBulkMoveTrigger(selection.selectedIds),
     invalidate,
-    // dialogs
     dialogs,
+    allTags,
+    tagsByBookmarkId,
+    selectedTagIds,
+    setSelectedTagIds,
   };
 }
