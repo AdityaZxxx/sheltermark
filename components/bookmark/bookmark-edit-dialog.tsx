@@ -1,8 +1,13 @@
 "use client";
 
+import { Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMemo, useState } from "react";
-import { updateBookmarkFields } from "~/app/action/bookmark.action";
+import { toast } from "sonner";
+import {
+  generateAiTitle,
+  updateBookmarkFields,
+} from "~/app/action/bookmark.action";
 import { MarkdownIcon } from "~/components/markdown-icon";
 import { Button } from "~/components/ui/button";
 import {
@@ -82,6 +87,8 @@ function EditFormInner({
   const { tags: allUserTags } = useUserTagsWithCount();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
   const initialValues = useMemo(
     () => ({
@@ -91,6 +98,32 @@ function EditFormInner({
     }),
     [bookmark.title, bookmark.note, bookmark.tags],
   );
+
+  async function handleGenerateTitle() {
+    setGenerating(true);
+    setAiSuggestion(null);
+    try {
+      const result = await generateAiTitle({ bookmarkId: bookmark.id });
+      if (result.success) {
+        setAiSuggestion(result.data.suggestion);
+      } else {
+        if (
+          result.error?.toLowerCase().includes("rate") ||
+          result.error?.toLowerCase().includes("limit")
+        ) {
+          toast.error("Daily generation limit reached. Try again tomorrow.");
+        } else {
+          toast.error(result.error || "Failed to generate title");
+        }
+      }
+    } catch {
+      toast.error(
+        "Failed to generate title. Check your connection and try again.",
+      );
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   const form = useForm({
     defaultValues: initialValues,
@@ -152,16 +185,64 @@ function EditFormInner({
               <Label htmlFor="edit-title" className="text-xs">
                 Title
               </Label>
-              <Input
-                id="edit-title"
-                name={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                autoFocus
-                maxLength={200}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="edit-title"
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  autoFocus
+                  maxLength={200}
+                  required
+                  className="pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateTitle}
+                  disabled={generating}
+                  aria-label="Generate title with AI"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground/70 transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <Sparkle
+                    className={`h-4 w-auto ${generating ? "animate-spin" : ""}`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+              {aiSuggestion && (
+                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+                  <Sparkle
+                    className="size-3.5 shrink-0 text-amber-500"
+                    weight="fill"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-foreground/90">
+                    {aiSuggestion}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="default"
+                    className="h-7 text-[11px] px-2.5"
+                    onClick={() => {
+                      field.handleChange(aiSuggestion);
+                      setAiSuggestion(null);
+                    }}
+                  >
+                    Apply
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-[11px] px-2.5"
+                    onClick={() => setAiSuggestion(null)}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </form.Field>

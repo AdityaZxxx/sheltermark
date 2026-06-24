@@ -4,6 +4,7 @@ import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
 import {
   deleteBookmarks as deleteBookmarksRepo,
+  generateAiTitleRepo,
   getBookmarks as getBookmarksRepo,
   insertBookmark as insertBookmarkRepo,
   moveBookmarks as moveBookmarksRepo,
@@ -21,6 +22,7 @@ import type {
   BookmarkRefetchMetadataInput,
   BookmarkRenameInput,
   BookmarkUpdateNoteInput,
+  GenerateAiTitleInput,
 } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
@@ -38,6 +40,13 @@ export async function addBookmark(
     };
   }
   return { success: true, data: result.data };
+}
+
+export async function generateAiTitle(
+  input: GenerateAiTitleInput,
+): Promise<ActionResult<{ suggestion: string }>> {
+  const { user, supabase } = await requireAuth();
+  return generateAiTitleRepo(supabase, user.id, input);
 }
 
 export async function deleteBookmarks({

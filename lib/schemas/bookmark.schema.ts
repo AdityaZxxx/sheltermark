@@ -47,6 +47,10 @@ export const bookmarkRefetchMetadataSchema = z.object({
   id: uuidSchema,
 });
 
+export const generateAiTitleSchema = z.object({
+  bookmarkId: uuidSchema,
+});
+
 export const bookmarkEditSchema = z.object({
   id: uuidSchema,
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -101,6 +105,7 @@ export type BookmarkRefetchMetadataInput = z.infer<
   typeof bookmarkRefetchMetadataSchema
 >;
 export type BookmarkEditInput = z.infer<typeof bookmarkEditSchema>;
+export type GenerateAiTitleInput = z.infer<typeof generateAiTitleSchema>;
 export type BookmarkEditTagEntry = z.infer<
   typeof bookmarkEditSchema
 >["tags"][number];

@@ -80,6 +80,7 @@ export function createBasicMetadata(
 ): import("./types").Metadata {
   return {
     title: url,
+    description: null,
     og_image_url: null,
     favicon_url: getGoogleFavicon(hostname),
   };

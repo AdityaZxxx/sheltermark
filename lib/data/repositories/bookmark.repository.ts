@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
+import { generateBookmarkTitle } from "~/lib/ai/generate-title";
+import { checkRateLimit } from "~/lib/ai/rate-limit";
 import { upsertTag as upsertTagRepo } from "~/lib/data/repositories/tag.repository";
 import { fetchMetadata } from "~/lib/metadata";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
@@ -19,6 +21,8 @@ import {
   bookmarkRenameSchema,
   bookmarkRestoreSchema,
   bookmarkUpdateNoteSchema,
+  type GenerateAiTitleInput,
+  generateAiTitleSchema,
 } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
@@ -541,6 +545,55 @@ export async function refetchMetadata(
   if (updateError) return { success: false, error: updateError.message };
 
   return { success: true, data: null };
+}
+
+export async function generateAiTitleRepo(
+  supabase: SupabaseClient,
+  userId: string,
+  input: GenerateAiTitleInput,
+): Promise<ActionResult<{ suggestion: string }>> {
+  const validated = generateAiTitleSchema.safeParse(input);
+  if (!validated.success) {
+    return { success: false, error: validated.error.message };
+  }
+
+  const rateLimit = checkRateLimit(userId);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error:
+        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
+    };
+  }
+
+  const { data: bookmark, error: fetchError } = await supabase
+    .from("bookmarks")
+    .select("url, title")
+    .eq("id", validated.data.bookmarkId)
+    .eq("user_id", userId)
+    .single();
+
+  if (fetchError || !bookmark) {
+    return { success: false, error: "Bookmark not found" };
+  }
+
+  const metadata = await fetchMetadata(bookmark.url);
+
+  try {
+    const suggestion = await generateBookmarkTitle({
+      url: bookmark.url,
+      currentTitle: bookmark.title,
+      description: metadata.description,
+    });
+
+    return { success: true, data: { suggestion } };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to generate title",
+    };
+  }
 }
 
 // ----------------- Export bookmarks (query only) -----------------
