@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
+import { BROKEN_STATUSES } from "~/lib/utils/broken-link";
 
 const bookmarkSchema = z.object({
   id: uuidSchema,
@@ -11,8 +12,9 @@ const bookmarkSchema = z.object({
   og_image_url: z.url().nullable(),
   is_public: z.boolean().default(false),
   is_broken: z.boolean().default(false),
-  last_checked_at: timestampSchema.nullable(),
+  broken_status: z.enum(BROKEN_STATUSES).optional().nullable().default("alive"),
   http_status: z.number().int().nullable(),
+  last_checked_at: timestampSchema.nullable(),
   created_at: timestampSchema,
   updated_at: timestampSchema.nullable(),
   deleted_at: timestampSchema.nullable(),

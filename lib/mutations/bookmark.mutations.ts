@@ -42,6 +42,7 @@ export function useAddBookmark(userId: string | undefined) {
         http_status: null,
         last_checked_at: null,
         is_broken: false,
+        broken_status: "alive",
         is_public: false,
         favicon_url: null,
         og_image_url: null,
@@ -84,7 +85,7 @@ export function useDeleteBookmarks(_userId: string | undefined) {
     mutationFn: deleteBookmarks,
     queryKey: bookmarkKeys.all,
     dependentQueryKeys: [trashKeys.all],
-    successMessage: "Bookmarks moved to trash",
+    successMessage: null,
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
       const prev = oldData as Bookmark[];

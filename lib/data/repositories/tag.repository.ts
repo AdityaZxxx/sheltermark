@@ -33,6 +33,64 @@ export async function getUserTags(
   return { success: true, data: (data as Tag[]) ?? [] };
 }
 
+export async function getWorkspaceTagsWithCount(
+  supabase: SupabaseClient,
+  userId: string,
+  workspaceId: string,
+): Promise<ActionResult<TagWithCount[]>> {
+  const { data: bookmarks } = await supabase
+    .from("bookmarks")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+
+  const bookmarkIds = (bookmarks ?? []).map((b) => b.id);
+
+  if (bookmarkIds.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  const { data: links, error } = await supabase
+    .from("bookmark_tags")
+    .select(
+      `
+      tag_id,
+      tags:tag_id(id, user_id, name, created_at)
+    `,
+    )
+    .in("bookmark_id", bookmarkIds)
+    .eq("tags.user_id", userId);
+
+  if (error) return { success: false, error: error.message };
+
+  const countByTag = new Map<string, number>();
+  const tagInfoMap = new Map<
+    string,
+    { id: string; user_id: string; name: string; created_at: string }
+  >();
+
+  for (const link of links ?? []) {
+    const row = link as { tag_id: string; tags: Tag | Tag[] | null };
+    const tag = Array.isArray(row.tags) ? row.tags[0] : row.tags;
+    if (!tag) continue;
+    tagInfoMap.set(tag.id, tag);
+    countByTag.set(tag.id, (countByTag.get(tag.id) ?? 0) + 1);
+  }
+
+  const tags: TagWithCount[] = Array.from(tagInfoMap.entries())
+    .map(([id, info]) => ({
+      id,
+      user_id: info.user_id,
+      name: info.name,
+      created_at: info.created_at,
+      count: countByTag.get(id) ?? 0,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return { success: true, data: tags };
+}
+
 export async function getTagsWithCount(
   supabase: SupabaseClient,
   userId: string,
@@ -296,6 +354,14 @@ export async function deleteTag(
   }
 
   const { tagId } = validated.data;
+
+  // Clean up junction table rows first to avoid orphaned references
+  const { error: linkError } = await supabase
+    .from("bookmark_tags")
+    .delete()
+    .eq("tag_id", tagId);
+
+  if (linkError) return { success: false, error: linkError.message };
 
   const { error } = await supabase
     .from("tags")

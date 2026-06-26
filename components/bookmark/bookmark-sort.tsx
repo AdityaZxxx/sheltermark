@@ -47,8 +47,8 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
         value={sort.sortBy}
         onValueChange={handleSortByChange}
       >
-        <SelectTrigger>
-          <SelectValue placeholder="Sort by" />
+        <SelectTrigger className="border-0 bg-input/50! hover:bg-input!">
+          <SelectValue placeholder="Hi!" />
         </SelectTrigger>
         <SelectContent>
           {SORT_OPTIONS.map((option) => (
@@ -60,13 +60,20 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
       </Select>
       <Button
         variant="secondary"
+        className="bg-input/50! hover:bg-input!"
         onClick={toggleSortOrder}
         aria-label={sort.sortOrder === "asc" ? "Ascending" : "Descending"}
       >
         {sort.sortOrder === "asc" ? (
-          <ArrowUpIcon className="size-3.5" />
+          <>
+            <ArrowUpIcon className="size-3.5" />{" "}
+            <span className="block md:hidden">Asc</span>
+          </>
         ) : (
-          <ArrowDownIcon className="size-3.5" />
+          <>
+            <ArrowDownIcon className="size-3.5" />{" "}
+            <span className="block md:hidden">Desc</span>
+          </>
         )}
       </Button>
     </div>

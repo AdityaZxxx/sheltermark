@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useBookmarkActions } from "~/hooks/use-bookmark-actions";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkGlobalShortcuts } from "~/hooks/use-bookmark-global-shortcuts";
@@ -9,10 +9,45 @@ import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
 import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import type { BookmarkScope, BookmarkViewVariant } from "~/lib/schemas/common";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
-export function useBookmarkViewModel() {
-  const [view, setView] = useState<"list" | "card">("list");
+const VIEW_PREFERENCE_KEY = "sheltermark-view-preference";
+
+function getStoredViewPreference(): BookmarkViewVariant {
+  if (typeof window === "undefined") return "list";
+  try {
+    const stored = localStorage.getItem(VIEW_PREFERENCE_KEY);
+    const valid: BookmarkViewVariant[] = ["list", "card", "comfort"];
+    if (stored && valid.includes(stored as BookmarkViewVariant)) {
+      return stored as BookmarkViewVariant;
+    }
+  } catch {
+    // localStorage may be blocked
+  }
+  return "list";
+}
+
+export function useBookmarkViewModel(scope: BookmarkScope) {
+  const [view, setView] = useState<BookmarkViewVariant>("list");
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    const stored = getStoredViewPreference();
+    setView(stored);
+  }, []);
+
+  const handleViewChange = useCallback((newView: BookmarkViewVariant) => {
+    startTransition(() => {
+      setView(newView);
+    });
+    try {
+      localStorage.setItem(VIEW_PREFERENCE_KEY, newView);
+    } catch {
+      // localStorage may be blocked
+    }
+  }, []);
+  const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
 
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
@@ -27,7 +62,7 @@ export function useBookmarkViewModel() {
     tagsByBookmarkId,
     selectedTagIds,
     setSelectedTagIds,
-  } = useBookmarks(currentWorkspace?.id);
+  } = useBookmarks(scope.type === "workspace" ? scope.id : undefined);
 
   const mutations = useBookmarkMutations();
 
@@ -118,7 +153,7 @@ export function useBookmarkViewModel() {
 
   return {
     view,
-    setView,
+    setView: handleViewChange,
     isLoading,
     searchQuery,
     setSearchQuery,
@@ -146,6 +181,8 @@ export function useBookmarkViewModel() {
       dialogs.handleBulkMoveTrigger(selection.selectedIds),
     invalidate,
     dialogs,
+    manageTagsDialogOpen,
+    setManageTagsDialogOpen,
     allTags,
     tagsByBookmarkId,
     selectedTagIds,

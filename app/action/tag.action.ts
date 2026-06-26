@@ -8,6 +8,7 @@ import {
   getBookmarkTags as getBookmarkTagsRepo,
   getTagsWithCount as getTagsWithCountRepo,
   getUserTags as getUserTagsRepo,
+  getWorkspaceTagsWithCount as getWorkspaceTagsWithCountRepo,
   removeTagFromBookmark as removeTagFromBookmarkRepo,
   renameTag as renameTagRepo,
   setBookmarkTags as setBookmarkTagsRepo,
@@ -33,6 +34,13 @@ export async function getTagsWithCount(): Promise<
 > {
   const { user, supabase } = await requireAuth();
   return getTagsWithCountRepo(supabase, user.id);
+}
+
+export async function getWorkspaceTagsWithCount(
+  workspaceId: string,
+): Promise<ActionResult<TagWithCount[]>> {
+  const { user, supabase } = await requireAuth();
+  return getWorkspaceTagsWithCountRepo(supabase, user.id, workspaceId);
 }
 
 export async function getBookmarkTags(

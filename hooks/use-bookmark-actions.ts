@@ -100,8 +100,12 @@ export function useBookmarkActions({
   const handleSubmit = useCallback(
     async (val: string) => {
       const trimmed = val.trim();
-      if (!currentWorkspace) {
-        toast.error("Please select a workspace first");
+      const targetWorkspace =
+        currentWorkspace ??
+        workspaces.find((ws) => ws.is_default) ??
+        workspaces[0];
+      if (!targetWorkspace) {
+        toast.error("Please create a workspace first");
         return;
       }
       if (trimmed.includes(".") || trimmed.startsWith("http")) {
@@ -116,7 +120,7 @@ export function useBookmarkActions({
         ]);
         setSearchQuery("");
         addBookmark(
-          { url: normalizedUrl, workspaceId: currentWorkspace.id },
+          { url: normalizedUrl, workspaceId: targetWorkspace.id },
           {
             onSuccess: () => {
               setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
@@ -130,7 +134,14 @@ export function useBookmarkActions({
         );
       }
     },
-    [currentWorkspace, addBookmark, invalidate, setSearchQuery, setPendingUrls],
+    [
+      currentWorkspace,
+      workspaces,
+      addBookmark,
+      invalidate,
+      setSearchQuery,
+      setPendingUrls,
+    ],
   );
 
   return {

@@ -1,19 +1,23 @@
 "use client";
 
-import { XIcon } from "@phosphor-icons/react";
-import { useUserTagsWithCount } from "~/hooks/use-user-tags";
+import { TagIcon } from "@phosphor-icons/react";
+import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { cn } from "~/lib/utils";
 
 interface BookmarkTagFilterProps {
   selectedTagIds: string[];
   onChange: (tagIds: string[]) => void;
+  onManageTags?: () => void;
+  workspaceId?: string;
 }
 
 export function BookmarkTagFilter({
   selectedTagIds,
   onChange,
+  onManageTags,
+  workspaceId,
 }: BookmarkTagFilterProps) {
-  const { tags, isLoading } = useUserTagsWithCount();
+  const { tags, isLoading } = useWorkspaceTagsWithCount(workspaceId);
 
   if (isLoading) return null;
   if (tags.length === 0) return null;
@@ -27,7 +31,17 @@ export function BookmarkTagFilter({
   };
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+      {onManageTags && (
+        <button
+          type="button"
+          onClick={onManageTags}
+          aria-label="Manage tags"
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.97]"
+        >
+          <TagIcon className="size-3.5" aria-hidden="true" />
+        </button>
+      )}
       {tags.map((tag) => {
         const isActive = selectedTagIds.includes(tag.id);
         return (
@@ -36,14 +50,13 @@ export function BookmarkTagFilter({
             type="button"
             onClick={() => toggleTag(tag.id)}
             className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[10px] font-medium transition-colors",
+              "inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-medium transition-colors active:scale-[0.97]",
               isActive
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             #{tag.name}
-            {isActive && <XIcon className="size-2.5" aria-hidden="true" />}
           </button>
         );
       })}
@@ -51,7 +64,7 @@ export function BookmarkTagFilter({
         <button
           type="button"
           onClick={() => onChange([])}
-          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors ml-1"
+          className="ml-1 shrink-0 text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
         >
           Clear
         </button>

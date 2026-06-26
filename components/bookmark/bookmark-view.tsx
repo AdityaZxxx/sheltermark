@@ -1,15 +1,17 @@
 "use client";
 
 import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
-import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
+import type { BookmarkScope } from "~/lib/schemas/common";
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
+import { BookmarkTrash } from "./bookmark-trash";
+import { TagManageDialog } from "./tag-manage-dialog";
 
-export function BookmarkView() {
-  const vm = useBookmarkViewModel();
+export function BookmarkView({ scope }: { scope: BookmarkScope }) {
+  const vm = useBookmarkViewModel(scope);
 
   return (
     <section
@@ -22,12 +24,16 @@ export function BookmarkView() {
         view={vm.view}
         searchQuery={vm.searchQuery}
         sort={vm.sort}
+        count={vm.bookmarks.length}
+        title={vm.currentWorkspace?.name ?? "All Bookmarks"}
         selectedTagIds={vm.selectedTagIds}
+        workspaceId={vm.currentWorkspace?.id}
         onSearchChange={vm.setSearchQuery}
         onSubmit={vm.handleSubmit}
         onViewChange={vm.setView}
         onSortChange={vm.setSort}
         onTagFilterChange={vm.setSelectedTagIds}
+        onManageTags={() => vm.setManageTagsDialogOpen(true)}
       />
 
       <BookmarkList
@@ -77,7 +83,7 @@ export function BookmarkView() {
         onSuccess={vm.invalidate}
       />
 
-      <BookmarkDeleteDialog
+      <BookmarkTrash
         open={vm.dialogs.deleteDialogOpen}
         onOpenChange={vm.dialogs.setDeleteDialogOpen}
         ids={vm.dialogs.bookmarksToDelete}
@@ -99,6 +105,12 @@ export function BookmarkView() {
           if (vm.dialogs.bookmarksToMove.length > 0)
             vm.selection.clearSelection();
         }}
+      />
+
+      <TagManageDialog
+        open={vm.manageTagsDialogOpen}
+        onOpenChange={vm.setManageTagsDialogOpen}
+        workspaceId={vm.currentWorkspace?.id}
       />
     </section>
   );

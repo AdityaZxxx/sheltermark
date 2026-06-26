@@ -214,7 +214,7 @@ export async function restoreBookmarks(
 
   const { data: toRestore } = await supabase
     .from("bookmarks")
-    .select("id, url")
+    .select("id, url, workspace_id")
     .in("id", ids)
     .eq("user_id", userId);
 
@@ -222,30 +222,42 @@ export async function restoreBookmarks(
     return { success: false, error: "No bookmarks found to restore" };
   }
 
-  const urls = toRestore.map((b) => b.url);
-
-  let existingQuery = supabase
-    .from("bookmarks")
-    .select("url")
-    .eq("user_id", userId)
-    .is("deleted_at", null)
-    .in("url", urls);
-
-  if (resolvedWorkspaceId) {
-    existingQuery = existingQuery.eq("workspace_id", resolvedWorkspaceId);
-  } else if (resolvedWorkspaceId === null) {
-    existingQuery = existingQuery.is("workspace_id", null);
-  } else {
-    existingQuery = existingQuery.not("workspace_id", "is", null);
+  const restoreGroups = new Map<
+    string | null,
+    { ids: string[]; urls: string[] }
+  >();
+  for (const bm of toRestore) {
+    const wsKey = bm.workspace_id ?? null;
+    const group = restoreGroups.get(wsKey) ?? { ids: [], urls: [] };
+    group.ids.push(bm.id);
+    group.urls.push(bm.url);
+    restoreGroups.set(wsKey, group);
   }
 
-  const { data: existing } = await existingQuery;
-  const existingUrls = new Set(existing?.map((b) => b.url) ?? []);
+  const existingMap = new Map<string | null, Set<string>>();
+  for (const [wsKey, { urls }] of restoreGroups) {
+    let query = supabase
+      .from("bookmarks")
+      .select("url")
+      .eq("user_id", userId)
+      .is("deleted_at", null)
+      .in("url", urls);
+
+    if (wsKey !== null) {
+      query = query.eq("workspace_id", wsKey);
+    } else {
+      query = query.is("workspace_id", null);
+    }
+
+    const { data: existing } = await query;
+    existingMap.set(wsKey, new Set(existing?.map((b) => b.url) ?? []));
+  }
 
   const toRestoreIds: string[] = [];
   let skippedCount = 0;
-
   for (const bm of toRestore) {
+    const wsKey = bm.workspace_id ?? null;
+    const existingUrls = existingMap.get(wsKey) ?? new Set();
     if (existingUrls.has(bm.url)) {
       skippedCount++;
     } else {

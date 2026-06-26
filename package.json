@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-form": "^1.28.1",
     "@tanstack/react-query": "^5.90.20",
+    "@tanstack/react-virtual": "^3.14.7",
     "@types/chrome": "^0.1.42",
     "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.209",
