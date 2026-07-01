@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useState } from "react";
 import { useBookmarkActions } from "~/hooks/use-bookmark-actions";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkGlobalShortcuts } from "~/hooks/use-bookmark-global-shortcuts";
@@ -29,18 +29,12 @@ function getStoredViewPreference(): BookmarkViewVariant {
 }
 
 export function useBookmarkViewModel(scope: BookmarkScope) {
-  const [view, setView] = useState<BookmarkViewVariant>("list");
-  const [, startTransition] = useTransition();
-
-  useEffect(() => {
-    const stored = getStoredViewPreference();
-    setView(stored);
-  }, []);
+  const [view, setView] = useState<BookmarkViewVariant>(
+    getStoredViewPreference,
+  );
 
   const handleViewChange = useCallback((newView: BookmarkViewVariant) => {
-    startTransition(() => {
-      setView(newView);
-    });
+    setView(newView);
     try {
       localStorage.setItem(VIEW_PREFERENCE_KEY, newView);
     } catch {
