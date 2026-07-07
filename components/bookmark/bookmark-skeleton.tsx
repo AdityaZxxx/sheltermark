@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { Skeleton } from "~/components/ui/skeleton";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
-function BookmarkListItemSkeleton() {
+export function BookmarkListItemSkeleton() {
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
       <Skeleton className="shrink-0 w-6 h-6 rounded-xs" />
@@ -15,7 +14,7 @@ function BookmarkListItemSkeleton() {
   );
 }
 
-function BookmarkCardItemSkeleton() {
+export function BookmarkCardItemSkeleton() {
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       <Skeleton className="w-full h-32" />
@@ -29,25 +28,9 @@ function BookmarkCardItemSkeleton() {
   );
 }
 
-function BookmarkComfortItemSkeleton() {
-  return (
-    <div className="flex gap-4 rounded-lg border p-3">
-      <div className="flex-1 space-y-2">
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex items-center gap-2 mt-2">
-          <Skeleton className="w-4 h-4 rounded-xs shrink-0" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-      </div>
-      <Skeleton className="w-24 sm:w-36 shrink-0 rounded-md aspect-video" />
-    </div>
-  );
-}
-
 interface BookmarkListSkeletonProps {
   count?: number;
-  view?: BookmarkViewVariant;
+  view?: "list" | "card";
 }
 
 export function BookmarkSkeleton({
@@ -55,11 +38,7 @@ export function BookmarkSkeleton({
   view = "list",
 }: BookmarkListSkeletonProps) {
   const SkeletonComponent =
-    view === "card"
-      ? BookmarkCardItemSkeleton
-      : view === "comfort"
-        ? BookmarkComfortItemSkeleton
-        : BookmarkListItemSkeleton;
+    view === "card" ? BookmarkCardItemSkeleton : BookmarkListItemSkeleton;
 
   const keys = useMemo(
     () => Array.from({ length: count }, () => crypto.randomUUID()),

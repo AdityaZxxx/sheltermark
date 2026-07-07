@@ -19,14 +19,10 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { getPastelColor } from "~/lib/utils";
+import type { Workspace } from "~/types/workspace.types";
 
 interface DemoWorkspaceMenuProps {
-  workspaces: {
-    id: string;
-    name: string;
-    is_public?: boolean;
-    bookmarks_count?: number;
-  }[];
+  workspaces: Workspace[];
   currentWorkspaceId: string;
   onSelectWorkspace: (id: string) => void;
 }
@@ -51,8 +47,7 @@ export function DemoWorkspaceMenu({
           >
             <div className="flex items-center gap-2">
               <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: getPastelColor(currentWorkspaceId) }}
+                className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspaceId || "default")}`}
               />
               <span className="truncate max-w-[100px]">
                 {activeWorkspaceName}

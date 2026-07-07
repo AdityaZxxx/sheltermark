@@ -3,7 +3,7 @@
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
-import { loginWithEmail, loginWithGoogle } from "~/app/action/login.action";
+import { loginWithEmail, loginWithGoogle } from "~/app/action/login";
 import { GoogleIcon } from "~/components/google-icon";
 import { Button } from "~/components/ui/button";
 import {
@@ -17,9 +17,8 @@ import { cn } from "~/lib/utils";
 
 export function LoginForm({
   className,
-  next,
   ...props
-}: React.ComponentProps<"div"> & { next?: string }) {
+}: React.ComponentProps<"div">) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
@@ -27,28 +26,23 @@ export function LoginForm({
 
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
-    await loginWithGoogle(next);
+    await loginWithGoogle();
   };
 
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoadingEmail(true);
 
     const formData = new FormData(e.currentTarget);
-    if (next) {
-      formData.append("next", next);
-    }
     const result = await loginWithEmail(formData);
 
-    if (!result.success) {
+    if (result?.error) {
       setError(result.error);
       setIsLoadingEmail(false);
     }
   };
 
-  // Persist accessibility improvements: connect errors to inputs via aria-describedby
-  const loginErrorId = error ? "login-error" : undefined;
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="flex flex-col gap-1">
@@ -85,11 +79,7 @@ export function LoginForm({
       </div>
 
       {error && (
-        <div
-          id={loginErrorId}
-          aria-live="polite"
-          className="rounded-md border border-destructive/20 bg-destructive/5 p-3"
-        >
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
           <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
@@ -105,8 +95,6 @@ export function LoginForm({
                 type="email"
                 placeholder="hello@awesome.com"
                 required
-                aria-invalid={!!error}
-                aria-describedby={error ? loginErrorId : undefined}
                 className="pl-10"
               />
               <EnvelopeIcon
@@ -132,8 +120,6 @@ export function LoginForm({
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 required
-                aria-invalid={!!error}
-                aria-describedby={error ? loginErrorId : undefined}
                 className="pr-10"
               />
               <button

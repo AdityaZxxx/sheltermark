@@ -1,12 +1,8 @@
+import type { Workspace } from "~/types/workspace.types";
 import { DemoWorkspaceMenu } from "./demo-workspace-menu";
 
 interface DemoHeaderProps {
-  workspaces: {
-    id: string;
-    name: string;
-    is_public?: boolean;
-    bookmarks_count?: number;
-  }[];
+  workspaces: Workspace[];
   currentWorkspaceId: string;
   onSelectWorkspace: (id: string) => void;
 }

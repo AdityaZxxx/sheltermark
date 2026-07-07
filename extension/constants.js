@@ -1,0 +1,14 @@
+// Sheltermark Extension Constants
+
+export const DEFAULT_BASE_URL = "https://sheltermark.vercel.app";
+
+export const NOTIFICATION_DURATION = 3000;
+
+export const MESSAGE_TYPES = {
+  SAVE_BOOKMARK: "SAVE_BOOKMARK",
+  GET_TAB_INFO: "GET_TAB_INFO",
+  CHECK_AUTH: "CHECK_AUTH",
+  GET_WORKSPACES: "GET_WORKSPACES",
+  X_BOOKMARK_CAPTURED: "X_BOOKMARK_CAPTURED",
+  CHECK_BOOKMARK: "CHECK_BOOKMARK",
+};

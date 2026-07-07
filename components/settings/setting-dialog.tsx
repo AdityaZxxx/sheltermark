@@ -3,20 +3,8 @@
 import { GearIcon, UserIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import { useState } from "react";
-import { toast } from "sonner";
-import { deleteAccount } from "~/app/action/setting.action";
 import { ExportDialog } from "~/components/import-export/export-dialog";
 import { ImportDialog } from "~/components/import-export/import-dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { SettingsGeneralTab } from "./setting-general-tab";
 import { SettingsProfileTab } from "./setting-profile-tab";
@@ -42,30 +29,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const isChildDialogOpen =
-    exportDialogOpen || importDialogOpen || deleteAlertOpen;
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText.toLowerCase() !== user.email?.toLowerCase()) {
-      toast.error("Enter your email to confirm");
-      return;
-    }
-
-    setIsDeleting(true);
-    const result = await deleteAccount();
-
-    if (!result.success) {
-      toast.error(result.error);
-    } else {
-      toast.success("Account deleted successfully");
-      window.location.href = "/";
-    }
-    setIsDeleting(false);
-    setDeleteAlertOpen(false);
-  };
+  const isChildDialogOpen = exportDialogOpen || importDialogOpen;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,9 +65,6 @@ export function SettingsDialog({
               onCancel={() => onOpenChange(false)}
               onOpenExportDialog={() => setExportDialogOpen(true)}
               onOpenImportDialog={() => setImportDialogOpen(true)}
-              onOpenDeleteAlert={() => {
-                setDeleteAlertOpen(true);
-              }}
             />
           </TabsContent>
 
@@ -124,45 +85,6 @@ export function SettingsDialog({
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
       />
-      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Account</AlertDialogTitle>
-            <AlertDialogDescription className="mt-2 text-left">
-              This will permanently delete your account and all your data,
-              including workspaces and bookmarks. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Type your email{" "}
-              <span className="font-medium text-foreground">{user.email}</span>{" "}
-              to confirm.
-            </p>
-            <Input
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder="Enter your email"
-              autoComplete="off"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteAccount}
-              disabled={
-                deleteConfirmText.toLowerCase() !== user.email?.toLowerCase() ||
-                isDeleting
-              }
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? "Deleting..." : "Delete Account"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 }

@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { logger } from "~/lib/logger";
 import { createClient } from "~/utils/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -62,7 +61,7 @@ export async function GET(request: NextRequest) {
       bookmark_id: data?.id ?? null,
     });
   } catch (error) {
-    logger.error("Extension check error", { error });
+    console.error("Extension check error:", error);
     return NextResponse.json({ saved: false }, { status: 200 });
   }
 }

@@ -1,10 +1,4 @@
-import type { Metadata } from "next";
 import { ForgotPasswordForm } from "~/components/auth/forgot-password-form";
-
-export const metadata: Metadata = {
-  title: "Forgot Password - Sheltermark",
-  description: "Reset your password by receiving a recovery link via email.",
-};
 
 export default function ForgotPasswordPage() {
   return (

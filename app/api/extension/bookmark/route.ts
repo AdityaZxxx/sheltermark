@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
-import { logger } from "~/lib/logger";
+import { insertBookmark } from "~/lib/bookmark";
 import { createClient } from "~/utils/supabase/server";
 
 export async function POST(req: Request) {
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
     }
 
     // Resolve workspace: if none provided, fall back to user's default
-    let workspaceId: string = workspace_id;
+    let workspaceId: string | null = workspace_id ?? null;
 
     if (!workspaceId) {
       const { data: defaultWorkspace } = await supabase
@@ -77,7 +76,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, data: result.data });
   } catch (error) {
-    logger.error("Extension bookmark error", { error });
+    console.error("Extension bookmark error:", error);
     return NextResponse.json(
       { error: "Failed to save bookmark" },
       { status: 500 },

@@ -3,44 +3,26 @@
 import { useCallback, useState } from "react";
 import { BookmarkCardItem } from "~/components/bookmark/bookmark-card-item";
 import { BookmarkDeleteDialog } from "~/components/bookmark/bookmark-delete-dialog";
-import { BookmarkEditDialog } from "~/components/bookmark/bookmark-edit-dialog";
 import { BookmarkInput } from "~/components/bookmark/bookmark-input";
 import { BookmarkListItem } from "~/components/bookmark/bookmark-list-item";
 import { BookmarkMoveDialog } from "~/components/bookmark/bookmark-move-dialog";
+import { BookmarkRenameDialog } from "~/components/bookmark/bookmark-rename-dialog";
 import { BookmarkToolbar } from "~/components/bookmark/bookmark-toolbar";
 import { BookmarkViewToggle } from "~/components/bookmark/bookmark-view-toggle";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type { Workspace } from "~/lib/schemas/workspace.schema";
 import { safeDomain } from "~/lib/utils";
+import type { Bookmark } from "~/types/bookmark.types";
+import type { Workspace } from "~/types/workspace.types";
 import { DEMO_WORKSPACES, INITIAL_DEMO_BOOKMARKS } from "./demo-data";
 import { DemoHeader } from "./demo-header";
 
-type BookmarkDemo = Pick<
-  Bookmark,
-  | "id"
-  | "url"
-  | "title"
-  | "favicon_url"
-  | "og_image_url"
-  | "workspace_id"
-  | "created_at"
-> & {
-  domain?: string;
-};
-
-type WorkspaceDemo = Pick<
-  Workspace,
-  "id" | "name" | "is_public" | "is_default"
->;
-
 export function DemoBookmarkView() {
-  const [bookmarks, setBookmarks] = useState<BookmarkDemo[]>(
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(
     INITIAL_DEMO_BOOKMARKS,
   );
-  const [workspaces] = useState<WorkspaceDemo[]>(DEMO_WORKSPACES);
+  const [workspaces] = useState<Workspace[]>(DEMO_WORKSPACES);
   const [activeWorkspaceId, setActiveWorkspaceId] =
     useState<string>("personal");
   const [view, setView] = useState<"list" | "card">("list");
@@ -57,8 +39,8 @@ export function DemoBookmarkView() {
   } = useBookmarkSelection();
 
   const {
-    editDialogOpen,
-    setEditDialogOpen,
+    renameDialogOpen,
+    setRenameDialogOpen,
     deleteDialogOpen,
     setDeleteDialogOpen,
     moveDialogOpen,
@@ -68,7 +50,7 @@ export function DemoBookmarkView() {
     bookmarksToMove,
     handleDeleteTrigger,
     handleBulkDeleteTrigger,
-    handleEditTrigger,
+    handleRenameTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
   } = useBookmarkDialogs();
@@ -134,6 +116,12 @@ export function DemoBookmarkView() {
     [bookmarks],
   );
 
+  const handleConfirmRename = useCallback((id: string, title: string) => {
+    setBookmarks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, title } : b)),
+    );
+  }, []);
+
   const handleConfirmDelete = useCallback(
     (ids: string[]) => {
       setBookmarks((prev) => prev.filter((b) => !ids.includes(b.id)));
@@ -173,12 +161,13 @@ export function DemoBookmarkView() {
 
       const metadata = await res.json();
 
-      const newBookmark: BookmarkDemo = {
+      const newBookmark: Bookmark = {
         id: crypto.randomUUID(),
         title: metadata.title || url,
         url,
         favicon_url: metadata.favicon_url || null,
         og_image_url: metadata.og_image_url || null,
+        domain: safeDomain(url),
         workspace_id: activeWorkspaceId || "personal",
         created_at: new Date().toISOString(),
       };
@@ -186,12 +175,13 @@ export function DemoBookmarkView() {
       setBookmarks((prev) => [newBookmark, ...prev]);
       setSearchQuery("");
     } catch {
-      const newBookmark: BookmarkDemo = {
+      const newBookmark: Bookmark = {
         id: crypto.randomUUID(),
         title: url,
         url,
         favicon_url: null,
         og_image_url: null,
+        domain: safeDomain(url),
         workspace_id: activeWorkspaceId || "personal",
         created_at: new Date().toISOString(),
       };
@@ -201,22 +191,14 @@ export function DemoBookmarkView() {
     }
   };
 
-  const onEditTrigger = useCallback(
+  const onRenameTrigger = useCallback(
     (id: string) => {
       const bookmark = filteredBookmarks.find((b) => b.id === id);
       if (bookmark) {
-        handleEditTrigger(id, [
-          {
-            id: bookmark.id,
-            title: bookmark.title,
-            note: null,
-            tagsByBookmarkId: new Map(),
-            allTags: [],
-          },
-        ]);
+        handleRenameTrigger(id, filteredBookmarks);
       }
     },
-    [filteredBookmarks, handleEditTrigger],
+    [filteredBookmarks, handleRenameTrigger],
   );
 
   const getItem = useCallback(
@@ -290,10 +272,10 @@ export function DemoBookmarkView() {
                   }
                   isSelectionMode={isSelectionMode}
                   workspaces={workspaces}
-                  currentWorkspaceId={bookmark.workspace_id ?? undefined}
+                  currentWorkspaceId={bookmark.workspace_id}
                   onSelect={toggleSelect}
                   onDelete={handleDeleteTrigger}
-                  onEdit={onEditTrigger}
+                  onRename={onRenameTrigger}
                   onMove={handleMoveTrigger}
                   onMoveToWorkspace={(id, wsId) =>
                     handleConfirmMove([id], wsId)
@@ -324,10 +306,10 @@ export function DemoBookmarkView() {
                   }
                   isSelectionMode={isSelectionMode}
                   workspaces={workspaces}
-                  currentWorkspaceId={bookmark.workspace_id ?? undefined}
+                  currentWorkspaceId={bookmark.workspace_id}
                   onSelect={toggleSelect}
                   onDelete={handleDeleteTrigger}
-                  onEdit={onEditTrigger}
+                  onRename={onRenameTrigger}
                   onMove={handleMoveTrigger}
                   onMoveToWorkspace={(id, wsId) =>
                     handleConfirmMove([id], wsId)
@@ -374,20 +356,13 @@ export function DemoBookmarkView() {
           onCopyUrls={handleBulkCopyUrls}
         />
 
-        <BookmarkEditDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          bookmark={
-            activeBookmark
-              ? {
-                  id: activeBookmark.id,
-                  title: activeBookmark.title,
-                  note: activeBookmark.note,
-                  tags: activeBookmark.tags,
-                }
-              : null
-          }
-          onSuccess={() => setEditDialogOpen(false)}
+        <BookmarkRenameDialog
+          open={renameDialogOpen}
+          onOpenChange={setRenameDialogOpen}
+          bookmark={activeBookmark}
+          onSuccess={() => setRenameDialogOpen(false)}
+          onConfirm={handleConfirmRename}
+          silent
         />
 
         <BookmarkDeleteDialog
@@ -396,6 +371,7 @@ export function DemoBookmarkView() {
           ids={bookmarksToDelete}
           onSuccess={() => setDeleteDialogOpen(false)}
           onConfirm={handleConfirmDelete}
+          silent
         />
 
         <BookmarkMoveDialog
@@ -405,12 +381,12 @@ export function DemoBookmarkView() {
           workspaces={workspaces}
           currentWorkspaceId={
             bookmarksToMove.length === 1
-              ? (bookmarks.find((b) => b.id === bookmarksToMove[0])
-                  ?.workspace_id ?? undefined)
-              : undefined
+              ? bookmarks.find((b) => b.id === bookmarksToMove[0])?.workspace_id
+              : null
           }
           onSuccess={() => setMoveDialogOpen(false)}
           onConfirm={handleConfirmMove}
+          silent
         />
       </section>
     </div>

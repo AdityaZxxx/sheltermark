@@ -17,9 +17,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu";
-import { getPastelColor } from "~/lib/utils";
-
-const EMPTY_WORKSPACES: { id: string; name: string }[] = [];
+import { cn, getPastelColor } from "~/lib/utils";
 
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
@@ -27,9 +25,9 @@ interface BookmarkContextMenuProps {
   url: string;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string;
+  currentWorkspaceId?: string | null;
   onSelect?: (id: string) => void;
-  onEdit?: (id: string) => void;
+  onRename?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -43,10 +41,10 @@ export function BookmarkContextMenu({
   id,
   url,
   isSelectionMode,
-  workspaces = EMPTY_WORKSPACES,
+  workspaces = [],
   currentWorkspaceId,
   onSelect,
-  onEdit,
+  onRename,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -69,9 +67,9 @@ export function BookmarkContextMenu({
     <ContextMenu>
       <ContextMenuTrigger render={children} />
       <ContextMenuContent>
-        <ContextMenuItem onClick={() => onEdit?.(id)}>
+        <ContextMenuItem onClick={() => onRename?.(id)}>
           <PencilIcon />
-          Edit
+          Rename
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
@@ -99,8 +97,10 @@ export function BookmarkContextMenu({
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: getPastelColor(ws.id) }}
+                        className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          getPastelColor(ws.id),
+                        )}
                       />
                       <span className="truncate">{ws.name}</span>
                     </div>

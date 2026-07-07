@@ -1,39 +1,59 @@
-import { logger } from "../logger";
 import { extractMetadataFromHtml } from "./extract";
 import { isSafeUrl, resolveFavicon, safeFetchHtml } from "./fetch";
 import { fallbackStrategy, fetchViaMicrolink } from "./strategies";
 import type { Metadata } from "./types";
 import { createBasicMetadata } from "./utils";
 
+export { isSafeUrl } from "./fetch";
+
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+interface CacheEntry {
+  data: Metadata;
+  expiry: number;
+}
+
+const metadataCache = new Map<string, CacheEntry>();
+
+function getCachedMetadata(url: string): Metadata | null {
+  const cached = metadataCache.get(url);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.data;
+  }
+  metadataCache.delete(url);
+  return null;
+}
+
+function setCachedMetadata(url: string, data: Metadata): void {
+  metadataCache.set(url, { data, expiry: Date.now() + CACHE_TTL });
+}
+
 export async function fetchMetadata(url: string): Promise<Metadata> {
+  const cached = getCachedMetadata(url);
+  if (cached) return cached;
+
   const urlObj = new URL(url);
   const hostname = urlObj.hostname;
 
   const [isSafe, fallbackResult] = await Promise.all([
     isSafeUrl(url),
-    fallbackStrategy(url, hostname).catch((err) => {
-      logger.warn("Fallback strategy failed", { url, error: err });
-      return null;
-    }),
+    fallbackStrategy(url, hostname).catch(() => null),
   ]);
 
   if (!isSafe) {
-    return createBasicMetadata(url, hostname);
+    const basic = createBasicMetadata(url, hostname);
+    setCachedMetadata(url, basic);
+    return basic;
   }
 
   if (fallbackResult) {
+    setCachedMetadata(url, fallbackResult);
     return fallbackResult;
   }
 
   const [fetchResult, microlinkPromise] = await Promise.all([
-    safeFetchHtml(url).catch((err) => {
-      logger.warn("Safe fetch HTML failed", { url, error: err });
-      return null;
-    }),
-    fetchViaMicrolink(url).catch((err) => {
-      logger.warn("Microlink fetch failed", { url, error: err });
-      return null;
-    }),
+    safeFetchHtml(url).catch(() => null),
+    fetchViaMicrolink(url).catch(() => null),
   ]);
 
   let finalMetadata: Metadata;
@@ -65,5 +85,6 @@ export async function fetchMetadata(url: string): Promise<Metadata> {
     finalMetadata = { ...finalMetadata, favicon_url: faviconUrl };
   }
 
+  setCachedMetadata(url, finalMetadata);
   return finalMetadata;
 }

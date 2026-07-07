@@ -8,8 +8,7 @@
     "storage",
     "tabs",
     "contextMenus",
-    "notifications",
-    "alarms"
+    "notifications"
   ],
   "host_permissions": [
     "https://sheltermark.vercel.app/*",
@@ -28,7 +27,7 @@
     }
   },
   "background": {
-    "service_worker": "dist/background.js",
+    "service_worker": "background.js",
     "type": "module"
   },
   "content_scripts": [
@@ -39,7 +38,7 @@
         "https://twitter.com/*",
         "https://www.twitter.com/*"
       ],
-      "js": ["dist/x-capture.js"],
+      "js": ["x-capture.js"],
       "run_at": "document_end"
     }
   ],

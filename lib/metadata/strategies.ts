@@ -1,6 +1,9 @@
-import { httpFetch } from "~/lib/utils/http-fetch";
 import type { Metadata } from "./types";
-import { decodeHtmlEntities, getGoogleFavicon } from "./utils";
+import {
+  decodeHtmlEntities,
+  fetchWithTimeout,
+  getGoogleFavicon,
+} from "./utils";
 
 type Platform = "twitter" | "youtube" | "js-heavy" | "generic";
 
@@ -25,7 +28,7 @@ const PLATFORMS: Record<Platform, (hostname: string) => boolean> = {
   generic: () => true,
 };
 
-function detectPlatform(hostname: string): Platform {
+export function detectPlatform(hostname: string): Platform {
   for (const [platform, check] of Object.entries(PLATFORMS)) {
     if (check(hostname)) return platform as Platform;
   }
@@ -45,7 +48,7 @@ function extractYouTubeVideoId(url: string): string | null {
     const embedMatch = urlObj.pathname.match(
       /^\/(embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/,
     );
-    if (embedMatch) return embedMatch[2] ?? null;
+    if (embedMatch) return embedMatch[2];
     const vMatch = urlObj.pathname.match(/^\/([a-zA-Z0-9_-]{11})$/);
     return vMatch?.[1] ?? null;
   } catch {
@@ -55,13 +58,14 @@ function extractYouTubeVideoId(url: string): string | null {
 
 async function fetchTwitter(url: string): Promise<Metadata | null> {
   const apiUrl = `https://api.fxtwitter.com${new URL(url).pathname}`;
-  const { response: res } = await httpFetch(apiUrl);
+  const res = await fetchWithTimeout(apiUrl, {
+    headers: { "User-Agent": "Sheltermark/1.0" },
+  });
   if (!res.ok) return null;
   const data = await res.json();
   if (data.tweet) {
     return {
       title: `${data.tweet.author?.name || "User"} on X: "${data.tweet.text?.substring(0, 50) || ""}..."`,
-      description: null,
       og_image_url:
         data.tweet.media?.photos?.[0]?.url ||
         data.tweet.author?.avatar_url ||
@@ -72,7 +76,6 @@ async function fetchTwitter(url: string): Promise<Metadata | null> {
   if (data.user) {
     return {
       title: `${data.user.name || "User"} (@${data.user.screen_name || "unknown"}) / X`,
-      description: null,
       og_image_url: data.user.avatar_url?.replace("_normal", "") || null,
       favicon_url: data.user.avatar_url || null,
     };
@@ -89,7 +92,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
 
   for (const fetcher of [
     async () => {
-      const { response: res } = await httpFetch(
+      const res = await fetchWithTimeout(
         `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
         { headers: { Accept: "application/json" } },
       );
@@ -97,13 +100,12 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
       const data = await res.json();
       return {
         title: decodeHtmlEntities(data.title || url),
-        description: null,
         og_image_url: data.thumbnail_url,
         favicon_url: fallbackFavicon,
       };
     },
     async () => {
-      const { response: res } = await httpFetch(
+      const res = await fetchWithTimeout(
         `https://noembed.com/embed?url=${encodeURIComponent(url)}`,
         { headers: { Accept: "application/json" } },
       );
@@ -113,7 +115,6 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
         ? null
         : {
             title: decodeHtmlEntities(data.title || url),
-            description: null,
             og_image_url: data.thumbnail_url,
             favicon_url: null,
           };
@@ -123,7 +124,6 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
     if (result) {
       return {
         title: result.title,
-        description: null,
         og_image_url: result.og_image_url || fallbackThumb,
         favicon_url: result.favicon_url || fallbackFavicon,
       };
@@ -133,7 +133,6 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
   if (videoId)
     return {
       title: "YouTube Video",
-      description: null,
       og_image_url: fallbackThumb,
       favicon_url: fallbackFavicon,
     };
@@ -141,7 +140,7 @@ async function fetchYouTube(url: string): Promise<Metadata | null> {
 }
 
 async function fetchJsHeavy(url: string): Promise<Metadata | null> {
-  const { response: res } = await httpFetch(
+  const res = await fetchWithTimeout(
     `https://api.microlink.io?url=${encodeURIComponent(url)}`,
     { headers: { Accept: "application/json" } },
   );
@@ -150,7 +149,6 @@ async function fetchJsHeavy(url: string): Promise<Metadata | null> {
   if (!data.status || data.status !== "success") return null;
   return {
     title: decodeHtmlEntities(data.data?.title || url),
-    description: null,
     og_image_url: data.data?.image?.url || null,
     favicon_url: data.data?.logo?.url || null,
   };
@@ -168,3 +166,6 @@ export async function fallbackStrategy(
 }
 
 export const fetchViaMicrolink = fetchJsHeavy;
+export const isTwitterUrl = PLATFORMS.twitter;
+export const isYouTubeUrl = PLATFORMS.youtube;
+export const isJsHeavySite = PLATFORMS["js-heavy"];

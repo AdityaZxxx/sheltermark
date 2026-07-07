@@ -46,11 +46,29 @@ export function getGoogleFavicon(hostname: string): string {
   return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
 }
 
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 5000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export function isPrivateIP(ip: string): boolean {
   const ipv4Match = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (ipv4Match) {
-    const p1 = Number(ipv4Match[1]);
-    const p2 = Number(ipv4Match[2]);
+    const [, p1, p2] = ipv4Match.map(Number);
     if (p1 === 10) return true;
     if (p1 === 127) return true;
     if (p1 === 169 && p2 === 254) return true;
@@ -80,7 +98,6 @@ export function createBasicMetadata(
 ): import("./types").Metadata {
   return {
     title: url,
-    description: null,
     og_image_url: null,
     favicon_url: getGoogleFavicon(hostname),
   };

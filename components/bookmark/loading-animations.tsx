@@ -48,24 +48,16 @@ export function TextDecrypt({
 }: TextDecryptProps) {
   const [display, setDisplay] = useState(text);
   const onCompleteRef = useRef(onComplete);
-
-  // Keep the ref in sync with the latest onComplete callback.
-  // Writing to a ref during render (the old position) prevents React
-  // Compiler from optimizing this component.
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (!text) return;
 
-    const startTimeout = setTimeout(() => {
-      // Show raw text before starting the decrypt animation.
-      // This must be inside the async timeout callback so React Compiler
-      // can track it — synchronous setState in an effect body breaks
-      // automatic memoization.
-      setDisplay(text);
+    // Phase 1: Show raw text
+    setDisplay(text);
 
+    const startTimeout = setTimeout(() => {
+      // Phase 2: Decrypt
       const chars = text.split("");
       const revealed = new Array(chars.length).fill(false);
       let frame = 0;

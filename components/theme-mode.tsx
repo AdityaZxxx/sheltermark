@@ -2,7 +2,6 @@
 
 import { LaptopIcon, MoonIcon, SunIcon } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { cn } from "~/lib/utils";
 
@@ -34,14 +33,6 @@ export function ThemeMode({
   className,
 }: ThemeModeProps) {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
   const { icon: iconSize, padding } = SIZE[size];
 
   if (variant === "rounding") {
@@ -52,32 +43,31 @@ export function ThemeMode({
           className,
         )}
       >
-        {THEMES.map(({ value, icon: Icon, label }) => (
-          <button
-            key={value}
-            type="button"
-            title={label}
-            onClick={() => setTheme(value)}
-            className={cn(
-              "relative flex items-center justify-center rounded-full transition-all duration-200",
-              padding,
-              "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
-              theme === value && [
-                "bg-white dark:bg-neutral-700",
-                "text-neutral-900 dark:text-neutral-100",
-                "shadow-sm shadow-black/10 dark:shadow-black/30",
-              ],
-            )}
-          >
-            <Icon
+        {THEMES.map(({ value, icon: Icon, label }) => {
+          const isActive = theme === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              title={label}
+              onClick={() => setTheme(value)}
               className={cn(
-                iconSize,
-                "transition-transform duration-200",
-                theme === value && "scale-110",
+                "relative flex items-center justify-center rounded-full transition-all duration-200",
+                padding,
+                "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
+                isActive && [
+                  "bg-white dark:bg-neutral-700",
+                  "text-neutral-900 dark:text-neutral-100",
+                  "shadow-sm shadow-black/10 dark:shadow-black/30",
+                ],
               )}
-            />
-          </button>
-        ))}
+            >
+              <Icon
+                className={cn(iconSize, "transition-transform duration-200")}
+              />
+            </button>
+          );
+        })}
       </div>
     );
   }

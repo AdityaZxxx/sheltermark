@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { logger } from "~/lib/logger";
 import { createClient } from "~/utils/supabase/server";
 
 export async function GET() {
@@ -23,7 +22,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    logger.error("Extension auth error", { error });
+    console.error("Extension auth error:", error);
     return NextResponse.json(
       { authenticated: false, error: "Failed to check auth" },
       { status: 500 },

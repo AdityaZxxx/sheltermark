@@ -2,8 +2,6 @@ import Link from "next/link";
 import { ThemeMode } from "./theme-mode";
 
 export function Footer() {
-  const year = new Date().getFullYear();
-
   return (
     <footer className="my-4 md:my-10 px-2 text-center text-xs md:text-sm text-muted-foreground">
       <div className="mb-4 flex flex-wrap gap-4  flex-row items-center justify-center">
@@ -18,7 +16,9 @@ export function Footer() {
           Privacy Policy
         </Link>
       </div>
-      <p>© {year} Sheltermark - Safe place for your bookmarks</p>
+      <p>
+        © {new Date().getFullYear()} Sheltermark - Safe place for your bookmarks
+      </p>
     </footer>
   );
 }

@@ -2,8 +2,8 @@
 
 import { EnvelopeIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { resetPasswordForEmail } from "~/app/action/reset-password.action";
+import { useState } from "react";
+import { resetPasswordForEmail } from "~/app/action/reset-password";
 import {
   Field,
   FieldDescription,
@@ -14,28 +14,29 @@ import { Input } from "~/components/ui/input";
 import { Button } from "../ui/button";
 
 export function ForgotPasswordForm() {
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true);
 
-    startTransition(async () => {
-      try {
-        const formData = new FormData(e.currentTarget);
-        const result = await resetPasswordForEmail(formData);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await resetPasswordForEmail(formData);
 
-        if (!result.success) {
-          setError(result.error);
-        } else {
-          setSuccess(true);
-        }
-      } catch {
-        setError("An unexpected error occurred. Please try again.");
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        setSuccess(true);
       }
-    });
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (success) {
@@ -56,8 +57,6 @@ export function ForgotPasswordForm() {
     );
   }
 
-  // Accessibility: associate error region with email input when present
-  const forgotErrorId = error ? "forgot-password-error" : undefined;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -69,11 +68,7 @@ export function ForgotPasswordForm() {
       </div>
 
       {error && (
-        <div
-          id={forgotErrorId}
-          aria-live="polite"
-          className="rounded-md border border-destructive/20 bg-destructive/5 p-3"
-        >
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
           <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
@@ -89,8 +84,6 @@ export function ForgotPasswordForm() {
                 type="email"
                 placeholder="hello@awesome.com"
                 required
-                aria-invalid={!!error}
-                aria-describedby={error ? forgotErrorId : undefined}
                 className="pl-10"
               />
               <EnvelopeIcon
@@ -100,8 +93,8 @@ export function ForgotPasswordForm() {
             </div>
           </Field>
           <Field>
-            <Button type="submit" disabled={isPending} className="w-full">
-              {isPending ? "Sending..." : "Send Reset Link"}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? "Sending..." : "Send Reset Link"}
             </Button>
             <FieldDescription className="text-center">
               Remember your password?{" "}

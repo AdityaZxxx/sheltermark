@@ -1,16 +1,10 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { Suspense } from "react";
-import { getBookmarks } from "~/app/action/bookmark.action";
-import { getProfile } from "~/app/action/setting.action";
-import { getWorkspaces } from "~/app/action/workspace.action";
-import { ShareDialogManager } from "~/components/add/share-dialog-manager";
+import { getBookmarks } from "~/app/action/bookmark";
+import { getWorkspaces } from "~/app/action/workspace";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
 import { Header } from "~/components/header";
-import { UserProvider } from "~/components/providers/user-context";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
-import { bookmarkKeys, profileKeys, workspaceKeys } from "~/lib/query-keys";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 export default async function DashboardPage() {
   const { user } = await requireAuth();
@@ -19,42 +13,25 @@ export default async function DashboardPage() {
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: workspaceKeys.byUser(user?.id),
-      queryFn: async () => {
-        const result = await getWorkspaces();
-        if (!result.success) throw new Error(result.error);
-        return result.data as WorkspaceWithCount[];
-      },
+      queryKey: ["workspaces", user?.id],
+      queryFn: () => getWorkspaces(),
     }),
     queryClient.prefetchQuery({
-      queryKey: bookmarkKeys.all,
+      queryKey: ["bookmarks", user?.id],
       queryFn: async () => {
-        const result = await getBookmarks();
-        if (!result.success) throw new Error(result.error);
-        return result.data;
-      },
-    }),
-    queryClient.prefetchQuery({
-      queryKey: profileKeys.byUser(user?.id),
-      queryFn: async () => {
-        const result = await getProfile();
-        if (!result.success) throw new Error(result.error);
-        return result.data?.profile ?? null;
+        const { data, error } = await getBookmarks();
+        if (error) throw new Error(error);
+        return data;
       },
     }),
   ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <UserProvider user={user}>
-        <main className="min-h-dvh bg-background">
-          <Header user={user} />
-          <BookmarkView scope={{ type: "global" }} />
-          <Suspense>
-            <ShareDialogManager />
-          </Suspense>
-        </main>
-      </UserProvider>
+      <main className="min-h-dvh bg-background">
+        <Header />
+        <BookmarkView />
+      </main>
     </HydrationBoundary>
   );
 }

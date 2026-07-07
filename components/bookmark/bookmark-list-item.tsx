@@ -1,12 +1,14 @@
-import { GlobeIcon } from "@phosphor-icons/react";
-import React from "react";
+import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
-import type { Tag } from "~/lib/schemas/tag.schema";
-import { type BrokenStatus, cn } from "~/lib/utils";
+import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
-import { BrokenLinkWarning } from "./broken-link-warning";
 
 interface BookmarkItemProps {
   id: string;
@@ -16,20 +18,16 @@ interface BookmarkItemProps {
   favicon_url?: string;
   og_image_url?: string;
   created_at: string;
-  note?: string | null;
-  tags?: Tag[];
+  isBroken?: boolean;
   httpStatus?: number | null;
-  brokenStatus?: BrokenStatus | string | null;
   autoCheckBroken?: boolean;
   isSelected?: boolean;
   isSelectionMode?: boolean;
-  bookmarkWorkspaceId?: string | null;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string;
+  currentWorkspaceId?: string | null;
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onTagClick?: (tagId: string) => void;
+  onRename?: (id: string) => void;
   onMove?: (id: string) => void;
   onMoveToWorkspace?: (id: string, workspaceId: string) => void;
   onCopyUrl?: (url: string) => void;
@@ -43,24 +41,23 @@ interface BookmarkListItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export const BookmarkListItem = React.memo(function BookmarkListItem({
+export function BookmarkListItem({
   id,
   title,
   url,
   favicon_url,
   domain,
   created_at,
+  isBroken,
   httpStatus,
-  brokenStatus,
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
-  bookmarkWorkspaceId,
   workspaces = [],
   currentWorkspaceId,
   onSelect,
   onDelete,
-  onEdit,
+  onRename,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -69,10 +66,6 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   tabIndex,
   disableContextMenu = false,
 }: BookmarkListItemProps) {
-  const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
-  const workspaceName = showWorkspaceBadge
-    ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
-    : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -86,7 +79,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2 rounded-lg border hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
+        "group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-all text-left w-full relative",
         isSelected && "bg-primary/5",
       )}
       onClick={(e) => {
@@ -108,63 +101,61 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
         </div>
       )}
 
-      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
-            {favicon_url ? (
-              // biome-ignore lint/performance/noImgElement: nothing to optimize
-              <img
-                src={favicon_url}
-                alt=""
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <GlobeIcon className="w-full h-full text-muted-foreground" />
+      <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
+        {favicon_url ? (
+          // biome-ignore lint/performance/noImgElement: nothing to optimize
+          <img
+            src={favicon_url}
+            alt=""
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <GlobeIcon className="w-full h-full text-muted-foreground" />
+        )}
+      </div>
+
+      <div className="flex-1 flex items-center justify-between min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
+          <p
+            className={cn(
+              "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors min-w-0",
+              isSelected && "text-primary",
             )}
-          </div>
-          <div className="min-w-0">
-            <p
-              className={cn(
-                "text-sm font-medium truncate text-foreground hover-only:group-hover:text-primary transition-colors pr-2",
-                isSelected && "text-primary",
-              )}
-            >
-              {title}
+          >
+            {title}
+          </p>
+          {isBroken && autoCheckBroken ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center cursor-help">
+                    <WarningIcon
+                      className="w-3.5 h-3.5 text-red-500"
+                      weight="fill"
+                    />
+                  </div>
+                }
+              />
+              <TooltipContent>
+                <span>{getBrokenLinkMessage(httpStatus)}</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+              {domain}
             </p>
-          </div>
+          )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 pl-9 sm:pl-0 w-full sm:w-auto sm:flex-1">
-          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-            <p className="text-xs text-muted-foreground truncate">{domain}</p>
-            {workspaceName && (
-              <>
-                <span className="text-xs text-muted-foreground/40 shrink-0">
-                  ·
-                </span>
-                <span className="text-xs text-muted-foreground/60 truncate shrink-0">
-                  {workspaceName}
-                </span>
-              </>
-            )}
-            {autoCheckBroken && (
-              <BrokenLinkWarning
-                brokenStatus={brokenStatus}
-                httpStatus={httpStatus}
-                autoCheckBroken={autoCheckBroken}
-              />
-            )}
-          </div>
-          <div className="relative shrink-0 text-xs text-muted-foreground">
-            <span className="transition-opacity group-hover:opacity-0">
-              {formatRelativeTime(created_at)}
-            </span>
+        <div className="relative shrink-0 ml-10 text-xs text-muted-foreground">
+          <span className="transition-opacity group-hover:opacity-0">
+            {formatRelativeTime(created_at)}
+          </span>
 
-            <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <Kbd>⌘</Kbd>
-              <Kbd>↵</Kbd>
-            </KbdGroup>
-          </div>
+          <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <Kbd>⌘</Kbd>
+            <Kbd>↵</Kbd>
+          </KbdGroup>
         </div>
       </div>
     </button>
@@ -183,7 +174,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
-      onEdit={onEdit}
+      onRename={onRename}
       onMove={onMove}
       onMoveToWorkspace={onMoveToWorkspace}
       onCopyUrl={onCopyUrl}
@@ -193,4 +184,4 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       {(triggerProps) => <div {...triggerProps}>{buttonContent}</div>}
     </BookmarkContextMenu>
   );
-});
+}
