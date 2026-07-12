@@ -14,7 +14,7 @@ import {
 } from "~/app/action/workspace";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { workspaceKeys } from "~/lib/query-keys";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
+import type { Workspace } from "~/types/workspace.types";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -37,7 +37,7 @@ export function useWorkspaces() {
   const queryKey = useMemo(() => workspaceKeys.byUser(user?.id), [user?.id]);
 
   const { data: workspaces = [], isLoading: isWsLoading } = useQuery<
-    WorkspaceWithCount[]
+    Workspace[]
   >(workspacesQueryOptions(user?.id));
 
   const currentWorkspace = useMemo(() => {
@@ -74,19 +74,18 @@ export function useWorkspaces() {
       const tempId = generateTempId();
       const isFirstWorkspace = workspaces.length === 0;
 
-      const optimisticWorkspace = {
+      const optimisticWorkspace: Workspace = {
         id: tempId,
         name,
         is_public: false,
         is_default: isFirstWorkspace,
         auto_check_broken: false,
         bookmarks_count: 0,
-        user_id: user?.id || "",
+        user_id: user?.id,
         created_at: new Date().toISOString(),
-        updated_at: null,
-      } satisfies WorkspaceWithCount;
+      };
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) => [
+      queryClient.setQueryData(queryKey, (old: Workspace[] = []) => [
         ...old,
         optimisticWorkspace,
       ]);
@@ -121,7 +120,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
+      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
         old.filter((ws) => ws.id !== id),
       );
 
@@ -162,7 +161,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
+      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
         old.map((ws) => (ws.id === id ? { ...ws, is_public: isPublic } : ws)),
       );
 
@@ -195,7 +194,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
+      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
         old.map((ws) => ({
           ...ws,
           is_default: ws.id === id,
@@ -230,7 +229,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
+      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
         old.map((ws) =>
           ws.id === id ? { ...ws, auto_check_broken: enabled } : ws,
         ),

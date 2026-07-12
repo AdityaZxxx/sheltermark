@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   addBookmark as addBookmarkAction,
@@ -13,13 +13,7 @@ import {
 } from "~/app/action/bookmark";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
-import type {
-  Bookmark,
-  BookmarkDeleteInput,
-  BookmarkMoveInput,
-  BookmarkRefetchMetadataInput,
-  BookmarkRenameInput,
-} from "~/lib/schemas/bookmark";
+import type { Bookmark } from "~/types/bookmark.types";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -30,9 +24,9 @@ const bookmarksQueryOptions = (
 ) => ({
   queryKey: bookmarkKeys.byWorkspace(workspaceId, userId),
   queryFn: async () => {
-    const result = await getBookmarks();
-    if (!result.success) throw new Error(result.error);
-    return result.data;
+    const { data, error } = await getBookmarks();
+    if (error) throw new Error(error);
+    return data || [];
   },
   enabled: !!userId,
   staleTime: 1000 * 60 * 5,
@@ -43,31 +37,65 @@ const bookmarksQueryOptions = (
 
 export function useBookmarks(workspaceId?: string) {
   const queryClient = useQueryClient();
-  const { user, isLoading: isAuthLoading } = useSupabase();
+  const { supabase, user, isLoading: isAuthLoading } = useSupabase();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const queryKey = bookmarkKeys.byWorkspace(workspaceId, user?.id);
+  const queryKey = useMemo(
+    () => bookmarkKeys.byWorkspace(workspaceId, user?.id),
+    [workspaceId, user?.id],
+  );
 
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>(
     bookmarksQueryOptions(workspaceId, user?.id),
   );
 
-  const { supabase } = useSupabase();
+  const bookmarks = useMemo(() => {
+    if (!workspaceId) return allBookmarks;
+    return allBookmarks.filter((b) => b.workspace_id === workspaceId);
+  }, [allBookmarks, workspaceId]);
+
+  const filteredBookmarks = useMemo(() => {
+    if (!searchQuery.trim()) return bookmarks;
+    const query = searchQuery.toLowerCase();
+    return bookmarks.filter(
+      (b) =>
+        b.title?.toLowerCase().includes(query) ||
+        b.url.toLowerCase().includes(query) ||
+        b.domain?.toLowerCase().includes(query),
+    );
+  }, [bookmarks, searchQuery]);
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
+
+  const invalidateAllBookmarks = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
+  }, [queryClient]);
+
+  const _invalidateWorkspaces = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: workspaceKeys.byUser(user?.id),
+    });
+  }, [queryClient, user?.id]);
+
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !supabase) return;
 
     const channel = supabase
-      .channel("bookmarks-changes")
+      .channel("bookmarks-realtime")
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "bookmarks",
           filter: `user_id=eq.${user.id}`,
         },
         () => {
+          console.log("[useBookmarks] New bookmark detected");
           queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
+          toast.success("New bookmark added!");
         },
       )
       .subscribe();
@@ -77,54 +105,29 @@ export function useBookmarks(workspaceId?: string) {
     };
   }, [user?.id, supabase, queryClient]);
 
-  const filteredBookmarks = workspaceId
-    ? allBookmarks.filter((b) => b.workspace_id === workspaceId)
-    : allBookmarks;
-
-  const bookmarks = searchQuery.trim()
-    ? filteredBookmarks.filter(
-        (b) =>
-          b.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          b.url.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : filteredBookmarks;
-
-  const invalidateBookmarks = () => {
-    queryClient.invalidateQueries({ queryKey });
-  };
-
-  const invalidateAllBookmarks = () => {
-    queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-  };
-
-  const invalidateWorkspaces = () => {
-    queryClient.invalidateQueries({
-      queryKey: workspaceKeys.byUser(user?.id),
-    });
-  };
-
   const addBookmark = useMutation({
-    mutationFn: (data: { url: string; workspaceId: string }) =>
-      addBookmarkAction(data),
-    onMutate: async (data) => {
+    mutationFn: addBookmarkAction,
+    onMutate: async (formData: FormData) => {
       await queryClient.cancelQueries({ queryKey });
       const previousBookmarks = queryClient.getQueryData(queryKey);
+
+      const url = formData.get("url") as string;
+      const title = (formData.get("title") as string) || url;
+      const domain = formData.get("domain") as string;
+      const workspaceIdValue = formData.get("workspaceId") as string;
 
       const tempId = generateTempId();
       const optimisticBookmark: Bookmark = {
         id: tempId,
-        url: data.url,
-        title: data.url,
-        http_status: null,
-        last_checked_at: null,
-        is_broken: false,
-        is_public: false,
+        url,
+        title,
+        domain: domain || "",
         favicon_url: null,
         og_image_url: null,
-        workspace_id: data.workspaceId,
+        workspace_id: workspaceIdValue || null,
         user_id: user?.id || "",
-        updated_at: null,
         created_at: new Date().toISOString(),
+        updated_at: null,
       };
 
       queryClient.setQueryData(queryKey, (old: Bookmark[] = []) => [
@@ -147,13 +150,13 @@ export function useBookmarks(workspaceId?: string) {
       }
     },
     onSettled: () => {
-      invalidateBookmarks();
+      invalidate();
     },
   });
 
   const deleteBookmarks = useMutation({
     mutationFn: deleteBookmarksAction,
-    onMutate: async ({ ids }: BookmarkDeleteInput) => {
+    onMutate: async (ids: string[]) => {
       await queryClient.cancelQueries({ queryKey });
       const previousBookmarks = queryClient.getQueryData(queryKey);
 
@@ -177,13 +180,13 @@ export function useBookmarks(workspaceId?: string) {
       }
     },
     onSettled: () => {
-      invalidateBookmarks();
+      invalidate();
     },
   });
 
   const renameBookmark = useMutation({
-    mutationFn: async ({ id, title }: BookmarkRenameInput) => {
-      return renameBookmarkAction({ id, title });
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      return renameBookmarkAction(id, title);
     },
     onMutate: async ({ id, title }) => {
       await queryClient.cancelQueries({ queryKey });
@@ -202,21 +205,27 @@ export function useBookmarks(workspaceId?: string) {
       }
       toast.error("Failed to rename bookmark");
     },
-    onSuccess: (result) => {
-      if (!result.success) {
-        toast.error(result.error);
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
       } else {
         toast.success("Bookmark renamed");
       }
     },
     onSettled: () => {
-      invalidateBookmarks();
+      invalidate();
     },
   });
 
   const moveBookmarks = useMutation({
-    mutationFn: async ({ ids, targetWorkspaceId }: BookmarkMoveInput) => {
-      return moveBookmarksAction({ ids, targetWorkspaceId });
+    mutationFn: async ({
+      ids,
+      targetWorkspaceId,
+    }: {
+      ids: string[];
+      targetWorkspaceId: string;
+    }) => {
+      return moveBookmarksAction(ids, targetWorkspaceId);
     },
     onMutate: async ({ ids, targetWorkspaceId }) => {
       await queryClient.cancelQueries({ queryKey });
@@ -254,21 +263,22 @@ export function useBookmarks(workspaceId?: string) {
       }
       toast.error("Failed to move bookmarks");
     },
-    onSuccess: (result) => {
-      if (!result.success) {
-        toast.error(result.error);
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success("Bookmarks moved");
       }
     },
     onSettled: () => {
-      invalidateBookmarks();
+      invalidate();
       invalidateAllBookmarks();
-      invalidateWorkspaces();
+      queryClient.invalidateQueries({ queryKey: ["workspaces", user?.id] });
     },
   });
 
   const refetchBookmarkMetadata = useMutation({
-    mutationFn: ({ id }: BookmarkRefetchMetadataInput) =>
-      refetchBookmarkMetadataAction({ id }),
+    mutationFn: ({ id }: { id: string }) => refetchBookmarkMetadataAction(id),
     onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey });
       const previousBookmarks = queryClient.getQueryData(queryKey);
@@ -288,26 +298,26 @@ export function useBookmarks(workspaceId?: string) {
       }
       toast.error("Failed to refresh metadata");
     },
-    onSuccess: (result) => {
-      if (!result.success) {
-        toast.error(result.error);
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
       } else {
         toast.success("Metadata refreshed");
       }
     },
     onSettled: () => {
-      invalidateBookmarks();
+      invalidate();
     },
   });
 
   return {
     bookmarks,
-    filteredBookmarks: bookmarks,
+    filteredBookmarks,
     allBookmarks,
     isLoading: isAuthLoading || isLoading,
     searchQuery,
     setSearchQuery,
-    invalidate: invalidateBookmarks,
+    invalidate,
     addBookmark: addBookmark.mutate,
     isAddingBookmark: addBookmark.isPending,
     deleteBookmarks: deleteBookmarks.mutate,
