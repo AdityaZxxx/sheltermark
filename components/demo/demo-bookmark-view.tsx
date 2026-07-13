@@ -396,7 +396,6 @@ export function DemoBookmarkView() {
           ids={bookmarksToDelete}
           onSuccess={() => setDeleteDialogOpen(false)}
           onConfirm={handleConfirmDelete}
-          silent
         />
 
         <BookmarkMoveDialog
@@ -412,7 +411,6 @@ export function DemoBookmarkView() {
           }
           onSuccess={() => setMoveDialogOpen(false)}
           onConfirm={handleConfirmMove}
-          silent
         />
       </section>
     </div>
