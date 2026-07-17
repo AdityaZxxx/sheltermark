@@ -40,7 +40,7 @@ export function useBookmarks(workspaceId?: string) {
   const { data: allTags = [] } = useQuery<Tag[]>(userTagsQueryOptions);
 
   const { data: bookmarkTagLinks = [] } = useQuery<BookmarkTagLink[]>({
-    queryKey: tagKeys.all,
+    queryKey: tagKeys.links,
     queryFn: () => fetchAllBookmarkTags(supabase, userId ?? ""),
     enabled: !!userId,
   });
@@ -125,6 +125,7 @@ export function useBookmarks(workspaceId?: string) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
     queryClient.invalidateQueries({ queryKey: tagKeys.all });
+    queryClient.invalidateQueries({ queryKey: tagKeys.links });
     if (userId) {
       queryClient.invalidateQueries({
         queryKey: workspaceKeys.byUser(userId),

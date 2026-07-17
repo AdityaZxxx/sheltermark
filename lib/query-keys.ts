@@ -32,6 +32,7 @@ export const trashKeys = {
 
 export const tagKeys = {
   all: ["tags"] as const,
+  links: ["tags", "links"] as const,
   withCount: ["tags", "withCount"] as const,
   byBookmark: (bookmarkId: string) => ["tags", "bookmark", bookmarkId] as const,
 };

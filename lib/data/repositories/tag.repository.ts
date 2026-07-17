@@ -297,6 +297,14 @@ export async function deleteTag(
 
   const { tagId } = validated.data;
 
+  // Clean up junction table rows first to avoid orphaned references
+  const { error: linkError } = await supabase
+    .from("bookmark_tags")
+    .delete()
+    .eq("tag_id", tagId);
+
+  if (linkError) return { success: false, error: linkError.message };
+
   const { error } = await supabase
     .from("tags")
     .delete()
