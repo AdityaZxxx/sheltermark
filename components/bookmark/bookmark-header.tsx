@@ -18,6 +18,7 @@ interface BookmarkHeaderProps {
   onViewChange: (view: "list" | "card") => void;
   onSortChange: (sort: BookmarkSort) => void;
   onTagFilterChange: (tagIds: string[]) => void;
+  onManageTags?: () => void;
 }
 
 export function BookmarkHeader({
@@ -31,6 +32,7 @@ export function BookmarkHeader({
   onViewChange,
   onSortChange,
   onTagFilterChange,
+  onManageTags,
 }: BookmarkHeaderProps) {
   return (
     <div className="space-y-3 mx-auto">
@@ -44,6 +46,7 @@ export function BookmarkHeader({
       <BookmarkTagFilter
         selectedTagIds={selectedTagIds}
         onChange={onTagFilterChange}
+        onManageTags={onManageTags}
       />
 
       <div className="flex items-center justify-between pt-2">

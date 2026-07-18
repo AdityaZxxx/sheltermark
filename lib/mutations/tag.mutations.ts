@@ -62,7 +62,7 @@ export function useRenameTag(_userId: string | undefined) {
   return useOptimisticMutation<RenameTagInput, Tag>({
     mutationFn: renameTag,
     queryKey: tagKeys.all,
-    dependentQueryKeys: [bookmarkKeys.all],
+    dependentQueryKeys: [bookmarkKeys.all, tagKeys.withCount],
     successMessage: "Tag renamed",
     errorMessage: "Failed to rename tag. Please try again.",
   });
@@ -72,7 +72,7 @@ export function useDeleteTag(_userId: string | undefined) {
   return useOptimisticMutation<DeleteTagInput, null>({
     mutationFn: deleteTag,
     queryKey: tagKeys.all,
-    dependentQueryKeys: [bookmarkKeys.all, tagKeys.links],
+    dependentQueryKeys: [bookmarkKeys.all, tagKeys.links, tagKeys.withCount],
     successMessage: "Tag deleted",
     errorMessage: "Failed to delete tag. Please try again.",
   });

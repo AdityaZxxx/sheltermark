@@ -7,6 +7,7 @@ import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
+import { TagManageDialog } from "./tag-manage-dialog";
 
 export function BookmarkView() {
   const vm = useBookmarkViewModel();
@@ -28,6 +29,7 @@ export function BookmarkView() {
         onViewChange={vm.setView}
         onSortChange={vm.setSort}
         onTagFilterChange={vm.setSelectedTagIds}
+        onManageTags={() => vm.setManageTagsDialogOpen(true)}
       />
 
       <BookmarkList
@@ -99,6 +101,11 @@ export function BookmarkView() {
           if (vm.dialogs.bookmarksToMove.length > 0)
             vm.selection.clearSelection();
         }}
+      />
+
+      <TagManageDialog
+        open={vm.manageTagsDialogOpen}
+        onOpenChange={vm.setManageTagsDialogOpen}
       />
     </section>
   );

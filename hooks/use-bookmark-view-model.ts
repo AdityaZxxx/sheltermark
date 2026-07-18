@@ -13,6 +13,7 @@ import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 export function useBookmarkViewModel() {
   const [view, setView] = useState<"list" | "card">("list");
+  const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
 
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
@@ -146,6 +147,8 @@ export function useBookmarkViewModel() {
       dialogs.handleBulkMoveTrigger(selection.selectedIds),
     invalidate,
     dialogs,
+    manageTagsDialogOpen,
+    setManageTagsDialogOpen,
     allTags,
     tagsByBookmarkId,
     selectedTagIds,

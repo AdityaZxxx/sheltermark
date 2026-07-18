@@ -1,17 +1,19 @@
 "use client";
 
-import { XIcon } from "@phosphor-icons/react";
+import { GearIcon } from "@phosphor-icons/react";
 import { useUserTagsWithCount } from "~/hooks/use-user-tags";
 import { cn } from "~/lib/utils";
 
 interface BookmarkTagFilterProps {
   selectedTagIds: string[];
   onChange: (tagIds: string[]) => void;
+  onManageTags?: () => void;
 }
 
 export function BookmarkTagFilter({
   selectedTagIds,
   onChange,
+  onManageTags,
 }: BookmarkTagFilterProps) {
   const { tags, isLoading } = useUserTagsWithCount();
 
@@ -28,6 +30,16 @@ export function BookmarkTagFilter({
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
+      {onManageTags && (
+        <button
+          type="button"
+          onClick={onManageTags}
+          aria-label="Manage tags"
+          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <GearIcon className="size-3.5" aria-hidden="true" />
+        </button>
+      )}
       {tags.map((tag) => {
         const isActive = selectedTagIds.includes(tag.id);
         return (
@@ -36,14 +48,13 @@ export function BookmarkTagFilter({
             type="button"
             onClick={() => toggleTag(tag.id)}
             className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[10px] font-medium transition-colors",
+              "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-medium transition-colors",
               isActive
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             #{tag.name}
-            {isActive && <XIcon className="size-2.5" aria-hidden="true" />}
           </button>
         );
       })}
