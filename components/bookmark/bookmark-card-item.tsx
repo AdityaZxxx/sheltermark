@@ -86,7 +86,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex flex-col rounded-sm overflow-hidden hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
+        "group flex flex-col rounded-sm overflow-hidden border hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
         isSelected && "bg-primary/5",
       )}
       onClick={() => {
@@ -144,26 +144,25 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
               <GlobeIcon className="w-full h-full text-muted-foreground" />
             )}
           </div>
-          {isBroken && autoCheckBroken ? (
+          <p className="text-xs font-medium text-muted-foreground truncate">
+            {domain}
+          </p>
+          {isBroken && autoCheckBroken && (
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center cursor-help">
+                  <span className="cursor-help shrink-0">
                     <WarningIcon
-                      className="w-3.5 h-3.5 text-red-500"
+                      className="w-3 h-3 text-red-500/70"
                       weight="fill"
                     />
-                  </div>
+                  </span>
                 }
               />
               <TooltipContent>
                 <span>{getBrokenLinkMessage(httpStatus)}</span>
               </TooltipContent>
             </Tooltip>
-          ) : (
-            <p className="text-xs font-medium text-muted-foreground truncate">
-              {domain}
-            </p>
           )}
         </div>
         <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 min-w-[80px]">

@@ -84,7 +84,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2 rounded-lg hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
+        "group flex items-center gap-3 px-3 py-2 rounded-lg border hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
         isSelected && "bg-primary/5",
       )}
       onClick={(e) => {
@@ -106,21 +106,20 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
         </div>
       )}
 
-      <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
-        {favicon_url ? (
-          // biome-ignore lint/performance/noImgElement: nothing to optimize
-          <img
-            src={favicon_url}
-            alt=""
-            className="w-full h-full object-contain"
-          />
-        ) : (
-          <GlobeIcon className="w-full h-full text-muted-foreground" />
-        )}
-      </div>
-
-      <div className="flex-1 flex items-center justify-between min-w-0">
-        <div className="flex-1 min-w-0 flex items-center gap-2 mr-2">
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
+            {favicon_url ? (
+              // biome-ignore lint/performance/noImgElement: nothing to optimize
+              <img
+                src={favicon_url}
+                alt=""
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <GlobeIcon className="w-full h-full text-muted-foreground" />
+            )}
+          </div>
           <div className="min-w-0">
             <p
               className={cn(
@@ -131,38 +130,43 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
               {title}
             </p>
           </div>
-          {isBroken && autoCheckBroken ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center cursor-help">
-                    <WarningIcon
-                      className="w-3.5 h-3.5 text-red-500"
-                      weight="fill"
-                    />
-                  </div>
-                }
-              />
-              <TooltipContent>
-                <span>{getBrokenLinkMessage(httpStatus)}</span>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
-              {domain}
-            </p>
-          )}
         </div>
 
-        <div className="relative shrink-0 text-xs text-muted-foreground">
-          <span className="transition-opacity group-hover:opacity-0">
-            {formatRelativeTime(created_at)}
-          </span>
+        <div className="flex items-center justify-between gap-2 pl-9 sm:pl-0 w-full sm:w-auto sm:flex-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap p-0 md:pl-2">
+              {domain}
+            </p>
+            {isBroken && autoCheckBroken && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="cursor-help shrink-0">
+                      <WarningIcon
+                        className="w-3 h-3 text-red-500"
+                        weight="fill"
+                      />
+                    </span>
+                  }
+                />
+                <TooltipContent>
+                  <span>{getBrokenLinkMessage(httpStatus)}</span>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          {(!isBroken || !autoCheckBroken) && (
+            <div className="relative shrink-0 text-xs text-muted-foreground">
+              <span className="transition-opacity group-hover:opacity-0">
+                {formatRelativeTime(created_at)}
+              </span>
 
-          <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            <Kbd>⌘</Kbd>
-            <Kbd>↵</Kbd>
-          </KbdGroup>
+              <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <Kbd>⌘</Kbd>
+                <Kbd>↵</Kbd>
+              </KbdGroup>
+            </div>
+          )}
         </div>
       </div>
     </button>

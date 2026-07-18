@@ -89,7 +89,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group relative flex flex-row items-start gap-3 sm:gap-4 rounded-lg border p-3 overflow-hidden hover-only:hover:bg-muted/50 w-full cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left",
+        "group relative flex flex-row gap-3 sm:gap-4 rounded-lg border p-3 overflow-hidden hover:bg-muted/50 w-full cursor-pointer transition-all text-left",
         isSelected && "bg-primary/5",
       )}
       onClick={() => {
@@ -115,32 +115,12 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {isBroken && autoCheckBroken && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <div className="absolute top-2 left-2 z-10 cursor-help">
-                  <div className="w-6 h-6 rounded-full bg-red-500/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                    <WarningIcon
-                      className="w-3.5 h-3.5 text-white"
-                      weight="fill"
-                    />
-                  </div>
-                </div>
-              }
-            />
-            <TooltipContent>
-              <span>{getBrokenLinkMessage(httpStatus)}</span>
-            </TooltipContent>
-          </Tooltip>
-        )}
-
-        <h3 className="text-base text-foreground truncate leading-none font-medium">
+        <h3 className="text-base font-medium text-foreground truncate leading-snug tracking-tight">
           {title}
         </h3>
         {note && (
-          <div className="pt-1">
-            <p className="text-sm text-muted-foreground line-clamp-1 sm:line-clamp-2 italic leading-snug">
+          <div className="pt-1.5">
+            <p className="text-sm text-muted-foreground line-clamp-1 sm:line-clamp-2 leading-snug">
               <BookmarkNoteText text={note} />
             </p>
           </div>
@@ -159,12 +139,29 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
               <GlobeIcon className="w-full h-full text-muted-foreground" />
             )}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 flex items-center gap-1">
             <p className="text-xs font-medium text-muted-foreground truncate">
               {domain}
             </p>
+            {isBroken && autoCheckBroken && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="cursor-help shrink-0">
+                      <WarningIcon
+                        className="w-3 h-3 text-red-500/80"
+                        weight="fill"
+                      />
+                    </span>
+                  }
+                />
+                <TooltipContent>
+                  <span>{getBrokenLinkMessage(httpStatus)}</span>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
-          <div className="shrink-0 text-[10px] text-muted-foreground">
+          <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
             {formatRelativeTime(created_at)}
           </div>
         </div>
@@ -172,38 +169,54 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
         {tags.length > 0 && (
           <div className="mt-2 flex items-center gap-1 flex-wrap">
             {tags.slice(0, 2).map((tag) => (
-              <button
+              // biome-ignore lint/a11y/useSemanticElements: cannot be <button> inside parent <button>
+              <span
                 key={tag.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
                   onTagClick?.(tag.id);
                 }}
-                className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    onTagClick?.(tag.id);
+                  }
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 #{tag.name}
-              </button>
+              </span>
             ))}
             {tags.slice(2, 4).map((tag) => (
-              <button
+              // biome-ignore lint/a11y/useSemanticElements: cannot be <button> inside parent <button>
+              <span
                 key={tag.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
                   onTagClick?.(tag.id);
                 }}
-                className="hidden sm:block text-xs text-muted-foreground/70 hover:text-foreground transition-colors"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    onTagClick?.(tag.id);
+                  }
+                }}
+                className="hidden sm:block text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 #{tag.name}
-              </button>
+              </span>
             ))}
             {tags.length > 2 && (
-              <span className="sm:hidden text-[10px] text-muted-foreground/50">
+              <span className="sm:hidden text-xs text-muted-foreground/50">
                 +{tags.length - 2}
               </span>
             )}
             {tags.length > 4 && (
-              <span className="hidden sm:inline text-[10px] text-muted-foreground/50">
+              <span className="hidden sm:inline text-xs text-muted-foreground/50">
                 +{tags.length - 4}
               </span>
             )}
