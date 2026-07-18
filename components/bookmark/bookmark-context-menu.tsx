@@ -17,7 +17,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu";
-import { cn, getPastelColor } from "~/lib/utils";
+import { getPastelColor } from "~/lib/utils";
 
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
@@ -25,7 +25,7 @@ interface BookmarkContextMenuProps {
   url: string;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string | null;
+  currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onRename?: (id: string) => void;
   onMove?: (id: string) => void;
@@ -97,10 +97,8 @@ export function BookmarkContextMenu({
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className={cn(
-                          "w-2 h-2 rounded-full shrink-0",
-                          getPastelColor(ws.id),
-                        )}
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: getPastelColor(ws.id) }}
                       />
                       <span className="truncate">{ws.name}</span>
                     </div>

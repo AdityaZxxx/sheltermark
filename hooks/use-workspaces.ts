@@ -8,13 +8,14 @@ import {
   createWorkspace,
   deleteWorkspace,
   getWorkspaces,
+  renameWorkspace,
   setDefaultWorkspace,
   toggleAutoCheckBroken,
   togglePublicStatus,
 } from "~/app/action/workspace";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { workspaceKeys } from "~/lib/query-keys";
-import type { Workspace } from "~/types/workspace.types";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -37,7 +38,7 @@ export function useWorkspaces() {
   const queryKey = useMemo(() => workspaceKeys.byUser(user?.id), [user?.id]);
 
   const { data: workspaces = [], isLoading: isWsLoading } = useQuery<
-    Workspace[]
+    WorkspaceWithCount[]
   >(workspacesQueryOptions(user?.id));
 
   const currentWorkspace = useMemo(() => {
@@ -74,18 +75,19 @@ export function useWorkspaces() {
       const tempId = generateTempId();
       const isFirstWorkspace = workspaces.length === 0;
 
-      const optimisticWorkspace: Workspace = {
+      const optimisticWorkspace = {
         id: tempId,
         name,
         is_public: false,
         is_default: isFirstWorkspace,
         auto_check_broken: false,
         bookmarks_count: 0,
-        user_id: user?.id,
+        user_id: user?.id || "",
         created_at: new Date().toISOString(),
-      };
+        updated_at: null,
+      } satisfies WorkspaceWithCount;
 
-      queryClient.setQueryData(queryKey, (old: Workspace[] = []) => [
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) => [
         ...old,
         optimisticWorkspace,
       ]);
@@ -120,7 +122,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
         old.filter((ws) => ws.id !== id),
       );
 
@@ -161,7 +163,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
         old.map((ws) => (ws.id === id ? { ...ws, is_public: isPublic } : ws)),
       );
 
@@ -194,7 +196,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
         old.map((ws) => ({
           ...ws,
           is_default: ws.id === id,
@@ -229,7 +231,7 @@ export function useWorkspaces() {
       await queryClient.cancelQueries({ queryKey });
       const previousWorkspaces = queryClient.getQueryData(queryKey);
 
-      queryClient.setQueryData(queryKey, (old: Workspace[] = []) =>
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
         old.map((ws) =>
           ws.id === id ? { ...ws, auto_check_broken: enabled } : ws,
         ),
@@ -260,6 +262,38 @@ export function useWorkspaces() {
     },
   });
 
+  const renameMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      renameWorkspace(id, name),
+    onMutate: async ({ id, name }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousWorkspaces = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: WorkspaceWithCount[] = []) =>
+        old.map((ws) => (ws.id === id ? { ...ws, name } : ws)),
+      );
+
+      return { previousWorkspaces };
+    },
+    onError: (error, _variables, context) => {
+      console.error("[useWorkspaces] renameWorkspace failed:", error);
+      if (context?.previousWorkspaces) {
+        queryClient.setQueryData(queryKey, context.previousWorkspaces);
+      }
+      toast.error("Failed to rename workspace");
+    },
+    onSuccess: (data) => {
+      if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success("Workspace renamed");
+      }
+    },
+    onSettled: () => {
+      invalidate();
+    },
+  });
+
   return {
     workspaces,
     currentWorkspace,
@@ -275,5 +309,7 @@ export function useWorkspaces() {
     isSettingDefault: setDefaultMutation.isPending,
     toggleAutoCheckBroken: autoCheckMutation.mutate,
     isTogglingAutoCheck: autoCheckMutation.isPending,
+    renameWorkspace: renameMutation.mutate,
+    isRenaming: renameMutation.isPending,
   };
 }

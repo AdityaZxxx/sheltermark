@@ -57,7 +57,7 @@ export async function getPublicProfile(username: string): Promise<{
   const { data: workspaces, error: workspacesError } = await supabase
     .from("workspaces")
     .select(
-      "id, name, bookmarks(id, url, title, favicon_url, og_image_url, created_at)",
+      "id, name, bookmarks(id, url, title, favicon_url, og_image_url, created_at, updated_at)",
     )
     .eq("user_id", profile.id)
     .eq("is_public", true)
@@ -82,6 +82,7 @@ export async function getPublicProfile(username: string): Promise<{
       favicon_url: b.favicon_url,
       og_image_url: b.og_image_url,
       created_at: b.created_at,
+      updated_at: b.updated_at,
     })),
   }));
 

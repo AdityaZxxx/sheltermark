@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     }
 
     // Resolve workspace: if none provided, fall back to user's default
-    let workspaceId: string | null = workspace_id ?? null;
+    let workspaceId: string = workspace_id;
 
     if (!workspaceId) {
       const { data: defaultWorkspace } = await supabase

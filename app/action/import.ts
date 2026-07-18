@@ -4,7 +4,7 @@ import { requireAuth } from "~/lib/auth";
 import { importOptionsSchema } from "~/lib/schemas/profile";
 import { normalizeUrl } from "~/lib/utils";
 
-export type ImportPreviewResult = {
+type ImportPreviewResult = {
   success: true;
   totalBookmarks: number;
   validBookmarks: number;
@@ -12,7 +12,7 @@ export type ImportPreviewResult = {
   workspaces: Array<{ name: string; count: number }>;
 };
 
-export type ImportResult =
+type ImportResult =
   | { success: true; imported: number; skipped: number; errors: string[] }
   | { success: false; error: string };
 

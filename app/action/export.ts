@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { requireAuth } from "~/lib/auth";
 import { exportOptionsSchema } from "~/lib/schemas/profile";
 
-export type ExportResult =
+type ExportResult =
   | { success: true; data: string; filename: string; contentType: string }
   | { success: false; error: string };
 
@@ -36,7 +36,9 @@ export async function exportBookmarks(
     query = query.eq("workspace_id", validated.data.workspaceId);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
 
   if (error) {
     return { success: false, error: error.message };

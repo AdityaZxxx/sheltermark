@@ -5,6 +5,7 @@ import {
   GlobeIcon,
   GlobeXIcon,
   LinkBreakIcon,
+  PencilSimpleIcon,
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -26,6 +27,7 @@ import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog";
+import { WorkspaceRenameDialog } from "./workspace-rename-dialog";
 import { WorkspaceVisibilityDialog } from "./workspace-visibility-dialog";
 
 export function WorkspaceMenu() {
@@ -39,11 +41,14 @@ export function WorkspaceMenu() {
     isDeleting,
     togglePublicStatus,
     toggleAutoCheckBroken,
+    renameWorkspace,
+    isRenaming,
   } = useWorkspaces();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -85,7 +90,12 @@ export function WorkspaceMenu() {
             >
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2.5 h-2.5 rounded-full ${getPastelColor(currentWorkspace?.id || "default")}`}
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{
+                    backgroundColor: getPastelColor(
+                      currentWorkspace?.id || "default",
+                    ),
+                  }}
                 />
                 <span className="truncate max-w-[100px] text-sm">
                   {activeWorkspaceName}
@@ -108,7 +118,8 @@ export function WorkspaceMenu() {
                 <DropdownMenuRadioItem value={ws.id} key={ws.id}>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-2.5 h-2.5 rounded-full ${getPastelColor(ws.id)}`}
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: getPastelColor(ws.id) }}
                     />
                     <span className="truncate">{ws.name}</span>
                     {ws.is_public && (
@@ -153,6 +164,17 @@ export function WorkspaceMenu() {
                     Make Public
                   </>
                 )}
+              </button>
+            )}
+          />
+
+          <DropdownMenuItem
+            nativeButton
+            className="w-full gap-1.5"
+            render={(props) => (
+              <button {...props} onClick={() => setIsRenameDialogOpen(true)}>
+                <PencilSimpleIcon className="h-4 w-4" />
+                Rename
               </button>
             )}
           />
@@ -231,6 +253,18 @@ export function WorkspaceMenu() {
               isPublic: !currentWorkspace.is_public,
             });
             setIsVisibilityDialogOpen(false);
+          }
+        }}
+      />
+
+      <WorkspaceRenameDialog
+        isOpen={isRenameDialogOpen}
+        onOpenChange={setIsRenameDialogOpen}
+        currentName={activeWorkspaceName}
+        isRenaming={isRenaming}
+        onRename={(name) => {
+          if (currentWorkspace) {
+            renameWorkspace({ id: currentWorkspace.id, name });
           }
         }}
       />

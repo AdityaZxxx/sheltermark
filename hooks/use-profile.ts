@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   getProfile,
@@ -10,16 +9,17 @@ import {
 } from "~/app/action/setting";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { profileKeys } from "~/lib/query-keys";
-import type { Profile } from "~/types/profile.types";
+import type { Profile } from "~/lib/schemas/profile";
 
 const profileQueryOptions = (userId: string | undefined) => ({
   queryKey: profileKeys.byUser(userId),
   queryFn: async () => {
+    if (!userId) return null;
     const result = await getProfile();
     if (result.error) {
       throw new Error(result.error);
     }
-    return result.profile as Profile | null;
+    return result.profile || null;
   },
   enabled: !!userId,
 });
@@ -28,15 +28,15 @@ export function useProfile() {
   const queryClient = useQueryClient();
   const { user, isLoading: isAuthLoading } = useSupabase();
 
-  const queryKey = useMemo(() => profileKeys.byUser(user?.id), [user?.id]);
+  const queryKey = profileKeys.byUser(user?.id);
 
   const { data, isLoading } = useQuery<Profile | null>(
     profileQueryOptions(user?.id),
   );
 
-  const invalidate = useCallback(() => {
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey });
-  }, [queryClient, queryKey]);
+  };
 
   const updateMutation = useMutation({
     mutationFn: async (data: { name: string }) => {

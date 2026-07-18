@@ -25,7 +25,7 @@ interface BookmarkItemProps {
   isSelected?: boolean;
   isSelectionMode?: boolean;
   workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string | null;
+  currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
   onRename?: (id: string) => void;
