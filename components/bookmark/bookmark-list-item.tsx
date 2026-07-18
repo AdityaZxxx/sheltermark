@@ -133,8 +133,8 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
         </div>
 
         <div className="flex items-center justify-between gap-2 pl-9 sm:pl-0 w-full sm:w-auto sm:flex-1">
-          <div className="flex items-center gap-2 min-w-0">
-            <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap p-0 md:pl-2">
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <p className="text-xs text-muted-foreground pl-0 md:pl-1 truncate">
               {domain}
             </p>
             {isBroken && autoCheckBroken && (
@@ -155,18 +155,16 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
               </Tooltip>
             )}
           </div>
-          {(!isBroken || !autoCheckBroken) && (
-            <div className="relative shrink-0 text-xs text-muted-foreground">
-              <span className="transition-opacity group-hover:opacity-0">
-                {formatRelativeTime(created_at)}
-              </span>
+          <div className="relative shrink-0 text-xs text-muted-foreground">
+            <span className="transition-opacity group-hover:opacity-0">
+              {formatRelativeTime(created_at)}
+            </span>
 
-              <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <Kbd>⌘</Kbd>
-                <Kbd>↵</Kbd>
-              </KbdGroup>
-            </div>
-          )}
+            <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <Kbd>⌘</Kbd>
+              <Kbd>↵</Kbd>
+            </KbdGroup>
+          </div>
         </div>
       </div>
     </button>
