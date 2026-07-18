@@ -11,7 +11,6 @@ import { formatRelativeTime } from "~/lib/format";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
-import { BookmarkNoteText } from "./bookmark-note-text";
 
 interface BookmarkItemProps {
   id: string;
@@ -64,7 +63,6 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onSelect,
   onDelete,
   onEdit,
-  onTagClick,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -72,8 +70,6 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
-  note,
-  tags = [],
 }: BookmarkListItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -88,7 +84,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-all text-left w-full relative",
+        "group flex items-center gap-3 px-3 py-2 rounded-lg hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
         isSelected && "bg-primary/5",
       )}
       onClick={(e) => {
@@ -128,34 +124,12 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
           <div className="min-w-0">
             <p
               className={cn(
-                "text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors",
+                "text-sm font-medium truncate text-foreground hover-only:group-hover:text-primary transition-colors",
                 isSelected && "text-primary",
               )}
             >
               {title}
             </p>
-            {note && (
-              <p className="text-[11px] text-muted-foreground/60 truncate italic leading-tight mt-0.5">
-                <BookmarkNoteText text={note} />
-              </p>
-            )}
-            {tags.length > 0 && (
-              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                {tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onTagClick?.(tag.id);
-                    }}
-                    className="text-[10px] text-muted-foreground/70 hover:text-foreground transition-colors"
-                  >
-                    #{tag.name}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           {isBroken && autoCheckBroken ? (
             <Tooltip>
@@ -180,7 +154,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
           )}
         </div>
 
-        <div className="relative shrink-0 ml-10 text-xs text-muted-foreground">
+        <div className="relative shrink-0 text-xs text-muted-foreground">
           <span className="transition-opacity group-hover:opacity-0">
             {formatRelativeTime(created_at)}
           </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
 import { BookmarkInput } from "./bookmark-input";
 import { BookmarkSortSelect } from "./bookmark-sort";
@@ -9,13 +10,13 @@ import { BookmarkViewToggle } from "./bookmark-view-toggle";
 
 interface BookmarkHeaderProps {
   inputRef: RefObject<HTMLInputElement | null>;
-  view: "list" | "card";
+  view: BookmarkViewVariant;
   searchQuery: string;
   sort: BookmarkSort;
   selectedTagIds: string[];
   onSearchChange: (value: string) => void;
   onSubmit: (value: string) => void;
-  onViewChange: (view: "list" | "card") => void;
+  onViewChange: (view: BookmarkViewVariant) => void;
   onSortChange: (sort: BookmarkSort) => void;
   onTagFilterChange: (tagIds: string[]) => void;
   onManageTags?: () => void;

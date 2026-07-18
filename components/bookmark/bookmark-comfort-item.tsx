@@ -2,7 +2,6 @@ import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
 import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
-import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import {
   Tooltip,
   TooltipContent,
@@ -12,6 +11,7 @@ import { formatRelativeTime } from "~/lib/format";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import { cn, getBrokenLinkMessage } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
+import { BookmarkNoteText } from "./bookmark-note-text";
 
 interface BookmarkItemProps {
   id: string;
@@ -43,11 +43,11 @@ interface BookmarkItemProps {
   disableContextMenu?: boolean | undefined;
 }
 
-interface BookmarkCardItemProps extends BookmarkItemProps {
+interface BookmarkComfortItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export const BookmarkCardItem = React.memo(function BookmarkCardItem({
+export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   id,
   title,
   url,
@@ -55,6 +55,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   favicon_url,
   domain,
   created_at,
+  note,
   isBroken,
   httpStatus,
   autoCheckBroken = true,
@@ -65,6 +66,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelect,
   onDelete,
   onEdit,
+  onTagClick,
   onMove,
   onMoveToWorkspace,
   onCopyUrl,
@@ -72,7 +74,8 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
-}: BookmarkCardItemProps) {
+  tags = [],
+}: BookmarkComfortItemProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -86,7 +89,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex flex-col rounded-sm overflow-hidden hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
+        "group relative flex flex-row items-start gap-3 sm:gap-4 rounded-lg border p-3 overflow-hidden hover-only:hover:bg-muted/50 w-full cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left",
         isSelected && "bg-primary/5",
       )}
       onClick={() => {
@@ -111,27 +114,39 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
         </div>
       )}
 
-      <div className="aspect-1200/628 w-full overflow-hidden relative">
-        {og_image_url ? (
-          <ProgressiveImage
-            src={og_image_url}
-            alt={title}
-            containerClassName="w-full h-full"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-muted">
-            <GlobeIcon className="w-12 h-12 text-muted-foreground/20" />
+      <div className="flex min-w-0 flex-1 flex-col">
+        {isBroken && autoCheckBroken && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <div className="absolute top-2 left-2 z-10 cursor-help">
+                  <div className="w-6 h-6 rounded-full bg-red-500/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                    <WarningIcon
+                      className="w-3.5 h-3.5 text-white"
+                      weight="fill"
+                    />
+                  </div>
+                </div>
+              }
+            />
+            <TooltipContent>
+              <span>{getBrokenLinkMessage(httpStatus)}</span>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        <h3 className="text-base text-foreground truncate leading-none font-medium">
+          {title}
+        </h3>
+        {note && (
+          <div className="pt-1">
+            <p className="text-sm text-muted-foreground line-clamp-1 sm:line-clamp-2 italic leading-snug">
+              <BookmarkNoteText text={note} />
+            </p>
           </div>
         )}
-        <div className="absolute bottom-0.5 left-1 right-1 bg-black/60 px-2 py-1 mx-auto">
-          <h3 className="text-[10px] text-white truncate leading-none font-medium">
-            {title}
-          </h3>
-        </div>
-      </div>
-      <div className="flex items-center px-4 py-3 justify-between w-full border-t border-border">
-        <div className="flex gap-2 min-w-0 flex-1 mr-2">
+
+        <div className="flex flex-row items-center gap-2 mt-4">
           <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
             {favicon_url ? (
               // biome-ignore lint/performance/noImgElement: nothing to optimize
@@ -144,37 +159,70 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
               <GlobeIcon className="w-full h-full text-muted-foreground" />
             )}
           </div>
-          {isBroken && autoCheckBroken ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <div className="shrink-0 w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center cursor-help">
-                    <WarningIcon
-                      className="w-3.5 h-3.5 text-red-500"
-                      weight="fill"
-                    />
-                  </div>
-                }
-              />
-              <TooltipContent>
-                <span>{getBrokenLinkMessage(httpStatus)}</span>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted-foreground truncate">
               {domain}
             </p>
-          )}
-        </div>
-        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 min-w-[80px]">
-          <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0 text-right w-full">
+          </div>
+          <div className="shrink-0 text-[10px] text-muted-foreground">
             {formatRelativeTime(created_at)}
-          </span>
-          <KbdGroup className="absolute right-3 col-start-1 row-start-1 text-xs transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none">
-            <Kbd>⌘</Kbd>
-            <Kbd>↵</Kbd>
-          </KbdGroup>
+          </div>
         </div>
+
+        {tags.length > 0 && (
+          <div className="mt-2 flex items-center gap-1 flex-wrap">
+            {tags.slice(0, 2).map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTagClick?.(tag.id);
+                }}
+                className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors"
+              >
+                #{tag.name}
+              </button>
+            ))}
+            {tags.slice(2, 4).map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTagClick?.(tag.id);
+                }}
+                className="hidden sm:block text-xs text-muted-foreground/70 hover:text-foreground transition-colors"
+              >
+                #{tag.name}
+              </button>
+            ))}
+            {tags.length > 2 && (
+              <span className="sm:hidden text-[10px] text-muted-foreground/50">
+                +{tags.length - 2}
+              </span>
+            )}
+            {tags.length > 4 && (
+              <span className="hidden sm:inline text-[10px] text-muted-foreground/50">
+                +{tags.length - 4}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="w-24 sm:w-36 shrink-0">
+        {og_image_url ? (
+          <ProgressiveImage
+            src={og_image_url}
+            alt={title}
+            containerClassName="w-full aspect-video rounded-md overflow-hidden bg-muted"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="w-full aspect-video flex items-center justify-center bg-muted rounded-md">
+            <GlobeIcon className="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground/20" />
+          </div>
+        )}
       </div>
     </button>
   );

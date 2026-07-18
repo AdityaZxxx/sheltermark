@@ -9,10 +9,38 @@ import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
 import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
+const VIEW_PREFERENCE_KEY = "sheltermark-view-preference";
+
+function getStoredViewPreference(): BookmarkViewVariant {
+  if (typeof window === "undefined") return "list";
+  try {
+    const stored = localStorage.getItem(VIEW_PREFERENCE_KEY);
+    const valid: BookmarkViewVariant[] = ["list", "card", "comfort"];
+    if (stored && valid.includes(stored as BookmarkViewVariant)) {
+      return stored as BookmarkViewVariant;
+    }
+  } catch {
+    // localStorage may be blocked
+  }
+  return "list";
+}
+
 export function useBookmarkViewModel() {
-  const [view, setView] = useState<"list" | "card">("list");
+  const [view, setView] = useState<BookmarkViewVariant>(
+    getStoredViewPreference,
+  );
+
+  const handleViewChange = useCallback((newView: BookmarkViewVariant) => {
+    setView(newView);
+    try {
+      localStorage.setItem(VIEW_PREFERENCE_KEY, newView);
+    } catch {
+      // localStorage may be blocked
+    }
+  }, []);
   const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
 
   const { workspaces, currentWorkspace } = useWorkspaces();
@@ -119,7 +147,7 @@ export function useBookmarkViewModel() {
 
   return {
     view,
-    setView,
+    setView: handleViewChange,
     isLoading,
     searchQuery,
     setSearchQuery,

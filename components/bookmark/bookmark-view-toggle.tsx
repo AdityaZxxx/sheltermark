@@ -1,9 +1,10 @@
-import { ListIcon, SquaresFourIcon } from "@phosphor-icons/react";
+import { ListIcon, RowsIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 interface BookmarkViewToggleProps {
-  view: "list" | "card";
-  onViewChange: (view: "list" | "card") => void;
+  view: BookmarkViewVariant;
+  onViewChange: (view: BookmarkViewVariant) => void;
 }
 
 export function BookmarkViewToggle({
@@ -13,14 +14,20 @@ export function BookmarkViewToggle({
   return (
     <Tabs
       value={view}
-      onValueChange={(v) => onViewChange(v as "list" | "card")}
+      onValueChange={(v) => onViewChange(v as BookmarkViewVariant)}
     >
-      <TabsList className="grid w-16 grid-cols-2 bg-muted/60 rounded-lg">
+      <TabsList className="grid w-full grid-cols-3 bg-muted/60 rounded-lg">
         <TabsTrigger
           value="list"
           className="rounded-md data-active:bg-background data-active:shadow-sm"
         >
           <ListIcon className="h-4 w-4" />
+        </TabsTrigger>
+        <TabsTrigger
+          value="comfort"
+          className="rounded-md data-active:bg-background data-active:shadow-sm"
+        >
+          <RowsIcon className="size-4" />
         </TabsTrigger>
         <TabsTrigger
           value="card"

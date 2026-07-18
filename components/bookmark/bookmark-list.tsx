@@ -2,11 +2,14 @@
 
 import { BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { Workspace } from "~/lib/schemas/workspace.schema";
 import { safeDomain } from "~/lib/utils";
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkCardItemLoading } from "./bookmark-card-item-loading";
+import { BookmarkComfortItem } from "./bookmark-comfort-item";
+import { BookmarkComfortItemLoading } from "./bookmark-comfort-item-loading";
 import { BookmarkListItem } from "./bookmark-list-item";
 import { BookmarkListItemLoading } from "./bookmark-list-item-loading";
 import { BookmarkSkeleton } from "./bookmark-skeleton";
@@ -17,7 +20,7 @@ interface PendingBookmark {
 }
 
 interface BookmarkListProps {
-  view: "list" | "card";
+  view: BookmarkViewVariant;
   isLoading: boolean;
   searchQuery: string;
   filteredBookmarks: Bookmark[];
@@ -95,6 +98,8 @@ export function BookmarkList({
       {pendingUrls.map((pending) =>
         view === "card" ? (
           <BookmarkCardItemLoading key={pending.id} url={pending.url} />
+        ) : view === "comfort" ? (
+          <BookmarkComfortItemLoading key={pending.id} url={pending.url} />
         ) : (
           <BookmarkListItemLoading key={pending.id} url={pending.url} />
         ),
@@ -145,6 +150,9 @@ export function BookmarkList({
 
         if (view === "card") {
           return <BookmarkCardItem key={bookmark.id} {...commonProps} />;
+        }
+        if (view === "comfort") {
+          return <BookmarkComfortItem key={bookmark.id} {...commonProps} />;
         }
         return <BookmarkListItem key={bookmark.id} {...commonProps} />;
       })}

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 interface UseBookmarkKeyboardOptions {
   itemCount: number;
-  view: "list" | "card";
+  view: BookmarkViewVariant;
   onSelect?: (id: string) => void;
   onOpen?: (url: string) => void;
   isSelectionMode?: boolean;
