@@ -84,7 +84,7 @@ export function useDeleteBookmarks(_userId: string | undefined) {
     mutationFn: deleteBookmarks,
     queryKey: bookmarkKeys.all,
     dependentQueryKeys: [trashKeys.all],
-    successMessage: "Bookmarks moved to trash",
+    successMessage: null,
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
       const prev = oldData as Bookmark[];

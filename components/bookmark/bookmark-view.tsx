@@ -1,12 +1,12 @@
 "use client";
 
 import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
-import { BookmarkDeleteDialog } from "./bookmark-delete-dialog";
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
+import { BookmarkTrash } from "./bookmark-trash";
 import { TagManageDialog } from "./tag-manage-dialog";
 
 export function BookmarkView() {
@@ -79,7 +79,7 @@ export function BookmarkView() {
         onSuccess={vm.invalidate}
       />
 
-      <BookmarkDeleteDialog
+      <BookmarkTrash
         open={vm.dialogs.deleteDialogOpen}
         onOpenChange={vm.dialogs.setDeleteDialogOpen}
         ids={vm.dialogs.bookmarksToDelete}
