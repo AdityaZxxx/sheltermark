@@ -134,6 +134,7 @@ export function BookmarkList({
           autoCheckBroken,
           isSelected,
           isSelectionMode,
+          bookmarkWorkspaceId: bookmark.workspace_id,
           workspaces,
           currentWorkspaceId,
           onSelect,

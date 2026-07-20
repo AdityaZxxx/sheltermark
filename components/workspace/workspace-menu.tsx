@@ -4,6 +4,7 @@ import {
   CaretUpDownIcon,
   GlobeIcon,
   GlobeXIcon,
+  LayoutIcon,
   LinkBreakIcon,
   PencilSimpleIcon,
   PlusIcon,
@@ -35,6 +36,7 @@ export function WorkspaceMenu() {
     workspaces,
     currentWorkspace,
     setActiveWorkspace,
+    clearActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
     isDeleting,
@@ -49,7 +51,8 @@ export function WorkspaceMenu() {
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
-  const activeWorkspaceName = currentWorkspace?.name || "Select workspace";
+  const isGlobalView = !currentWorkspace;
+  const activeWorkspaceName = currentWorkspace?.name || "Dashboard";
 
   const handleTogglePublic = () => {
     setIsVisibilityDialogOpen(true);
@@ -76,7 +79,7 @@ export function WorkspaceMenu() {
                   className="w-2.5 h-2.5 rounded-full"
                   style={{
                     backgroundColor: getPastelColor(
-                      currentWorkspace?.id || "default",
+                      currentWorkspace?.id || "dashboard",
                     ),
                   }}
                 />
@@ -89,12 +92,31 @@ export function WorkspaceMenu() {
           }
         />
         <DropdownMenuContent align="start" sideOffset={8} className="w-56">
+          {!isGlobalView && (
+            <>
+              <DropdownMenuItem
+                nativeButton
+                className="w-full gap-1.5"
+                render={(props) => (
+                  <button
+                    {...props}
+                    type="button"
+                    onClick={clearActiveWorkspace}
+                  >
+                    <LayoutIcon className="h-4 w-4" />
+                    All Bookmarks
+                  </button>
+                )}
+              />
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuGroup>
             <DropdownMenuLabel className="sr-only">
               Workspaces
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
-              value={currentWorkspace?.id}
+              value={currentWorkspace?.id ?? ""}
               onValueChange={setActiveWorkspace}
             >
               {workspaces.map((ws) => (

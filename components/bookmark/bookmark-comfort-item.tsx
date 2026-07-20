@@ -24,6 +24,7 @@ interface BookmarkItemProps {
   autoCheckBroken?: boolean | undefined;
   isSelected?: boolean | undefined;
   isSelectionMode?: boolean | undefined;
+  bookmarkWorkspaceId?: string | null;
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string | undefined;
   onSelect?: ((id: string) => void) | undefined;
@@ -57,6 +58,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
+  bookmarkWorkspaceId,
   workspaces = [],
   currentWorkspaceId,
   onSelect,
@@ -72,6 +74,10 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   disableContextMenu = false,
   tags = [],
 }: BookmarkComfortItemProps) {
+  const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
+  const workspaceName = showWorkspaceBadge
+    ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
+    : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -139,6 +145,14 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
             <p className="text-xs font-medium text-muted-foreground truncate">
               {domain}
             </p>
+            {workspaceName && (
+              <>
+                <span className="text-xs text-muted-foreground/40">·</span>
+                <span className="text-xs text-muted-foreground/60 truncate shrink-0">
+                  {workspaceName}
+                </span>
+              </>
+            )}
             {autoCheckBroken && (
               <BrokenLinkWarning
                 brokenStatus={brokenStatus}

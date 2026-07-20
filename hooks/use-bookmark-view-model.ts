@@ -9,7 +9,7 @@ import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
 import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
+import type { BookmarkScope, BookmarkViewVariant } from "~/lib/schemas/common";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 const VIEW_PREFERENCE_KEY = "sheltermark-view-preference";
@@ -28,7 +28,7 @@ function getStoredViewPreference(): BookmarkViewVariant {
   return "list";
 }
 
-export function useBookmarkViewModel() {
+export function useBookmarkViewModel(scope: BookmarkScope) {
   const [view, setView] = useState<BookmarkViewVariant>(
     getStoredViewPreference,
   );
@@ -56,7 +56,7 @@ export function useBookmarkViewModel() {
     tagsByBookmarkId,
     selectedTagIds,
     setSelectedTagIds,
-  } = useBookmarks(currentWorkspace?.id);
+  } = useBookmarks(scope.type === "workspace" ? scope.id : undefined);
 
   const mutations = useBookmarkMutations();
 

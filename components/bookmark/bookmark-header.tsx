@@ -16,6 +16,7 @@ interface BookmarkHeaderProps {
   sort: BookmarkSort;
   selectedTagIds: string[];
   count?: number;
+  title?: string;
   workspaceId?: string;
   onSearchChange: (value: string) => void;
   onSubmit: (value: string) => void;
@@ -32,6 +33,7 @@ export function BookmarkHeader({
   sort,
   selectedTagIds,
   count,
+  title = "All Bookmarks",
   workspaceId,
   onSearchChange,
   onSubmit,
@@ -58,7 +60,7 @@ export function BookmarkHeader({
 
       <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
         <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance">
-          {searchQuery ? "Search Results" : "All Bookmarks"}
+          {searchQuery ? "Search Results" : title}
           {typeof count === "number" && count > 0 && (
             <span className="ml-1.5 tabular-nums text-foreground/40">
               · <span className="text-foreground/60">{count}</span>

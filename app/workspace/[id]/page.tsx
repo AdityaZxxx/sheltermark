@@ -12,7 +12,12 @@ import { makeQueryClient } from "~/lib/query-client";
 import { bookmarkKeys, profileKeys, workspaceKeys } from "~/lib/query-keys";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
-export default async function DashboardPage() {
+interface WorkspacePageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function WorkspacePage({ params }: WorkspacePageProps) {
+  const { id } = await params;
   const { user } = await requireAuth();
 
   const queryClient = makeQueryClient();
@@ -49,7 +54,7 @@ export default async function DashboardPage() {
       <UserProvider user={user}>
         <main className="min-h-dvh bg-background">
           <Header user={user} />
-          <BookmarkView scope={{ type: "global" }} />
+          <BookmarkView scope={{ type: "workspace", id }} />
           <Suspense>
             <ShareDialogManager />
           </Suspense>

@@ -23,6 +23,7 @@ interface BookmarkItemProps {
   autoCheckBroken?: boolean;
   isSelected?: boolean;
   isSelectionMode?: boolean;
+  bookmarkWorkspaceId?: string | null;
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
@@ -54,6 +55,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
+  bookmarkWorkspaceId,
   workspaces = [],
   currentWorkspaceId,
   onSelect,
@@ -67,6 +69,10 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   tabIndex,
   disableContextMenu = false,
 }: BookmarkListItemProps) {
+  const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
+  const workspaceName = showWorkspaceBadge
+    ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
+    : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -131,6 +137,16 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
         <div className="flex items-center justify-between gap-2 pl-9 sm:pl-0 w-full sm:w-auto sm:flex-1">
           <div className="flex items-center gap-2 min-w-0 overflow-hidden">
             <p className="text-xs text-muted-foreground truncate">{domain}</p>
+            {workspaceName && (
+              <>
+                <span className="text-xs text-muted-foreground/40 shrink-0">
+                  ·
+                </span>
+                <span className="text-xs text-muted-foreground/60 truncate shrink-0">
+                  {workspaceName}
+                </span>
+              </>
+            )}
             {autoCheckBroken && (
               <BrokenLinkWarning
                 brokenStatus={brokenStatus}

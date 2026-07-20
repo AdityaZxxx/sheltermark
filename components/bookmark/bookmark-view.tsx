@@ -1,6 +1,7 @@
 "use client";
 
 import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
+import type { BookmarkScope } from "~/lib/schemas/common";
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
@@ -9,8 +10,8 @@ import { BookmarkToolbar } from "./bookmark-toolbar";
 import { BookmarkTrash } from "./bookmark-trash";
 import { TagManageDialog } from "./tag-manage-dialog";
 
-export function BookmarkView() {
-  const vm = useBookmarkViewModel();
+export function BookmarkView({ scope }: { scope: BookmarkScope }) {
+  const vm = useBookmarkViewModel(scope);
 
   return (
     <section
@@ -24,6 +25,7 @@ export function BookmarkView() {
         searchQuery={vm.searchQuery}
         sort={vm.sort}
         count={vm.bookmarks.length}
+        title={vm.currentWorkspace?.name ?? "All Bookmarks"}
         selectedTagIds={vm.selectedTagIds}
         workspaceId={vm.currentWorkspace?.id}
         onSearchChange={vm.setSearchQuery}

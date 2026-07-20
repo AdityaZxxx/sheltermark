@@ -22,3 +22,7 @@ export const slugSchema = z
 
 export type BookmarkViewVariant = "list" | "card" | "comfort";
 export const bookmarkViewVariantSchema = z.enum(["list", "card", "comfort"]);
+
+export type BookmarkScope =
+  | { type: "global" }
+  | { type: "workspace"; id: string };
