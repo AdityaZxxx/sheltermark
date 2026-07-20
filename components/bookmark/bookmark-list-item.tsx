@@ -87,7 +87,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       onKeyDown={handleKeyDown}
       className={cn(
         "group flex items-center gap-3 px-3 py-2 rounded-lg border hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
-        isSelected && "bg-primary/5",
+        isSelected && "bg-primary/10",
       )}
       onClick={(e) => {
         if (isSelectionMode) {
@@ -125,7 +125,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
           <div className="min-w-0">
             <p
               className={cn(
-                "text-sm font-medium truncate text-foreground hover-only:group-hover:text-primary transition-colors pr-2",
+                "text-sm font-medium truncate text-foreground tracking-tight leading-snug hover-only:group-hover:text-primary transition-colors pr-2",
                 isSelected && "text-primary",
               )}
             >
@@ -139,7 +139,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
             <p className="text-xs text-muted-foreground truncate">{domain}</p>
             {workspaceName && (
               <>
-                <span className="text-xs text-muted-foreground/40 shrink-0">
+                <span className="text-xs text-muted-foreground/60 shrink-0">
                   ·
                 </span>
                 <span className="text-xs text-muted-foreground/60 truncate shrink-0">

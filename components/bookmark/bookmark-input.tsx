@@ -85,7 +85,7 @@ export function BookmarkInput({
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
       />
-      <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 pointer-events-none sm:block">
+      <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 pointer-events-none md:block">
         <KbdGroup>
           <Kbd>{mod}</Kbd>
           <Kbd>K</Kbd>

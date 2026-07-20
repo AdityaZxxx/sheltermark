@@ -41,13 +41,13 @@ export function BookmarkToolbar({
         "animate-in fade-in slide-in-from-bottom-5 duration-280",
       )}
     >
-      <div className="flex flex-col items-center mb-4">
+      <div className="flex flex-col items-center mb-2">
         <Badge>{selectedCount} selected</Badge>
       </div>
 
       <div
         className={cn(
-          "bg-popover border border-border shadow-xl rounded-xl px-4 py-2",
+          "bg-popover border border-border shadow-xl rounded-xl p-1.5 mb-2",
           "flex flex-col items-center gap-2 w-full",
           "backdrop-blur-sm bg-popover/95",
         )}
@@ -56,13 +56,17 @@ export function BookmarkToolbar({
           <Button
             variant="ghost"
             className={cn(
-              "h-7 rounded-md gap-1.5",
+              "h-10 rounded-md gap-1.5",
               isAllSelected && "bg-accent text-accent-foreground",
             )}
             onClick={onToggleSelectAll}
             aria-label={isAllSelected ? "Deselect all" : "Select all"}
           >
-            {isAllSelected ? <XSquareIcon /> : <CheckSquareIcon />}
+            {isAllSelected ? (
+              <XSquareIcon className="size-4.5" />
+            ) : (
+              <CheckSquareIcon className="size-4.5" />
+            )}
             <span className="text-xs hidden md:block">
               {isAllSelected ? "Deselect All" : "Select All"}
             </span>
@@ -70,24 +74,24 @@ export function BookmarkToolbar({
 
           <Button
             variant="ghost"
-            className="h-7 rounded-md gap-1.5"
+            className="h-10 rounded-md gap-1.5"
             onClick={onCopyUrls}
             aria-label="Copy URLs"
             disabled={!selectedCount}
           >
-            <CopyIcon />
+            <CopyIcon className="size-4.5" />
             <span className="text-xs hidden md:block">
               {selectedCount > 1 ? "Copy URLs" : "Copy URL"}
             </span>
           </Button>
           <Button
             variant="ghost"
-            className="h-7 rounded-md gap-1.5"
+            className="h-10 rounded-md gap-1.5"
             onClick={onMove}
             aria-label="Move"
             disabled={!selectedCount}
           >
-            <FolderOpenIcon />
+            <FolderOpenIcon className="size-4.5" />
             <span className="text-xs hidden md:block">Move</span>
           </Button>
 
@@ -95,22 +99,22 @@ export function BookmarkToolbar({
 
           <Button
             variant="ghost"
-            className="h-7 rounded-md gap-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+            className="h-10 rounded-md gap-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
             onClick={onDelete}
             aria-label="Delete"
             disabled={!selectedCount}
           >
-            <TrashIcon />
+            <TrashIcon className="size-4.5" />
             <span className="text-xs hidden md:block">Delete</span>
           </Button>
           <Button
             variant="ghost"
-            size="icon-xs"
-            className="h-5 w-5 rounded"
+            size="icon-sm"
+            className="size-9 rounded-md"
             onClick={onClear}
             aria-label="Clear selection"
           >
-            <XIcon />
+            <XIcon className="size-4.5" />
           </Button>
         </div>
       </div>

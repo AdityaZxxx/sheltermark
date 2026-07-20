@@ -7,6 +7,7 @@ import { updatePassword } from "~/app/action/reset-password.action";
 import { Button } from "~/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { AuthError } from "./auth-error";
 
 export function ResetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -41,11 +42,7 @@ export function ResetPasswordForm() {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
+      {error && <AuthError error={error} />}
 
       <form onSubmit={handleSubmit}>
         <FieldGroup>

@@ -2,6 +2,7 @@ import { GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
+import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import { formatRelativeTime } from "~/lib/format";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import { type BrokenStatus, cn } from "~/lib/utils";
@@ -91,8 +92,8 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group relative flex flex-row gap-3 sm:gap-4 rounded-lg border p-3 overflow-hidden hover:bg-muted/50 w-full cursor-pointer transition-all text-left",
-        isSelected && "bg-primary/5",
+        "group relative flex flex-row gap-3 md:gap-4 rounded-lg border p-3 overflow-hidden hover-only:hover:bg-muted/50 w-full cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left",
+        isSelected && "bg-primary/10",
       )}
       onClick={() => {
         if (isSelectionMode) {
@@ -102,9 +103,6 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
         }
       }}
     >
-      {isSelected && (
-        <div className="absolute inset-0 rounded-sm pointer-events-none z-20" />
-      )}
       {isSelectionMode && (
         <div className="absolute top-2 right-2 z-10">
           <Checkbox
@@ -122,7 +120,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
         </h3>
         {note && (
           <div className="pt-1.5">
-            <p className="text-sm text-muted-foreground line-clamp-1 sm:line-clamp-2 leading-snug">
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-snug">
               <BookmarkNoteText text={note} />
             </p>
           </div>
@@ -142,12 +140,10 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
             )}
           </div>
           <div className="min-w-0 flex-1 flex items-center gap-1">
-            <p className="text-xs font-medium text-muted-foreground truncate">
-              {domain}
-            </p>
+            <p className="text-xs text-muted-foreground truncate">{domain}</p>
             {workspaceName && (
               <>
-                <span className="text-xs text-muted-foreground/40">·</span>
+                <span className="text-xs text-muted-foreground/60">·</span>
                 <span className="text-xs text-muted-foreground/60 truncate shrink-0">
                   {workspaceName}
                 </span>
@@ -161,8 +157,14 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
               />
             )}
           </div>
-          <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
-            {formatRelativeTime(created_at)}
+          <div className="relative shrink-0 text-xs text-muted-foreground">
+            <span className="tabular-nums transition-opacity group-hover:opacity-0">
+              {formatRelativeTime(created_at)}
+            </span>
+            <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <Kbd>⌘</Kbd>
+              <Kbd>↵</Kbd>
+            </KbdGroup>
           </div>
         </div>
 
@@ -205,25 +207,25 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
                     onTagClick?.(tag.id);
                   }
                 }}
-                className="hidden sm:block text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="hidden md:block text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 #{tag.name}
               </span>
             ))}
             {tags.length > 2 && (
-              <span className="sm:hidden text-xs text-muted-foreground/50">
+              <span className="md:hidden text-xs text-muted-foreground/60">
                 +{tags.length - 2}
               </span>
             )}
             {tags.length > 4 && (
-              <span className="hidden sm:inline text-xs text-muted-foreground/50">
+              <span className="hidden md:inline text-xs text-muted-foreground/60">
                 +{tags.length - 4}
               </span>
             )}
           </div>
         )}
       </div>
-      <div className="w-24 sm:w-36 shrink-0">
+      <div className="w-28 md:w-36 shrink-0">
         {og_image_url ? (
           <ProgressiveImage
             src={og_image_url}
@@ -233,7 +235,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
           />
         ) : (
           <div className="w-full aspect-video flex items-center justify-center bg-muted rounded-md">
-            <GlobeIcon className="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground/20" />
+            <GlobeIcon className="w-10 h-10 md:w-12 md:h-12 text-muted-foreground/40" />
           </div>
         )}
       </div>

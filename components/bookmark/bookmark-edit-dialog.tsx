@@ -350,11 +350,11 @@ function MarkdownExample({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-      <code className="shrink-0 font-mono text-[11px] text-muted-foreground">
+      <code className="shrink-0 font-mono text-xs text-muted-foreground">
         {syntax}
       </code>
-      <span className="shrink-0 text-[11px] text-muted-foreground/60">→</span>
-      <div className="min-w-0 flex-1 truncate text-[11px] text-foreground/90">
+      <span className="shrink-0 text-xs text-muted-foreground">→</span>
+      <div className="min-w-0 flex-1 truncate text-xs text-foreground">
         <BookmarkNoteText text={preview} />
       </div>
     </div>

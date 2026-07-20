@@ -59,11 +59,11 @@ export function BookmarkHeader({
       />
 
       <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
-        <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance tracking-wider">
           {searchQuery ? "Search Results" : title}
           {typeof count === "number" && count > 0 && (
-            <span className="ml-1.5 tabular-nums text-foreground/40">
-              · <span className="text-foreground/60">{count}</span>
+            <span className="ml-1.5 tabular-nums text-muted-foreground">
+              · <span>{count}</span>
             </span>
           )}
         </h2>

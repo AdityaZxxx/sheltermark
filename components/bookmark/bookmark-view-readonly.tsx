@@ -86,7 +86,7 @@ export function BookmarkViewReadOnly({
       {isLoading ? (
         <BookmarkSkeleton count={6} view={view} />
       ) : filteredBookmarks.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-16 text-muted-foreground">
           <p>No public bookmarks yet.</p>
         </div>
       ) : view === "comfort" ? (

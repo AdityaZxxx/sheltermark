@@ -130,10 +130,10 @@ export function TagManageDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md gap-0 p-0" showCloseButton={false}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div className="flex items-center justify-between p-4 pb-3">
           <div>
             <DialogTitle className="text-sm">Tags</DialogTitle>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {tags.length} tag{tags.length !== 1 ? "s" : ""} in workspace
               {totalUsages > 0 && ` · ${totalUsages} uses`}
             </p>
@@ -153,17 +153,17 @@ export function TagManageDialog({
           </DialogClose>
         </div>
 
-        <div className="px-5 pb-2">
+        <div className="px-4 pb-2">
           <div className="relative">
             <MagnifyingGlassIcon
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground/50 pointer-events-none"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60 pointer-events-none"
               aria-hidden="true"
             />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search tags…"
-              className="w-full h-8 rounded-md border border-input bg-input/20 pl-7 pr-2.5 text-xs outline-none placeholder:text-muted-foreground/40 transition-colors focus:border-ring focus:ring-1 focus:ring-ring/30"
+              className="w-full h-9 rounded-md border border-input bg-input/20 pl-7 pr-2.5 text-sm outline-none placeholder:text-muted-foreground/60 transition-colors focus:border-ring focus:ring-1 focus:ring-ring/30"
             />
           </div>
         </div>
@@ -189,9 +189,9 @@ export function TagManageDialog({
                 return (
                   <div
                     key={tag.id}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-destructive/5 mx-1"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-destructive/10"
                   >
-                    <span className="text-[11px] text-foreground/90 flex-1 min-w-0">
+                    <span className="text-xs text-foreground flex-1 min-w-0">
                       Delete{" "}
                       <span className="font-medium">
                         &ldquo;{tag.name}&rdquo;
@@ -201,7 +201,7 @@ export function TagManageDialog({
                         <span className="text-muted-foreground">
                           {" "}
                           Removes it from{" "}
-                          <span className="font-medium text-foreground/80">
+                          <span className="font-medium text-foreground">
                             {tag.count === 1
                               ? "1 bookmark"
                               : `${tag.count} bookmarks`}
@@ -214,7 +214,7 @@ export function TagManageDialog({
                       <button
                         type="button"
                         onClick={() => setConfirmingDeleteId(null)}
-                        className="h-7 rounded-md px-2.5 text-[11px] font-medium text-muted-foreground hover:text-foreground active:scale-[0.97] transition-[colors,transform] duration-100 ease-out"
+                        className="h-8 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground active:scale-[0.97] transition-[colors,transform] duration-100 ease-out"
                       >
                         Cancel
                       </button>
@@ -222,7 +222,7 @@ export function TagManageDialog({
                         type="button"
                         onClick={() => handleDeleteConfirm(tag.id)}
                         disabled={deleteTag.isPending}
-                        className="h-7 rounded-md px-2.5 text-[11px] font-medium text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out disabled:pointer-events-none disabled:opacity-50"
+                        className="h-8 rounded-md px-2.5 text-xs font-medium text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out disabled:pointer-events-none disabled:opacity-50"
                       >
                         {deleteTag.isPending ? "Deleting…" : "Delete"}
                       </button>
@@ -238,8 +238,8 @@ export function TagManageDialog({
                   key={tag.id}
                   className={`group flex items-center gap-3 rounded-lg px-4 py-2.5 transition-[background-color,box-shadow] duration-150 ease-out ${
                     isEditing
-                      ? "bg-muted/50 -mx-1 px-5 shadow-sm ring-1 ring-foreground/5"
-                      : "hover:bg-muted/25"
+                      ? "bg-muted/60 -mx-1 px-5 shadow-sm ring-1 ring-border"
+                      : "hover-only:hover:bg-muted/50"
                   }`}
                 >
                   <TagIcon
@@ -271,17 +271,17 @@ export function TagManageDialog({
                           cancelRenaming();
                         }
                       }}
-                      className="min-w-0 flex-1 h-5 border-0 bg-transparent p-0 text-[13px] font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
+                      className="min-w-0 flex-1 h-6 border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/60"
                       maxLength={50}
                       autoComplete="off"
                     />
                   ) : (
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground/85">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                       {tag.name}
                     </span>
                   )}
 
-                  <span className="text-[11px] text-muted-foreground/50 shrink-0 tabular-nums">
+                  <span className="text-xs text-muted-foreground/60 shrink-0 tabular-nums">
                     {tag.count === 1 ? "1 use" : `${tag.count} uses`}
                   </span>
 
@@ -291,7 +291,7 @@ export function TagManageDialog({
                         type="button"
                         onClick={() => startRenaming(tag)}
                         aria-label={`Rename ${tag.name}`}
-                        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-0.5"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-0.5"
                       >
                         <PencilSimpleIcon
                           className="size-3"
@@ -305,7 +305,7 @@ export function TagManageDialog({
                           setEditingTagId(null);
                         }}
                         aria-label={`Delete ${tag.name}`}
-                        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-1"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-1"
                       >
                         <TrashIcon className="size-3" aria-hidden="true" />
                       </button>

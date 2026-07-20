@@ -23,9 +23,9 @@ export function SectionHeader({
 
 export function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
+    <div className="flex flex-col items-center justify-center py-16 animate-in fade-in duration-500">
       <div className="size-16 rounded-full bg-muted flex items-center justify-center mb-4">
-        <ArchiveIcon className="size-7 text-muted-foreground/50" />
+        <ArchiveIcon className="size-7 text-muted-foreground/60" />
       </div>
       <p className="text-sm text-muted-foreground">Trash is empty</p>
       <p className="text-xs text-muted-foreground/60 mt-1">

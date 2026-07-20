@@ -49,7 +49,7 @@ export function UserMenu({ user }: UserMenuProps) {
           render={
             <Button
               variant="ghost"
-              className="gap-2 px-2 py-2 md:px-2 md:py-1 -m-2 md:m-0 rounded-full md:rounded-md h-auto"
+              className="gap-2 rounded-md h-auto px-2 py-1.5"
             >
               <Avatar>
                 <AvatarImage
@@ -66,7 +66,7 @@ export function UserMenu({ user }: UserMenuProps) {
           }
         />
         <DropdownMenuContent
-          className="rounded-xl w-full"
+          className="rounded-lg w-56"
           align="end"
           sideOffset={8}
         >
@@ -105,8 +105,10 @@ export function UserMenu({ user }: UserMenuProps) {
             </span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem>
-            <ShortcutButton />
+          <DropdownMenuItem className="w-full">
+            <span className="w-full flex items-center gap-2">
+              <ShortcutButton />
+            </span>
           </DropdownMenuItem>
 
           <DropdownMenuItem

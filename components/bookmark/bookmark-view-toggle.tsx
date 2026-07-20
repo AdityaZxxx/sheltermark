@@ -22,26 +22,22 @@ export function BookmarkViewToggle({
       <TabsList
         className={cn("grid grid-cols-3 bg-muted/60 rounded-lg", className)}
       >
-        <TabsTrigger
-          value="list"
-          className="rounded-md data-active:bg-background data-active:shadow-sm"
-        >
-          <ListIcon className="h-4 w-4" />{" "}
-          <span className="block md:hidden">List </span>
+        <TabsTrigger value="list" className="rounded-md" aria-label="List view">
+          <ListIcon className="h-4 w-4" />
         </TabsTrigger>
         <TabsTrigger
           value="comfort"
-          className="rounded-md data-active:bg-background data-active:shadow-sm"
+          className="rounded-md"
+          aria-label="Comfort view"
         >
-          <RowsIcon className="size-4" />{" "}
-          <span className="block md:hidden">Comfort</span>
+          <RowsIcon className="size-4" />
         </TabsTrigger>
         <TabsTrigger
           value="card"
-          className="rounded-md data-active:bg-background data-active:shadow-sm"
+          className="rounded-md"
+          aria-label="Gallery view"
         >
-          <SquaresFourIcon className="h-4 w-4" />{" "}
-          <span className="block md:hidden">Gallery</span>
+          <SquaresFourIcon className="h-4 w-4" />
         </TabsTrigger>
       </TabsList>
     </Tabs>
