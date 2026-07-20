@@ -1,17 +1,13 @@
-import { GlobeIcon, WarningIcon } from "@phosphor-icons/react";
+import { GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "~/components/ui/tooltip";
 import { formatRelativeTime } from "~/lib/format";
 import type { Tag } from "~/lib/schemas/tag.schema";
-import { cn, getBrokenLinkMessage } from "~/lib/utils";
+import { type BrokenStatus, cn } from "~/lib/utils";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BookmarkNoteText } from "./bookmark-note-text";
+import { BrokenLinkWarning } from "./broken-link-warning";
 
 interface BookmarkItemProps {
   id: string;
@@ -23,8 +19,8 @@ interface BookmarkItemProps {
   created_at: string;
   note?: string | null;
   tags?: Tag[];
-  isBroken?: boolean | undefined;
   httpStatus?: number | null;
+  brokenStatus?: BrokenStatus | string | null;
   autoCheckBroken?: boolean | undefined;
   isSelected?: boolean | undefined;
   isSelectionMode?: boolean | undefined;
@@ -56,8 +52,8 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   domain,
   created_at,
   note,
-  isBroken,
   httpStatus,
+  brokenStatus,
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
@@ -143,22 +139,12 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
             <p className="text-xs font-medium text-muted-foreground truncate">
               {domain}
             </p>
-            {isBroken && autoCheckBroken && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <span className="cursor-help shrink-0">
-                      <WarningIcon
-                        className="w-3 h-3 text-red-500/80"
-                        weight="fill"
-                      />
-                    </span>
-                  }
-                />
-                <TooltipContent>
-                  <span>{getBrokenLinkMessage(httpStatus)}</span>
-                </TooltipContent>
-              </Tooltip>
+            {autoCheckBroken && (
+              <BrokenLinkWarning
+                brokenStatus={brokenStatus}
+                httpStatus={httpStatus}
+                autoCheckBroken={autoCheckBroken}
+              />
             )}
           </div>
           <div className="shrink-0 text-xs text-muted-foreground tabular-nums">

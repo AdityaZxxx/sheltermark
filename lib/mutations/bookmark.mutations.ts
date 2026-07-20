@@ -42,6 +42,7 @@ export function useAddBookmark(userId: string | undefined) {
         http_status: null,
         last_checked_at: null,
         is_broken: false,
+        broken_status: "alive",
         is_public: false,
         favicon_url: null,
         og_image_url: null,
