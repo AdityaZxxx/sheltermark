@@ -119,7 +119,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
           <div className="min-w-0">
             <p
               className={cn(
-                "text-sm font-medium truncate text-foreground hover-only:group-hover:text-primary transition-colors",
+                "text-sm font-medium truncate text-foreground hover-only:group-hover:text-primary transition-colors pr-2",
                 isSelected && "text-primary",
               )}
             >
@@ -130,9 +130,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
 
         <div className="flex items-center justify-between gap-2 pl-9 sm:pl-0 w-full sm:w-auto sm:flex-1">
           <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-            <p className="text-xs text-muted-foreground pl-0 md:pl-1 truncate">
-              {domain}
-            </p>
+            <p className="text-xs text-muted-foreground truncate">{domain}</p>
             {autoCheckBroken && (
               <BrokenLinkWarning
                 brokenStatus={brokenStatus}
