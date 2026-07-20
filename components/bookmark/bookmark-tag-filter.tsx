@@ -1,21 +1,23 @@
 "use client";
 
 import { TagIcon } from "@phosphor-icons/react";
-import { useUserTagsWithCount } from "~/hooks/use-user-tags";
+import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { cn } from "~/lib/utils";
 
 interface BookmarkTagFilterProps {
   selectedTagIds: string[];
   onChange: (tagIds: string[]) => void;
   onManageTags?: () => void;
+  workspaceId?: string;
 }
 
 export function BookmarkTagFilter({
   selectedTagIds,
   onChange,
   onManageTags,
+  workspaceId,
 }: BookmarkTagFilterProps) {
-  const { tags, isLoading } = useUserTagsWithCount();
+  const { tags, isLoading } = useWorkspaceTagsWithCount(workspaceId);
 
   if (isLoading) return null;
   if (tags.length === 0) return null;

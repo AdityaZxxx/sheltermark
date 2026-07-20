@@ -25,6 +25,7 @@ export function BookmarkView() {
         sort={vm.sort}
         count={vm.bookmarks.length}
         selectedTagIds={vm.selectedTagIds}
+        workspaceId={vm.currentWorkspace?.id}
         onSearchChange={vm.setSearchQuery}
         onSubmit={vm.handleSubmit}
         onViewChange={vm.setView}
@@ -107,6 +108,7 @@ export function BookmarkView() {
       <TagManageDialog
         open={vm.manageTagsDialogOpen}
         onOpenChange={vm.setManageTagsDialogOpen}
+        workspaceId={vm.currentWorkspace?.id}
       />
     </section>
   );

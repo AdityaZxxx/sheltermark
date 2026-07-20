@@ -35,4 +35,6 @@ export const tagKeys = {
   links: ["tags", "links"] as const,
   withCount: ["tags", "withCount"] as const,
   byBookmark: (bookmarkId: string) => ["tags", "bookmark", bookmarkId] as const,
+  byWorkspace: (workspaceId: string) =>
+    ["tags", "byWorkspace", workspaceId] as const,
 };

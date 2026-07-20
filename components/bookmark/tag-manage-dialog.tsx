@@ -17,18 +17,23 @@ import {
   DialogContent,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { useUserTagsWithCount } from "~/hooks/use-user-tags";
+import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
 interface TagManageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  workspaceId?: string;
 }
 
-export function TagManageDialog({ open, onOpenChange }: TagManageDialogProps) {
+export function TagManageDialog({
+  open,
+  onOpenChange,
+  workspaceId,
+}: TagManageDialogProps) {
   const { user } = useSupabase();
-  const { tags, isLoading } = useUserTagsWithCount();
+  const { tags, isLoading } = useWorkspaceTagsWithCount(workspaceId);
   const deleteTag = useDeleteTag(user?.id);
   const renameTag = useRenameTag(user?.id);
 
@@ -129,8 +134,8 @@ export function TagManageDialog({ open, onOpenChange }: TagManageDialogProps) {
           <div>
             <DialogTitle className="text-sm">Tags</DialogTitle>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {tags.length} tag{tags.length !== 1 ? "s" : ""}
-              {totalUsages > 0 && ` · ${totalUsages} total uses`}
+              {tags.length} tag{tags.length !== 1 ? "s" : ""} in workspace
+              {totalUsages > 0 && ` · ${totalUsages} uses`}
             </p>
           </div>
           <DialogClose
@@ -172,7 +177,9 @@ export function TagManageDialog({ open, onOpenChange }: TagManageDialogProps) {
 
           {!isLoading && filtered.length === 0 && (
             <p className="text-xs text-muted-foreground py-8 text-center">
-              {search ? "No tags match your search" : "No tags yet"}
+              {search
+                ? "No tags match your search"
+                : "No tags in this workspace"}
             </p>
           )}
 

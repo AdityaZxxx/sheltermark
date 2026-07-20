@@ -16,6 +16,7 @@ interface BookmarkHeaderProps {
   sort: BookmarkSort;
   selectedTagIds: string[];
   count?: number;
+  workspaceId?: string;
   onSearchChange: (value: string) => void;
   onSubmit: (value: string) => void;
   onViewChange: (view: BookmarkViewVariant) => void;
@@ -31,6 +32,7 @@ export function BookmarkHeader({
   sort,
   selectedTagIds,
   count,
+  workspaceId,
   onSearchChange,
   onSubmit,
   onViewChange,
@@ -51,6 +53,7 @@ export function BookmarkHeader({
         selectedTagIds={selectedTagIds}
         onChange={onTagFilterChange}
         onManageTags={onManageTags}
+        workspaceId={workspaceId}
       />
 
       <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
