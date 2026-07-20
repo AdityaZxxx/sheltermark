@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
 import { BookmarkInput } from "./bookmark-input";
+import { BookmarkMobileControls } from "./bookmark-mobile-controls";
 import { BookmarkSortSelect } from "./bookmark-sort";
 import { BookmarkTagFilter } from "./bookmark-tag-filter";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
@@ -14,6 +15,7 @@ interface BookmarkHeaderProps {
   searchQuery: string;
   sort: BookmarkSort;
   selectedTagIds: string[];
+  count?: number;
   onSearchChange: (value: string) => void;
   onSubmit: (value: string) => void;
   onViewChange: (view: BookmarkViewVariant) => void;
@@ -28,6 +30,7 @@ export function BookmarkHeader({
   searchQuery,
   sort,
   selectedTagIds,
+  count,
   onSearchChange,
   onSubmit,
   onViewChange,
@@ -36,7 +39,7 @@ export function BookmarkHeader({
   onManageTags,
 }: BookmarkHeaderProps) {
   return (
-    <div className="space-y-3 mx-auto">
+    <div className="space-y-2 mx-auto sm:space-y-3">
       <BookmarkInput
         ref={inputRef}
         value={searchQuery}
@@ -50,13 +53,30 @@ export function BookmarkHeader({
         onManageTags={onManageTags}
       />
 
-      <div className="flex items-center justify-between pt-2">
-        <h2 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+      <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance">
           {searchQuery ? "Search Results" : "All Bookmarks"}
+          {typeof count === "number" && count > 0 && (
+            <span className="ml-1.5 tabular-nums text-foreground/40">
+              · <span className="text-foreground/60">{count}</span>
+            </span>
+          )}
         </h2>
+
         <div className="flex items-center gap-2">
-          <BookmarkSortSelect sort={sort} onSortChange={onSortChange} />
-          <BookmarkViewToggle view={view} onViewChange={onViewChange} />
+          <div className="hidden items-center gap-2 sm:flex">
+            <BookmarkSortSelect sort={sort} onSortChange={onSortChange} />
+            <BookmarkViewToggle view={view} onViewChange={onViewChange} />
+          </div>
+          <div className="sm:hidden">
+            <BookmarkMobileControls
+              sort={sort}
+              view={view}
+              onSortChange={onSortChange}
+              onViewChange={onViewChange}
+              onManageTags={onManageTags}
+            />
+          </div>
         </div>
       </div>
     </div>

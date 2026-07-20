@@ -23,6 +23,7 @@ export function BookmarkView() {
         view={vm.view}
         searchQuery={vm.searchQuery}
         sort={vm.sort}
+        count={vm.bookmarks.length}
         selectedTagIds={vm.selectedTagIds}
         onSearchChange={vm.setSearchQuery}
         onSubmit={vm.handleSubmit}
