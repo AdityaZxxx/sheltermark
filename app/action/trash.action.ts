@@ -12,6 +12,7 @@ import {
   permanentDeleteWorkspace as permanentDeleteWorkspaceRepo,
   restoreWorkspace as restoreWorkspaceRepo,
 } from "~/lib/data/repositories/workspace.repository";
+import { emptyUserTrash } from "~/lib/data/transaction";
 import type {
   Bookmark,
   BookmarkRestoreInput,
@@ -60,22 +61,5 @@ export async function permanentDeleteWorkspace(
 
 export async function emptyTrash(): Promise<ActionResult<null>> {
   const { user, supabase } = await requireAuth();
-
-  const { error: bmError } = await supabase
-    .from("bookmarks")
-    .delete()
-    .eq("user_id", user.id)
-    .not("deleted_at", "is", null);
-
-  if (bmError) return { success: false, error: bmError.message };
-
-  const { error: wsError } = await supabase
-    .from("workspaces")
-    .delete()
-    .eq("user_id", user.id)
-    .not("deleted_at", "is", null);
-
-  if (wsError) return { success: false, error: wsError.message };
-
-  return { success: true, data: null };
+  return emptyUserTrash(supabase, user.id);
 }
