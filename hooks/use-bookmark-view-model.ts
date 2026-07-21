@@ -1,52 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useState } from "react";
 import { useBookmarkActions } from "~/hooks/use-bookmark-actions";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkGlobalShortcuts } from "~/hooks/use-bookmark-global-shortcuts";
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
-
+import { useViewPreference } from "~/hooks/use-view-preference";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { BookmarkScope, BookmarkViewVariant } from "~/lib/schemas/common";
+import type { BookmarkScope } from "~/lib/schemas/common";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
-const VIEW_PREFERENCE_KEY = "sheltermark-view-preference";
-
-function getStoredViewPreference(): BookmarkViewVariant {
-  if (typeof window === "undefined") return "list";
-  try {
-    const stored = localStorage.getItem(VIEW_PREFERENCE_KEY);
-    const valid: BookmarkViewVariant[] = ["list", "card", "comfort"];
-    if (stored && valid.includes(stored as BookmarkViewVariant)) {
-      return stored as BookmarkViewVariant;
-    }
-  } catch {
-    // localStorage may be blocked
-  }
-  return "list";
-}
-
 export function useBookmarkViewModel(scope: BookmarkScope) {
-  const [view, setView] = useState<BookmarkViewVariant>("list");
-  const [, startTransition] = useTransition();
-
-  useEffect(() => {
-    const stored = getStoredViewPreference();
-    setView(stored);
-  }, []);
-
-  const handleViewChange = useCallback((newView: BookmarkViewVariant) => {
-    startTransition(() => {
-      setView(newView);
-    });
-    try {
-      localStorage.setItem(VIEW_PREFERENCE_KEY, newView);
-    } catch {
-      // localStorage may be blocked
-    }
-  }, []);
+  const { view, setView } = useViewPreference();
   const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
 
   const { workspaces, currentWorkspace } = useWorkspaces();
@@ -157,7 +124,7 @@ export function useBookmarkViewModel(scope: BookmarkScope) {
 
   return {
     view,
-    setView: handleViewChange,
+    setView,
     isLoading,
     searchQuery,
     setSearchQuery,
