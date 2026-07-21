@@ -1,4 +1,4 @@
-import { GlobeIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -39,6 +39,7 @@ interface BookmarkItemProps {
   onSelectionModeToggle?: (() => void) | undefined;
   tabIndex?: number | undefined;
   disableContextMenu?: boolean | undefined;
+  refetchingId?: string | null;
 }
 
 interface BookmarkComfortItemProps extends BookmarkItemProps {
@@ -56,6 +57,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   note,
   httpStatus,
   brokenStatus,
+  tags,
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
@@ -73,8 +75,9 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
-  tags = [],
+  refetchingId,
 }: BookmarkComfortItemProps) {
+  const safeTags = tags ?? [];
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
   const workspaceName = showWorkspaceBadge
     ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
@@ -92,7 +95,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group relative flex flex-row gap-3 md:gap-4 rounded-lg border p-3 overflow-hidden hover-only:hover:bg-muted/50 w-full cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left",
+        "group relative flex flex-row gap-3 md:gap-4 rounded-lg p-3 overflow-hidden hover-only:hover:bg-muted/50 w-full cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left",
         isSelected && "bg-primary/10",
       )}
       onClick={() => {
@@ -115,9 +118,9 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <h3 className="text-base font-medium text-foreground truncate leading-snug tracking-tight">
+        <p className="text-sm font-medium text-foreground truncate leading-snug tracking-tight">
           {title}
-        </h3>
+        </p>
         {note && (
           <div className="pt-1.5">
             <p className="text-sm text-muted-foreground line-clamp-2 leading-snug">
@@ -127,16 +130,22 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
         )}
 
         <div className="flex flex-row items-center gap-2 mt-4">
-          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
+          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center relative">
             {favicon_url ? (
               // biome-ignore lint/performance/noImgElement: nothing to optimize
               <img
                 src={favicon_url}
                 alt={`${domain} favicon`}
-                className="w-full h-full object-contain"
+                className={cn(
+                  "w-full h-full object-contain transition-opacity",
+                  refetchingId === id && "opacity-30",
+                )}
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
+            )}
+            {refetchingId === id && (
+              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-2.5 text-muted-foreground animate-spin" />
             )}
           </div>
           <div className="min-w-0 flex-1 flex items-center gap-1">
@@ -168,9 +177,9 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
           </div>
         </div>
 
-        {tags.length > 0 && (
+        {safeTags.length > 0 && (
           <div className="mt-2 flex items-center gap-1 flex-wrap">
-            {tags.slice(0, 2).map((tag) => (
+            {safeTags.slice(0, 2).map((tag) => (
               // biome-ignore lint/a11y/useSemanticElements: cannot be <button> inside parent <button>
               <span
                 key={tag.id}
@@ -191,7 +200,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
                 #{tag.name}
               </span>
             ))}
-            {tags.slice(2, 4).map((tag) => (
+            {safeTags.slice(2, 4).map((tag) => (
               // biome-ignore lint/a11y/useSemanticElements: cannot be <button> inside parent <button>
               <span
                 key={tag.id}
@@ -212,14 +221,14 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
                 #{tag.name}
               </span>
             ))}
-            {tags.length > 2 && (
+            {safeTags.length > 2 && (
               <span className="md:hidden text-xs text-muted-foreground/60">
-                +{tags.length - 2}
+                +{safeTags.length - 2}
               </span>
             )}
-            {tags.length > 4 && (
+            {safeTags.length > 4 && (
               <span className="hidden md:inline text-xs text-muted-foreground/60">
-                +{tags.length - 4}
+                +{safeTags.length - 4}
               </span>
             )}
           </div>

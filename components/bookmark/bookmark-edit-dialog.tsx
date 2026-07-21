@@ -4,10 +4,7 @@ import { Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  generateAiTitle,
-  updateBookmarkFields,
-} from "~/app/action/bookmark.action";
+import { generateAiTitle } from "~/app/action/bookmark.action";
 import { MarkdownIcon } from "~/components/markdown-icon";
 import { Button } from "~/components/ui/button";
 import {
@@ -29,6 +26,7 @@ import {
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
 import { useUserTagsWithCount } from "~/hooks/use-user-tags";
+import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import { entriesEqual, type TagEntry, tagsToEntries } from "~/lib/utils";
 import { BookmarkNoteText } from "./bookmark-note-text";
@@ -43,7 +41,8 @@ interface BookmarkEditDialogProps {
     note: string | null;
     tags: Tag[];
   } | null;
-  onSuccess: () => void;
+  updateBookmarkFields: (input: BookmarkEditInput) => void;
+  isPending: boolean;
 }
 
 function isDirty(
@@ -61,7 +60,8 @@ export function BookmarkEditDialog({
   open,
   onOpenChange,
   bookmark,
-  onSuccess,
+  updateBookmarkFields,
+  isPending,
 }: BookmarkEditDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,7 +70,8 @@ export function BookmarkEditDialog({
           key={bookmark.id}
           bookmark={bookmark}
           onOpenChange={onOpenChange}
-          onSuccess={onSuccess}
+          updateBookmarkFields={updateBookmarkFields}
+          isPending={isPending}
         />
       )}
     </Dialog>
@@ -80,13 +81,12 @@ export function BookmarkEditDialog({
 function EditFormInner({
   bookmark,
   onOpenChange,
-  onSuccess,
+  updateBookmarkFields,
+  isPending,
 }: Omit<BookmarkEditDialogProps, "open"> & {
   bookmark: NonNullable<BookmarkEditDialogProps["bookmark"]>;
 }) {
   const { tags: allUserTags } = useUserTagsWithCount();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
@@ -127,37 +127,22 @@ function EditFormInner({
 
   const form = useForm({
     defaultValues: initialValues,
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       if (!isDirty(value, initialValues)) {
         onOpenChange(false);
         return;
       }
-      setSubmitting(true);
-      setError(null);
-      try {
-        const noteValue = value.note?.trim() ? value.note.trim() : null;
-        const res = await updateBookmarkFields({
-          id: bookmark.id,
-          title: value.title.trim(),
-          note: noteValue,
-          tags: value.tags.map((e) => (e.id ? { id: e.id } : { name: e.name })),
-        });
-        if (res.success) {
-          onSuccess();
-          onOpenChange(false);
-        } else {
-          setError(
-            res.error ||
-              "Failed to save changes. Check your connection and try again.",
-          );
-        }
-      } catch {
-        setError(
-          "Failed to save changes. Check your connection and try again.",
-        );
-      } finally {
-        setSubmitting(false);
-      }
+      const noteValue = value.note?.trim() ? value.note.trim() : null;
+      // Optimistic update via parent-provided mutation. The dialog closes
+      // immediately and the cache updates behind the scenes. If the server
+      // fails, the hook rolls back the cache and fires toast.error.
+      updateBookmarkFields({
+        id: bookmark.id,
+        title: value.title.trim(),
+        note: noteValue,
+        tags: value.tags.map((e) => (e.id ? { id: e.id } : { name: e.name })),
+      });
+      onOpenChange(false);
     },
   });
 
@@ -311,28 +296,18 @@ function EditFormInner({
           )}
         </form.Field>
 
-        {error && (
-          <p
-            className="text-[11px] text-destructive"
-            role="alert"
-            aria-live="polite"
-          >
-            {error}
-          </p>
-        )}
-
         <DialogFooter>
           <div className="flex w-full items-center justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={submitting}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting || !dirty}>
-              {submitting ? "Saving…" : "Save Changes"}
+            <Button type="submit" disabled={isPending || !dirty}>
+              {isPending ? "Saving…" : "Save Changes"}
             </Button>
           </div>
         </DialogFooter>

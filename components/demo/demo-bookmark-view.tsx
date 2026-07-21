@@ -372,7 +372,11 @@ export function DemoBookmarkView() {
                 }
               : null
           }
-          onSuccess={() => setEditDialogOpen(false)}
+          updateBookmarkFields={() => {
+            // Demo: no-op mock
+            setEditDialogOpen(false);
+          }}
+          isPending={false}
         />
 
         <BookmarkTrash

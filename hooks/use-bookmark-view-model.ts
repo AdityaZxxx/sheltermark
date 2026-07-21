@@ -7,7 +7,7 @@ import { useBookmarkGlobalShortcuts } from "~/hooks/use-bookmark-global-shortcut
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
 import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
-import { usePendingBookmarks } from "~/hooks/use-pending-bookmarks";
+
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import type { BookmarkScope, BookmarkViewVariant } from "~/lib/schemas/common";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
@@ -65,6 +65,13 @@ export function useBookmarkViewModel(scope: BookmarkScope) {
   } = useBookmarks(scope.type === "workspace" ? scope.id : undefined);
 
   const mutations = useBookmarkMutations();
+  const {
+    isDeletingBookmarks,
+    isMovingBookmarks,
+    updateBookmarkFields,
+    isUpdatingBookmarkFields,
+    refetchingId,
+  } = mutations;
 
   const selection = useBookmarkSelection();
   const dialogs = useBookmarkDialogs();
@@ -76,8 +83,6 @@ export function useBookmarkViewModel(scope: BookmarkScope) {
       onSelect: selection.toggleSelect,
       onOpen: (url) => window.open(url, "_blank"),
     });
-
-  const { pendingUrls, setPendingUrls } = usePendingBookmarks(bookmarks);
 
   const {
     handleCopyUrl,
@@ -95,7 +100,6 @@ export function useBookmarkViewModel(scope: BookmarkScope) {
     refetchBookmarkMetadata: mutations.refetchBookmarkMetadata,
     invalidate,
     setSearchQuery,
-    setPendingUrls,
   });
 
   useBookmarkGlobalShortcuts({
@@ -162,7 +166,6 @@ export function useBookmarkViewModel(scope: BookmarkScope) {
     bookmarks,
     workspaces,
     currentWorkspace,
-    pendingUrls,
     selection,
     isAllSelected,
     focusedIndex,
@@ -179,6 +182,14 @@ export function useBookmarkViewModel(scope: BookmarkScope) {
       dialogs.handleBulkDeleteTrigger(selection.selectedIds),
     onBulkMoveTrigger: () =>
       dialogs.handleBulkMoveTrigger(selection.selectedIds),
+    toolbarPendingAction: isDeletingBookmarks
+      ? ("deleting" as const)
+      : isMovingBookmarks
+        ? ("moving" as const)
+        : null,
+    refetchingId,
+    updateBookmarkFields,
+    isUpdatingBookmarkFields,
     invalidate,
     dialogs,
     manageTagsDialogOpen,

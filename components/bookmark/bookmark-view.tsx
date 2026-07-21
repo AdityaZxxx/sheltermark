@@ -41,7 +41,6 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         isLoading={vm.isLoading}
         searchQuery={vm.searchQuery}
         filteredBookmarks={vm.bookmarks}
-        pendingUrls={vm.pendingUrls}
         workspaces={vm.workspaces}
         currentWorkspaceId={vm.currentWorkspace?.id}
         selectedIds={vm.selection.selectedIds}
@@ -59,6 +58,7 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         autoCheckBroken={vm.currentWorkspace?.auto_check_broken !== false}
         tagsByBookmarkId={vm.tagsByBookmarkId}
         allTags={vm.allTags}
+        refetchingId={vm.refetchingId}
       />
 
       <BookmarkToolbar
@@ -74,13 +74,15 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         onDelete={vm.onBulkDeleteTrigger}
         onMove={vm.onBulkMoveTrigger}
         onCopyUrls={vm.handleBulkCopyUrls}
+        pendingAction={vm.toolbarPendingAction}
       />
 
       <BookmarkEditDialog
         open={vm.dialogs.editDialogOpen}
         onOpenChange={vm.dialogs.setEditDialogOpen}
         bookmark={vm.dialogs.activeBookmark}
-        onSuccess={vm.invalidate}
+        updateBookmarkFields={vm.updateBookmarkFields}
+        isPending={vm.isUpdatingBookmarkFields}
       />
 
       <BookmarkTrash

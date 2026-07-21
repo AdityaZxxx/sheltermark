@@ -66,7 +66,7 @@ export function UserMenu({ user }: UserMenuProps) {
           }
         />
         <DropdownMenuContent
-          className="rounded-lg w-56"
+          className="rounded-lg w-42"
           align="end"
           sideOffset={8}
         >
@@ -129,6 +129,8 @@ export function UserMenu({ user }: UserMenuProps) {
               </span>
             </Link>
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
 
           <DropdownMenuItem
             variant="destructive"

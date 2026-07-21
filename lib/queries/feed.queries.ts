@@ -10,4 +10,6 @@ export const feedsQueryOptions = (userId: string | undefined) => ({
     return result.data as Feed[];
   },
   enabled: !!userId,
+  refetchOnMount: false,
+  placeholderData: (previousData: Feed[] | undefined) => previousData,
 });

@@ -1,9 +1,8 @@
 "use client";
 
 import { CaretUpDownIcon } from "@phosphor-icons/react";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { moveBookmarks } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -21,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Label } from "~/components/ui/label";
+import { useBookmarkMutations } from "~/hooks/use-bookmarks";
 import { getPastelColor } from "~/lib/utils";
 
 interface BookmarkMoveDialogProps {
@@ -77,7 +77,9 @@ function MoveForm({
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
     null,
   );
-  const [isPending, startTransition] = useTransition();
+  const { moveBookmarks, isMovingBookmarks } = useBookmarkMutations();
+
+  const isPending = isMovingBookmarks;
 
   // Filter out the current workspace
   const availableWorkspaces = workspaces.filter(
@@ -87,51 +89,39 @@ function MoveForm({
   const handleMove = () => {
     if (ids.length === 0 || !targetWorkspaceId) return;
 
-    startTransition(async () => {
-      if (onConfirm) {
-        await onConfirm(ids, targetWorkspaceId);
-        onSuccess();
-        onOpenChange(false);
-      } else {
-        const res = await moveBookmarks({ ids, targetWorkspaceId });
-
-        if (res.success) {
-          if (!silent) {
-            const workspaceName = selectedWorkspace?.name || "Target Workspace";
-            const { movedCount, skippedCount } = res.data;
-
-            if (movedCount > 0 && skippedCount > 0) {
-              toast.success(
-                `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
-              );
-            } else if (movedCount > 0) {
-              toast.success(
-                movedCount === 1
-                  ? `Bookmark moved to ${workspaceName}`
-                  : `${movedCount} bookmarks moved to ${workspaceName}`,
-              );
-            } else if (skippedCount > 0) {
-              toast.info(
-                skippedCount === 1
-                  ? `Bookmark already exists in ${workspaceName}`
-                  : `Bookmarks already exist in ${workspaceName}`,
-              );
-            }
-          }
+    if (onConfirm) {
+      // Parent-supplied handler (backward compat)
+      const result = onConfirm(ids, targetWorkspaceId);
+      if (result instanceof Promise) {
+        result.then(() => {
           onSuccess();
           onOpenChange(false);
-        } else {
-          toast.error(res.error || "Failed to move bookmarks");
-        }
+        });
+      } else {
+        onSuccess();
+        onOpenChange(false);
       }
-    });
+      return;
+    }
+
+    // Optimistic move via the shared hook. Cache updates instantly; toast
+    // dialog closes immediately on click.
+    moveBookmarks({ ids, targetWorkspaceId });
+    if (!silent) {
+      const workspaceName =
+        workspaces.find((w) => w.id === targetWorkspaceId)?.name ||
+        "Target Workspace";
+      toast.success(
+        ids.length === 1
+          ? `Bookmark moved to ${workspaceName}`
+          : `${ids.length} bookmarks moved to ${workspaceName}`,
+      );
+    }
+    onSuccess();
+    onOpenChange(false);
   };
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const selectedWorkspace = workspaces.find(
-    (ws) => ws.id === targetWorkspaceId,
-  );
 
   return (
     <DialogContent>
@@ -152,7 +142,7 @@ function MoveForm({
               variant="outline"
               className="w-full justify-between px-3 h-10 font-normal"
               onClick={() => setIsMenuOpen(true)}
-              disabled={availableWorkspaces.length === 0}
+              disabled={availableWorkspaces.length === 0 || isPending}
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <div
@@ -164,7 +154,9 @@ function MoveForm({
                   }}
                 />
                 <span className="truncate">
-                  {selectedWorkspace?.name || "Select workspace..."}
+                  {(targetWorkspaceId &&
+                    workspaces.find((w) => w.id === targetWorkspaceId)?.name) ||
+                    "Select workspace..."}
                 </span>
               </div>
               <CaretUpDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -199,11 +191,12 @@ function MoveForm({
           type="button"
           variant="ghost"
           onClick={() => onOpenChange(false)}
+          disabled={isPending}
         >
           Cancel
         </Button>
         <Button onClick={handleMove} disabled={isPending || !targetWorkspaceId}>
-          {isPending ? "Moving..." : "Move"}
+          {isPending ? "Moving…" : "Move"}
         </Button>
       </DialogFooter>
     </DialogContent>

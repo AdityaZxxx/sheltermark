@@ -25,10 +25,12 @@ export function DeleteConfirmDialog({
   pendingDelete,
   onOpenChange,
   onConfirm,
+  isPending,
 }: {
   pendingDelete: PendingDelete;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  isPending?: boolean;
 }) {
   return (
     <AlertDialog open={pendingDelete !== null} onOpenChange={onOpenChange}>
@@ -55,9 +57,13 @@ export function DeleteConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={onConfirm}>
-            Delete forever
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isPending}
+          >
+            {isPending ? "Deleting…" : "Delete forever"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

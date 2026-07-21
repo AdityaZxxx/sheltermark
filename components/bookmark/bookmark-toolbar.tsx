@@ -20,6 +20,7 @@ interface BookmarkToolbarProps {
   onDelete: () => void;
   onMove: () => void;
   onCopyUrls: () => void;
+  pendingAction?: "deleting" | "moving" | null;
 }
 
 export function BookmarkToolbar({
@@ -31,6 +32,7 @@ export function BookmarkToolbar({
   onDelete,
   onMove,
   onCopyUrls,
+  pendingAction = null,
 }: BookmarkToolbarProps) {
   if (!isSelectionMode) return null;
 
@@ -89,10 +91,12 @@ export function BookmarkToolbar({
             className="h-10 rounded-md gap-1.5"
             onClick={onMove}
             aria-label="Move"
-            disabled={!selectedCount}
+            disabled={!selectedCount || pendingAction === "moving"}
           >
             <FolderOpenIcon className="size-4.5" />
-            <span className="text-xs hidden md:block">Move</span>
+            <span className="text-xs hidden md:block">
+              {pendingAction === "moving" ? "Moving…" : "Move"}
+            </span>
           </Button>
 
           <Separator orientation="vertical" />
@@ -102,10 +106,12 @@ export function BookmarkToolbar({
             className="h-10 rounded-md gap-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
             onClick={onDelete}
             aria-label="Delete"
-            disabled={!selectedCount}
+            disabled={!selectedCount || pendingAction === "deleting"}
           >
             <TrashIcon className="size-4.5" />
-            <span className="text-xs hidden md:block">Delete</span>
+            <span className="text-xs hidden md:block">
+              {pendingAction === "deleting" ? "Deleting…" : "Delete"}
+            </span>
           </Button>
           <Button
             variant="ghost"

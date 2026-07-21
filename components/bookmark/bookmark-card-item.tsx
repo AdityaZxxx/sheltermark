@@ -1,4 +1,4 @@
-import { GlobeIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -38,6 +38,7 @@ interface BookmarkItemProps {
   onSelectionModeToggle?: (() => void) | undefined;
   tabIndex?: number | undefined;
   disableContextMenu?: boolean | undefined;
+  refetchingId?: string | null;
 }
 
 interface BookmarkCardItemProps extends BookmarkItemProps {
@@ -70,6 +71,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  refetchingId,
 }: BookmarkCardItemProps) {
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
   const workspaceName = showWorkspaceBadge
@@ -88,7 +90,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex flex-col rounded-lg overflow-hidden border hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
+        "group flex flex-col rounded-lg overflow-hidden hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
         isSelected && "bg-primary/10",
       )}
       onClick={() => {
@@ -131,16 +133,22 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       </div>
       <div className="flex items-center px-4 py-3 justify-between w-full border-t border-border">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
-          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
+          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center relative">
             {favicon_url ? (
               // biome-ignore lint/performance/noImgElement: nothing to optimize
               <img
                 src={favicon_url}
                 alt={`${domain} favicon`}
-                className="w-full h-full object-contain"
+                className={cn(
+                  "w-full h-full object-contain transition-opacity",
+                  refetchingId === id && "opacity-30",
+                )}
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
+            )}
+            {refetchingId === id && (
+              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-2.5 text-muted-foreground animate-spin" />
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate">{domain}</p>
@@ -160,7 +168,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
             />
           )}
         </div>
-        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 min-w-[80px]">
+        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 w-fit">
           <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 text-right w-full">
             {formatRelativeTime(created_at)}
           </span>

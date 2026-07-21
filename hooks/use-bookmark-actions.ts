@@ -29,9 +29,6 @@ interface UseBookmarkActionsProps {
   refetchBookmarkMetadata: (data: { id: string }) => void;
   invalidate: () => void;
   setSearchQuery: (query: string) => void;
-  setPendingUrls: React.Dispatch<
-    React.SetStateAction<{ id: string; url: string }[]>
-  >;
 }
 
 export function useBookmarkActions({
@@ -44,7 +41,6 @@ export function useBookmarkActions({
   refetchBookmarkMetadata,
   invalidate,
   setSearchQuery,
-  setPendingUrls,
 }: UseBookmarkActionsProps) {
   const handleCopyUrl = useCallback((url: string) => {
     navigator.clipboard.writeText(url);
@@ -113,35 +109,21 @@ export function useBookmarkActions({
           ? trimmed
           : `https://${trimmed}`;
 
-        const pendingId = `pending-${Date.now()}`;
-        setPendingUrls((prev) => [
-          ...prev,
-          { id: pendingId, url: normalizedUrl },
-        ]);
         setSearchQuery("");
         addBookmark(
           { url: normalizedUrl, workspaceId: targetWorkspace.id },
           {
             onSuccess: () => {
-              setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
               invalidate();
             },
             onError: (err) => {
-              setPendingUrls((prev) => prev.filter((p) => p.id !== pendingId));
               toast.error(err.message || "Failed to add bookmark");
             },
           },
         );
       }
     },
-    [
-      currentWorkspace,
-      workspaces,
-      addBookmark,
-      invalidate,
-      setSearchQuery,
-      setPendingUrls,
-    ],
+    [currentWorkspace, workspaces, addBookmark, invalidate, setSearchQuery],
   );
 
   return {

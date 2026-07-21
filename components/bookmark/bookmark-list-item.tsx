@@ -1,4 +1,4 @@
-import { GlobeIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
@@ -37,6 +37,7 @@ interface BookmarkItemProps {
   onSelectionModeToggle?: () => void;
   tabIndex?: number;
   disableContextMenu?: boolean;
+  refetchingId?: string | null;
 }
 
 interface BookmarkListItemProps extends BookmarkItemProps {
@@ -68,6 +69,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  refetchingId,
 }: BookmarkListItemProps) {
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
   const workspaceName = showWorkspaceBadge
@@ -86,7 +88,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2 rounded-lg border hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
+        "group flex items-center gap-3 px-3 py-2 rounded-lg hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",
         isSelected && "bg-primary/10",
       )}
       onClick={(e) => {
@@ -110,16 +112,22 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
 
       <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
+          <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center relative">
             {favicon_url ? (
               // biome-ignore lint/performance/noImgElement: nothing to optimize
               <img
                 src={favicon_url}
                 alt=""
-                className="w-full h-full object-contain"
+                className={cn(
+                  "w-full h-full object-contain transition-opacity",
+                  refetchingId === id && "opacity-30",
+                )}
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
+            )}
+            {refetchingId === id && (
+              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-3 text-muted-foreground animate-spin" />
             )}
           </div>
           <div className="min-w-0">

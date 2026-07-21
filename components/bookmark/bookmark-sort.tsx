@@ -67,9 +67,15 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
         }
       >
         {sort.sortOrder === "asc" ? (
-          <ArrowUpIcon className="size-3.5" />
+          <>
+            <ArrowUpIcon className="size-3.5" />{" "}
+            <span className="md:hidden">Asc</span>
+          </>
         ) : (
-          <ArrowDownIcon className="size-3.5" />
+          <>
+            <ArrowDownIcon className="size-3.5" />{" "}
+            <span className="md:hidden">Desc</span>
+          </>
         )}
       </Button>
     </div>

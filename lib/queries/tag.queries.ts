@@ -14,6 +14,8 @@ export const userTagsQueryOptions = {
     if (!result?.success) throw new Error(result?.error);
     return result.data as Tag[];
   },
+  refetchOnMount: false,
+  placeholderData: (previousData: Tag[] | undefined) => previousData,
 };
 
 export const tagsWithCountQueryOptions = (userId: string | undefined) => ({
@@ -24,6 +26,8 @@ export const tagsWithCountQueryOptions = (userId: string | undefined) => ({
     return result.data as TagWithCount[];
   },
   enabled: !!userId,
+  refetchOnMount: false,
+  placeholderData: (previousData: TagWithCount[] | undefined) => previousData,
 });
 
 export const workspaceTagsWithCountQueryOptions = (
@@ -38,6 +42,8 @@ export const workspaceTagsWithCountQueryOptions = (
     return result.data as TagWithCount[];
   },
   enabled: !!userId && !!workspaceId,
+  refetchOnMount: false,
+  placeholderData: (previousData: TagWithCount[] | undefined) => previousData,
 });
 
 export const bookmarkTagsQueryOptions = (
@@ -51,4 +57,6 @@ export const bookmarkTagsQueryOptions = (
     return result.data as Tag[];
   },
   enabled: !!userId && !!bookmarkId,
+  refetchOnMount: false,
+  placeholderData: (previousData: Tag[] | undefined) => previousData,
 });

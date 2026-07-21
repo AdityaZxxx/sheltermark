@@ -46,7 +46,7 @@ export function BookmarkTrash({
     if (handled.current || idsRef.current.length === 0) return;
     handled.current = true;
 
-    const doAfterDelete = () => {
+    const fireToastAndClose = () => {
       const toastId = toast("Moved to trash", {
         action: {
           label: "Undo",
@@ -61,12 +61,18 @@ export function BookmarkTrash({
     };
 
     if (onConfirmRef.current) {
-      Promise.resolve(onConfirmRef.current(idsRef.current)).then(doAfterDelete);
-    } else {
-      deleteBookmarksRef.current(
-        { ids: idsRef.current },
-        { onSuccess: doAfterDelete },
+      Promise.resolve(onConfirmRef.current(idsRef.current)).then(
+        fireToastAndClose,
       );
+    } else {
+      // Fire toast + close dialog immediately — the underlying
+      // useDeleteBookmarks mutation is optimistic (item vanishes from list
+      // onMutate), so the user sees instant feedback. The Undo action
+      // remains valid during the roundtrip because rollback hasn't happened
+      // yet. If the server later fails, the hook rolls back the cache and
+      // fires toast.error separately.
+      deleteBookmarksRef.current({ ids: idsRef.current });
+      fireToastAndClose();
     }
   }, [open]);
 

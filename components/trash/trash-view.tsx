@@ -420,6 +420,7 @@ export function TrashView() {
         }
         isRestoringWorkspace={restoreWs.isPending}
         onConfirm={handleRestoreConfirm}
+        isPending={restoreBm.isPending}
       />
 
       <DeleteConfirmDialog
