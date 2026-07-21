@@ -5,7 +5,11 @@ import {
   renameTag,
   setBookmarkTags,
 } from "~/app/action/tag.action";
-import { useOptimisticMutation } from "~/lib/mutations/base";
+import {
+  optimisticRemove,
+  optimisticUpdate,
+  useOptimisticMutation,
+} from "~/lib/mutations/base";
 import { bookmarkKeys, tagKeys } from "~/lib/query-keys";
 import type {
   AddTagToBookmarkInput,
@@ -204,16 +208,16 @@ export function useRenameTag(_userId: string | undefined) {
     successMessage: "Tag renamed",
     errorMessage: "Failed to rename tag. Please try again.",
     prepareOptimisticData: (oldData, { tagId, name }) => {
-      const prev = (oldData as Tag[]) ?? [];
-      return prev.map((t) => (t.id === tagId ? { ...t, name } : t));
+      return optimisticUpdate<Tag>(oldData, tagId, (t) => ({ ...t, name }));
     },
     additionalOptimisticUpdates: ({ tagId, name }) => [
       {
         key: tagKeys.withCount,
-        updater: (oldData) => {
-          const prev = (oldData as TagWithCount[]) ?? [];
-          return prev.map((t) => (t.id === tagId ? { ...t, name } : t));
-        },
+        updater: (oldData) =>
+          optimisticUpdate<TagWithCount>(oldData, tagId, (t) => ({
+            ...t,
+            name,
+          })),
       },
     ],
   });
@@ -228,23 +232,17 @@ export function useDeleteTag(_userId: string | undefined) {
     successMessage: "Tag deleted",
     errorMessage: "Failed to delete tag. Please try again.",
     prepareOptimisticData: (oldData, { tagId }) => {
-      const prev = (oldData as Tag[]) ?? [];
-      return prev.filter((t) => t.id !== tagId);
+      return optimisticRemove<Tag>(oldData, tagId);
     },
     additionalOptimisticUpdates: ({ tagId }) => [
       {
         key: tagKeys.withCount,
-        updater: (oldData) => {
-          const prev = (oldData as TagWithCount[]) ?? [];
-          return prev.filter((t) => t.id !== tagId);
-        },
+        updater: (oldData) => optimisticRemove<TagWithCount>(oldData, tagId),
       },
       {
         key: tagKeys.links,
-        updater: (oldData) => {
-          const prev = (oldData as BookmarkTagLink[]) ?? [];
-          return prev.filter((l) => l.tag_id !== tagId);
-        },
+        updater: (oldData) =>
+          optimisticRemove<BookmarkTagLink>(oldData, tagId, (l) => l.tag_id),
       },
     ],
   });

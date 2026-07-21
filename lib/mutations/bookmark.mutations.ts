@@ -7,7 +7,12 @@ import {
   updateBookmarkFields,
   updateBookmarkNote,
 } from "~/app/action/bookmark.action";
-import { useOptimisticMutation } from "~/lib/mutations/base";
+import {
+  optimisticPrepend,
+  optimisticRemove,
+  optimisticUpdate,
+  useOptimisticMutation,
+} from "~/lib/mutations/base";
 import {
   bookmarkKeys,
   tagKeys,
@@ -36,7 +41,6 @@ export function useAddBookmark(userId: string | undefined) {
     successMessage: "Bookmark added",
     errorMessage: "Failed to add bookmark",
     prepareOptimisticData: (oldData, { url, workspaceId }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
       const tempId = generateTempId();
       const optimistic: Bookmark = {
         id: tempId,
@@ -55,7 +59,7 @@ export function useAddBookmark(userId: string | undefined) {
         created_at: new Date().toISOString(),
         note: null,
       } as Bookmark;
-      return [optimistic, ...prev];
+      return optimisticPrepend<Bookmark>(oldData, optimistic);
     },
   });
 }
@@ -71,9 +75,7 @@ export function useDeleteBookmarks(userId: string | undefined) {
     successMessage: null,
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      const idsToDelete = new Set(ids);
-      return prev.filter((b) => !idsToDelete.has(b.id));
+      return optimisticRemove<Bookmark>(oldData, ids);
     },
   });
 }
@@ -86,8 +88,7 @@ export function useRenameBookmark(_userId: string | undefined) {
     successMessage: "Bookmark renamed",
     errorMessage: "Failed to rename bookmark",
     prepareOptimisticData: (oldData, { id, title }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      return prev.map((b) => (b.id === id ? { ...b, title } : b));
+      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({ ...b, title }));
     },
   });
 }
@@ -104,9 +105,7 @@ export function useMoveBookmarks(userId: string | undefined) {
     successMessage: null,
     errorMessage: "Failed to move bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      const idsToMove = new Set(ids);
-      return prev.filter((b) => !idsToMove.has(b.id));
+      return optimisticRemove<Bookmark>(oldData, ids);
     },
   });
 }
@@ -119,10 +118,10 @@ export function useRefetchBookmarkMetadata(_userId: string | undefined) {
     successMessage: "Metadata refreshed",
     errorMessage: "Failed to refresh metadata",
     prepareOptimisticData: (oldData, { id }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      return prev.map((b) =>
-        b.id === id ? { ...b, last_checked_at: new Date().toISOString() } : b,
-      );
+      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({
+        ...b,
+        last_checked_at: new Date().toISOString(),
+      }));
     },
   });
 }
@@ -134,8 +133,7 @@ export function useUpdateBookmarkNote(_userId: string | undefined) {
     successMessage: "Note saved",
     errorMessage: "Failed to save note",
     prepareOptimisticData: (oldData, { id, note }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      return prev.map((b) => (b.id === id ? { ...b, note } : b));
+      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({ ...b, note }));
     },
   });
 }
@@ -150,17 +148,12 @@ export function useUpdateBookmarkFields(_userId: string | undefined) {
     successMessageOnMutate: true,
     errorMessage: "Failed to save changes",
     prepareOptimisticData: (oldData, { id, title, note }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      return prev.map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              title,
-              note,
-              updated_at: new Date().toISOString(),
-            }
-          : b,
-      );
+      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({
+        ...b,
+        title,
+        note,
+        updated_at: new Date().toISOString(),
+      }));
     },
     additionalOptimisticUpdates: ({ id, tags }) => {
       const bookmarkTags: BookmarkTagLink[] = tags

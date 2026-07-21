@@ -6,7 +6,7 @@ import {
   restoreBookmarks,
   restoreWorkspace,
 } from "~/app/action/trash.action";
-import { useOptimisticMutation } from "~/lib/mutations/base";
+import { optimisticRemove, useOptimisticMutation } from "~/lib/mutations/base";
 import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
 import type {
   Bookmark,
@@ -28,9 +28,7 @@ export function useRestoreBookmarks() {
     successMessage: null,
     errorMessage: "Failed to restore bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      const idSet = new Set(ids);
-      return prev.filter((b) => !idSet.has(b.id));
+      return optimisticRemove<Bookmark>(oldData, ids);
     },
     additionalOptimisticUpdates: ({ ids }) => {
       const idSet = new Set(ids);
@@ -105,9 +103,7 @@ export function usePermanentDeleteBookmarks() {
     successMessage: "Bookmarks permanently deleted",
     errorMessage: "Failed to permanently delete bookmarks",
     prepareOptimisticData: (oldData, ids) => {
-      const prev = (oldData as Bookmark[]) ?? [];
-      const idSet = new Set(ids);
-      return prev.filter((b) => !idSet.has(b.id));
+      return optimisticRemove<Bookmark>(oldData, ids);
     },
     additionalOptimisticUpdates: (ids) => {
       const idSet = new Set(ids);
@@ -135,8 +131,7 @@ export function usePermanentDeleteWorkspace() {
     successMessage: "Workspace permanently deleted",
     errorMessage: "Failed to permanently delete workspace",
     prepareOptimisticData: (oldData, id) => {
-      const prev = (oldData as TrashedWorkspace[]) ?? [];
-      return prev.filter((ws) => ws.id !== id);
+      return optimisticRemove<TrashedWorkspace>(oldData, id);
     },
   });
 }

@@ -8,6 +8,40 @@ import { toast } from "sonner";
 import type { ActionResult } from "~/lib/action-result";
 import { logger } from "~/lib/logger";
 
+function defaultKey<T>(item: T): string {
+  return (item as { id: string }).id as string;
+}
+
+export function optimisticRemove<T>(
+  oldData: unknown,
+  id: string | string[],
+  getKey: (item: T) => string = defaultKey,
+): T[] {
+  const prev = (oldData as T[]) ?? [];
+  const idsToRemove = new Set(Array.isArray(id) ? id : [id]);
+  return prev.filter((item) => !idsToRemove.has(getKey(item)));
+}
+
+export function optimisticUpdate<T>(
+  oldData: unknown,
+  id: string,
+  updater: (item: T) => T,
+  getKey: (item: T) => string = defaultKey,
+): T[] {
+  const prev = (oldData as T[]) ?? [];
+  return prev.map((item) => (getKey(item) === id ? updater(item) : item));
+}
+
+export function optimisticAppend<T>(oldData: unknown, item: T): T[] {
+  const prev = (oldData as T[]) ?? [];
+  return [...prev, item];
+}
+
+export function optimisticPrepend<T>(oldData: unknown, item: T): T[] {
+  const prev = (oldData as T[]) ?? [];
+  return [item, ...prev];
+}
+
 interface AdditionalOptimisticUpdate {
   key: QueryKey;
   updater: (oldData: unknown) => unknown;

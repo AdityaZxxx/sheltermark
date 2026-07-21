@@ -8,7 +8,12 @@ import {
 } from "~/app/action/feed.action";
 import type { ActionResult } from "~/lib/action-result";
 import { logger } from "~/lib/logger";
-import { useOptimisticMutation } from "~/lib/mutations/base";
+import {
+  optimisticAppend,
+  optimisticRemove,
+  optimisticUpdate,
+  useOptimisticMutation,
+} from "~/lib/mutations/base";
 import { feedKeys } from "~/lib/query-keys";
 import type { Feed } from "~/lib/schemas/feed.schema";
 
@@ -23,9 +28,8 @@ export function useSubscribeToFeed(userId: string | undefined) {
     successMessage: "Subscribed to feed",
     errorMessage: "Failed to subscribe to feed",
     prepareOptimisticData: (oldData, { url }) => {
-      const prev = (oldData as Feed[]) ?? [];
       const tempId = generateTempId();
-      const optimistic: Feed = {
+      return optimisticAppend<Feed>(oldData, {
         id: tempId,
         url,
         user_id: userId || "",
@@ -37,8 +41,7 @@ export function useSubscribeToFeed(userId: string | undefined) {
         last_synced_at: null,
         created_at: new Date().toISOString(),
         updated_at: null,
-      } satisfies Feed;
-      return [...prev, optimistic];
+      } satisfies Feed);
     },
   });
 }
@@ -49,12 +52,10 @@ export function useRefreshFeed(userId: string | undefined) {
     queryKey: feedKeys.byUser(userId),
     errorMessage: "Failed to refresh feed",
     prepareOptimisticData: (oldData, id) => {
-      const prev = (oldData as Feed[]) ?? [];
-      return prev.map((feed) =>
-        feed.id === id
-          ? { ...feed, last_synced_at: new Date().toISOString() }
-          : feed,
-      );
+      return optimisticUpdate<Feed>(oldData, id, (feed) => ({
+        ...feed,
+        last_synced_at: new Date().toISOString(),
+      }));
     },
   });
 }
@@ -66,8 +67,7 @@ export function useDeleteFeed(userId: string | undefined) {
     successMessage: "Feed deleted",
     errorMessage: "Failed to delete feed",
     prepareOptimisticData: (oldData, id) => {
-      const prev = (oldData as Feed[]) ?? [];
-      return prev.filter((feed) => feed.id !== id);
+      return optimisticRemove<Feed>(oldData, id);
     },
   });
 }
