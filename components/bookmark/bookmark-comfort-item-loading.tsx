@@ -27,7 +27,7 @@ export function BookmarkComfortItemLoading({
           </div>
           <TextDecrypt
             text={domain}
-            className="text-xs font-medium text-muted-foreground/70 truncate min-w-0 flex-1"
+            className="text-xs text-muted-foreground/70 truncate min-w-0 flex-1"
             delay={600}
           />
         </div>
@@ -36,7 +36,7 @@ export function BookmarkComfortItemLoading({
       {/* OG thumbnail placeholder */}
       <div className="w-24 sm:w-36 shrink-0">
         <div className="w-full aspect-video rounded-md overflow-hidden bg-muted flex items-center justify-center">
-          <GlobeIcon className="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground/20" />
+          <GlobeIcon className="w-10 h-10 md:w-12 md:h-12 text-muted-foreground/40" />
         </div>
       </div>
     </div>

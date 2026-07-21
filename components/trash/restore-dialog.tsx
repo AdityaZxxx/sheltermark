@@ -36,6 +36,7 @@ interface RestoreDialogProps {
     targetWorkspaceId?: string | null;
     newWorkspaceName?: string;
   }) => void;
+  isPending?: boolean;
 }
 
 type Destination = "original" | "other" | "new";
@@ -50,6 +51,7 @@ export function RestoreDialog({
   onRestoreWorkspace,
   isRestoringWorkspace,
   onConfirm,
+  isPending,
 }: RestoreDialogProps) {
   const { workspaces } = useWorkspaces();
 
@@ -230,17 +232,22 @@ export function RestoreDialog({
         </RadioGroup>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={
+              isPending ||
               (destination === "new" && !newWsName.trim()) ||
               (destination === "other" && !selectedWsId)
             }
           >
-            Restore
+            {isPending ? "Restoring…" : "Restore"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
   TrashedWorkspace,
@@ -87,38 +88,7 @@ export async function deleteWorkspace(
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
-  const { data: ws } = await supabase
-    .from("workspaces")
-    .select("is_default")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .single();
-
-  if (ws?.is_default) {
-    return { success: false, error: "Cannot delete default workspace" };
-  }
-
-  const now = new Date().toISOString();
-
-  // Soft-delete the workspace and all its active bookmarks
-  const { error: wsError } = await supabase
-    .from("workspaces")
-    .update({ deleted_at: now })
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (wsError) return { success: false, error: wsError.message };
-
-  const { error: bmError } = await supabase
-    .from("bookmarks")
-    .update({ deleted_at: now })
-    .eq("workspace_id", id)
-    .eq("user_id", userId)
-    .is("deleted_at", null);
-
-  if (bmError) return { success: false, error: bmError.message };
-
-  return { success: true, data: null };
+  return deleteWorkspaceWithBookmarks(supabase, userId, id);
 }
 
 export async function getTrashedWorkspaces(

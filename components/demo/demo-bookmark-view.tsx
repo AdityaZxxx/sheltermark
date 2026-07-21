@@ -333,7 +333,7 @@ export function DemoBookmarkView() {
         </div>
 
         {filteredBookmarks.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-16 text-muted-foreground">
             {searchQuery
               ? "No bookmarks found"
               : "No bookmarks in this workspace"}
@@ -372,7 +372,11 @@ export function DemoBookmarkView() {
                 }
               : null
           }
-          onSuccess={() => setEditDialogOpen(false)}
+          updateBookmarkFields={() => {
+            // Demo: no-op mock
+            setEditDialogOpen(false);
+          }}
+          isPending={false}
         />
 
         <BookmarkTrash

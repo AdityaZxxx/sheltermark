@@ -19,6 +19,7 @@ interface WorkspaceRestoreDialogProps {
   bookmarkCount: number;
   hasDuplicateName: boolean;
   onConfirm: () => void;
+  isPending?: boolean;
 }
 
 export function WorkspaceRestoreDialog({
@@ -28,6 +29,7 @@ export function WorkspaceRestoreDialog({
   bookmarkCount,
   hasDuplicateName,
   onConfirm,
+  isPending,
 }: WorkspaceRestoreDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -52,9 +54,9 @@ export function WorkspaceRestoreDialog({
           )}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
-            Restore workspace
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={isPending}>
+            {isPending ? "Restoring…" : "Restore workspace"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

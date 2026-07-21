@@ -1,31 +1,23 @@
 "use client";
 
 import { BookmarkIcon } from "@phosphor-icons/react";
+import { useExitAnimation } from "~/hooks/use-exit-animation";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { Workspace } from "~/lib/schemas/workspace.schema";
 import { safeDomain } from "~/lib/utils";
 import { BookmarkCardItem } from "./bookmark-card-item";
-import { BookmarkCardItemLoading } from "./bookmark-card-item-loading";
 import { BookmarkComfortItem } from "./bookmark-comfort-item";
-import { BookmarkComfortItemLoading } from "./bookmark-comfort-item-loading";
 import { BookmarkListItem } from "./bookmark-list-item";
-import { BookmarkListItemLoading } from "./bookmark-list-item-loading";
 import { BookmarkSkeleton } from "./bookmark-skeleton";
 import { VirtualList } from "./virtual-list";
-
-interface PendingBookmark {
-  id: string;
-  url: string;
-}
 
 interface BookmarkListProps {
   view: BookmarkViewVariant;
   isLoading: boolean;
   searchQuery: string;
   filteredBookmarks: Bookmark[];
-  pendingUrls: PendingBookmark[];
   workspaces: Workspace[];
   currentWorkspaceId?: string;
   selectedIds: string[];
@@ -43,6 +35,7 @@ interface BookmarkListProps {
   autoCheckBroken?: boolean;
   tagsByBookmarkId: Map<string, string[]>;
   allTags: Tag[];
+  refetchingId?: string | null;
 }
 
 export function BookmarkList({
@@ -50,7 +43,6 @@ export function BookmarkList({
   isLoading,
   searchQuery,
   filteredBookmarks,
-  pendingUrls,
   workspaces,
   currentWorkspaceId,
   selectedIds,
@@ -68,8 +60,10 @@ export function BookmarkList({
   autoCheckBroken = true,
   tagsByBookmarkId,
   allTags,
+  refetchingId,
 }: BookmarkListProps) {
-  const isEmpty = filteredBookmarks.length === 0 && pendingUrls.length === 0;
+  const { exiting } = useExitAnimation(filteredBookmarks);
+  const isEmpty = filteredBookmarks.length === 0 && exiting.length === 0;
 
   if (isLoading) {
     return <BookmarkSkeleton count={6} view={view} />;
@@ -129,23 +123,28 @@ export function BookmarkList({
       onRefetch,
       onSelectionModeToggle,
       tabIndex,
+      refetchingId,
     };
   }
+
+  const exitClass =
+    "animate-out fade-out slide-out-to-top-2 duration-150 ease-out";
 
   if (view === "list" || view === "comfort") {
     const IsList = view === "list";
     return (
       <div>
-        {pendingUrls.length > 0 && (
+        {exiting.length > 0 && (
           <div className="flex flex-col gap-1 mb-1">
-            {pendingUrls.map((pending) =>
+            {exiting.map((bookmark) =>
               IsList ? (
-                <BookmarkListItemLoading key={pending.id} url={pending.url} />
+                <div key={bookmark.id} className={exitClass}>
+                  <BookmarkListItem {...getCommonProps(bookmark, 0)} />
+                </div>
               ) : (
-                <BookmarkComfortItemLoading
-                  key={pending.id}
-                  url={pending.url}
-                />
+                <div key={bookmark.id} className={exitClass}>
+                  <BookmarkComfortItem {...getCommonProps(bookmark, 0)} />
+                </div>
               ),
             )}
           </div>
@@ -167,9 +166,11 @@ export function BookmarkList({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {pendingUrls.map((pending) => (
-        <BookmarkCardItemLoading key={pending.id} url={pending.url} />
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {exiting.map((bookmark) => (
+        <div key={bookmark.id} className={exitClass}>
+          <BookmarkCardItem {...getCommonProps(bookmark, 0)} />
+        </div>
       ))}
       {filteredBookmarks.map((bookmark, index) => {
         const props = getCommonProps(bookmark, index);

@@ -69,7 +69,7 @@ export function BookmarkMobileControls({
 
         <div className="flex flex-col gap-5 p-4 pt-3 overflow-y-auto">
           <section className="flex flex-col gap-2">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               View
             </span>
             <BookmarkViewToggle
@@ -80,7 +80,7 @@ export function BookmarkMobileControls({
           </section>
 
           <section className="flex flex-col gap-2">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Sort by
             </span>
             <div className="w-full">

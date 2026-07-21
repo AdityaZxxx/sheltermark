@@ -1,4 +1,4 @@
-import { GlobeIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -38,6 +38,7 @@ interface BookmarkItemProps {
   onSelectionModeToggle?: (() => void) | undefined;
   tabIndex?: number | undefined;
   disableContextMenu?: boolean | undefined;
+  refetchingId?: string | null;
 }
 
 interface BookmarkCardItemProps extends BookmarkItemProps {
@@ -70,6 +71,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  refetchingId,
 }: BookmarkCardItemProps) {
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
   const workspaceName = showWorkspaceBadge
@@ -88,8 +90,8 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       tabIndex={tabIndex}
       onKeyDown={handleKeyDown}
       className={cn(
-        "group flex flex-col rounded-sm overflow-hidden border hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
-        isSelected && "bg-primary/5",
+        "group flex flex-col rounded-lg overflow-hidden hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",
+        isSelected && "bg-primary/10",
       )}
       onClick={() => {
         if (isSelectionMode) {
@@ -99,9 +101,6 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
         }
       }}
     >
-      {isSelected && (
-        <div className="absolute inset-0 rounded-sm pointer-events-none z-20" />
-      )}
       {isSelectionMode && (
         <div className="absolute top-2 right-2 z-10">
           <Checkbox
@@ -123,35 +122,39 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted">
-            <GlobeIcon className="w-12 h-12 text-muted-foreground/20" />
+            <GlobeIcon className="w-12 h-12 text-muted-foreground/40" />
           </div>
         )}
-        <div className="absolute bottom-0.5 left-1 right-1 bg-black/60 px-2 py-1 mx-auto">
-          <h3 className="text-[10px] text-white truncate leading-none font-medium">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-6 pb-1.5 px-2">
+          <h3 className="text-xs text-white/95 truncate leading-tight font-medium tracking-tight">
             {title}
           </h3>
         </div>
       </div>
       <div className="flex items-center px-4 py-3 justify-between w-full border-t border-border">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
-          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
+          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center relative">
             {favicon_url ? (
               // biome-ignore lint/performance/noImgElement: nothing to optimize
               <img
                 src={favicon_url}
                 alt={`${domain} favicon`}
-                className="w-full h-full object-contain"
+                className={cn(
+                  "w-full h-full object-contain transition-opacity",
+                  refetchingId === id && "opacity-30",
+                )}
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
             )}
+            {refetchingId === id && (
+              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-2.5 text-muted-foreground animate-spin" />
+            )}
           </div>
-          <p className="text-xs font-medium text-muted-foreground truncate">
-            {domain}
-          </p>
+          <p className="text-xs text-muted-foreground truncate">{domain}</p>
           {workspaceName && (
             <>
-              <span className="text-xs text-muted-foreground/40">·</span>
+              <span className="text-xs text-muted-foreground/60">·</span>
               <span className="text-xs text-muted-foreground/60 truncate shrink-0">
                 {workspaceName}
               </span>
@@ -165,8 +168,8 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
             />
           )}
         </div>
-        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 min-w-[80px]">
-          <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground transition-opacity group-hover:opacity-0 text-right w-full">
+        <div className="grid grid-cols-1 grid-rows-1 place-items-center shrink-0 w-fit">
+          <span className="col-start-1 row-start-1 text-[10px] text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 text-right w-full">
             {formatRelativeTime(created_at)}
           </span>
           <KbdGroup className="absolute right-3 col-start-1 row-start-1 text-xs transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none">

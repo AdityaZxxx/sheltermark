@@ -21,6 +21,8 @@ export function BulkActionBar({
   onClearSelection,
   isAllSelected,
   onExitSelectionMode,
+  isRestoring,
+  isDeleting,
 }: {
   count: number;
   totalCount: number;
@@ -30,6 +32,8 @@ export function BulkActionBar({
   onClearSelection: () => void;
   isAllSelected: boolean;
   onExitSelectionMode: () => void;
+  isRestoring?: boolean;
+  isDeleting?: boolean;
 }) {
   return (
     <div
@@ -67,9 +71,9 @@ export function BulkActionBar({
             </span>
           </Button>
 
-          <Button variant="ghost" onClick={onRestore}>
+          <Button variant="ghost" onClick={onRestore} disabled={isRestoring}>
             <ArrowBendUpLeftIcon />
-            Restore
+            {isRestoring ? "Restoring…" : "Restore"}
           </Button>
 
           <Separator orientation="vertical" />
@@ -78,10 +82,11 @@ export function BulkActionBar({
             variant="ghost"
             className="h-7 rounded-md gap-1.5 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
             onClick={onPermanentDelete}
+            disabled={isDeleting}
             aria-label="Delete"
           >
             <TrashIcon />
-            Delete forever
+            {isDeleting ? "Deleting…" : "Delete forever"}
           </Button>
 
           <div className="h-4 w-px bg-border" />

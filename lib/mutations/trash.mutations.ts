@@ -1,4 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   emptyTrash,
@@ -7,18 +6,44 @@ import {
   restoreBookmarks,
   restoreWorkspace,
 } from "~/app/action/trash.action";
-import { logger } from "~/lib/logger";
+import { optimisticRemove, useOptimisticMutation } from "~/lib/mutations/base";
 import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
-import type { BookmarkRestoreInput } from "~/lib/schemas/bookmark.schema";
+import type {
+  Bookmark,
+  BookmarkRestoreInput,
+} from "~/lib/schemas/bookmark.schema";
+import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
+
+interface RestoreResult {
+  restoredCount: number;
+  skippedCount: number;
+}
 
 export function useRestoreBookmarks() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: BookmarkRestoreInput) => restoreBookmarks(input),
-    onError: (error) => {
-      logger.error("restoreBookmarks failed", { error });
-      toast.error("Failed to restore bookmarks");
+  return useOptimisticMutation<BookmarkRestoreInput, RestoreResult>({
+    mutationFn: restoreBookmarks,
+    mutationKey: ["restoreBookmarks"],
+    queryKey: trashKeys.bookmarks,
+    dependentQueryKeys: [bookmarkKeys.all],
+    successMessage: null,
+    errorMessage: "Failed to restore bookmarks",
+    prepareOptimisticData: (oldData, { ids }) => {
+      return optimisticRemove<Bookmark>(oldData, ids);
+    },
+    additionalOptimisticUpdates: ({ ids }) => {
+      const idSet = new Set(ids);
+      return [
+        {
+          key: trashKeys.workspaces,
+          updater: (oldData) => {
+            const prev = (oldData as TrashedWorkspace[]) ?? [];
+            return prev.map((ws) => ({
+              ...ws,
+              bookmarks: ws.bookmarks.filter((b) => !idSet.has(b.id)),
+            }));
+          },
+        },
+      ];
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -36,21 +61,20 @@ export function useRestoreBookmarks() {
         toast.error(result.error ?? "Failed to restore bookmarks");
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: trashKeys.all });
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-    },
   });
 }
 
 export function useRestoreWorkspace() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => restoreWorkspace(id),
-    onError: (error) => {
-      logger.error("restoreWorkspace failed", { error });
-      toast.error("Failed to restore workspace");
+  return useOptimisticMutation<string, RestoreResult>({
+    mutationFn: restoreWorkspace,
+    mutationKey: ["restoreWorkspace"],
+    queryKey: trashKeys.workspaces,
+    dependentQueryKeys: [workspaceKeys.all, bookmarkKeys.all],
+    successMessage: null,
+    errorMessage: "Failed to restore workspace",
+    prepareOptimisticData: (oldData, id) => {
+      const prev = (oldData as TrashedWorkspace[]) ?? [];
+      return prev.filter((ws) => ws.id !== id);
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -68,78 +92,67 @@ export function useRestoreWorkspace() {
         toast.error(result.error ?? "Failed to restore workspace");
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: trashKeys.all });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-    },
   });
 }
 
 export function usePermanentDeleteBookmarks() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (ids: string[]) => permanentDeleteBookmarks(ids),
-    onError: (error) => {
-      logger.error("permanentDeleteBookmarks failed", { error });
-      toast.error("Failed to permanently delete bookmarks");
+  return useOptimisticMutation<string[], null>({
+    mutationFn: permanentDeleteBookmarks,
+    mutationKey: ["permanentDeleteBookmarks"],
+    queryKey: trashKeys.bookmarks,
+    successMessage: "Bookmarks permanently deleted",
+    errorMessage: "Failed to permanently delete bookmarks",
+    prepareOptimisticData: (oldData, ids) => {
+      return optimisticRemove<Bookmark>(oldData, ids);
     },
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success("Bookmarks permanently deleted");
-      } else {
-        toast.error(result.error ?? "Failed to permanently delete bookmarks");
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: trashKeys.all });
+    additionalOptimisticUpdates: (ids) => {
+      const idSet = new Set(ids);
+      return [
+        {
+          key: trashKeys.workspaces,
+          updater: (oldData) => {
+            const prev = (oldData as TrashedWorkspace[]) ?? [];
+            return prev.map((ws) => ({
+              ...ws,
+              bookmarks: ws.bookmarks.filter((b) => !idSet.has(b.id)),
+            }));
+          },
+        },
+      ];
     },
   });
 }
 
 export function usePermanentDeleteWorkspace() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => permanentDeleteWorkspace(id),
-    onError: (error) => {
-      logger.error("permanentDeleteWorkspace failed", { error });
-      toast.error("Failed to permanently delete workspace");
-    },
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success("Workspace permanently deleted");
-      } else {
-        toast.error(result.error ?? "Failed to permanently delete workspace");
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: trashKeys.all });
+  return useOptimisticMutation<string, null>({
+    mutationFn: permanentDeleteWorkspace,
+    mutationKey: ["permanentDeleteWorkspace"],
+    queryKey: trashKeys.workspaces,
+    successMessage: "Workspace permanently deleted",
+    errorMessage: "Failed to permanently delete workspace",
+    prepareOptimisticData: (oldData, id) => {
+      return optimisticRemove<TrashedWorkspace>(oldData, id);
     },
   });
 }
 
 export function useEmptyTrash() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useOptimisticMutation<void, null>({
     mutationFn: () => emptyTrash(),
-    onError: (error) => {
-      logger.error("emptyTrash failed", { error });
-      toast.error("Failed to empty trash");
+    mutationKey: ["emptyTrash"],
+    queryKey: trashKeys.bookmarks,
+    dependentQueryKeys: [bookmarkKeys.all, workspaceKeys.all],
+    successMessage: "Trash emptied",
+    errorMessage: "Failed to empty trash",
+    prepareOptimisticData: () => {
+      // Clear bookmarks list optimistically
+      return [];
     },
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success("Trash emptied");
-      } else {
-        toast.error(result.error ?? "Failed to empty trash");
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: trashKeys.all });
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
-    },
+    additionalOptimisticUpdates: () => [
+      {
+        key: trashKeys.workspaces,
+        updater: () => [],
+      },
+    ],
   });
 }

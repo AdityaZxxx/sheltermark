@@ -19,9 +19,7 @@ export function VirtualList<T extends { id: string }>({
   gap = 0,
 }: VirtualListProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const [listHeight, setListHeight] = useState(
-    typeof window !== "undefined" ? window.innerHeight - 100 : 600,
-  );
+  const [listHeight, setListHeight] = useState(600);
 
   useLayoutEffect(() => {
     function update() {

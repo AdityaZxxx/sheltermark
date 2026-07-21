@@ -50,7 +50,7 @@ export function BookmarkTagFilter({
             type="button"
             onClick={() => toggleTag(tag.id)}
             className={cn(
-              "inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-medium transition-colors active:scale-[0.97]",
+              "inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors active:scale-[0.97]",
               isActive
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -64,7 +64,7 @@ export function BookmarkTagFilter({
         <button
           type="button"
           onClick={() => onChange([])}
-          className="ml-1 shrink-0 text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
+          className="ml-1 shrink-0 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
         >
           Clear
         </button>

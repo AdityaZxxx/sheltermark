@@ -14,6 +14,8 @@ export const trashedBookmarksQueryOptions = (userId: string | undefined) => ({
     return result.data as Bookmark[];
   },
   enabled: !!userId,
+  refetchOnMount: false,
+  placeholderData: (previousData: Bookmark[] | undefined) => previousData,
 });
 
 export const trashedWorkspacesQueryOptions = (userId: string | undefined) => ({
@@ -24,4 +26,7 @@ export const trashedWorkspacesQueryOptions = (userId: string | undefined) => ({
     return result.data as TrashedWorkspace[];
   },
   enabled: !!userId,
+  refetchOnMount: false,
+  placeholderData: (previousData: TrashedWorkspace[] | undefined) =>
+    previousData,
 });

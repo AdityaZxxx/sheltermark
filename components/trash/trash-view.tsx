@@ -244,6 +244,7 @@ export function TrashView() {
 
   return (
     <>
+      {/* pb-24 clears the floating bulk-action bar (fixed bottom-4) */}
       <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
         <div className="flex flex-col justify-between gap-3 mb-8">
           <div className="flex items-center justify-start gap-3">
@@ -285,7 +286,7 @@ export function TrashView() {
               placeholder="Search trash..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex h-9 w-full rounded-lg border border-border bg-transparent pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="flex h-9 w-full rounded-lg border border-border bg-transparent pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/30"
             />
             {searchQuery && (
               <button
@@ -419,6 +420,7 @@ export function TrashView() {
         }
         isRestoringWorkspace={restoreWs.isPending}
         onConfirm={handleRestoreConfirm}
+        isPending={restoreBm.isPending}
       />
 
       <DeleteConfirmDialog
