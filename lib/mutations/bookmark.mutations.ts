@@ -32,6 +32,7 @@ export function useAddBookmark(userId: string | undefined) {
     mutationFn: ({ url, workspaceId }) => addBookmark({ url, workspaceId }),
     mutationKey: ["addBookmark"],
     queryKey: bookmarkKeys.all,
+    dependentQueryKeys: userId ? [workspaceKeys.byUser(userId)] : [],
     successMessage: "Bookmark added",
     errorMessage: "Failed to add bookmark",
     prepareOptimisticData: (oldData, { url, workspaceId }) => {
@@ -59,12 +60,14 @@ export function useAddBookmark(userId: string | undefined) {
   });
 }
 
-export function useDeleteBookmarks(_userId: string | undefined) {
+export function useDeleteBookmarks(userId: string | undefined) {
   return useOptimisticMutation<BookmarkDeleteInput, null>({
     mutationFn: deleteBookmarks,
     mutationKey: ["deleteBookmarks"],
     queryKey: bookmarkKeys.all,
-    dependentQueryKeys: [trashKeys.all],
+    dependentQueryKeys: userId
+      ? [trashKeys.all, workspaceKeys.byUser(userId)]
+      : [trashKeys.all],
     successMessage: null,
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
