@@ -291,7 +291,7 @@ export function TagManageDialog({
                         type="button"
                         onClick={() => startRenaming(tag)}
                         aria-label={`Rename ${tag.name}`}
-                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-0.5"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-0.5"
                       >
                         <PencilSimpleIcon
                           className="size-3"
@@ -305,7 +305,7 @@ export function TagManageDialog({
                           setEditingTagId(null);
                         }}
                         aria-label={`Delete ${tag.name}`}
-                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-1"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-1"
                       >
                         <TrashIcon className="size-3" aria-hidden="true" />
                       </button>

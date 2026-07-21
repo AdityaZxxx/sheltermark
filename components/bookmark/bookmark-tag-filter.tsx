@@ -64,7 +64,7 @@ export function BookmarkTagFilter({
         <button
           type="button"
           onClick={() => onChange([])}
-          className="ml-1 shrink-0 text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
+          className="ml-1 shrink-0 text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
         >
           Clear
         </button>
