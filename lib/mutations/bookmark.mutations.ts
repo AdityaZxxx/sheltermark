@@ -14,11 +14,10 @@ import {
   useOptimisticMutation,
 } from "~/lib/mutations/base";
 import {
-  bookmarkKeys,
-  tagKeys,
-  trashKeys,
-  workspaceKeys,
-} from "~/lib/query-keys";
+  updateBookmarkFieldsDependentKeys,
+  updateBookmarkFieldsUpdates,
+} from "~/lib/mutations/tag.invalidation";
+import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
 import type {
   Bookmark,
   BookmarkDeleteInput,
@@ -143,7 +142,7 @@ export function useUpdateBookmarkFields(_userId: string | undefined) {
     mutationFn: updateBookmarkFields,
     mutationKey: ["updateBookmarkFields"],
     queryKey: bookmarkKeys.all,
-    dependentQueryKeys: [tagKeys.all, tagKeys.links, tagKeys.withCount],
+    dependentQueryKeys: updateBookmarkFieldsDependentKeys(),
     successMessage: "Bookmark updated",
     successMessageOnMutate: true,
     errorMessage: "Failed to save changes",
@@ -156,22 +155,10 @@ export function useUpdateBookmarkFields(_userId: string | undefined) {
       }));
     },
     additionalOptimisticUpdates: ({ id, tags }) => {
-      const bookmarkTags: BookmarkTagLink[] = tags
+      const links = tags
         .filter((t) => t.id)
         .map((t) => ({ bookmark_id: id, tag_id: t.id as string }));
-
-      return [
-        {
-          key: tagKeys.links,
-          updater: (oldData) => {
-            const prev = (oldData as BookmarkTagLink[]) ?? [];
-            const filtered = prev.filter((l) => l.bookmark_id !== id);
-            return [...filtered, ...bookmarkTags];
-          },
-        },
-      ];
+      return updateBookmarkFieldsUpdates(id, links);
     },
   });
 }
-
-type BookmarkTagLink = { bookmark_id: string; tag_id: string };
