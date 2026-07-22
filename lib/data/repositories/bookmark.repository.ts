@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
+import type { DbClient } from "~/lib/data/db-client";
 import { fetchMetadata } from "~/lib/metadata";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import {
@@ -38,7 +39,7 @@ type InsertBookmarkResult =
   | { success: false; duplicate?: false; error: string };
 
 export async function insertBookmark(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   { url, workspaceId, clientTitle }: InsertBookmarkParams,
 ): Promise<InsertBookmarkResult> {
@@ -87,11 +88,11 @@ export async function insertBookmark(
     return { success: false, error: error.message };
   }
 
-  return { success: true, data };
+  return { success: true, data: data as Bookmark };
 }
 
 export async function getBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   workspaceId?: string,
 ): Promise<ActionResult<Bookmark[]>> {
@@ -116,7 +117,7 @@ export async function getBookmarks(
 }
 
 export async function deleteBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   { ids }: BookmarkDeleteInput,
 ): Promise<ActionResult<null>> {
@@ -139,7 +140,7 @@ export async function deleteBookmarks(
 }
 
 export async function getTrashedBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<Bookmark[]>> {
   const { data, error } = await supabase
@@ -161,7 +162,7 @@ export type BatchBookmarkInput = {
 };
 
 export async function batchInsertBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   workspaceId: string | null,
   bookmarks: BatchBookmarkInput[],
@@ -287,7 +288,7 @@ export async function batchInsertBookmarks(
 }
 
 export async function permanentDeleteBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   { ids }: BookmarkDeleteInput,
 ): Promise<ActionResult<null>> {
@@ -307,7 +308,7 @@ export async function permanentDeleteBookmarks(
 }
 
 export async function emptyTrashBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<null>> {
   const { error } = await supabase
@@ -321,7 +322,7 @@ export async function emptyTrashBookmarks(
 }
 
 export async function moveBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   { ids, targetWorkspaceId }: BookmarkMoveInput,
 ): Promise<ActionResult<{ movedCount: number; skippedCount: number }>> {
@@ -348,7 +349,7 @@ export async function moveBookmarks(
   if (!sourceBookmarks || sourceBookmarks.length === 0)
     return { success: false, error: "No bookmarks found to move" };
 
-  const sourceUrls = sourceBookmarks.map((b) => b.url);
+  const sourceUrls = sourceBookmarks.map((b) => (b as { url: string }).url);
 
   // 2. Check for existing (non-trashed) URLs in the target workspace
   let existingQuery = supabase
@@ -372,7 +373,7 @@ export async function moveBookmarks(
   // 3. Separate IDs into those to move and those to skip
   const toMoveIds: string[] = [];
   let skippedCount = 0;
-  for (const bookmark of sourceBookmarks) {
+  for (const bookmark of sourceBookmarks as { id: string; url: string }[]) {
     if (existingUrls.has(bookmark.url)) {
       skippedCount++;
     } else {
@@ -400,7 +401,7 @@ export async function moveBookmarks(
 }
 
 export async function renameBookmark(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   { id, title }: BookmarkRenameInput,
 ): Promise<ActionResult<null>> {
@@ -423,7 +424,7 @@ export async function renameBookmark(
 }
 
 export async function updateBookmarkNote(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   { id, note }: BookmarkUpdateNoteInput,
 ): Promise<ActionResult<null>> {
@@ -446,7 +447,7 @@ export async function updateBookmarkNote(
 }
 
 export async function updateBookmarkFields(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: BookmarkEditInput,
 ): Promise<ActionResult<Tag[]>> {
@@ -469,7 +470,7 @@ export async function updateBookmarkFields(
   }
 
   const tagResult = await resolveAndReplaceBookmarkTags(
-    supabase,
+    supabase as unknown as SupabaseClient,
     userId,
     id,
     tags,
@@ -480,7 +481,7 @@ export async function updateBookmarkFields(
 }
 
 export async function refetchMetadata(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: BookmarkRefetchMetadataInput,
 ): Promise<ActionResult<null>> {
@@ -500,7 +501,8 @@ export async function refetchMetadata(
     return { success: false, error: "Bookmark not found" };
   }
 
-  const metadata = await fetchMetadata(bookmark.url);
+  const bm = bookmark as { url: string; title: string };
+  const metadata = await fetchMetadata(bm.url);
 
   const { error: updateError } = await supabase
     .from("bookmarks")
@@ -518,7 +520,7 @@ export async function refetchMetadata(
 }
 
 export async function generateAiTitleRepo(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: GenerateAiTitleInput,
 ): Promise<ActionResult<{ suggestion: string }>> {
@@ -547,12 +549,13 @@ export async function generateAiTitleRepo(
     return { success: false, error: "Bookmark not found" };
   }
 
-  const metadata = await fetchMetadata(bookmark.url);
+  const bm = bookmark as { url: string; title: string };
+  const metadata = await fetchMetadata(bm.url);
 
   try {
     const suggestion = await generateBookmarkTitle({
-      url: bookmark.url,
-      currentTitle: bookmark.title,
+      url: bm.url,
+      currentTitle: bm.title,
       description: metadata.description,
     });
 
@@ -581,7 +584,7 @@ type BookmarkWithWorkspace = {
 };
 
 export async function exportBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   options: z.infer<typeof exportOptionsSchema>,
 ): Promise<ActionResult<BookmarkWithWorkspace[]>> {

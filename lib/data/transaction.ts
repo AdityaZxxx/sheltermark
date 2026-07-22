@@ -1,10 +1,10 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import type { DbClient } from "~/lib/data/db-client";
 
 type RpcResult = { success: boolean; error?: string; data: null };
 
 export async function deleteWorkspaceWithBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   workspaceId: string,
 ): Promise<ActionResult<null>> {
@@ -25,7 +25,7 @@ export async function deleteWorkspaceWithBookmarks(
 }
 
 export async function emptyUserTrash(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<null>> {
   const { data, error } = await supabase.rpc("empty_user_trash", {

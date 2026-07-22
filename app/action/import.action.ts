@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
+import type { DbClient } from "~/lib/data/db-client";
 import { batchInsertBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import {
   createWorkspaceRaw,
@@ -104,7 +105,7 @@ export async function importBookmarks(
 
   if (validated.data.createWorkspace && validated.data.newWorkspaceName) {
     const result = await createWorkspaceRaw(
-      supabase,
+      supabase as unknown as DbClient,
       user.id,
       validated.data.newWorkspaceName,
     );
@@ -117,7 +118,10 @@ export async function importBookmarks(
   }
 
   if (!targetWorkspaceId && !validated.data.createWorkspace) {
-    const result = await getDefaultWorkspace(supabase, user.id);
+    const result = await getDefaultWorkspace(
+      supabase as unknown as DbClient,
+      user.id,
+    );
 
     if (!result.success) {
       return result;
@@ -129,7 +133,7 @@ export async function importBookmarks(
   }
 
   return batchInsertBookmarks(
-    supabase,
+    supabase as unknown as DbClient,
     user.id,
     targetWorkspaceId ?? null,
     parsed.bookmarks,

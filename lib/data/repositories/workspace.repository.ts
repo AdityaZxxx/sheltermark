@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import type { DbClient } from "~/lib/data/db-client";
 import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
@@ -12,7 +12,7 @@ import {
 } from "~/lib/schemas/workspace.schema";
 
 export async function getWorkspaces(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<WorkspaceWithCount[]>> {
   const [workspacesResult, countsResult] = await Promise.all([
@@ -49,7 +49,7 @@ export async function getWorkspaces(
 }
 
 export async function createWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
@@ -84,7 +84,7 @@ export async function createWorkspace(
 }
 
 export async function deleteWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
@@ -92,7 +92,7 @@ export async function deleteWorkspace(
 }
 
 export async function getTrashedWorkspaces(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<TrashedWorkspace[]>> {
   const [workspacesResult, bookmarksResult] = await Promise.all([
@@ -144,7 +144,7 @@ export async function getTrashedWorkspaces(
 }
 
 export async function permanentDeleteWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
@@ -168,7 +168,7 @@ export async function permanentDeleteWorkspace(
 }
 
 export async function emptyTrashWorkspaces(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<null>> {
   // Hard-delete all trashed bookmarks first
@@ -192,7 +192,7 @@ export async function emptyTrashWorkspaces(
 }
 
 export async function togglePublicStatus(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
   isPublic: boolean,
@@ -208,7 +208,7 @@ export async function togglePublicStatus(
 }
 
 export async function setDefaultWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
@@ -228,7 +228,7 @@ export async function setDefaultWorkspace(
 }
 
 export async function toggleAutoCheckBroken(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
   enabled: boolean,
@@ -243,7 +243,7 @@ export async function toggleAutoCheckBroken(
 }
 
 export async function createWorkspaceRaw(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   name: string,
 ): Promise<ActionResult<{ id: string }>> {
@@ -272,11 +272,11 @@ export async function createWorkspaceRaw(
     };
   }
 
-  return { success: true, data: { id: data.id } };
+  return { success: true, data: { id: (data as { id: string }).id } };
 }
 
 export async function getDefaultWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<{ id: string } | null>> {
   const { data, error } = await supabase
@@ -287,11 +287,11 @@ export async function getDefaultWorkspace(
     .maybeSingle();
 
   if (error) return { success: false, error: error.message };
-  return { success: true, data: data ?? null };
+  return { success: true, data: data as { id: string } | null };
 }
 
 export async function renameWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
   name: string,

@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
+import type { DbClient } from "~/lib/data/db-client";
 import {
   getTrashedBookmarks as getTrashedBookmarksRepo,
   permanentDeleteBookmarks as permanentDeleteBookmarksRepo,
@@ -21,47 +22,56 @@ import type {
 } from "~/lib/schemas/bookmark.schema";
 import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
 
-export async function getTrashedBookmarks(): Promise<ActionResult<Bookmark[]>> {
+/**
+ * Returns the authenticated user and a DbClient-typed view of the
+ * Supabase client. See `bookmark.action.ts` for the cast rationale.
+ */
+async function auth() {
   const { user, supabase } = await requireAuth();
-  return getTrashedBookmarksRepo(supabase, user.id);
+  return { user, db: supabase as unknown as DbClient };
+}
+
+export async function getTrashedBookmarks(): Promise<ActionResult<Bookmark[]>> {
+  const { user, db } = await auth();
+  return getTrashedBookmarksRepo(db, user.id);
 }
 
 export async function getTrashedWorkspaces(): Promise<
   ActionResult<TrashedWorkspace[]>
 > {
-  const { user, supabase } = await requireAuth();
-  return getTrashedWorkspacesRepo(supabase, user.id);
+  const { user, db } = await auth();
+  return getTrashedWorkspacesRepo(db, user.id);
 }
 
 export async function restoreBookmarks(
   input: BookmarkRestoreInput,
 ): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
-  const { user, supabase } = await requireAuth();
-  return restoreBookmarksService(supabase, user.id, input);
+  const { user, db } = await auth();
+  return restoreBookmarksService(db, user.id, input);
 }
 
 export async function restoreWorkspace(
   id: string,
 ): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
-  const { user, supabase } = await requireAuth();
-  return restoreWorkspaceService(supabase, user.id, id);
+  const { user, db } = await auth();
+  return restoreWorkspaceService(db, user.id, id);
 }
 
 export async function permanentDeleteBookmarks(
   ids: string[],
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return permanentDeleteBookmarksRepo(supabase, user.id, { ids });
+  const { user, db } = await auth();
+  return permanentDeleteBookmarksRepo(db, user.id, { ids });
 }
 
 export async function permanentDeleteWorkspace(
   id: string,
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return permanentDeleteWorkspaceRepo(supabase, user.id, id);
+  const { user, db } = await auth();
+  return permanentDeleteWorkspaceRepo(db, user.id, id);
 }
 
 export async function emptyTrash(): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return emptyUserTrash(supabase, user.id);
+  const { user, db } = await auth();
+  return emptyUserTrash(db, user.id);
 }

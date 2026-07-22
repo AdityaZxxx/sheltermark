@@ -2,6 +2,7 @@
 
 import type { ActionResult } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
+import type { DbClient } from "~/lib/data/db-client";
 import {
   deleteBookmarks as deleteBookmarksRepo,
   generateAiTitleRepo,
@@ -26,11 +27,23 @@ import type {
 } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
+/**
+ * Returns the authenticated user and a DbClient-typed view of the
+ * Supabase client. Cast through `unknown` because Supabase's recursive
+ * generics hit TS's instantiation-depth limit when structurally checked
+ * against DbClient — the runtime shape is compatible, the type system
+ * just can't prove it without expanding to infinity.
+ */
+async function auth() {
+  const { user, supabase } = await requireAuth();
+  return { user, db: supabase as unknown as DbClient };
+}
+
 export async function addBookmark(
   data: BookmarkCreateInput,
 ): Promise<ActionResult<Bookmark>> {
-  const { user, supabase } = await requireAuth();
-  const result = await insertBookmarkRepo(supabase, user.id, data);
+  const { user, db } = await auth();
+  const result = await insertBookmarkRepo(db, user.id, data);
   if (!result.success) {
     return {
       success: false,
@@ -45,15 +58,15 @@ export async function addBookmark(
 export async function generateAiTitle(
   input: GenerateAiTitleInput,
 ): Promise<ActionResult<{ suggestion: string }>> {
-  const { user, supabase } = await requireAuth();
-  return generateAiTitleRepo(supabase, user.id, input);
+  const { user, db } = await auth();
+  return generateAiTitleRepo(db, user.id, input);
 }
 
 export async function deleteBookmarks({
   ids,
 }: BookmarkDeleteInput): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return deleteBookmarksRepo(supabase, user.id, { ids });
+  const { user, db } = await auth();
+  return deleteBookmarksRepo(db, user.id, { ids });
 }
 
 export async function moveBookmarks({
@@ -62,43 +75,43 @@ export async function moveBookmarks({
 }: BookmarkMoveInput): Promise<
   ActionResult<{ movedCount: number; skippedCount: number }>
 > {
-  const { user, supabase } = await requireAuth();
-  return moveBookmarksRepo(supabase, user.id, { ids, targetWorkspaceId });
+  const { user, db } = await auth();
+  return moveBookmarksRepo(db, user.id, { ids, targetWorkspaceId });
 }
 
 export async function renameBookmark({
   id,
   title,
 }: BookmarkRenameInput): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return renameBookmarkRepo(supabase, user.id, { id, title });
+  const { user, db } = await auth();
+  return renameBookmarkRepo(db, user.id, { id, title });
 }
 
 export async function updateBookmarkNote({
   id,
   note,
 }: BookmarkUpdateNoteInput): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return updateBookmarkNoteRepo(supabase, user.id, { id, note });
+  const { user, db } = await auth();
+  return updateBookmarkNoteRepo(db, user.id, { id, note });
 }
 
 export async function refetchBookmarkMetadata(
   id: BookmarkRefetchMetadataInput,
 ): Promise<ActionResult<null>> {
-  const { user, supabase } = await requireAuth();
-  return refetchMetadataRepo(supabase, user.id, id);
+  const { user, db } = await auth();
+  return refetchMetadataRepo(db, user.id, id);
 }
 
 export async function getBookmarks(
   workspaceId?: string,
 ): Promise<ActionResult<Bookmark[]>> {
-  const { user, supabase } = await requireAuth();
-  return getBookmarksRepo(supabase, user.id, workspaceId);
+  const { user, db } = await auth();
+  return getBookmarksRepo(db, user.id, workspaceId);
 }
 
 export async function updateBookmarkFields(
   input: BookmarkEditInput,
 ): Promise<ActionResult<Tag[]>> {
-  const { user, supabase } = await requireAuth();
-  return updateBookmarkFieldsRepo(supabase, user.id, input);
+  const { user, db } = await auth();
+  return updateBookmarkFieldsRepo(db, user.id, input);
 }

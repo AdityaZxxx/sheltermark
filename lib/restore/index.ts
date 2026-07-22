@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import type { DbClient } from "~/lib/data/db-client";
 import { createWorkspaceRaw } from "~/lib/data/repositories/workspace.repository";
 import type {
   Bookmark,
@@ -71,7 +71,7 @@ export function getRestoreTargetForUI(
 }
 
 export async function restoreBookmarks(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: BookmarkRestoreInput,
 ): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
@@ -134,11 +134,14 @@ export async function restoreBookmarks(
     return { success: false, error: "No bookmarks found to restore" };
   }
 
+  type RestoreRow = { id: string; url: string; workspace_id: string | null };
+  const restoreRows = toRestore as RestoreRow[];
+
   const restoreGroups = new Map<
     string | null,
     { ids: string[]; urls: string[] }
   >();
-  for (const bm of toRestore) {
+  for (const bm of restoreRows) {
     const wsKey = bm.workspace_id ?? null;
     const group = restoreGroups.get(wsKey) ?? { ids: [], urls: [] };
     group.ids.push(bm.id);
@@ -162,12 +165,15 @@ export async function restoreBookmarks(
     }
 
     const { data: existing } = await query;
-    existingMap.set(wsKey, new Set(existing?.map((b) => b.url) ?? []));
+    existingMap.set(
+      wsKey,
+      new Set((existing as { url: string }[] | null)?.map((b) => b.url) ?? []),
+    );
   }
 
   const toRestoreIds: string[] = [];
   let skippedCount = 0;
-  for (const bm of toRestore) {
+  for (const bm of restoreRows) {
     const wsKey = bm.workspace_id ?? null;
     const existingUrls = existingMap.get(wsKey) ?? new Set();
     if (existingUrls.has(bm.url)) {
@@ -206,7 +212,7 @@ export async function restoreBookmarks(
 }
 
 export async function restoreWorkspace(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   id: string,
 ): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
@@ -231,7 +237,8 @@ export async function restoreWorkspace(
     return { success: true, data: { restoredCount: 0, skippedCount: 0 } };
   }
 
-  const urls = trashedBookmarks.map((b) => b.url);
+  const trashedRows = trashedBookmarks as { id: string; url: string }[];
+  const urls = trashedRows.map((b) => b.url);
 
   const { data: existing } = await supabase
     .from("bookmarks")
@@ -241,12 +248,14 @@ export async function restoreWorkspace(
     .is("deleted_at", null)
     .in("url", urls);
 
-  const existingUrls = new Set(existing?.map((b) => b.url) ?? []);
+  const existingUrls = new Set(
+    (existing as { url: string }[] | null)?.map((b) => b.url) ?? [],
+  );
 
   const toRestoreIds: string[] = [];
   let skippedCount = 0;
 
-  for (const bm of trashedBookmarks) {
+  for (const bm of trashedRows) {
     if (existingUrls.has(bm.url)) {
       skippedCount++;
     } else {
