@@ -153,6 +153,139 @@ export async function getTrashedBookmarks(
   return { success: true, data: (data as Bookmark[]) ?? [] };
 }
 
+export type BatchBookmarkInput = {
+  url: string;
+  title: string;
+  favicon_url?: string | null;
+  og_image_url?: string | null;
+};
+
+export async function batchInsertBookmarks(
+  supabase: SupabaseClient,
+  userId: string,
+  workspaceId: string | null,
+  bookmarks: BatchBookmarkInput[],
+  options?: { duplicateStrategy?: "skip" | "replace" },
+): Promise<
+  ActionResult<{ imported: number; skipped: number; errors: string[] }>
+> {
+  const errors: string[] = [];
+  const toInsert: BatchBookmarkInput[] = [];
+  const replaceUrls: string[] = [];
+  const strategy = options?.duplicateStrategy ?? "skip";
+
+  let existingQuery = supabase
+    .from("bookmarks")
+    .select("url")
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+
+  if (workspaceId) {
+    existingQuery = existingQuery.eq("workspace_id", workspaceId);
+  } else {
+    existingQuery = existingQuery.is("workspace_id", null);
+  }
+
+  const { data: existingData } = await existingQuery;
+  const existingUrls = new Set((existingData ?? []).map((b) => b.url));
+
+  for (const bookmark of bookmarks) {
+    try {
+      new URL(bookmark.url);
+    } catch {
+      errors.push(`Invalid URL: ${bookmark.url}`);
+      continue;
+    }
+
+    const normalizedUrl = normalizeUrl(bookmark.url);
+
+    if (existingUrls.has(normalizedUrl)) {
+      if (strategy === "skip") {
+        continue;
+      }
+      replaceUrls.push(normalizedUrl);
+    }
+
+    toInsert.push({
+      url: normalizedUrl,
+      title: bookmark.title || bookmark.url,
+      favicon_url: bookmark.favicon_url || null,
+      og_image_url: bookmark.og_image_url || null,
+    });
+  }
+
+  if (replaceUrls.length > 0) {
+    let deleteQuery = supabase
+      .from("bookmarks")
+      .delete()
+      .eq("user_id", userId)
+      .in("url", replaceUrls);
+    if (workspaceId) {
+      deleteQuery = deleteQuery.eq("workspace_id", workspaceId);
+    } else {
+      deleteQuery = deleteQuery.is("workspace_id", null);
+    }
+    const { error: deleteError } = await deleteQuery;
+    if (deleteError) {
+      errors.push(`Replace deletions: ${deleteError.message}`);
+    }
+  }
+
+  if (toInsert.length === 0) {
+    return {
+      success: true,
+      data: { imported: 0, skipped: bookmarks.length, errors },
+    };
+  }
+
+  const batchSize = 100;
+  const batches: { batch: BatchBookmarkInput[]; index: number }[] = [];
+  for (let i = 0; i < toInsert.length; i += batchSize) {
+    batches.push({
+      batch: toInsert.slice(i, i + batchSize),
+      index: Math.floor(i / batchSize),
+    });
+  }
+
+  const insertPayloads = batches.map(({ batch }) =>
+    batch.map((bm) => ({
+      user_id: userId,
+      workspace_id: workspaceId,
+      url: bm.url,
+      title: bm.title,
+      favicon_url: bm.favicon_url || null,
+      og_image_url: bm.og_image_url || null,
+    })),
+  );
+
+  const batchResults = await Promise.allSettled(
+    insertPayloads.map((payload) => supabase.from("bookmarks").insert(payload)),
+  );
+
+  let imported = 0;
+  for (let i = 0; i < batchResults.length; i++) {
+    const result = batchResults[i];
+    if (!result) continue;
+    const batchLabel = i + 1;
+    if (result.status === "fulfilled") {
+      if (!result.value.error) {
+        imported += insertPayloads[i]?.length ?? 0;
+      } else {
+        errors.push(`Batch ${batchLabel}: ${result.value.error.message}`);
+      }
+    } else {
+      errors.push(
+        `Batch ${batchLabel}: ${result.reason?.message ?? "Insert failed"}`,
+      );
+    }
+  }
+
+  return {
+    success: true,
+    data: { imported, skipped: bookmarks.length - imported, errors },
+  };
+}
+
 export async function permanentDeleteBookmarks(
   supabase: SupabaseClient,
   userId: string,
