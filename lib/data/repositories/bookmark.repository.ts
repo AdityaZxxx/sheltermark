@@ -11,14 +11,12 @@ import {
   type BookmarkMoveInput,
   type BookmarkRefetchMetadataInput,
   type BookmarkRenameInput,
-  type BookmarkRestoreInput,
   type BookmarkUpdateNoteInput,
   bookmarkDeleteSchema,
   bookmarkEditSchema,
   bookmarkMoveSchema,
   bookmarkRefetchMetadataSchema,
   bookmarkRenameSchema,
-  bookmarkRestoreSchema,
   bookmarkUpdateNoteSchema,
   type GenerateAiTitleInput,
   generateAiTitleSchema,
@@ -153,144 +151,6 @@ export async function getTrashedBookmarks(
 
   if (error) return { success: false, error: error.message };
   return { success: true, data: (data as Bookmark[]) ?? [] };
-}
-
-export async function restoreBookmarks(
-  supabase: SupabaseClient,
-  userId: string,
-  input: BookmarkRestoreInput,
-): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
-  const validated = bookmarkRestoreSchema.safeParse(input);
-  if (!validated.success) {
-    return { success: false, error: validated.error.message };
-  }
-
-  const { ids, targetWorkspaceId, newWorkspaceName } = validated.data;
-
-  let resolvedWorkspaceId: string | null | undefined = targetWorkspaceId;
-
-  if (newWorkspaceName) {
-    const { createWorkspaceRaw } = await import(
-      "~/lib/data/repositories/workspace.repository"
-    );
-    const result = await createWorkspaceRaw(supabase, userId, newWorkspaceName);
-    if (!result.success) return result;
-    resolvedWorkspaceId = result.data.id;
-  }
-
-  const now = new Date().toISOString();
-
-  if (resolvedWorkspaceId === undefined) {
-    const { data: bookmarks } = await supabase
-      .from("bookmarks")
-      .select("id, workspace_id")
-      .in("id", ids)
-      .eq("user_id", userId);
-
-    const wsIds = [
-      ...new Set(
-        (bookmarks ?? [])
-          .filter((b) => b.workspace_id)
-          .map((b) => b.workspace_id as string),
-      ),
-    ];
-
-    if (wsIds.length > 0) {
-      const { data: trashed } = await supabase
-        .from("workspaces")
-        .select("id")
-        .in("id", wsIds)
-        .not("deleted_at", "is", null);
-
-      if (trashed && trashed.length > 0) {
-        return {
-          success: false,
-          error:
-            "Cannot restore bookmarks to a trashed workspace. Restore the workspace first, or choose a different destination.",
-        };
-      }
-    }
-  }
-
-  const { data: toRestore } = await supabase
-    .from("bookmarks")
-    .select("id, url, workspace_id")
-    .in("id", ids)
-    .eq("user_id", userId);
-
-  if (!toRestore || toRestore.length === 0) {
-    return { success: false, error: "No bookmarks found to restore" };
-  }
-
-  const restoreGroups = new Map<
-    string | null,
-    { ids: string[]; urls: string[] }
-  >();
-  for (const bm of toRestore) {
-    const wsKey = bm.workspace_id ?? null;
-    const group = restoreGroups.get(wsKey) ?? { ids: [], urls: [] };
-    group.ids.push(bm.id);
-    group.urls.push(bm.url);
-    restoreGroups.set(wsKey, group);
-  }
-
-  const existingMap = new Map<string | null, Set<string>>();
-  for (const [wsKey, { urls }] of restoreGroups) {
-    let query = supabase
-      .from("bookmarks")
-      .select("url")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .in("url", urls);
-
-    if (wsKey !== null) {
-      query = query.eq("workspace_id", wsKey);
-    } else {
-      query = query.is("workspace_id", null);
-    }
-
-    const { data: existing } = await query;
-    existingMap.set(wsKey, new Set(existing?.map((b) => b.url) ?? []));
-  }
-
-  const toRestoreIds: string[] = [];
-  let skippedCount = 0;
-  for (const bm of toRestore) {
-    const wsKey = bm.workspace_id ?? null;
-    const existingUrls = existingMap.get(wsKey) ?? new Set();
-    if (existingUrls.has(bm.url)) {
-      skippedCount++;
-    } else {
-      toRestoreIds.push(bm.id);
-    }
-  }
-
-  const updateData: Record<string, unknown> = {
-    deleted_at: null,
-    updated_at: now,
-  };
-
-  if (resolvedWorkspaceId !== undefined) {
-    updateData.workspace_id = resolvedWorkspaceId;
-  }
-
-  if (toRestoreIds.length > 0) {
-    const { error } = await supabase
-      .from("bookmarks")
-      .update(updateData)
-      .in("id", toRestoreIds)
-      .eq("user_id", userId);
-
-    if (error) return { success: false, error: error.message };
-  }
-
-  return {
-    success: true,
-    data: {
-      restoredCount: toRestoreIds.length,
-      skippedCount,
-    },
-  };
 }
 
 export async function permanentDeleteBookmarks(

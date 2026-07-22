@@ -5,14 +5,16 @@ import { requireAuth } from "~/lib/auth";
 import {
   getTrashedBookmarks as getTrashedBookmarksRepo,
   permanentDeleteBookmarks as permanentDeleteBookmarksRepo,
-  restoreBookmarks as restoreBookmarksRepo,
 } from "~/lib/data/repositories/bookmark.repository";
 import {
   getTrashedWorkspaces as getTrashedWorkspacesRepo,
   permanentDeleteWorkspace as permanentDeleteWorkspaceRepo,
-  restoreWorkspace as restoreWorkspaceRepo,
 } from "~/lib/data/repositories/workspace.repository";
 import { emptyUserTrash } from "~/lib/data/transaction";
+import {
+  restoreBookmarks as restoreBookmarksService,
+  restoreWorkspace as restoreWorkspaceService,
+} from "~/lib/restore";
 import type {
   Bookmark,
   BookmarkRestoreInput,
@@ -35,14 +37,14 @@ export async function restoreBookmarks(
   input: BookmarkRestoreInput,
 ): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
   const { user, supabase } = await requireAuth();
-  return restoreBookmarksRepo(supabase, user.id, input);
+  return restoreBookmarksService(supabase, user.id, input);
 }
 
 export async function restoreWorkspace(
   id: string,
 ): Promise<ActionResult<{ restoredCount: number; skippedCount: number }>> {
   const { user, supabase } = await requireAuth();
-  return restoreWorkspaceRepo(supabase, user.id, id);
+  return restoreWorkspaceService(supabase, user.id, id);
 }
 
 export async function permanentDeleteBookmarks(

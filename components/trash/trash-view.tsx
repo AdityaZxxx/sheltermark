@@ -40,6 +40,7 @@ import {
   useRestoreBookmarks,
   useRestoreWorkspace,
 } from "~/lib/mutations/trash.mutations";
+import { getRestoreTargetForUI } from "~/lib/restore";
 
 export function TrashView() {
   const { trashedBookmarks, trashedWorkspaces, isLoading, totalCount } =
@@ -70,51 +71,15 @@ export function TrashView() {
     bookmarkCount: number;
   } | null>(null);
 
-  const trashedBookmarkIdsFromWs = new Set(
-    trashedWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
-  );
-
-  // Map bookmark id → its trashed parent workspace
-  const trashedBookmarkToWs = new Map<string, { id: string; name: string }>();
-  for (const ws of trashedWorkspaces) {
-    for (const bm of ws.bookmarks) {
-      trashedBookmarkToWs.set(bm.id, { id: ws.id, name: ws.name });
-    }
-  }
-
   const openRestoreDialog = (ids: string[]) => {
-    const hasTrashedOrigin = ids.some((id) => trashedBookmarkIdsFromWs.has(id));
-
-    let trashedWorkspaceName: string | null = null;
-    let trashedWorkspaceId: string | null = null;
-
-    if (hasTrashedOrigin) {
-      for (const id of ids) {
-        const ws = trashedBookmarkToWs.get(id);
-        if (ws) {
-          trashedWorkspaceName = ws.name;
-          trashedWorkspaceId = ws.id;
-          break;
-        }
-      }
-    }
-
-    let originalWorkspaceName: string | null = null;
-    if (!hasTrashedOrigin && ids.length > 0) {
-      const bm = trashedBookmarks.find((b) => b.id === ids[0]);
-      if (bm?.workspace_id) {
-        const ws = activeWorkspaces.find((w) => w.id === bm.workspace_id);
-        if (ws) originalWorkspaceName = ws.name;
-      }
-    }
-
-    setRestoreTarget({
-      ids,
-      hasTrashedOrigin,
-      trashedWorkspaceName,
-      trashedWorkspaceId,
-      originalWorkspaceName,
-    });
+    setRestoreTarget(
+      getRestoreTargetForUI(
+        ids,
+        trashedBookmarks,
+        trashedWorkspaces,
+        activeWorkspaces,
+      ),
+    );
   };
 
   const handleRestoreConfirm = (options: {
