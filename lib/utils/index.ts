@@ -1,6 +1,5 @@
 export { getBaseUrl } from "./base-url";
 export {
-  type BrokenStatus,
   getBrokenLinkMessage,
   type RenderableBrokenState,
   resolveBrokenState,

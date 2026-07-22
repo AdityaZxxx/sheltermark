@@ -4,7 +4,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { type BrokenStatus, cn, resolveBrokenState } from "~/lib/utils";
+import type { BrokenStatus } from "~/lib/link-health/types";
+import { cn, resolveBrokenState } from "~/lib/utils";
 
 export interface BrokenLinkWarningProps {
   brokenStatus: BrokenStatus | string | null | undefined;

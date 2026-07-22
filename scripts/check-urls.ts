@@ -31,11 +31,8 @@
  */
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import {
-  type BrokenStatus,
-  checkUrl,
-  type UrlHealthResult,
-} from "~/lib/link-health/checker";
+import { checkUrl } from "~/lib/link-health/checker";
+import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
 import { type LogContext, logger } from "~/lib/logger";
 import { safeDomain } from "~/lib/utils";
 
