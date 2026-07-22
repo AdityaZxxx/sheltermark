@@ -7,7 +7,6 @@ import {
   createWorkspaceRaw,
   getDefaultWorkspace,
 } from "~/lib/data/repositories/workspace.repository";
-import type { ParsedBookmark } from "~/lib/import/parsers";
 import { parseImportFile } from "~/lib/import/parsers";
 import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 import { importOptionsSchema } from "~/lib/schemas/profile.schema";

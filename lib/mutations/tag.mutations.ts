@@ -30,7 +30,6 @@ import type {
   RenameTagInput,
   SetBookmarkTagsInput,
   Tag,
-  TagWithCount,
 } from "~/lib/schemas/tag.schema";
 
 type BookmarkTagLink = { bookmark_id: string; tag_id: string };
