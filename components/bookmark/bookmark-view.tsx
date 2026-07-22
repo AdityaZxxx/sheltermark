@@ -1,17 +1,16 @@
 "use client";
 
-import { useBookmarkViewModel } from "~/hooks/use-bookmark-view-model";
+import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
 import type { BookmarkScope } from "~/lib/schemas/common";
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
-import { BookmarkTrash } from "./bookmark-trash";
 import { TagManageDialog } from "./tag-manage-dialog";
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
-  const vm = useBookmarkViewModel(scope);
+  const vm = useBookmarkListManager(scope);
 
   return (
     <section
@@ -47,8 +46,8 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         isSelectionMode={vm.selection.isSelectionMode}
         focusedIndex={vm.focusedIndex}
         onSelect={vm.selection.toggleSelect}
-        onDelete={vm.onDeleteTrigger}
-        onEdit={vm.handleEdit}
+        onDelete={vm.dialogs.handleDeleteTrigger}
+        onEdit={vm.dialogs.handleEditTrigger}
         onTagClick={(tagId) => vm.setSelectedTagIds([tagId])}
         onMove={vm.dialogs.handleMoveTrigger}
         onMoveToWorkspace={vm.handleMoveToWorkspace}
@@ -71,8 +70,8 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
             ? vm.selection.clearSelectionOnly
             : () => vm.selection.selectAll(vm.bookmarks.map((b) => b.id))
         }
-        onDelete={vm.onBulkDeleteTrigger}
-        onMove={vm.onBulkMoveTrigger}
+        onDelete={vm.dialogs.handleBulkDeleteTrigger}
+        onMove={vm.dialogs.handleBulkMoveTrigger}
         onCopyUrls={vm.handleBulkCopyUrls}
         pendingAction={vm.toolbarPendingAction}
       />
@@ -83,17 +82,6 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         bookmark={vm.dialogs.activeBookmark}
         updateBookmarkFields={vm.updateBookmarkFields}
         isPending={vm.isUpdatingBookmarkFields}
-      />
-
-      <BookmarkTrash
-        open={vm.dialogs.deleteDialogOpen}
-        onOpenChange={vm.dialogs.setDeleteDialogOpen}
-        ids={vm.dialogs.bookmarksToDelete}
-        onSuccess={() => {
-          vm.invalidate();
-          if (vm.dialogs.bookmarksToDelete.length > 0)
-            vm.selection.clearSelection();
-        }}
       />
 
       <BookmarkMoveDialog

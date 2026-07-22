@@ -31,12 +31,6 @@ export function useBookmarkKeyboardNavigation({
       e: React.KeyboardEvent,
       getItem?: (index: number) => { id: string; url: string } | undefined,
     ) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        focusInput();
-        return;
-      }
-
       if (
         document.activeElement === inputRef.current ||
         document.activeElement?.tagName === "INPUT" ||
@@ -74,15 +68,7 @@ export function useBookmarkKeyboardNavigation({
         }
       }
     },
-    [
-      itemCount,
-      view,
-      focusedIndex,
-      isSelectionMode,
-      onSelect,
-      onOpen,
-      focusInput,
-    ],
+    [itemCount, view, focusedIndex, isSelectionMode, onSelect, onOpen],
   );
 
   return {
