@@ -36,7 +36,7 @@ export function WorkspaceAddDialog({
         <DialogHeader>
           <DialogTitle>Add Workspace</DialogTitle>
           <DialogDescription>
-            Add a new workspace to organize your bookmarks.
+            Workspaces keep your bookmarks, tags, and shared links separate.
           </DialogDescription>
         </DialogHeader>
 
@@ -45,12 +45,13 @@ export function WorkspaceAddDialog({
             <Label htmlFor="workspace-name">Name</Label>
             <Input
               id="workspace-name"
-              placeholder="Enter workspace name"
+              placeholder="e.g. Research, Design, Inbox"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSubmit();
               }}
+              maxLength={35}
             />
           </div>
         </div>
