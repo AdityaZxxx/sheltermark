@@ -1,12 +1,13 @@
-import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import type React from "react";
+
+import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+
 import { Input } from "~/components/ui/input";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 
 const isMac =
-  typeof navigator !== "undefined" &&
-  /Mac|iPhone|iPad/.test(navigator.userAgent);
+  "navigator" in globalThis && /Mac|iPhone|iPad/.test(navigator.userAgent);
 const mod = isMac ? "⌘" : "Ctrl";
 
 interface BookmarkInputProps {

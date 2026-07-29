@@ -1,3 +1,13 @@
+import type {
+  Bookmark,
+  BookmarkDeleteInput,
+  BookmarkEditInput,
+  BookmarkMoveInput,
+  BookmarkRenameInput,
+  BookmarkUpdateNoteInput,
+} from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
+
 import {
   addBookmark,
   deleteBookmarks,
@@ -18,21 +28,16 @@ import {
   updateBookmarkFieldsUpdates,
 } from "~/lib/mutations/tag.invalidation";
 import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
-import type {
-  Bookmark,
-  BookmarkDeleteInput,
-  BookmarkEditInput,
-  BookmarkMoveInput,
-  BookmarkRenameInput,
-  BookmarkUpdateNoteInput,
-} from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function useAddBookmark(userId: string | undefined) {
-  return useOptimisticMutation<{ url: string; workspaceId: string }, unknown>({
+  return useOptimisticMutation<
+    { url: string; workspaceId: string },
+    Bookmark,
+    Bookmark[]
+  >({
     mutationFn: ({ url, workspaceId }) => addBookmark({ url, workspaceId }),
     mutationKey: ["addBookmark"],
     queryKey: bookmarkKeys.all,
@@ -40,9 +45,8 @@ export function useAddBookmark(userId: string | undefined) {
     successMessage: "Bookmark added",
     errorMessage: "Failed to add bookmark",
     prepareOptimisticData: (oldData, { url, workspaceId }) => {
-      const tempId = generateTempId();
       const optimistic: Bookmark = {
-        id: tempId,
+        id: generateTempId(),
         url,
         title: url,
         http_status: null,
@@ -57,14 +61,15 @@ export function useAddBookmark(userId: string | undefined) {
         updated_at: null,
         created_at: new Date().toISOString(),
         note: null,
-      } as Bookmark;
-      return optimisticPrepend<Bookmark>(oldData, optimistic);
+        deleted_at: null,
+      };
+      return optimisticPrepend(oldData, optimistic);
     },
   });
 }
 
 export function useDeleteBookmarks(userId: string | undefined) {
-  return useOptimisticMutation<BookmarkDeleteInput, null>({
+  return useOptimisticMutation<BookmarkDeleteInput, null, Bookmark[]>({
     mutationFn: deleteBookmarks,
     mutationKey: ["deleteBookmarks"],
     queryKey: bookmarkKeys.all,
@@ -74,20 +79,20 @@ export function useDeleteBookmarks(userId: string | undefined) {
     successMessage: null,
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
-      return optimisticRemove<Bookmark>(oldData, ids);
+      return optimisticRemove(oldData, ids);
     },
   });
 }
 
 export function useRenameBookmark(_userId: string | undefined) {
-  return useOptimisticMutation<BookmarkRenameInput, null>({
+  return useOptimisticMutation<BookmarkRenameInput, null, Bookmark[]>({
     mutationFn: renameBookmark,
     mutationKey: ["renameBookmark"],
     queryKey: bookmarkKeys.all,
     successMessage: "Bookmark renamed",
     errorMessage: "Failed to rename bookmark",
     prepareOptimisticData: (oldData, { id, title }) => {
-      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({ ...b, title }));
+      return optimisticUpdate(oldData, id, (b) => ({ ...b, title }));
     },
   });
 }
@@ -95,7 +100,8 @@ export function useRenameBookmark(_userId: string | undefined) {
 export function useMoveBookmarks(userId: string | undefined) {
   return useOptimisticMutation<
     BookmarkMoveInput,
-    { movedCount: number; skippedCount: number }
+    { movedCount: number; skippedCount: number },
+    Bookmark[]
   >({
     mutationFn: moveBookmarks,
     mutationKey: ["moveBookmarks"],
@@ -104,20 +110,20 @@ export function useMoveBookmarks(userId: string | undefined) {
     successMessage: null,
     errorMessage: "Failed to move bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
-      return optimisticRemove<Bookmark>(oldData, ids);
+      return optimisticRemove(oldData, ids);
     },
   });
 }
 
 export function useRefetchBookmarkMetadata(_userId: string | undefined) {
-  return useOptimisticMutation<{ id: string }, null>({
+  return useOptimisticMutation<{ id: string }, null, Bookmark[]>({
     mutationFn: refetchBookmarkMetadata,
     mutationKey: ["refetchBookmarkMetadata"],
     queryKey: bookmarkKeys.all,
     successMessage: "Metadata refreshed",
     errorMessage: "Failed to refresh metadata",
     prepareOptimisticData: (oldData, { id }) => {
-      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({
+      return optimisticUpdate(oldData, id, (b) => ({
         ...b,
         last_checked_at: new Date().toISOString(),
       }));
@@ -126,19 +132,19 @@ export function useRefetchBookmarkMetadata(_userId: string | undefined) {
 }
 
 export function useUpdateBookmarkNote(_userId: string | undefined) {
-  return useOptimisticMutation<BookmarkUpdateNoteInput, null>({
+  return useOptimisticMutation<BookmarkUpdateNoteInput, null, Bookmark[]>({
     mutationFn: updateBookmarkNote,
     queryKey: bookmarkKeys.all,
     successMessage: "Note saved",
     errorMessage: "Failed to save note",
     prepareOptimisticData: (oldData, { id, note }) => {
-      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({ ...b, note }));
+      return optimisticUpdate(oldData, id, (b) => ({ ...b, note }));
     },
   });
 }
 
 export function useUpdateBookmarkFields(_userId: string | undefined) {
-  return useOptimisticMutation<BookmarkEditInput, Tag[]>({
+  return useOptimisticMutation<BookmarkEditInput, Tag[], Bookmark[]>({
     mutationFn: updateBookmarkFields,
     mutationKey: ["updateBookmarkFields"],
     queryKey: bookmarkKeys.all,
@@ -147,7 +153,7 @@ export function useUpdateBookmarkFields(_userId: string | undefined) {
     successMessageOnMutate: true,
     errorMessage: "Failed to save changes",
     prepareOptimisticData: (oldData, { id, title, note }) => {
-      return optimisticUpdate<Bookmark>(oldData, id, (b) => ({
+      return optimisticUpdate(oldData, id, (b) => ({
         ...b,
         title,
         note,
@@ -155,9 +161,10 @@ export function useUpdateBookmarkFields(_userId: string | undefined) {
       }));
     },
     additionalOptimisticUpdates: ({ id, tags }) => {
-      const links = tags
-        .filter((t) => t.id)
-        .map((t) => ({ bookmark_id: id, tag_id: t.id as string }));
+      const links: Array<{ bookmark_id: string; tag_id: string }> = [];
+      for (const tag of tags) {
+        if (tag.id) links.push({ bookmark_id: id, tag_id: tag.id });
+      }
       return updateBookmarkFieldsUpdates(id, links);
     },
   });

@@ -5,6 +5,9 @@ import {
   CaretDownIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
+
+import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
+
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { Button } from "~/components/ui/button";
 import {
@@ -12,9 +15,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
-import { formatRelativeTime } from "~/lib/format";
-import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
 import { getPastelColor } from "~/lib/utils";
+import { formatRelativeTime } from "~/lib/utils/format";
 
 export function WorkspaceCard({
   workspace,

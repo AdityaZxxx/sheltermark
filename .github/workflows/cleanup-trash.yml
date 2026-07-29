@@ -2,8 +2,8 @@ name: Cleanup Trash
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Every day at midnight UTC
-  workflow_dispatch:  # Allow manual triggering
+    - cron: "0 0 * * *" # Every day at midnight UTC
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
   cleanup-trash:

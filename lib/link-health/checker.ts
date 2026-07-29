@@ -1,3 +1,5 @@
+import type { UrlHealthResult } from "~/lib/link-health/types";
+
 import {
   AMBIGUOUS_CLIENT_PROTOCOL_STATUSES,
   classifyByHttpStatus,
@@ -5,14 +7,13 @@ import {
   VALID_HIGH_STATUS,
 } from "~/lib/link-health/classifier";
 import { isAlwaysAliveDomain } from "~/lib/link-health/domains";
-import type { UrlHealthResult } from "~/lib/link-health/types";
-import { logger } from "~/lib/logger";
 import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
+import { logger } from "~/lib/utils/logger";
 
 const TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;
 
-export const SOFT_404_KEYWORDS = [
+const SOFT_404_KEYWORDS = [
   "page not found",
   "doesn't exist",
   "not available",
@@ -52,7 +53,7 @@ function reasonForClientOrServerError(status: number): string {
   return "client_error";
 }
 
-export interface Soft404Detection {
+interface Soft404Detection {
   isSoft404: boolean;
   reason?:
     | "soft404_combined"
@@ -143,7 +144,7 @@ async function tryGetFallback(
           : "ok_get",
     };
   } catch (error) {
-    return classifyFetchError(error);
+    return classifyFetchError(error instanceof Error ? error : String(error));
   }
 }
 
@@ -209,7 +210,7 @@ export async function checkUrl(
     });
     response = result.response;
   } catch (error) {
-    return classifyFetchError(error);
+    return classifyFetchError(error instanceof Error ? error : String(error));
   }
 
   const status = response.status;

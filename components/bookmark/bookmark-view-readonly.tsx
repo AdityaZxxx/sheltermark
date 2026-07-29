@@ -2,10 +2,14 @@
 
 import { useQueryState } from "nuqs";
 import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+
 import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
+import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { getPastelColor, safeDomain, slugify } from "~/lib/utils";
+
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkComfortItem } from "./bookmark-comfort-item";
 import { BookmarkListItem } from "./bookmark-list-item";
@@ -55,7 +59,7 @@ export function BookmarkViewReadOnly({
         </div>
       ) : publicWorkspaces.length > 0 ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 overflow-y-hidden">
+          <ScrollArea className="w-full min-w-0 flex-1 whitespace-nowrap [&_[data-slot=scroll-area-viewport]]:scroll-fade-x">
             <Tabs
               value={activeWorkspace || "all"}
               onValueChange={(v) => setActiveWorkspace(v === "all" ? null : v)}
@@ -65,7 +69,7 @@ export function BookmarkViewReadOnly({
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="px-3 text-sm shrink-0 gap-2"
+                    className="px-3 text-sm shrink-0 gap-2 after:content-none"
                   >
                     {tab.color && (
                       <span
@@ -78,8 +82,16 @@ export function BookmarkViewReadOnly({
                 ))}
               </TabsList>
             </Tabs>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+
+          <div className="shrink-0">
+            <BookmarkViewToggle
+              view={view}
+              onViewChange={setView}
+              showLabels={false}
+            />
           </div>
-          <BookmarkViewToggle view={view} onViewChange={setView} />
         </div>
       ) : null}
 

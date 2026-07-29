@@ -29,12 +29,19 @@
  *      Prevents accidental DoS of a single domain and reduces 429s.
  *      Global concurrency is still capped at CONCURRENCY.
  */
-import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import { checkUrl } from "~/lib/link-health/checker";
+import { config } from "dotenv";
+import { z } from "zod";
+
 import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
-import { type LogContext, logger } from "~/lib/logger";
+
+import { cronActor, insertAuditEventSupabase } from "~/lib/audit";
+import { checkUrl } from "~/lib/link-health/checker";
+import { urlSchema, uuidSchema } from "~/lib/schemas/common";
 import { safeDomain } from "~/lib/utils";
+import { logger } from "~/lib/utils/logger";
+
+config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -54,11 +61,13 @@ const MAX_RETRIES = 2;
 const MAX_BOOKMARKS_PER_RUN = 500;
 const STALE_CHECK_DAYS = 7;
 
-interface BookmarkToCheck {
-  id: string;
-  url: string;
-  user_id: string;
-}
+const bookmarkToCheckSchema = z.object({
+  id: uuidSchema,
+  url: urlSchema,
+  user_id: uuidSchema,
+});
+
+type BookmarkToCheck = z.infer<typeof bookmarkToCheckSchema>;
 
 interface RunSummary {
   checked: number;
@@ -163,6 +172,30 @@ async function persistResult(
   return { written: true };
 }
 
+async function recordRun(summary: RunSummary): Promise<void> {
+  // Privileged cross-user run: documented in docs/policies/data-access.md §5.
+  // A run that cannot be audited is a failed run (§5.4), so this helper
+  // throws rather than swallowing — callers decide the exit code.
+  await insertAuditEventSupabase(supabase, {
+    actorType: "cron",
+    actorId: cronActor("check-urls"),
+    action: "url_health_check.run",
+    resourceType: "bookmark",
+    reason: "Scheduled URL health check for auto-check workspaces",
+    metadata: {
+      checked: summary.checked,
+      confirmedBroken: summary.broken,
+      likelyBroken: summary.likely,
+      unresolved: summary.unknown,
+      updated: summary.updated,
+    },
+  });
+}
+
+function emptySummary(): RunSummary {
+  return { checked: 0, broken: 0, likely: 0, unknown: 0, updated: 0 };
+}
+
 async function main(): Promise<void> {
   logger.info("Starting URL health check");
 
@@ -182,6 +215,9 @@ async function main(): Promise<void> {
   }
   if (!bookmarks?.length) {
     logger.info("No bookmarks need checking");
+    // Still record the run: the audit trail must show the job ran and found
+    // nothing (§5.3 promises one event per privileged run).
+    await recordRun(emptySummary());
     return;
   }
 
@@ -193,8 +229,15 @@ async function main(): Promise<void> {
     written: boolean;
   };
 
+  const parsed = z.array(bookmarkToCheckSchema).safeParse(bookmarks ?? []);
+  if (!parsed.success) {
+    logger.error("Unexpected bookmark shape", {
+      message: parsed.error.message,
+    });
+    process.exit(1);
+  }
   const outcomes = await runWithPerHostConcurrency<CheckOutcome>(
-    (bookmarks as BookmarkToCheck[]).map((bm) => ({
+    parsed.data.map((bm) => ({
       host: safeDomain(bm.url),
       run: async () => {
         const result = await checkUrl(bm.url, {
@@ -224,7 +267,9 @@ async function main(): Promise<void> {
     unknown: outcomes.filter((o) => o.result.brokenStatus === "unknown").length,
     updated: outcomes.filter((o) => o.written).length,
   };
-  logger.info("URL health check done", summary as unknown as LogContext);
+  logger.info("URL health check done", summary);
+
+  await recordRun(summary);
 }
 
 main().catch((err) => {

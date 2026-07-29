@@ -2,6 +2,7 @@
 
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -133,7 +134,11 @@ export function RestoreDialog({
 
         <RadioGroup
           value={destination}
-          onValueChange={(v) => setDestination(v as Destination)}
+          onValueChange={(v) => {
+            if (v === "original" || v === "other" || v === "new") {
+              setDestination(v);
+            }
+          }}
           className="gap-2"
         >
           {!hasTrashedOrigin && (originalWs || originalWorkspaceName) && (
@@ -159,8 +164,7 @@ export function RestoreDialog({
             <div className="flex-1">
               <p className="text-sm font-medium">Other workspace</p>
               {destination === "other" && (
-                // biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only; keyboard irrelevant for this wrapper
-                // biome-ignore lint/a11y/noStaticElementInteractions: prevents Select click from toggling radio parent
+                // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only, keyboard irrelevant; prevents Select click from toggling radio parent
                 <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={selectedWsId}
@@ -265,8 +269,7 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: row toggles radio for convenience; keyboard handled by RadioGroupItem natively
-    // biome-ignore lint/a11y/noStaticElementInteractions: RadioGroupItem inside provides the interactive radio element
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row toggles radio for convenience; keyboard handled by RadioGroupItem natively
     <div
       className={cn(
         "flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { BROKEN_STATUSES } from "~/lib/link-health/types";
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
@@ -108,9 +109,6 @@ export type BookmarkRefetchMetadataInput = z.infer<
 >;
 export type BookmarkEditInput = z.infer<typeof bookmarkEditSchema>;
 export type GenerateAiTitleInput = z.infer<typeof generateAiTitleSchema>;
-export type BookmarkEditTagEntry = z.infer<
-  typeof bookmarkEditSchema
->["tags"][number];
 export type WorkspaceWithBookmarks = z.infer<
   typeof workspaceWithBookmarksSchema
 >;

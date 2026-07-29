@@ -1,10 +1,12 @@
 import dns from "node:dns/promises";
 import { isIP } from "node:net";
+
 import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
+
 import { getGoogleFavicon, isPrivateIP } from "./utils";
 
 const DNS_TIMEOUT = 3000;
-const MAX_HTML_SIZE = 200 * 1024;
+export const MAX_HTML_SIZE = 200 * 1024;
 
 export async function isSafeUrl(url: string): Promise<boolean> {
   try {
@@ -71,7 +73,7 @@ export async function resolveFavicon(
       return rootFavicon;
     }
   } catch {
-    // fall through to Google
+    // root /favicon.ico missing or unreachable: fall back to Google favicon
   }
 
   return getGoogleFavicon(hostname);

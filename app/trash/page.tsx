@@ -1,16 +1,15 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+
 import {
   getTrashedBookmarks,
   getTrashedWorkspaces,
 } from "~/app/action/trash.action";
-import { Header } from "~/components/header";
+import { Header } from "~/components/layout/header";
 import { UserProvider } from "~/components/providers/user-context";
 import { TrashView } from "~/components/trash/trash-view";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
 import { trashKeys } from "~/lib/query-keys";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
 
 export default async function TrashPage() {
   const { user } = await requireAuth();
@@ -23,7 +22,7 @@ export default async function TrashPage() {
       queryFn: async () => {
         const result = await getTrashedBookmarks();
         if (!result.success) throw new Error(result.error);
-        return result.data as Bookmark[];
+        return result.data;
       },
     }),
     queryClient.prefetchQuery({
@@ -31,7 +30,7 @@ export default async function TrashPage() {
       queryFn: async () => {
         const result = await getTrashedWorkspaces();
         if (!result.success) throw new Error(result.error);
-        return result.data as TrashedWorkspace[];
+        return result.data;
       },
     }),
   ]);

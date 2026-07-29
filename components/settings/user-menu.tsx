@@ -1,5 +1,7 @@
 "use client";
 
+import type { User } from "@supabase/supabase-js";
+
 import {
   ArchiveIcon,
   CaretUpDownIcon,
@@ -9,12 +11,12 @@ import {
   SignOutIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react";
-import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+
 import { logout } from "~/app/action/login.action";
 import { FeedManager } from "~/components/feed/feed-manager";
-import { ShortcutButton } from "~/components/keyboard-shortcuts-dialog";
+import { ThemeMode } from "~/components/layout/theme-mode";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,8 +26,9 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useProfile } from "~/hooks/use-profile";
-import { ThemeMode } from "../theme-mode";
+
 import { Button } from "../ui/button";
+import { ShortcutButton } from "./keyboard-shortcuts-dialog";
 import { SettingsDialog } from "./setting-dialog";
 
 interface UserMenuProps {

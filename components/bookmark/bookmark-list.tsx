@@ -1,12 +1,15 @@
 "use client";
 
 import { BookmarkIcon } from "@phosphor-icons/react";
-import { useExitAnimation } from "~/hooks/use-exit-animation";
+
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { Workspace } from "~/lib/schemas/workspace.schema";
+
+import { useExitAnimation } from "~/hooks/use-exit-animation";
 import { safeDomain } from "~/lib/utils";
+
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkComfortItem } from "./bookmark-comfort-item";
 import { BookmarkListItem } from "./bookmark-list-item";

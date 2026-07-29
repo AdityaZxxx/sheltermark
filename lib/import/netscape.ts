@@ -17,13 +17,20 @@
  */
 
 import type { DefaultTreeAdapterMap } from "parse5";
+
 import { parseFragment } from "parse5";
+
 import type { ParsedBookmark, ParseResult } from "./parsers";
 
 type ChildNode = DefaultTreeAdapterMap["childNode"];
 type ParentNode = DefaultTreeAdapterMap["parentNode"];
 type Element = DefaultTreeAdapterMap["element"];
+type TextNode = DefaultTreeAdapterMap["textNode"];
 type Node = DefaultTreeAdapterMap["node"];
+
+function isTextNode(node: ChildNode): node is TextNode {
+  return node.nodeName === "#text";
+}
 
 /** Schemes we refuse to import. Matches the metadata pipeline's safety policy. */
 const REJECTED_SCHEMES = new Set([
@@ -60,10 +67,9 @@ function decodeEntities(text: string): string {
 /** Collect all text content from an element, concatenated. */
 function extractText(element: Element): string {
   const parts: string[] = [];
-  const walk = (node: ChildNode) => {
-    if (node.nodeName === "#text") {
-      // After nodeName check, only TextNode has a `value` field.
-      parts.push((node as { value: string }).value);
+  const walk = (node: ChildNode): void => {
+    if (isTextNode(node)) {
+      parts.push(node.value);
     } else if ("childNodes" in node && node.childNodes) {
       for (const child of node.childNodes) {
         walk(child);
@@ -176,14 +182,14 @@ function anchorToBookmark(
 
   const title = extractText(anchor);
 
-  // Extract embedded favicon from ICON attribute, if present and reasonable.
   const iconAttr = getAttr(anchor, "icon");
   let favicon_url: string | undefined;
   if (iconAttr?.startsWith("data:")) {
+    // data: favicons above the size cap are likely clipped exports;
+    // skipping falls back to favicon-resolution strategies.
     if (iconAttr.length <= MAX_FAVICON_DATA_URL_LENGTH) {
       favicon_url = iconAttr;
     }
-    // else: too large, skip silently
   } else if (iconAttr) {
     favicon_url = iconAttr;
   }
@@ -231,7 +237,6 @@ export function parseNetscapeHTML(content: string): ParseResult {
 
   const bookmarks: ParsedBookmark[] = [];
 
-  // Find every top-level <DL> in the fragment.
   for (const node of document.childNodes) {
     if (!("tagName" in node)) continue;
     if (isDL(node)) {

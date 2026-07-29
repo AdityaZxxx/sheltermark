@@ -1,4 +1,4 @@
-import Logo from "~/components/logo";
+import Logo from "~/components/layout/logo";
 import { getPastelColor } from "~/lib/utils";
 
 type OGImageProps = {

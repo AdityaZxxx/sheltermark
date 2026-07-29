@@ -1,6 +1,12 @@
 "use client";
 
 import { ArrowDownIcon, ArrowUpIcon } from "@phosphor-icons/react";
+
+import type {
+  BookmarkSort,
+  BookmarkSortBy,
+} from "~/lib/schemas/bookmark.schema";
+
 import {
   Select,
   SelectContent,
@@ -8,10 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import type {
-  BookmarkSort,
-  BookmarkSortBy,
-} from "~/lib/schemas/bookmark.schema";
+
 import { Button } from "../ui/button";
 
 interface BookmarkSortProps {
@@ -28,9 +31,11 @@ const SORT_OPTIONS: { value: BookmarkSortBy; label: string }[] = [
 
 export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
   const handleSortByChange = (value: string | null) => {
-    if (value) {
-      onSortChange({ ...sort, sortBy: value as BookmarkSortBy });
-    }
+    const matched = value
+      ? SORT_OPTIONS.find((o) => o.value === value)
+      : undefined;
+    if (!matched) return;
+    onSortChange({ ...sort, sortBy: matched.value });
   };
 
   const toggleSortOrder = () => {

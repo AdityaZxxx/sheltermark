@@ -1,6 +1,8 @@
 import { useMemo } from "react";
-import { Skeleton } from "~/components/ui/skeleton";
+
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
+import { Skeleton } from "~/components/ui/skeleton";
 
 function BookmarkListItemSkeleton() {
   return (

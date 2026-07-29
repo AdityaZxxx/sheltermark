@@ -3,10 +3,12 @@
 import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+
 import { updatePassword } from "~/app/action/reset-password.action";
 import { Button } from "~/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+
 import { AuthError } from "./auth-error";
 
 export function ResetPasswordForm() {

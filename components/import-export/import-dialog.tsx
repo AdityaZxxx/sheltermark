@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-
 import { useImportDialog } from "~/hooks/use-import-dialog";
+
 import { DoneStep } from "./done-step";
 import { ImportingStep } from "./importing-step";
 import { PreviewStep } from "./preview-step";
@@ -86,7 +86,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             folderTree={folderTree}
             selectedFolders={selectedFolders}
             selectedCount={selectedCount}
-            onWorkspaceChange={(value) => setTargetWorkspaceId(value as string)}
+            onWorkspaceChange={(value) => {
+              if (value !== null) setTargetWorkspaceId(value);
+            }}
             onWorkspaceNameChange={setNewWorkspaceName}
             onDuplicateStrategyChange={setDuplicateStrategy}
             onToggleFolder={toggleFolder}

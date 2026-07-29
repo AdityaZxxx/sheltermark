@@ -4,8 +4,12 @@ import { Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
+
 import { generateAiTitle } from "~/app/action/bookmark.action";
-import { MarkdownIcon } from "~/components/markdown-icon";
+import { TagInput } from "~/components/tag/tag-input";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -24,12 +28,12 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
-import { useUserTagsWithCount } from "~/hooks/use-user-tags";
-import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
+import { useUserTagsWithCount } from "~/hooks/use-tags";
 import { entriesEqual, type TagEntry, tagsToEntries } from "~/lib/utils";
+
 import { BookmarkNoteText } from "./bookmark-note-text";
-import { TagInput } from "./tag-input";
+import { MarkdownIcon } from "./markdown-icon";
+import { Orb } from "./orb";
 
 interface BookmarkEditDialogProps {
   open: boolean;
@@ -174,6 +178,7 @@ function EditFormInner({
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
+                    // oxlint-disable-next-line jsx-a11y/no-autofocus -- intentional: dialog opens with focus in the title input
                     autoFocus
                     maxLength={200}
                     required
@@ -186,10 +191,13 @@ function EditFormInner({
                     aria-label="Generate title with AI"
                     className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <Sparkle
-                      className={`h-4 w-auto ${generating ? "animate-spin" : ""}`}
-                      aria-hidden="true"
-                    />
+                    {generating ? (
+                      <span aria-hidden="true" className="inline-flex">
+                        <Orb size={24} />
+                      </span>
+                    ) : (
+                      <Sparkle className="h-4 w-auto" aria-hidden="true" />
+                    )}
                   </button>
                 </div>
                 {aiSuggestion && (

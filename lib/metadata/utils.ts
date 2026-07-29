@@ -1,4 +1,4 @@
-const HTML_ENTITIES: Record<string, string> = {
+const HTML_ENTITIES = {
   "&amp;": "&",
   "&lt;": "<",
   "&gt;": ">",
@@ -14,7 +14,7 @@ const HTML_ENTITIES: Record<string, string> = {
   "&copy;": "©",
   "&reg;": "®",
   "&trade;": "™",
-};
+} as const satisfies Record<string, string>;
 
 export function decodeHtmlEntities(text: string): string {
   let decoded = text;

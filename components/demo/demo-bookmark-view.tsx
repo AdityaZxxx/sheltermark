@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useState } from "react";
+
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
+import type { Workspace } from "~/lib/schemas/workspace.schema";
+
 import { BookmarkCardItem } from "~/components/bookmark/bookmark-card-item";
 import { BookmarkComfortItem } from "~/components/bookmark/bookmark-comfort-item";
 import { BookmarkEditDialog } from "~/components/bookmark/bookmark-edit-dialog";
@@ -13,9 +17,8 @@ import { BookmarkViewToggle } from "~/components/bookmark/bookmark-view-toggle";
 import { useBookmarkDialogs } from "~/hooks/use-bookmark-dialogs";
 import { useBookmarkKeyboardNavigation } from "~/hooks/use-bookmark-keyboard";
 import { useBookmarkSelection } from "~/hooks/use-bookmark-selection";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
-import type { Workspace } from "~/lib/schemas/workspace.schema";
 import { safeDomain } from "~/lib/utils";
+
 import {
   DEMO_TAGS,
   DEMO_WORKSPACES,
@@ -254,6 +257,7 @@ export function DemoBookmarkView() {
         onSelectWorkspace={setActiveWorkspaceId}
       />
 
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed */}
       <section
         aria-label="Demo Bookmarks"
         className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"

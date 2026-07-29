@@ -1,6 +1,10 @@
 "use client";
 
 import { SpinnerIcon } from "@phosphor-icons/react";
+
+import type { PreviewData } from "~/hooks/use-import-dialog";
+import type { FolderNode } from "~/lib/import/folder-filter";
+
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
@@ -11,10 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import type { PreviewData } from "~/hooks/use-import-dialog";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import type { FolderNode } from "~/lib/import/folder-filter";
 import { cn, getPastelColor } from "~/lib/utils";
+
 import { FolderTree } from "./folder-tree";
 
 interface PreviewStepProps {
@@ -157,9 +160,11 @@ export function PreviewStep({
         <Label className="text-xs font-medium">Duplicate handling</Label>
         <RadioGroup
           value={duplicateStrategy}
-          onValueChange={(value) =>
-            onDuplicateStrategyChange(value as "skip" | "replace")
-          }
+          onValueChange={(value) => {
+            if (value === "skip" || value === "replace") {
+              onDuplicateStrategyChange(value);
+            }
+          }}
           className="flex flex-col gap-2"
         >
           <div className="flex items-center gap-2">

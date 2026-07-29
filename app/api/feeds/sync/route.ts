@@ -1,7 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+
+import { getDb } from "~/lib/data/db";
 import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
-import { logger } from "~/lib/logger";
+import { logger } from "~/lib/utils/logger";
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -11,10 +12,7 @@ export async function POST(request: Request) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  if (!process.env.DATABASE_URL) {
     return NextResponse.json(
       { success: false, error: "Server misconfigured" },
       { status: 500 },
@@ -22,8 +20,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const result = await syncAllFeedsGlobal(supabase);
+    const result = await syncAllFeedsGlobal(getDb());
 
     if (!result.success) {
       logger.error("Feed sync failed", { error: result.error });

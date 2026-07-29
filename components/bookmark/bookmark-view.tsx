@@ -1,18 +1,21 @@
 "use client";
 
-import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
 import type { BookmarkScope } from "~/lib/schemas/common";
+
+import { TagManageDialog } from "~/components/tag/tag-manage-dialog";
+import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
+
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
-import { TagManageDialog } from "./tag-manage-dialog";
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
   const vm = useBookmarkListManager(scope);
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed
     <section
       aria-label="Bookmarks"
       className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"

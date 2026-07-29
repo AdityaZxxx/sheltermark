@@ -2,8 +2,10 @@
 
 import type { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
+
 import { createContext, use, useEffect, useState } from "react";
-import { createClient } from "~/utils/supabase/client";
+
+import { createClient } from "~/lib/supabase/client";
 
 interface SupabaseContextValue {
   supabase: ReturnType<typeof createBrowserClient>;
@@ -27,8 +29,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
+    supabase.auth.getUser().then(({ data: { user: supabaseUser } }) => {
+      setUser(supabaseUser);
       setIsLoading(false);
     });
 

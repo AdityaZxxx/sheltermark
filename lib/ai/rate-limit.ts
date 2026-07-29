@@ -5,6 +5,11 @@ interface RateLimitEntry {
   count: number;
 }
 
+interface RateLimitCheckResult {
+  allowed: boolean;
+  remaining: number;
+}
+
 const store = new Map<string, RateLimitEntry>();
 
 function getTodayKey(): string {
@@ -15,15 +20,11 @@ function getTodayKey(): string {
  * Checks and increments rate limit for a user.
  * Returns true if under limit, false if rate limited.
  */
-export function checkRateLimit(userId: string): {
-  allowed: boolean;
-  remaining: number;
-} {
+export function checkRateLimit(userId: string): RateLimitCheckResult {
   const today = getTodayKey();
   const entry = store.get(userId);
 
   if (!entry || entry.date !== today) {
-    // First use today or new day
     store.set(userId, { date: today, count: 1 });
     return { allowed: true, remaining: DAILY_LIMIT - 1 };
   }
@@ -36,18 +37,9 @@ export function checkRateLimit(userId: string): {
   return { allowed: true, remaining: DAILY_LIMIT - entry.count };
 }
 
-/**
- * Returns remaining generations for a user today.
- */
-export function getRemainingGenerations(userId: string): number {
-  const today = getTodayKey();
-  const entry = store.get(userId);
-  if (!entry || entry.date !== today) return DAILY_LIMIT;
-  return Math.max(0, DAILY_LIMIT - entry.count);
-}
-
-// Periodic cleanup every hour to prevent memory leaks
-if (typeof setInterval !== "undefined") {
+// Periodic cleanup every hour to prevent memory leaks. Feature-detected with
+// an `in` capability check so the module also loads in timer-less environments.
+if ("setInterval" in globalThis) {
   setInterval(
     () => {
       const today = getTodayKey();

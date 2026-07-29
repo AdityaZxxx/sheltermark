@@ -1,11 +1,13 @@
 import {
   type CheckResult,
   type ExtensionMessage,
+  type GetWorkspacesResult,
   MESSAGE_TYPES,
   NOTIFICATION_DURATION,
   type PopupInfo,
   type SaveEntrySource,
   type SaveResult,
+  type TabInfo,
   type TagsResult,
   type TagWithCount,
   type Workspace,
@@ -22,6 +24,13 @@ import {
   type QueueHookContext,
   resumeQueue,
 } from "./queue.js";
+import {
+  checkResultSchema,
+  extensionMessageSchema,
+  getWorkspacesResultSchema,
+  popupInfoSchema,
+  tagsResultSchema,
+} from "./schema.js";
 import {
   clearDataCaches,
   getBaseUrl,
@@ -42,11 +51,11 @@ interface NotificationConfigEntry {
   priority: number;
 }
 
-const NOTIFICATION_CONFIG: Record<string, NotificationConfigEntry> = {
+const NOTIFICATION_CONFIG = {
   success: { color: "#22c55e", badge: "\u2713", priority: 0 },
   error: { color: "#ef4444", badge: "!", priority: 2 },
   info: { color: "#6b7280", badge: "\u00b7", priority: 0 },
-};
+} as const satisfies Record<NotificationType, NotificationConfigEntry>;
 
 interface SessionCache {
   workspaces: Workspace[] | null;
@@ -55,6 +64,15 @@ interface SessionCache {
 const sessionCache: SessionCache = {
   workspaces: null,
 };
+
+/** Every payload this worker answers with through sendResponse. */
+type ExtensionResponse =
+  | SaveResult
+  | TabInfo
+  | CheckResult
+  | PopupInfo
+  | TagsResult
+  | { error: string };
 
 function invalidateCache(): void {
   sessionCache.workspaces = null;
@@ -137,7 +155,6 @@ chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
  * and after mutations. Never throws — cache warmup is best-effort.
  */
 async function revalidateCaches(): Promise<void> {
-  // Fire in parallel; each fetch updates its cache entry independently.
   await Promise.allSettled([
     (async () => {
       const cached = await getCachedWorkspaces();
@@ -186,8 +203,9 @@ async function saveCurrentTabWithNotification(): Promise<void> {
     });
     await handleSaveOutcome(outcome, lastWorkspace);
   } catch (error) {
-    const e = error as { message?: string };
-    showNotification("Error", e.message || "An error occurred", "error");
+    const message =
+      error instanceof Error ? error.message : "An error occurred";
+    showNotification("Error", message, "error");
   }
 }
 
@@ -223,18 +241,24 @@ chrome.contextMenus.onClicked.addListener(
       });
       await handleSaveOutcome(outcome, lastWorkspace);
     } catch (error) {
-      const e = error as { message?: string };
-      showNotification("Error", e.message || "Failed to save", "error");
+      const message = error instanceof Error ? error.message : "Failed to save";
+      showNotification("Error", message, "error");
     }
   },
 );
 
 chrome.runtime.onMessage.addListener(
   (
-    message: ExtensionMessage,
+    rawMessage: ExtensionMessage,
     _sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: unknown) => void,
+    sendResponse: (response?: ExtensionResponse) => void,
   ) => {
+    // Messages arrive untyped across the extension runtime; any payload that
+    // fails the contract is ignored rather than half-handled.
+    const parsedMessage = extensionMessageSchema.safeParse(rawMessage);
+    if (!parsedMessage.success) return false;
+    const message = parsedMessage.data;
+
     if (message.type === MESSAGE_TYPES.SAVE_BOOKMARK) {
       const { url, title, workspaceId, tags } = message.data;
       saveOrEnqueue("popup", { url, title, workspaceId, tags })
@@ -294,8 +318,6 @@ chrome.runtime.onMessage.addListener(
           if (result.authenticated) {
             void resumeQueue().then(() => drain(queueHooks));
           }
-          // Warm the session cache from the authenticated response so the next
-          // popup open renders instantly from local storage.
           if (result.authenticated && result.workspaces) {
             sessionCache.workspaces = result.workspaces;
             void setCachedWorkspaces(result.workspaces);
@@ -400,11 +422,10 @@ async function postBookmarkRaw({
       }),
     });
   } catch (err) {
-    const e = err as { message?: string };
     return {
       fetchThrew: true,
       status: null,
-      errorMessage: e?.message ?? "Network error",
+      errorMessage: err instanceof Error ? err.message : "Network error",
     };
   }
   console.debug(`[Sheltermark] Bookmark API response`, {
@@ -419,7 +440,6 @@ async function postBookmarkRaw({
   };
 }
 
-// -------------------- Queue integration --------------------
 // Entry points call saveOrEnqueue(): it does everything inline first so the
 // existing happy-path notifications ("Saved!" / "Already saved" / "Login
 // required") fire exactly as before. Only on a network failure (transient/
@@ -441,7 +461,6 @@ async function saveOrEnqueue(
 
   if (!outcome.fetchThrew) {
     const status = outcome.status ?? 0;
-    // Happy path: surface the existing notification behavior.
     if (status >= 200 && status < 300) {
       if (params.workspaceId) {
         await setLastWorkspace(params.workspaceId);
@@ -451,7 +470,6 @@ async function saveOrEnqueue(
     }
     if (status === 409) return { kind: "duplicate" };
     if (status === 401) {
-      // Enqueue + pause + trigger existing login flow.
       await enqueue(
         {
           url: params.url,
@@ -570,10 +588,10 @@ async function handleXBookmark(url: string): Promise<SaveResult> {
     await handleSaveOutcome(outcome, workspaceId);
     return saveOutcomeToSaveResult(outcome);
   } catch (error) {
-    const e = error as Error;
-    console.error(`[Sheltermark] X bookmark failed`, { url, error: e.message });
-    showNotification("Error", e.message || "Failed to save", "error");
-    return { success: false, error: e.message };
+    const message = error instanceof Error ? error.message : "Failed to save";
+    console.error(`[Sheltermark] X bookmark failed`, { url, error: message });
+    showNotification("Error", message, "error");
+    return { success: false, error: message };
   }
 }
 
@@ -617,11 +635,6 @@ function showNotification(
   );
 }
 
-interface GetWorkspacesResult {
-  workspaces?: Workspace[];
-  error?: string;
-}
-
 /** Raw network fetch. Never caches; callers write the cache on success. */
 async function fetchWorkspacesRaw(): Promise<GetWorkspacesResult> {
   const baseUrl = await getBaseUrl();
@@ -629,7 +642,7 @@ async function fetchWorkspacesRaw(): Promise<GetWorkspacesResult> {
     credentials: "include",
   });
   if (!response.ok) throw new Error("Failed to fetch workspaces");
-  return (await response.json()) as GetWorkspacesResult;
+  return getWorkspacesResultSchema.parse(await response.json());
 }
 
 /**
@@ -660,8 +673,7 @@ async function fetchTagsRaw(): Promise<TagWithCount[]> {
     credentials: "include",
   });
   if (!response.ok) return [];
-  const data = (await response.json()) as TagsResult;
-  return data.tags ?? [];
+  return tagsResultSchema.parse(await response.json()).tags ?? [];
 }
 
 /**
@@ -704,7 +716,7 @@ async function getPopupInfo({
       bookmarkId: null,
     };
   }
-  return response.json() as Promise<PopupInfo>;
+  return popupInfoSchema.parse(await response.json());
 }
 
 interface CheckBookmarkParams {
@@ -726,5 +738,5 @@ async function checkBookmark({
   );
 
   if (!response.ok) return { saved: false };
-  return response.json() as Promise<CheckResult>;
+  return checkResultSchema.parse(await response.json());
 }

@@ -14,7 +14,6 @@ export const DemoBookmarkViewLazy = dynamic(
             <div className="flex gap-2">
               {[1, 2, 3].map((_, idx) => (
                 <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: off
                   key={`tab-${idx}`}
                   className="w-20 h-6 bg-muted rounded-md animate-pulse"
                 />
@@ -26,7 +25,6 @@ export const DemoBookmarkViewLazy = dynamic(
         <div className="flex flex-col gap-1">
           {[1, 2, 3, 4, 5].map((_, idx) => (
             <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: off
               key={`skeleton-${idx}`}
               className="h-12 bg-muted rounded-lg animate-pulse"
             />

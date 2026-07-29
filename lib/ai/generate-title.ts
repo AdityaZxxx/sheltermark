@@ -1,7 +1,8 @@
 import { generateText } from "ai";
+
 import { aiProvider } from "./client";
 
-export interface GenerateTitleInput {
+interface GenerateTitleInput {
   url: string;
   currentTitle: string;
   description: string | null;

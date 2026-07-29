@@ -1,19 +1,6 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
-import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
-import {
-  deleteBookmarks as deleteBookmarksRepo,
-  generateAiTitleRepo,
-  getBookmarks as getBookmarksRepo,
-  insertBookmark as insertBookmarkRepo,
-  moveBookmarks as moveBookmarksRepo,
-  refetchMetadata as refetchMetadataRepo,
-  renameBookmark as renameBookmarkRepo,
-  updateBookmarkFields as updateBookmarkFieldsRepo,
-  updateBookmarkNote as updateBookmarkNoteRepo,
-} from "~/lib/data/repositories/bookmark.repository";
 import type {
   Bookmark,
   BookmarkCreateInput,
@@ -27,16 +14,23 @@ import type {
 } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
-/**
- * Returns the authenticated user and a DbClient-typed view of the
- * Supabase client. Cast through `unknown` because Supabase's recursive
- * generics hit TS's instantiation-depth limit when structurally checked
- * against DbClient — the runtime shape is compatible, the type system
- * just can't prove it without expanding to infinity.
- */
+import { requireAuth } from "~/lib/auth";
+import { getDb } from "~/lib/data/db";
+import {
+  deleteBookmarks as deleteBookmarksRepo,
+  generateAiTitleRepo,
+  getBookmarks as getBookmarksRepo,
+  insertBookmark as insertBookmarkRepo,
+  moveBookmarks as moveBookmarksRepo,
+  refetchMetadata as refetchMetadataRepo,
+  renameBookmark as renameBookmarkRepo,
+  updateBookmarkFields as updateBookmarkFieldsRepo,
+  updateBookmarkNote as updateBookmarkNoteRepo,
+} from "~/lib/data/repositories/bookmark.repository";
+
 async function auth() {
-  const { user, supabase } = await requireAuth();
-  return { user, db: supabase as unknown as DbClient };
+  const { user } = await requireAuth();
+  return { user, db: getDb() };
 }
 
 export async function addBookmark(

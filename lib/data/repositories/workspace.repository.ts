@@ -1,55 +1,122 @@
+import "server-only";
+import { and, asc, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { z } from "zod";
+
 import type { ActionResult } from "~/lib/action-result";
-import type { DbClient } from "~/lib/data/db-client";
-import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
+import type { DrizzleDb } from "~/lib/data/db";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
   TrashedWorkspace,
+  Workspace,
   WorkspaceWithCount,
 } from "~/lib/schemas/workspace.schema";
+
+import { bookmarks, workspaces } from "~/lib/data/schema";
+import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
 import {
   workspaceCreateSchema,
   workspaceRenameSchema,
 } from "~/lib/schemas/workspace.schema";
 
+type WorkspaceRow = typeof workspaces.$inferSelect;
+type BookmarkRow = typeof bookmarks.$inferSelect;
+
+const workspaceIdRowSchema = z.object({ id: z.string().min(1) });
+
+function toWorkspace(row: WorkspaceRow): Workspace {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    name: row.name,
+    is_public: row.isPublic ?? false,
+    is_default: row.isDefault,
+    auto_check_broken: row.autoCheckBroken ?? true,
+    created_at: row.createdAt.toISOString(),
+    updated_at: row.updatedAt?.toISOString() ?? null,
+    deleted_at: row.deletedAt?.toISOString() ?? null,
+  };
+}
+
+function toBookmark(row: BookmarkRow): Bookmark {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    workspace_id: row.workspaceId,
+    url: row.url,
+    title: row.title ?? "",
+    favicon_url: row.faviconUrl,
+    og_image_url: row.ogImageUrl,
+    is_public: row.isPublic ?? false,
+    is_broken: row.isBroken ?? false,
+    broken_status: row.brokenStatus ?? "alive",
+    http_status: row.httpStatus,
+    last_checked_at: row.lastCheckedAt?.toISOString() ?? null,
+    created_at: row.createdAt.toISOString(),
+    updated_at: row.updatedAt?.toISOString() ?? null,
+    deleted_at: row.deletedAt?.toISOString() ?? null,
+    note: row.note,
+  };
+}
+
+function dbError(cause: unknown): ActionResult<never> {
+  return {
+    success: false,
+    error: cause instanceof Error ? cause.message : "Database error",
+  };
+}
+
+/**
+ * SECURITY: Drizzle connects with the service-role credential and BYPASSES
+ * ROW LEVEL SECURITY. Every query in this file enforces `user_id` ownership
+ * explicitly.
+ */
 export async function getWorkspaces(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
 ): Promise<ActionResult<WorkspaceWithCount[]>> {
-  const [workspacesResult, countsResult] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("*")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("bookmarks")
-      .select("workspace_id")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .not("workspace_id", "is", null),
-  ]);
+  try {
+    const [wsRows, countRows] = await Promise.all([
+      db
+        .select()
+        .from(workspaces)
+        .where(and(eq(workspaces.userId, userId), isNull(workspaces.deletedAt)))
+        .orderBy(asc(workspaces.createdAt)),
+      db
+        .select({ workspaceId: bookmarks.workspaceId })
+        .from(bookmarks)
+        .where(
+          and(
+            eq(bookmarks.userId, userId),
+            isNull(bookmarks.deletedAt),
+            isNotNull(bookmarks.workspaceId),
+          ),
+        ),
+    ]);
 
-  if (workspacesResult.error)
-    return { success: false, error: workspacesResult.error.message };
+    const countMap = new Map<string, number>();
+    for (const row of countRows) {
+      const workspaceId = row.workspaceId;
+      if (!workspaceId) continue;
+      countMap.set(workspaceId, (countMap.get(workspaceId) ?? 0) + 1);
+    }
 
-  const countMap = new Map<string, number>();
-  for (const row of (countsResult.data ?? []) as { workspace_id: string }[]) {
-    countMap.set(row.workspace_id, (countMap.get(row.workspace_id) ?? 0) + 1);
+    return {
+      success: true,
+      data: wsRows.map((row) => {
+        const workspace = toWorkspace(row);
+        return {
+          ...workspace,
+          bookmarks_count: countMap.get(workspace.id) ?? 0,
+        };
+      }),
+    };
+  } catch (cause) {
+    return dbError(cause);
   }
-
-  const result = (
-    (workspacesResult.data ?? []) as Array<Record<string, unknown>>
-  ).map((workspace) => ({
-    ...workspace,
-    bookmarks_count: countMap.get(workspace.id as string) ?? 0,
-  }));
-
-  return { success: true, data: result as WorkspaceWithCount[] };
 }
 
 export async function createWorkspace(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
@@ -61,237 +128,205 @@ export async function createWorkspace(
     return { success: false, error: msg };
   }
 
-  const { data, error } = await supabase
-    .from("workspaces")
-    .insert([
-      {
+  try {
+    const [row] = await db
+      .insert(workspaces)
+      .values({
+        userId,
         name: validated.data.name,
-        user_id: userId,
-        is_default: false,
-        is_public: false,
-      },
-    ])
-    .select()
-    .single();
+        isDefault: false,
+        isPublic: false,
+      })
+      .returning({ id: workspaces.id });
 
-  if (error) return { success: false, error: error.message };
-
-  const id = (data as { id: string } | null)?.id;
-  if (typeof id !== "string") {
-    return { success: false, error: "Invalid workspace data returned" };
+    const parsed = workspaceIdRowSchema.safeParse(row);
+    if (!parsed.success) {
+      return { success: false, error: "Invalid workspace data returned" };
+    }
+    return { success: true, data: { id: parsed.data.id } };
+  } catch (cause) {
+    return dbError(cause);
   }
-  return { success: true, data: { id } };
 }
 
 export async function deleteWorkspace(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
-  return deleteWorkspaceWithBookmarks(supabase, userId, id);
+  return deleteWorkspaceWithBookmarks(db, userId, id);
 }
 
 export async function getTrashedWorkspaces(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
 ): Promise<ActionResult<TrashedWorkspace[]>> {
-  const [workspacesResult, bookmarksResult] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("*")
-      .eq("user_id", userId)
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false }),
-    supabase
-      .from("bookmarks")
-      .select("*")
-      .eq("user_id", userId)
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false }),
-  ]);
+  try {
+    const [wsRows, bmRows] = await Promise.all([
+      db
+        .select()
+        .from(workspaces)
+        .where(
+          and(eq(workspaces.userId, userId), isNotNull(workspaces.deletedAt)),
+        )
+        .orderBy(desc(workspaces.deletedAt)),
+      db
+        .select()
+        .from(bookmarks)
+        .where(
+          and(eq(bookmarks.userId, userId), isNotNull(bookmarks.deletedAt)),
+        )
+        .orderBy(desc(bookmarks.deletedAt)),
+    ]);
 
-  if (workspacesResult.error)
-    return { success: false, error: workspacesResult.error.message };
+    const trashedWorkspaceIds = new Set(wsRows.map((ws) => ws.id));
 
-  const trashedWorkspaceIds = new Set(
-    (workspacesResult.data ?? []).map((ws) => ws.id),
-  );
-
-  const bookmarksByWs = new Map<string, Bookmark[]>();
-  const standaloneBookmarks: Bookmark[] = [];
-  for (const bm of (bookmarksResult.data ?? []) as Bookmark[]) {
-    if (bm.workspace_id && trashedWorkspaceIds.has(bm.workspace_id)) {
-      const list = bookmarksByWs.get(bm.workspace_id) ?? [];
-      list.push(bm);
-      bookmarksByWs.set(bm.workspace_id, list);
-    } else {
-      standaloneBookmarks.push(bm);
+    const bookmarksByWs = new Map<string, Bookmark[]>();
+    for (const row of bmRows) {
+      const bookmark = toBookmark(row);
+      if (
+        bookmark.workspace_id &&
+        trashedWorkspaceIds.has(bookmark.workspace_id)
+      ) {
+        const list = bookmarksByWs.get(bookmark.workspace_id) ?? [];
+        list.push(bookmark);
+        bookmarksByWs.set(bookmark.workspace_id, list);
+      }
     }
+
+    return {
+      success: true,
+      data: wsRows.map((row) => {
+        const workspace = toWorkspace(row);
+        return {
+          ...workspace,
+          bookmarks_count: bookmarksByWs.get(workspace.id)?.length ?? 0,
+          bookmarks: bookmarksByWs.get(workspace.id) ?? [],
+        };
+      }),
+    };
+  } catch (cause) {
+    return dbError(cause);
   }
-
-  const result = (
-    (workspacesResult.data ?? []) as Array<Record<string, unknown>>
-  ).map((workspace) => ({
-    ...workspace,
-    bookmarks_count: bookmarksByWs.get(workspace.id as string)?.length ?? 0,
-    bookmarks: bookmarksByWs.get(workspace.id as string) ?? [],
-  }));
-
-  return {
-    success: true,
-    data: result as unknown as TrashedWorkspace[],
-  };
 }
 
 export async function permanentDeleteWorkspace(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
-  // Hard-delete bookmarks first (avoids CASCADE issues with tracking)
-  const { error: bmError } = await supabase
-    .from("bookmarks")
-    .delete()
-    .eq("workspace_id", id)
-    .eq("user_id", userId);
+  try {
+    // Hard-delete bookmarks first (avoids CASCADE issues with tracking)
+    await db
+      .delete(bookmarks)
+      .where(and(eq(bookmarks.workspaceId, id), eq(bookmarks.userId, userId)));
 
-  if (bmError) return { success: false, error: bmError.message };
-
-  const { error } = await supabase
-    .from("workspaces")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
-}
-
-export async function emptyTrashWorkspaces(
-  supabase: DbClient,
-  userId: string,
-): Promise<ActionResult<null>> {
-  // Hard-delete all trashed bookmarks first
-  const { error: bmError } = await supabase
-    .from("bookmarks")
-    .delete()
-    .eq("user_id", userId)
-    .not("deleted_at", "is", null);
-
-  if (bmError) return { success: false, error: bmError.message };
-
-  // Then hard-delete trashed workspaces (CASCADE handles remaining bookmarks)
-  const { error } = await supabase
-    .from("workspaces")
-    .delete()
-    .eq("user_id", userId)
-    .not("deleted_at", "is", null);
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
+    await db
+      .delete(workspaces)
+      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }
 
 export async function togglePublicStatus(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
   isPublic: boolean,
 ): Promise<ActionResult<null>> {
-  const { error } = await supabase
-    .from("workspaces")
-    .update({ is_public: isPublic })
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
+  try {
+    await db
+      .update(workspaces)
+      .set({ isPublic })
+      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }
 
 export async function setDefaultWorkspace(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
-  const { error: unsetError } = await supabase
-    .from("workspaces")
-    .update({ is_default: false })
-    .eq("user_id", userId);
-  if (unsetError) return { success: false, error: unsetError.message };
+  try {
+    await db
+      .update(workspaces)
+      .set({ isDefault: false })
+      .where(eq(workspaces.userId, userId));
 
-  const { error: setError } = await supabase
-    .from("workspaces")
-    .update({ is_default: true })
-    .eq("id", id)
-    .eq("user_id", userId);
-  if (setError) return { success: false, error: setError.message };
-  return { success: true, data: null };
+    await db
+      .update(workspaces)
+      .set({ isDefault: true })
+      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }
 
 export async function toggleAutoCheckBroken(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
   enabled: boolean,
 ): Promise<ActionResult<null>> {
-  const { error } = await supabase
-    .from("workspaces")
-    .update({ auto_check_broken: enabled })
-    .eq("id", id)
-    .eq("user_id", userId);
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
+  try {
+    await db
+      .update(workspaces)
+      .set({ autoCheckBroken: enabled })
+      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }
 
 export async function createWorkspaceRaw(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   name: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const { data, error } = await supabase
-    .from("workspaces")
-    .insert({
-      name,
-      user_id: userId,
-      is_default: false,
-      is_public: false,
-    })
-    .select("id")
-    .single();
+  try {
+    const [row] = await db
+      .insert(workspaces)
+      .values({ userId, name, isDefault: false, isPublic: false })
+      .returning({ id: workspaces.id });
 
-  if (error) {
-    return {
-      success: false,
-      error: `Failed to create workspace: ${error.message}`,
-    };
+    if (!row) {
+      return {
+        success: false,
+        error: "Failed to create workspace: no data returned",
+      };
+    }
+    return { success: true, data: { id: row.id } };
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Database error";
+    return { success: false, error: `Failed to create workspace: ${message}` };
   }
-
-  if (!data) {
-    return {
-      success: false,
-      error: "Failed to create workspace: no data returned",
-    };
-  }
-
-  return { success: true, data: { id: (data as { id: string }).id } };
 }
 
 export async function getDefaultWorkspace(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
 ): Promise<ActionResult<{ id: string } | null>> {
-  const { data, error } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("is_default", true)
-    .maybeSingle();
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: data as { id: string } | null };
+  try {
+    const [row] = await db
+      .select({ id: workspaces.id })
+      .from(workspaces)
+      .where(and(eq(workspaces.userId, userId), eq(workspaces.isDefault, true)))
+      .limit(1);
+    return { success: true, data: row ? { id: row.id } : null };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }
 
 export async function renameWorkspace(
-  supabase: DbClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
   name: string,
@@ -303,11 +338,18 @@ export async function renameWorkspace(
     return { success: false, error: msg };
   }
 
-  const { error } = await supabase
-    .from("workspaces")
-    .update({ name: validated.data.name })
-    .eq("id", validated.data.id)
-    .eq("user_id", userId);
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: null };
+  try {
+    await db
+      .update(workspaces)
+      .set({ name: validated.data.name })
+      .where(
+        and(
+          eq(workspaces.id, validated.data.id),
+          eq(workspaces.userId, userId),
+        ),
+      );
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }

@@ -44,5 +44,14 @@ next-env.d.ts
 # development
 .vscode
 opencode.json
-AGENT.md
 prd.md
+trace-*.json
+
+# local Supabase CLI state (project link, pooler URL)
+/supabase/.temp/
+
+# throwaway debug / probe scripts
+/.scratch/
+
+.opencode
+.agents

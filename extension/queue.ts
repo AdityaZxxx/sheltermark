@@ -29,11 +29,9 @@ import {
   QUEUE_MAX_ITEMS,
   QUEUE_OFFLINE_NOTICE_DEBOUNCE_MS,
   type QueueItem,
-  type QueueItemStatus,
   type SaveEntrySource,
 } from "./constants.js";
-
-// ---------------- Storage layout ----------------
+import { queueStorageSchema } from "./schema.js";
 
 const STORAGE_KEYS = {
   ITEMS: "queueItems",
@@ -49,15 +47,12 @@ interface QueueState {
   notifiedOfflineAt: number | null;
 }
 
-// ---------------- Drain guard ----------------
 // In-memory only; reset on worker wake via drainOnStartup.
 
 let drainInProgress = false;
 
-// ---------------- Hooks ----------------
 // Injected dependencies so background.ts owns chrome.* + fetch + notifications
-// and the queue stays pure/testable. All are optional; defaults are no-ops so
-// tests that don't care about notifications just don't pass them.
+// and the queue stays pure/testable.
 
 export interface QueueHookContext {
   /**
@@ -85,9 +80,7 @@ export interface PostOutcome {
   retryAfterHeader?: string | null; // for 429
 }
 
-// ---------------- Attempt outcome classification ----------------
-
-export type QueueAttemptResult =
+type QueueAttemptResult =
   | { kind: "ok" }
   | { kind: "duplicate" }
   | { kind: "auth" }
@@ -168,29 +161,32 @@ function truncateErr(msg: string): string {
     : msg;
 }
 
-// ---------------- Storage access ----------------
-
+/**
+ * Read the persisted queue state. The schema applies per-field defaults, so a
+ * fresh install (absent keys) reads back as an empty queue. A payload that
+ * fails to parse (corruption, an older incompatible shape) falls back to the
+ * empty state rather than stalling every later drain.
+ */
 async function readState(): Promise<QueueState> {
-  const raw = (await chrome.storage.local.get([
+  const raw = await chrome.storage.local.get([
     STORAGE_KEYS.ITEMS,
     STORAGE_KEYS.SEQ,
     STORAGE_KEYS.PAUSED,
     STORAGE_KEYS.NOTIFIED_OFFLINE_AT,
-  ])) as Partial<QueueState> & Record<string, unknown>;
-
-  const items = (raw[STORAGE_KEYS.ITEMS] as QueueItem[] | undefined) ?? [];
-  // Backfill `tags` for items persisted by an older build — the field did not
-  // exist before quick metadata editing, and a missing value must behave
-  // exactly like an empty selection.
-  for (const item of items) {
-    if (!Array.isArray(item.tags)) item.tags = [];
+  ]);
+  const parsed = queueStorageSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.warn("[Sheltermark] queue storage unreadable; starting empty", {
+      error: parsed.error.message,
+    });
+    return { items: [], seq: 0, paused: false, notifiedOfflineAt: null };
   }
-  const seq = (raw[STORAGE_KEYS.SEQ] as number | undefined) ?? 0;
-  const paused = (raw[STORAGE_KEYS.PAUSED] as boolean | undefined) ?? false;
-  const notifiedOfflineAt =
-    (raw[STORAGE_KEYS.NOTIFIED_OFFLINE_AT] as number | null | undefined) ??
-    null;
-  return { items, seq, paused, notifiedOfflineAt };
+  return {
+    items: parsed.data[STORAGE_KEYS.ITEMS],
+    seq: parsed.data[STORAGE_KEYS.SEQ],
+    paused: parsed.data[STORAGE_KEYS.PAUSED],
+    notifiedOfflineAt: parsed.data[STORAGE_KEYS.NOTIFIED_OFFLINE_AT],
+  };
 }
 
 async function writeState(state: QueueState): Promise<void> {
@@ -202,9 +198,7 @@ async function writeState(state: QueueState): Promise<void> {
   });
 }
 
-// ---------------- Enqueue ----------------
-
-export interface EnqueueInput {
+interface EnqueueInput {
   url: string;
   title: string | null;
   workspaceId: string | null;
@@ -252,7 +246,6 @@ export async function enqueue(
   const seeded = input.seedFailedAttempt;
   // If the inline attempt failed transiently, apply backoff (or an explicit
   // Retry-After) so the next drain (heartbeat) doesn't re-fire immediately.
-  // Otherwise due now.
   const seededDelayMs = seeded?.retryAfterMs ?? backoffDelayMs(1);
   const item: QueueItem = {
     id: crypto.randomUUID(),
@@ -296,20 +289,10 @@ export async function enqueue(
   return item;
 }
 
-// ---------------- Queue introspection ----------------
-
-export async function pendingCount(): Promise<number> {
-  const { items } = await readState();
-  return items.filter((i) => i.status === "pending" || i.status === "in_flight")
-    .length;
-}
-
 export async function isPaused(): Promise<boolean> {
   const { paused } = await readState();
   return paused;
 }
-
-// ---------------- Restart recovery ----------------
 
 /**
  * Reset every `in_flight` item to `pending` (due immediately) and clear the
@@ -343,8 +326,6 @@ export async function drainOnStartup(): Promise<void> {
   if (changed) await writeState(state);
 }
 
-// ---------------- Pause / resume ----------------
-
 export async function pauseQueue(): Promise<void> {
   const state = await readState();
   if (state.paused) return;
@@ -369,27 +350,26 @@ export async function resumeQueue(): Promise<void> {
   if (changed) await writeState(state);
 }
 
-// ---------------- Drain ----------------
-
 /**
  * Process due pending items serially, one POST at a time, until none are due
  * or the queue is paused. Idempotent re-entrancy guard via `drainInProgress`.
  * Heartbeat calls this; alarms/onStartup/resume also call this.
  */
 export async function drain(hooks: QueueHookContext): Promise<void> {
+  // Claim the guard synchronously before any await so a concurrent drain()
+  // call interleaved during readState() cannot slip through.
   if (drainInProgress) return;
-  const state = await readState();
-  if (state.paused) return;
-
   drainInProgress = true;
   try {
+    const state = await readState();
+    if (state.paused) return;
+
     let syncedCount = 0;
     const wasOfflineNotified = state.notifiedOfflineAt != null;
 
     // Loop: re-read only items we mutate, mutating a working copy, writing
     // once per processed item so a mid-drain kill loses at most one item's
     // forward progress (and even that is safe: in_flight → pending on restart).
-    // Use a local copy; we persist after each successful transition.
     const working = state.items.slice();
 
     for (let i = 0; i < working.length; i++) {
@@ -514,11 +494,10 @@ async function safePost(
   try {
     outcome = await hooks.postBookmark(item);
   } catch (err) {
-    const e = err as { message?: string };
     outcome = {
       fetchThrew: true,
       status: null,
-      errorMessage: e?.message ?? "Network error",
+      errorMessage: err instanceof Error ? err.message : "Network error",
     };
   }
   const result = classifyResponse(
@@ -540,8 +519,6 @@ function appendHistory(item: QueueItem): void {
   }
 }
 
-// ---------------- Heartbeat wiring ----------------
-
 /**
  * Register the heartbeat alarm. Idempotent: recreates the alarm. The keep-alive
  * behavior falls out for free — `drain()` touches chrome.storage.local, which
@@ -555,27 +532,3 @@ export function installHeartbeat(): void {
 export function isHeartbeatAlarm(alarmName: string): boolean {
   return alarmName === QUEUE_HEARTBEAT_ALARM;
 }
-
-// ---------------- Status helpers ----------------
-
-/**
- * Whether a `pending` item is currently due (used by tests/observability; not
- * on the drain hot path).
- */
-export function itemIsDue(item: QueueItem, now: number): boolean {
-  return item.status === "pending" && (item.nextAttemptAt ?? 0) <= now;
-}
-
-export function statusRank(status: QueueItemStatus): number {
-  switch (status) {
-    case "pending":
-      return 0;
-    case "in_flight":
-      return 1;
-    case "dead":
-      return 2;
-  }
-}
-
-export type { QueueState };
-export { STORAGE_KEYS };

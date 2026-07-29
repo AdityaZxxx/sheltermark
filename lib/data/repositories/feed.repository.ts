@@ -1,31 +1,69 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, desc, eq } from "drizzle-orm";
+
 import type { ActionResult } from "~/lib/action-result";
-import { logger } from "~/lib/logger";
-import { fetchMetadata } from "~/lib/metadata";
-import { type ParsedFeed, parseFeed } from "~/lib/rss-parser";
+import type { DrizzleDb } from "~/lib/data/db";
 import type { Feed } from "~/lib/schemas/feed.schema";
+
+import { bookmarks, feedEntries, feeds, workspaces } from "~/lib/data/schema";
+import { type ParsedFeed, parseFeed } from "~/lib/feeds/rss-parser";
+import { fetchMetadata } from "~/lib/metadata/pipeline";
 import {
   feedCreateSchema,
   feedDeleteSchema,
   feedRefreshSchema,
 } from "~/lib/schemas/feed.schema";
+import { logger } from "~/lib/utils/logger";
 
-// Get feeds for a user
+type FeedRow = typeof feeds.$inferSelect;
+
+function toFeed(row: FeedRow): Feed {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    workspace_id: row.workspaceId,
+    url: row.url,
+    title: row.title,
+    description: row.description,
+    site_url: row.siteUrl,
+    icon_url: row.iconUrl,
+    last_synced_at: row.lastSyncedAt?.toISOString() ?? null,
+    created_at: row.createdAt?.toISOString() ?? new Date().toISOString(),
+    updated_at: row.updatedAt?.toISOString() ?? null,
+  };
+}
+
+function dbError(cause: unknown): ActionResult<never> {
+  return {
+    success: false,
+    error: cause instanceof Error ? cause.message : "Database error",
+  };
+}
+
+/**
+ * SECURITY: Drizzle connects with the service-role credential and BYPASSES
+ * ROW LEVEL SECURITY. Own-feed queries key on `user_id` explicitly; the
+ * cron path (syncAllFeedsGlobal) reads every user by design. Bookmark and
+ * feed-entry inserts swallow constraint errors to match the pre-migration
+ * behaviour, where feed syncs tolerated partial duplicate inserts.
+ */
 export async function getFeeds(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
   userId: string,
 ): Promise<ActionResult<Feed[]>> {
-  const { data, error } = await supabase
-    .from("feeds")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .eq("user_id", userId);
-  if (error) return { success: false, error: error.message };
-  return { success: true, data: (data ?? []) as Feed[] };
+  try {
+    const rows = await db
+      .select()
+      .from(feeds)
+      .where(eq(feeds.userId, userId))
+      .orderBy(desc(feeds.createdAt));
+    return { success: true, data: rows.map(toFeed) };
+  } catch (cause) {
+    return dbError(cause);
+  }
 }
 
 export async function subscribeToFeed(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
   userId: string,
   url: string,
   workspaceId?: string,
@@ -39,14 +77,18 @@ export async function subscribeToFeed(
   const parsedUrl = validated.data.url;
   const targetWorkspaceId = validated.data.workspaceId || null;
 
-  const existing = await supabase
-    .from("feeds")
-    .select("id")
-    .eq("url", parsedUrl)
-    .eq("user_id", userId)
-    .maybeSingle();
+  let existing: { id: string }[];
+  try {
+    existing = await db
+      .select({ id: feeds.id })
+      .from(feeds)
+      .where(and(eq(feeds.url, parsedUrl), eq(feeds.userId, userId)))
+      .limit(1);
+  } catch (cause) {
+    return dbError(cause);
+  }
 
-  if (existing.data) {
+  if (existing.length > 0) {
     return { success: false, error: "You are already subscribed to this feed" };
   }
 
@@ -70,36 +112,39 @@ export async function subscribeToFeed(
       })
     : null;
 
-  const { data: feed, error: feedError } = await supabase
-    .from("feeds")
-    .insert([
-      {
+  let feedRow: FeedRow;
+  try {
+    const inserted = await db
+      .insert(feeds)
+      .values({
         url: parsedUrl,
-        user_id: userId,
-        workspace_id: targetWorkspaceId,
+        userId,
+        workspaceId: targetWorkspaceId,
         title: feedData.title,
         description: feedData.description,
-        site_url: feedData.link,
-        icon_url: siteMeta?.favicon_url || null,
-        last_synced_at: new Date().toISOString(),
-      },
-    ])
-    .select()
-    .single();
-
-  if (feedError) {
-    return { success: false, error: feedError.message };
+        siteUrl: feedData.link,
+        iconUrl: siteMeta?.favicon_url || null,
+        lastSyncedAt: new Date(),
+      })
+      .returning();
+    const first = inserted[0];
+    if (!first) return { success: false, error: "Insert returned no row" };
+    feedRow = first;
+  } catch (cause) {
+    return dbError(cause);
   }
 
-  const workspaceIdToUse =
-    targetWorkspaceId ||
-    (await supabase
-      .from("workspaces")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("is_default", true)
-      .single()
-      .then((r) => r.data?.id));
+  const [defaultWorkspace] = targetWorkspaceId
+    ? []
+    : await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(
+          and(eq(workspaces.userId, userId), eq(workspaces.isDefault, true)),
+        )
+        .limit(1);
+
+  const workspaceIdToUse = targetWorkspaceId || defaultWorkspace?.id || null;
 
   const itemsToInsert = feedData.items.slice(0, 50);
   const metadataResults = await Promise.all(
@@ -117,20 +162,24 @@ export async function subscribeToFeed(
   const bookmarksToInsert = itemsToInsert.map((item, index) => {
     const meta = metadataResults[index];
     return {
-      user_id: userId,
-      workspace_id: workspaceIdToUse,
+      userId,
+      workspaceId: workspaceIdToUse,
       url: item.link,
       title: item.title,
-      favicon_url: meta?.favicon_url || null,
-      og_image_url: meta?.og_image_url || null,
+      faviconUrl: meta?.favicon_url || null,
+      ogImageUrl: meta?.og_image_url || null,
     };
   });
 
   if (bookmarksToInsert.length > 0) {
-    await supabase.from("bookmarks").insert(bookmarksToInsert);
+    try {
+      await db.insert(bookmarks).values(bookmarksToInsert);
+    } catch (err) {
+      logger.warn("Feed subscribe skipped some bookmarks", { error: err });
+    }
   }
 
-  return { success: true, data: feed as Feed };
+  return { success: true, data: toFeed(feedRow) };
 }
 
 type SyncFeedOptions = {
@@ -138,7 +187,7 @@ type SyncFeedOptions = {
 };
 
 async function syncSingleFeed(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
   feed: Feed,
   userId: string,
   options?: SyncFeedOptions,
@@ -147,21 +196,21 @@ async function syncSingleFeed(
   try {
     feedData = await parseFeed(feed.url);
   } catch (err) {
-    await supabase
-      .from("feeds")
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq("id", feed.id);
+    await db
+      .update(feeds)
+      .set({ lastSyncedAt: new Date() })
+      .where(eq(feeds.id, feed.id));
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to parse feed",
     };
   }
 
-  const existingGuids = await supabase
-    .from("feed_entries")
-    .select("guid")
-    .eq("feed_id", feed.id)
-    .then((r) => new Set((r.data || []).map((e) => e.guid)));
+  const existingGuidRows = await db
+    .select({ guid: feedEntries.guid })
+    .from(feedEntries)
+    .where(eq(feedEntries.feedId, feed.id));
+  const existingGuids = new Set(existingGuidRows.map((e) => e.guid));
 
   let newItems = feedData.items.filter((item) => !existingGuids.has(item.guid));
   if (options?.maxItems !== undefined) {
@@ -170,25 +219,26 @@ async function syncSingleFeed(
 
   if (newItems.length > 0) {
     const entriesToInsert = newItems.map((item) => ({
-      feed_id: feed.id,
+      feedId: feed.id,
       title: item.title,
       link: item.link,
-      content: item.content,
-      summary: item.contentSnippet,
+      content: item.content ?? null,
+      summary: item.contentSnippet ?? null,
       guid: item.guid,
-      published: item.pubDate ? new Date(item.pubDate).toISOString() : null,
+      published: item.pubDate ? new Date(item.pubDate) : null,
     }));
-    await supabase.from("feed_entries").insert(entriesToInsert);
+    await db.insert(feedEntries).values(entriesToInsert);
 
     let targetWorkspaceId = feed.workspace_id;
     if (!targetWorkspaceId) {
-      const { data: wsData } = await supabase
-        .from("workspaces")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("is_default", true)
-        .single();
-      targetWorkspaceId = wsData?.id ?? null;
+      const [defaultWorkspace] = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(
+          and(eq(workspaces.userId, userId), eq(workspaces.isDefault, true)),
+        )
+        .limit(1);
+      targetWorkspaceId = defaultWorkspace?.id ?? null;
     }
 
     if (targetWorkspaceId) {
@@ -199,17 +249,21 @@ async function syncSingleFeed(
       const bookmarksToInsert = newItems.map((item, index) => {
         const meta = metadataResults[index];
         return {
-          user_id: userId,
-          workspace_id: targetWorkspaceId,
+          userId,
+          workspaceId: targetWorkspaceId,
           url: item.link,
           title: item.title,
-          favicon_url: meta?.favicon_url || null,
-          og_image_url: meta?.og_image_url || null,
+          faviconUrl: meta?.favicon_url || null,
+          ogImageUrl: meta?.og_image_url || null,
         };
       });
 
       if (bookmarksToInsert.length > 0) {
-        await supabase.from("bookmarks").insert(bookmarksToInsert);
+        try {
+          await db.insert(bookmarks).values(bookmarksToInsert);
+        } catch (err) {
+          logger.warn("Feed sync skipped some bookmarks", { error: err });
+        }
       }
     }
   }
@@ -218,22 +272,22 @@ async function syncSingleFeed(
     ? await fetchMetadata(feedData.link).catch(() => null)
     : null;
 
-  await supabase
-    .from("feeds")
-    .update({
+  await db
+    .update(feeds)
+    .set({
       title: feedData.title,
       description: feedData.description,
-      site_url: feedData.link,
-      icon_url: siteMeta?.favicon_url || null,
-      last_synced_at: new Date().toISOString(),
+      siteUrl: feedData.link,
+      iconUrl: siteMeta?.favicon_url || null,
+      lastSyncedAt: new Date(),
     })
-    .eq("id", feed.id);
+    .where(eq(feeds.id, feed.id));
 
   return { success: true, data: { syncedCount: newItems.length } };
 }
 
 export async function refreshFeed(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
 ): Promise<ActionResult<Feed>> {
@@ -243,30 +297,36 @@ export async function refreshFeed(
     return { success: false, error: msg };
   }
 
-  const { data: feed } = await supabase
-    .from("feeds")
-    .select("*")
-    .eq("id", id)
-    .eq("user_id", userId)
-    .single();
+  let feedRow: FeedRow | undefined;
+  try {
+    const rows = await db
+      .select()
+      .from(feeds)
+      .where(and(eq(feeds.id, validated.data.id), eq(feeds.userId, userId)))
+      .limit(1);
+    feedRow = rows[0];
+  } catch (cause) {
+    return dbError(cause);
+  }
 
-  if (!feed) {
+  if (!feedRow) {
     return { success: false, error: "Feed not found" };
   }
 
-  const result = await syncSingleFeed(supabase, feed as Feed, userId, {
+  const feed = toFeed(feedRow);
+  const result = await syncSingleFeed(db, feed, userId, {
     maxItems: 20,
   });
   if (!result.success) return result;
 
   return {
     success: true,
-    data: { ...(feed as Feed), last_synced_at: new Date().toISOString() },
+    data: { ...feed, last_synced_at: new Date().toISOString() },
   };
 }
 
 export async function deleteFeed(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
   userId: string,
   id: string,
 ): Promise<ActionResult<null>> {
@@ -276,35 +336,40 @@ export async function deleteFeed(
     return { success: false, error: msg };
   }
 
-  const { error: deleteError } = await supabase
-    .from("feeds")
-    .delete()
-    .eq("id", validated.data.id)
-    .eq("user_id", userId);
-  if (deleteError) return { success: false, error: deleteError.message };
+  try {
+    await db
+      .delete(feeds)
+      .where(and(eq(feeds.id, validated.data.id), eq(feeds.userId, userId)));
+  } catch (cause) {
+    return dbError(cause);
+  }
   return { success: true, data: null };
 }
 
 export async function syncAllFeeds(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
   userId: string,
 ): Promise<ActionResult<{ synced: number; errors: string[] }>> {
-  const { data: feeds } = await supabase
-    .from("feeds")
-    .select("*")
-    .eq("user_id", userId);
-  if (!feeds || feeds.length === 0) {
+  let feedRows: FeedRow[];
+  try {
+    feedRows = await db.select().from(feeds).where(eq(feeds.userId, userId));
+  } catch (cause) {
+    return dbError(cause);
+  }
+
+  if (feedRows.length === 0) {
     return { success: true, data: { synced: 0, errors: [] } };
   }
 
+  const feedsToSync = feedRows.map(toFeed);
   const results = await Promise.allSettled(
-    feeds.map((feed) => refreshFeed(supabase, userId, feed.id)),
+    feedsToSync.map((feed) => refreshFeed(db, userId, feed.id)),
   );
 
   let synced = 0;
   const errors: string[] = [];
   for (let i = 0; i < results.length; i++) {
-    const feed = feeds[i];
+    const feed = feedsToSync[i];
     const result = results[i];
     if (!result || !feed) continue;
     if (result.status === "fulfilled") {
@@ -324,22 +389,20 @@ export async function syncAllFeeds(
 }
 
 export async function syncAllFeedsGlobal(
-  supabase: SupabaseClient,
+  db: DrizzleDb,
 ): Promise<ActionResult<{ synced: number; errors: string[] }>> {
-  const { data: users, error } = await supabase
-    .from("feeds")
-    .select("user_id")
-    .not("user_id", "is", null);
-
-  if (error) return { success: false, error: error.message };
-
-  const userIds = [...new Set(users.map((u) => u.user_id))];
+  let userRows: { userId: string }[];
+  try {
+    userRows = await db.selectDistinct({ userId: feeds.userId }).from(feeds);
+  } catch (cause) {
+    return dbError(cause);
+  }
 
   let totalSynced = 0;
   const allErrors: string[] = [];
 
-  for (const userId of userIds) {
-    const result = await syncAllFeeds(supabase, userId);
+  for (const { userId } of userRows) {
+    const result = await syncAllFeeds(db, userId);
     if (result.success) {
       totalSynced += result.data.synced;
       allErrors.push(...result.data.errors);

@@ -1,7 +1,9 @@
 # Introduce `DbClient` seam and `FakeDbClient` for repository testing
 
 **Date**: 2026-07-23
-**Status**: Accepted
+**Status**: Superseded
+
+> Superseded by the Drizzle migration (2026-08). `lib/data/db-client.ts` and `FakeDbClient` were deleted; repositories now take `DrizzleDb` directly (see `docs/architecture.md` "Data layer"). The replacement test seam is the real database: live-database isolation suites in `tests/integration/*-isolation.test.ts` exercise the exact service-role/RLS-bypassed posture, and `insertBookmark` keeps an injected `fetchMetadataFn` seam for deterministic non-network tests. The test-first rule and `peek()` design notes below are kept as historical record.
 
 ## Context
 
@@ -33,6 +35,7 @@ Introduce a narrow, owned `DbClient` interface (`lib/data/db-client.ts`) that re
 Every new capability added to `DbClient` or `FakeDbClient` must be introduced by a failing repository test. Do not preemptively add operators, terminal methods, or error behaviours "because they're likely needed." This prevents the fake from gradually becoming a Supabase reimplementation.
 
 Capabilities added during Phase 1, each justified by existing repository code:
+
 - `.is()` / `.not(col, "is", null)` on `DbMutationBuilder` — `batchInsertBookmarks` and `emptyTrashBookmarks` use them.
 - `rpc()` on `DbClient` — `transaction.ts` calls `supabase.rpc("delete_workspace_with_bookmarks", ...)`.
 
@@ -50,6 +53,7 @@ Capabilities added during Phase 1, each justified by existing repository code:
 ## Scope of Phase 1
 
 Migrated and tested:
+
 - `bookmark.repository.ts` — all 13 functions
 - `restore/index.ts` — both functions
 - `workspace.repository.ts` — all 15 functions (migrated, not yet tested for branching)

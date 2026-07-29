@@ -1,8 +1,10 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/db";
 import {
   createWorkspace as createWorkspaceRepo,
   deleteWorkspace as deleteWorkspaceRepo,
@@ -12,12 +14,10 @@ import {
   toggleAutoCheckBroken as toggleAutoCheckBrokenRepo,
   togglePublicStatus as togglePublicStatusRepo,
 } from "~/lib/data/repositories/workspace.repository";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
-/** See bookmark.action.ts for the cast rationale. */
 async function auth() {
-  const { user, supabase } = await requireAuth();
-  return { user, db: supabase as unknown as DbClient };
+  const { user } = await requireAuth();
+  return { user, db: getDb() };
 }
 
 export async function getWorkspaces(): Promise<

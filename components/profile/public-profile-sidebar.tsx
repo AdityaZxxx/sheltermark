@@ -1,8 +1,10 @@
 "use client";
 
 import { GithubLogoIcon, GlobeIcon, XLogoIcon } from "@phosphor-icons/react";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+
 import type { Profile } from "~/lib/schemas/profile.schema";
+
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 interface PublicProfileSidebarProps {
   profile: Profile;
@@ -35,7 +37,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
         </p>
       )}
 
-      <div className="flex justify-start gap-4">
+      <div className="flex justify-start gap-4 pt-3 border-t border-border/60">
         {profile.website_url && (
           <a
             href={profile.website_url}

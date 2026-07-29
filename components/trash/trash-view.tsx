@@ -7,6 +7,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
+
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { BulkActionBar } from "~/components/trash/bulk-action-bar";
 import {
@@ -40,7 +41,7 @@ import {
   useRestoreBookmarks,
   useRestoreWorkspace,
 } from "~/lib/mutations/trash.mutations";
-import { getRestoreTargetForUI } from "~/lib/restore";
+import { getRestoreTargetForUI } from "~/lib/restore/restore-target";
 
 export function TrashView() {
   const { trashedBookmarks, trashedWorkspaces, isLoading, totalCount } =

@@ -1,6 +1,7 @@
 "use client";
 
 import { SpinnerIcon, UploadSimpleIcon } from "@phosphor-icons/react";
+
 import { type DetectedFormat, formatDisplayName } from "~/lib/import/detect";
 
 interface UploadStepProps {

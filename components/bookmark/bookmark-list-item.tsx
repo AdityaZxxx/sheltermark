@@ -1,11 +1,14 @@
 import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Kbd, KbdGroup } from "~/components/ui/kbd";
-import { formatRelativeTime } from "~/lib/format";
+
 import type { BrokenStatus } from "~/lib/link-health/types";
 import type { Tag } from "~/lib/schemas/tag.schema";
+
+import { Checkbox } from "~/components/ui/checkbox";
+import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import { cn } from "~/lib/utils";
+import { formatRelativeTime } from "~/lib/utils/format";
+
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BrokenLinkWarning } from "./broken-link-warning";
 
@@ -115,7 +118,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
         <div className="flex items-center gap-3 min-w-0">
           <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center relative">
             {favicon_url ? (
-              // biome-ignore lint/performance/noImgElement: nothing to optimize
+              // oxlint-disable-next-line next/no-img-element -- nothing to optimize
               <img
                 src={favicon_url}
                 alt=""

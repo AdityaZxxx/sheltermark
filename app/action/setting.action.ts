@@ -1,7 +1,14 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type {
+  Profile,
+  UpdateProfileInput,
+  UpdatePublicProfileInput,
+} from "~/lib/schemas/profile.schema";
+
 import { requireAuth } from "~/lib/auth";
+import { getDb } from "~/lib/data/db";
 import {
   deleteAccount as deleteAccountRepo,
   deleteAvatar as deleteAvatarRepo,
@@ -10,31 +17,26 @@ import {
   updatePublicProfile as updatePublicProfileRepo,
   uploadAvatar as uploadAvatarRepo,
 } from "~/lib/data/repositories/profile.repository";
-import type {
-  Profile,
-  UpdateProfileInput,
-  UpdatePublicProfileInput,
-} from "~/lib/schemas/profile.schema";
 
 export async function updateProfile(
   data: UpdateProfileInput,
 ): Promise<ActionResult<{ message: string }>> {
   const { user, supabase } = await requireAuth();
-  return updateProfileRepo(supabase, user.id, data);
+  return updateProfileRepo(getDb(), supabase, user.id, data);
 }
 
 export async function updatePublicProfile(
   data: UpdatePublicProfileInput,
 ): Promise<ActionResult<{ message: string }>> {
-  const { user, supabase } = await requireAuth();
-  return updatePublicProfileRepo(supabase, user.id, data);
+  const { user } = await requireAuth();
+  return updatePublicProfileRepo(getDb(), user.id, data);
 }
 
 export async function getProfile(): Promise<
   ActionResult<{ profile: Profile }>
 > {
-  const { user, supabase } = await requireAuth();
-  return getProfileRepo(supabase, user.id);
+  const { user } = await requireAuth();
+  return getProfileRepo(getDb(), user.id);
 }
 
 export async function checkUsernameAvailability(data: {
@@ -82,15 +84,15 @@ export async function uploadAvatar(
   formData: FormData,
 ): Promise<ActionResult<{ avatarUrl: string }>> {
   const { user, supabase } = await requireAuth();
-  return uploadAvatarRepo(supabase, user.id, formData);
+  return uploadAvatarRepo(getDb(), supabase, user.id, formData);
 }
 
 export async function deleteAvatar(): Promise<ActionResult<null>> {
   const { user, supabase } = await requireAuth();
-  return deleteAvatarRepo(supabase, user.id);
+  return deleteAvatarRepo(getDb(), supabase, user.id);
 }
 
 export async function deleteAccount(): Promise<ActionResult<null>> {
   const { user, supabase } = await requireAuth();
-  return deleteAccountRepo(supabase, user.id);
+  return deleteAccountRepo(getDb(), supabase, user.id);
 }

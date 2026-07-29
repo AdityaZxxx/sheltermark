@@ -1,17 +1,23 @@
 "use client";
 
+import type { z } from "zod";
+
 import { useCallback, useEffect, useState, useTransition } from "react";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
+import { bookmarkViewVariantSchema } from "~/lib/schemas/common";
+
+type BookmarkViewVariant = z.infer<typeof bookmarkViewVariantSchema>;
 
 const VIEW_PREFERENCE_KEY = "sheltermark-view-preference";
 
 function getStored(): BookmarkViewVariant {
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- standard Next.js SSR guard
   if (typeof window === "undefined") return "list";
   try {
     const stored = localStorage.getItem(VIEW_PREFERENCE_KEY);
-    const valid: BookmarkViewVariant[] = ["list", "card", "comfort"];
-    if (stored && valid.includes(stored as BookmarkViewVariant)) {
-      return stored as BookmarkViewVariant;
+    if (stored !== null) {
+      const parsed = bookmarkViewVariantSchema.safeParse(stored);
+      if (parsed.success) return parsed.data;
     }
   } catch {
     /* localStorage may be blocked */

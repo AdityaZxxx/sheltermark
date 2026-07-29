@@ -1,7 +1,8 @@
-import { resolveBrokenStatus } from "~/lib/link-health/classifier";
 import type { BrokenStatus } from "~/lib/link-health/types";
 
-export interface RenderableBrokenState {
+import { resolveBrokenStatus } from "~/lib/link-health/classifier";
+
+interface RenderableBrokenState {
   /** Should the warning icon be drawn? */
   showWarning: boolean;
   /** Tooltip / a11y label explaining the current state. */
@@ -40,6 +41,14 @@ export function getBrokenLinkMessage(
 export function resolveBrokenState(
   input: BrokenStateInput,
 ): RenderableBrokenState {
+  if (input.status == null && input.httpStatus == null) {
+    return {
+      showWarning: false,
+      message: "Not checked yet",
+      severity: "none",
+    };
+  }
+
   const status = resolveBrokenStatus(
     input.status ?? null,
     input.httpStatus ?? null,
@@ -72,8 +81,8 @@ export function resolveBrokenState(
     default: {
       // Defensive: never reached unless BROKEN_STATUSES grows without
       // this switch being updated.
-      const _exhaustive: never = status;
-      return _exhaustive;
+      const exhaustive: never = status;
+      return exhaustive;
     }
   }
 }

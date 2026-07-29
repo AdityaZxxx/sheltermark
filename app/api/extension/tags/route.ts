@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+
+import { getDb } from "~/lib/data/db";
 import { getTagsWithCount } from "~/lib/data/repositories/tag.repository";
-import { logger } from "~/lib/logger";
-import { createClient } from "~/utils/supabase/server";
+import { createClient } from "~/lib/supabase/server";
+import { logger } from "~/lib/utils/logger";
 
 /**
  * Tag suggestions for the extension popup. Tags are user-scoped (not
@@ -24,7 +26,7 @@ export async function GET() {
       );
     }
 
-    const result = await getTagsWithCount(supabase, user.id);
+    const result = await getTagsWithCount(getDb(), user.id);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
