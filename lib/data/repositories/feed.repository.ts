@@ -162,12 +162,12 @@ export async function subscribeToFeed(
   const bookmarksToInsert = itemsToInsert.map((item, index) => {
     const meta = metadataResults[index];
     return {
-      userId,
-      workspaceId: workspaceIdToUse,
+      user_id: userId,
+      workspace_id: workspaceIdToUse,
       url: item.link,
       title: item.title,
-      faviconUrl: meta?.favicon_url || null,
-      ogImageUrl: meta?.og_image_url || null,
+      favicon_url: meta?.favicon_url || null,
+      og_image_url: meta?.og_image_url || null,
     };
   });
 
@@ -249,12 +249,12 @@ async function syncSingleFeed(
       const bookmarksToInsert = newItems.map((item, index) => {
         const meta = metadataResults[index];
         return {
-          userId,
-          workspaceId: targetWorkspaceId,
+          user_id: userId,
+          workspace_id: targetWorkspaceId,
           url: item.link,
           title: item.title,
-          faviconUrl: meta?.favicon_url || null,
-          ogImageUrl: meta?.og_image_url || null,
+          favicon_url: meta?.favicon_url || null,
+          og_image_url: meta?.og_image_url || null,
         };
       });
 

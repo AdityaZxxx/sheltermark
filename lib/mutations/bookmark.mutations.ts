@@ -109,8 +109,12 @@ export function useMoveBookmarks(userId: string | undefined) {
     dependentQueryKeys: userId ? [workspaceKeys.byUser(userId)] : [],
     successMessage: null,
     errorMessage: "Failed to move bookmarks",
-    prepareOptimisticData: (oldData, { ids }) => {
-      return optimisticRemove(oldData, ids);
+    prepareOptimisticData: (oldData, { ids, targetWorkspaceId }) => {
+      const prev = oldData ?? [];
+      const idSet = new Set(ids);
+      return prev.map((b) =>
+        idSet.has(b.id) ? { ...b, workspace_id: targetWorkspaceId } : b,
+      );
     },
   });
 }

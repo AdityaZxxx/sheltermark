@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { z } from "zod";
 
 import type { BrokenStatus } from "~/lib/link-health/types";
 
@@ -32,6 +33,32 @@ import type { BrokenStatus } from "~/lib/link-health/types";
 const citext = customType<{ data: string }>({
   dataType() {
     return "citext";
+  },
+});
+
+/**
+ * timestamptz surfaced as an ISO-8601 string (`typeof row.created_at` is
+ * `string`), so `$inferSelect` matches the wire contract without a mapping
+ * layer. Drizzle's built-in `timestamp()` returns raw Postgres text
+ * (`2026-04-16 13:18:53.940292+00`) in string mode — not ISO — and Date in
+ * date mode; `fromDriver` normalizes to `new Date(...).toISOString()`.
+ */
+const isoTimestamptz = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "timestamp with time zone";
+  },
+  fromDriver(value) {
+    // driver boundary: postgres-js hands the raw wire value for timestamptz;
+    // parse it here so a contract violation fails loudly, not silently.
+    const raw = z.string().parse(value);
+    const iso = raw
+      .replace(" ", "T")
+      .replace(
+        /([+-]\d{2})(?::?(\d{2}))?$/,
+        (_m: string, hh: string, mm?: string) =>
+          mm ? `${hh}:${mm}` : `${hh}:00`,
+      );
+    return new Date(iso).toISOString();
   },
 });
 
@@ -101,46 +128,46 @@ export const bookmarks = pgTable(
       .primaryKey()
       .notNull()
       .default(sql`uuid_generate_v4()`),
-    userId: uuid("user_id")
+    user_id: uuid()
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+    workspace_id: uuid().references(() => workspaces.id, {
       onDelete: "set null",
     }),
     url: text().notNull(),
     title: text(),
-    faviconUrl: text("favicon_url"),
-    ogImageUrl: text("og_image_url"),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    favicon_url: text(),
+    og_image_url: text(),
+    created_at: isoTimestamptz()
       .notNull()
       .default(sql`timezone('utc'::text, now())`),
-    updatedAt: timestamp("updated_at", { withTimezone: true }),
-    isPublic: boolean("is_public").default(false),
-    isBroken: boolean("is_broken").default(false),
-    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
-    httpStatus: integer("http_status"),
-    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    updated_at: isoTimestamptz(),
+    is_public: boolean().default(false),
+    is_broken: boolean().default(false),
+    last_checked_at: isoTimestamptz(),
+    http_status: integer(),
+    deleted_at: isoTimestamptz(),
     note: text(),
-    brokenStatus: text("broken_status").$type<BrokenStatus | null>(),
+    broken_status: text().$type<BrokenStatus | null>(),
   },
   (table) => [
-    index("bookmarks_user_id_idx").on(table.userId),
-    index("bookmarks_workspace_id_idx").on(table.workspaceId),
+    index("bookmarks_user_id_idx").on(table.user_id),
+    index("bookmarks_workspace_id_idx").on(table.workspace_id),
     // Live index direction is DESC (see supabase/migrations); .desc() keeps
     // the generated DDL in sync.
-    index("bookmarks_created_at_idx").on(table.createdAt.desc()),
+    index("bookmarks_created_at_idx").on(table.created_at.desc()),
     index("idx_bookmarks_deleted_at")
-      .on(table.deletedAt)
+      .on(table.deleted_at)
       .where(sql`(deleted_at IS NOT NULL)`),
-    index("idx_bookmarks_user_url").on(table.userId, table.url),
-    index("idx_bookmarks_user_workspace").on(table.userId, table.workspaceId),
+    index("idx_bookmarks_user_url").on(table.user_id, table.url),
+    index("idx_bookmarks_user_workspace").on(table.user_id, table.workspace_id),
     uniqueIndex("bookmarks_workspace_url_unique")
-      .on(table.workspaceId, table.url)
+      .on(table.workspace_id, table.url)
       .where(sql`(deleted_at IS NULL)`),
     index("bookmarks_is_broken_idx")
-      .on(table.isBroken)
+      .on(table.is_broken)
       .where(sql`(is_broken = true)`),
-    index("bookmarks_last_checked_at_idx").on(table.lastCheckedAt),
+    index("bookmarks_last_checked_at_idx").on(table.last_checked_at),
     check(
       "bookmarks_broken_status_check",
       sql`broken_status IN ('alive', 'confirmed_broken', 'likely_broken', 'unknown')`,
@@ -231,22 +258,20 @@ export const tags = pgTable(
 export const bookmarkTags = pgTable(
   "bookmark_tags",
   {
-    bookmarkId: uuid("bookmark_id")
+    bookmark_id: uuid()
       .notNull()
       .references(() => bookmarks.id, { onDelete: "cascade" }),
-    tagId: uuid("tag_id")
+    tag_id: uuid()
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
+    created_at: isoTimestamptz()
       .notNull()
-      .defaultNow(),
+      .default(sql`now()`),
   },
   (table) => [
-    primaryKey({ columns: [table.bookmarkId, table.tagId] }),
-    index("idx_bookmark_tags_bookmark_id").on(table.bookmarkId),
-    index("idx_bookmark_tags_tag_id").on(table.tagId),
+    primaryKey({ columns: [table.bookmark_id, table.tag_id] }),
+    index("idx_bookmark_tags_bookmark_id").on(table.bookmark_id),
+    index("idx_bookmark_tags_tag_id").on(table.tag_id),
   ],
 );
 

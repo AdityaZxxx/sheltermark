@@ -59,20 +59,20 @@ type InsertBookmarkResult =
 function toBookmark(row: BookmarkRow): Bookmark {
   return {
     id: row.id,
-    user_id: row.userId,
-    workspace_id: row.workspaceId,
+    user_id: row.user_id,
+    workspace_id: row.workspace_id,
     url: row.url,
     title: row.title ?? "",
-    favicon_url: row.faviconUrl,
-    og_image_url: row.ogImageUrl,
-    is_public: row.isPublic ?? false,
-    is_broken: row.isBroken ?? false,
-    broken_status: row.brokenStatus ?? "alive",
-    http_status: row.httpStatus,
-    last_checked_at: row.lastCheckedAt?.toISOString() ?? null,
-    created_at: row.createdAt.toISOString(),
-    updated_at: row.updatedAt?.toISOString() ?? null,
-    deleted_at: row.deletedAt?.toISOString() ?? null,
+    favicon_url: row.favicon_url,
+    og_image_url: row.og_image_url,
+    is_public: row.is_public ?? false,
+    is_broken: row.is_broken ?? false,
+    broken_status: row.broken_status ?? "alive",
+    http_status: row.http_status,
+    last_checked_at: row.last_checked_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    deleted_at: row.deleted_at,
     note: row.note,
   };
 }
@@ -103,12 +103,12 @@ export async function insertBookmark(
     .from(bookmarks)
     .where(
       and(
-        eq(bookmarks.userId, userId),
+        eq(bookmarks.user_id, userId),
         eq(bookmarks.url, normalizedUrl),
-        isNull(bookmarks.deletedAt),
+        isNull(bookmarks.deleted_at),
         workspaceId
-          ? eq(bookmarks.workspaceId, workspaceId)
-          : isNull(bookmarks.workspaceId),
+          ? eq(bookmarks.workspace_id, workspaceId)
+          : isNull(bookmarks.workspace_id),
       ),
     )
     .limit(1);
@@ -135,12 +135,12 @@ export async function insertBookmark(
     const inserted = await db
       .insert(bookmarks)
       .values({
-        userId,
+        user_id: userId,
         url: normalizedUrl,
-        workspaceId: workspaceId ?? null,
+        workspace_id: workspaceId ?? null,
         title,
-        faviconUrl: metadata?.favicon_url ?? null,
-        ogImageUrl: metadata?.og_image_url ?? null,
+        favicon_url: metadata?.favicon_url ?? null,
+        og_image_url: metadata?.og_image_url ?? null,
       })
       .returning();
     const first = inserted[0];
@@ -170,8 +170,8 @@ export async function insertBookmark(
       try {
         await db.insert(bookmarkTags).values(
           resolved.map((tag) => ({
-            bookmarkId: bookmark.id,
-            tagId: tag.id,
+            bookmark_id: bookmark.id,
+            tag_id: tag.id,
           })),
         );
       } catch (cause) {
@@ -212,12 +212,12 @@ export async function getBookmarks(
       .from(bookmarks)
       .where(
         and(
-          eq(bookmarks.userId, userId),
-          isNull(bookmarks.deletedAt),
-          workspaceId ? eq(bookmarks.workspaceId, workspaceId) : undefined,
+          eq(bookmarks.user_id, userId),
+          isNull(bookmarks.deleted_at),
+          workspaceId ? eq(bookmarks.workspace_id, workspaceId) : undefined,
         ),
       )
-      .orderBy(desc(bookmarks.createdAt));
+      .orderBy(desc(bookmarks.created_at));
     return { success: true, data: rows.map(toBookmark) };
   } catch (cause) {
     return dbError(cause);
@@ -234,15 +234,15 @@ export async function deleteBookmarks(
     return { success: false, error: validated.error.message };
   }
 
-  const now = new Date();
+  const now = new Date().toISOString();
   try {
     await db
       .update(bookmarks)
-      .set({ deletedAt: now, updatedAt: now })
+      .set({ deleted_at: now, updated_at: now })
       .where(
         and(
           inArray(bookmarks.id, validated.data.ids),
-          eq(bookmarks.userId, userId),
+          eq(bookmarks.user_id, userId),
         ),
       );
   } catch (cause) {
@@ -259,8 +259,10 @@ export async function getTrashedBookmarks(
     const rows = await db
       .select()
       .from(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), isNotNull(bookmarks.deletedAt)))
-      .orderBy(desc(bookmarks.deletedAt));
+      .where(
+        and(eq(bookmarks.user_id, userId), isNotNull(bookmarks.deleted_at)),
+      )
+      .orderBy(desc(bookmarks.deleted_at));
     return { success: true, data: rows.map(toBookmark) };
   } catch (cause) {
     return dbError(cause);
@@ -293,11 +295,11 @@ export async function batchInsertBookmarks(
     .from(bookmarks)
     .where(
       and(
-        eq(bookmarks.userId, userId),
-        isNull(bookmarks.deletedAt),
+        eq(bookmarks.user_id, userId),
+        isNull(bookmarks.deleted_at),
         workspaceId
-          ? eq(bookmarks.workspaceId, workspaceId)
-          : isNull(bookmarks.workspaceId),
+          ? eq(bookmarks.workspace_id, workspaceId)
+          : isNull(bookmarks.workspace_id),
       ),
     );
   const existingUrls = new Set(existingRows.map((b) => b.url));
@@ -337,11 +339,11 @@ export async function batchInsertBookmarks(
         .delete(bookmarks)
         .where(
           and(
-            eq(bookmarks.userId, userId),
+            eq(bookmarks.user_id, userId),
             inArray(bookmarks.url, replaceUrls),
             workspaceId
-              ? eq(bookmarks.workspaceId, workspaceId)
-              : isNull(bookmarks.workspaceId),
+              ? eq(bookmarks.workspace_id, workspaceId)
+              : isNull(bookmarks.workspace_id),
           ),
         );
     } catch (cause) {
@@ -370,12 +372,12 @@ export async function batchInsertBookmarks(
     batches.map(({ batch }) =>
       db.insert(bookmarks).values(
         batch.map((bm) => ({
-          userId,
-          workspaceId,
+          user_id: userId,
+          workspace_id: workspaceId,
           url: bm.url,
           title: bm.title,
-          faviconUrl: bm.favicon_url || null,
-          ogImageUrl: bm.og_image_url || null,
+          favicon_url: bm.favicon_url || null,
+          og_image_url: bm.og_image_url || null,
         })),
       ),
     ),
@@ -421,7 +423,7 @@ export async function permanentDeleteBookmarks(
       .where(
         and(
           inArray(bookmarks.id, validated.data.ids),
-          eq(bookmarks.userId, userId),
+          eq(bookmarks.user_id, userId),
         ),
       );
   } catch (cause) {
@@ -452,7 +454,7 @@ export async function moveBookmarks(
       .select({ id: bookmarks.id, url: bookmarks.url })
       .from(bookmarks)
       .where(
-        and(inArray(bookmarks.id, sourceIds), eq(bookmarks.userId, userId)),
+        and(inArray(bookmarks.id, sourceIds), eq(bookmarks.user_id, userId)),
       );
 
     if (sourceBookmarks.length === 0) {
@@ -466,12 +468,12 @@ export async function moveBookmarks(
       .from(bookmarks)
       .where(
         and(
-          eq(bookmarks.userId, userId),
-          isNull(bookmarks.deletedAt),
+          eq(bookmarks.user_id, userId),
+          isNull(bookmarks.deleted_at),
           inArray(bookmarks.url, sourceUrls),
           targetId
-            ? eq(bookmarks.workspaceId, targetId)
-            : isNull(bookmarks.workspaceId),
+            ? eq(bookmarks.workspace_id, targetId)
+            : isNull(bookmarks.workspace_id),
         ),
       );
 
@@ -490,9 +492,9 @@ export async function moveBookmarks(
     if (toMoveIds.length > 0) {
       await db
         .update(bookmarks)
-        .set({ workspaceId: targetId, updatedAt: new Date() })
+        .set({ workspace_id: targetId, updated_at: new Date().toISOString() })
         .where(
-          and(inArray(bookmarks.id, toMoveIds), eq(bookmarks.userId, userId)),
+          and(inArray(bookmarks.id, toMoveIds), eq(bookmarks.user_id, userId)),
         );
     }
 
@@ -521,9 +523,12 @@ export async function renameBookmark(
   try {
     await db
       .update(bookmarks)
-      .set({ title: validated.data.title, updatedAt: new Date() })
+      .set({
+        title: validated.data.title,
+        updated_at: new Date().toISOString(),
+      })
       .where(
-        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.userId, userId)),
+        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       );
   } catch (cause) {
     return dbError(cause);
@@ -544,9 +549,9 @@ export async function updateBookmarkNote(
   try {
     await db
       .update(bookmarks)
-      .set({ note: validated.data.note, updatedAt: new Date() })
+      .set({ note: validated.data.note, updated_at: new Date().toISOString() })
       .where(
-        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.userId, userId)),
+        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       );
   } catch (cause) {
     return dbError(cause);
@@ -569,8 +574,8 @@ export async function updateBookmarkFields(
   try {
     await db
       .update(bookmarks)
-      .set({ title, note, updatedAt: new Date() })
-      .where(and(eq(bookmarks.id, id), eq(bookmarks.userId, userId)));
+      .set({ title, note, updated_at: new Date().toISOString() })
+      .where(and(eq(bookmarks.id, id), eq(bookmarks.user_id, userId)));
   } catch (cause) {
     return dbError(cause);
   }
@@ -597,7 +602,7 @@ export async function refetchMetadata(
       .select({ url: bookmarks.url })
       .from(bookmarks)
       .where(
-        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.userId, userId)),
+        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       )
       .limit(1);
     if (!row) {
@@ -614,12 +619,12 @@ export async function refetchMetadata(
     await db
       .update(bookmarks)
       .set({
-        faviconUrl: metadata?.favicon_url ?? null,
-        ogImageUrl: metadata?.og_image_url ?? null,
-        updatedAt: new Date(),
+        favicon_url: metadata?.favicon_url ?? null,
+        og_image_url: metadata?.og_image_url ?? null,
+        updated_at: new Date().toISOString(),
       })
       .where(
-        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.userId, userId)),
+        and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       );
   } catch (cause) {
     return dbError(cause);
@@ -654,7 +659,7 @@ export async function generateAiTitleRepo(
       .where(
         and(
           eq(bookmarks.id, validated.data.bookmarkId),
-          eq(bookmarks.userId, userId),
+          eq(bookmarks.user_id, userId),
         ),
       )
       .limit(1);
@@ -712,20 +717,20 @@ export async function exportBookmarks(
         workspace: { id: workspaces.id, name: workspaces.name },
       })
       .from(bookmarks)
-      .innerJoin(workspaces, eq(workspaces.id, bookmarks.workspaceId))
+      .innerJoin(workspaces, eq(workspaces.id, bookmarks.workspace_id))
       .where(
         and(
-          eq(bookmarks.userId, userId),
-          isNull(bookmarks.deletedAt),
+          eq(bookmarks.user_id, userId),
+          isNull(bookmarks.deleted_at),
           options.workspaceId
-            ? eq(bookmarks.workspaceId, options.workspaceId)
+            ? eq(bookmarks.workspace_id, options.workspaceId)
             : undefined,
         ),
       )
       // Original PostgREST order: updated_at DESC NULLS LAST, then
       // created_at DESC — drizzle's desc() lacks a nulls clause, so spell it.
       .orderBy(
-        sql`${bookmarks.updatedAt} desc nulls last, ${bookmarks.createdAt} desc`,
+        sql`${bookmarks.updated_at} desc nulls last, ${bookmarks.created_at} desc`,
       );
 
     const data: BookmarkWithWorkspace[] = rows.map((row) => {
@@ -734,10 +739,10 @@ export async function exportBookmarks(
         id: bm.id,
         url: bm.url,
         title: bm.title,
-        favicon_url: bm.faviconUrl,
-        og_image_url: bm.ogImageUrl,
-        created_at: bm.createdAt.toISOString(),
-        workspace_id: bm.workspaceId,
+        favicon_url: bm.favicon_url,
+        og_image_url: bm.og_image_url,
+        created_at: bm.created_at,
+        workspace_id: bm.workspace_id,
         workspaces: [{ id: row.workspace.id, name: row.workspace.name }],
       };
     });
