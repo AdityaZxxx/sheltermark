@@ -20,8 +20,8 @@ interface BookmarkSortProps {
 }
 
 const SORT_OPTIONS: { value: BookmarkSortBy; label: string }[] = [
-  { value: "updated_at", label: "Updated" },
   { value: "created_at", label: "Created" },
+  { value: "updated_at", label: "Updated" },
   { value: "title", label: "Title" },
   { value: "domain", label: "Domain" },
 ];
