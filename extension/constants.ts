@@ -4,12 +4,10 @@ export const NOTIFICATION_DURATION = 3000;
 export const MESSAGE_TYPES = {
   SAVE_BOOKMARK: "SAVE_BOOKMARK",
   GET_TAB_INFO: "GET_TAB_INFO",
-  CHECK_AUTH: "CHECK_AUTH",
-  GET_WORKSPACES: "GET_WORKSPACES",
   X_BOOKMARK_CAPTURED: "X_BOOKMARK_CAPTURED",
   CHECK_BOOKMARK: "CHECK_BOOKMARK",
-  CHECK_BOOKMARK_CACHED: "CHECK_BOOKMARK_CACHED",
   CHECK_BOOKMARK_SETTLED: "CHECK_BOOKMARK_SETTLED",
+  GET_POPUP: "GET_POPUP",
 } as const;
 
 type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
@@ -27,14 +25,6 @@ interface GetTabInfoMessage extends MessageBase {
   type: typeof MESSAGE_TYPES.GET_TAB_INFO;
 }
 
-interface CheckAuthMessage extends MessageBase {
-  type: typeof MESSAGE_TYPES.CHECK_AUTH;
-}
-
-interface GetWorkspacesMessage extends MessageBase {
-  type: typeof MESSAGE_TYPES.GET_WORKSPACES;
-}
-
 interface XBookmarkCapturedMessage extends MessageBase {
   type: typeof MESSAGE_TYPES.X_BOOKMARK_CAPTURED;
   url: string;
@@ -45,25 +35,23 @@ interface CheckBookmarkMessage extends MessageBase {
   data: { url: string; workspaceId?: string };
 }
 
-interface CheckBookmarkCachedMessage extends MessageBase {
-  type: typeof MESSAGE_TYPES.CHECK_BOOKMARK_CACHED;
-  data: { url: string; workspaceId: string };
-}
-
 interface CheckBookmarkSettledMessage extends MessageBase {
   type: typeof MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED;
   data: { url: string; workspaceId: string };
 }
 
+interface GetPopupMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.GET_POPUP;
+  data: { url: string; workspaceId: string | null };
+}
+
 export type ExtensionMessage =
   | SaveBookmarkMessage
   | GetTabInfoMessage
-  | CheckAuthMessage
-  | GetWorkspacesMessage
   | XBookmarkCapturedMessage
   | CheckBookmarkMessage
-  | CheckBookmarkCachedMessage
-  | CheckBookmarkSettledMessage;
+  | CheckBookmarkSettledMessage
+  | GetPopupMessage;
 
 export interface SaveResult {
   success?: boolean;
@@ -84,10 +72,14 @@ export interface TabInfo {
   favIconUrl?: string;
 }
 
-export interface AuthResult {
-  authenticated?: boolean;
-}
-
 export interface CheckResult {
   saved?: boolean;
+}
+
+export interface PopupInfo {
+  authenticated: boolean;
+  workspaces?: Workspace[];
+  lastWorkspace: string | null;
+  alreadySaved: boolean;
+  bookmarkId: string | null;
 }

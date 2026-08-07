@@ -1,9 +1,9 @@
 import {
-  type AuthResult,
   type CheckResult,
   type ExtensionMessage,
   MESSAGE_TYPES,
   NOTIFICATION_DURATION,
+  type PopupInfo,
   type SaveResult,
   type Workspace,
 } from "./constants.js";
@@ -24,45 +24,17 @@ const NOTIFICATION_CONFIG: Record<string, NotificationConfigEntry> = {
 };
 
 interface SessionCache {
-  authenticated: boolean | null;
   workspaces: Workspace[] | null;
 }
 
 const sessionCache: SessionCache = {
-  authenticated: null,
   workspaces: null,
 };
 
 const checkCache = new Map<string, Promise<CheckResult | null>>();
 const CHECK_CACHE_TTL = 30_000;
 
-async function getCachedCheck(
-  workspaceId: string,
-  url: string,
-): Promise<CheckResult | null> {
-  const key = `${workspaceId}::${url}`;
-  const existing = checkCache.get(key);
-  if (existing) return existing;
-
-  const promise = checkBookmark({ url, workspaceId }).catch((err) => {
-    console.warn(`[Sheltermark] Cached check failed`, {
-      url,
-      workspaceId,
-      error: err,
-    });
-    return null;
-  });
-  checkCache.set(key, promise);
-
-  setTimeout(() => {
-    if (checkCache.get(key) === promise) checkCache.delete(key);
-  }, CHECK_CACHE_TTL);
-
-  return promise;
-}
-
 function invalidateCache(): void {
-  sessionCache.authenticated = null;
   sessionCache.workspaces = null;
   checkCache.clear();
 }
@@ -182,22 +154,6 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
-    if (message.type === MESSAGE_TYPES.CHECK_AUTH) {
-      checkAuth()
-        .then((result) => sendResponse(result))
-        .catch(() => sendResponse({ authenticated: false }));
-      return true;
-    }
-
-    if (message.type === MESSAGE_TYPES.GET_WORKSPACES) {
-      getWorkspaces()
-        .then((result) => sendResponse(result))
-        .catch((error: Error) =>
-          sendResponse({ workspaces: [], error: error.message }),
-        );
-      return true;
-    }
-
     if (message.type === MESSAGE_TYPES.X_BOOKMARK_CAPTURED) {
       handleXBookmark(message.url)
         .then((result) => sendResponse(result))
@@ -214,15 +170,18 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
-    if (message.type === MESSAGE_TYPES.CHECK_BOOKMARK_CACHED) {
-      const { url, workspaceId } = message.data;
-      if (!url || !workspaceId) {
-        sendResponse({ saved: false });
-        return;
-      }
-      getCachedCheck(workspaceId, url)
-        .then((result) => sendResponse(result || { saved: false }))
-        .catch(() => sendResponse({ saved: false }));
+    if (message.type === MESSAGE_TYPES.GET_POPUP) {
+      getPopupInfo(message.data)
+        .then((result) => sendResponse(result))
+        .catch(() =>
+          sendResponse({
+            authenticated: false,
+            workspaces: [],
+            lastWorkspace: null,
+            alreadySaved: false,
+            bookmarkId: null,
+          }),
+        );
       return true;
     }
 
@@ -283,24 +242,6 @@ async function handleSaveResult(
     showNotification("Saved!", "Bookmark saved successfully", "success");
   } else {
     showNotification("Error", result.error || "Failed to save", "error");
-  }
-}
-
-async function checkAuth(): Promise<AuthResult> {
-  if (sessionCache.authenticated !== null) {
-    return { authenticated: sessionCache.authenticated };
-  }
-  const baseUrl = await getBaseUrl();
-  try {
-    const response = await fetch(`${baseUrl}/api/extension/auth`, {
-      credentials: "include",
-    });
-    const data = (await response.json()) as AuthResult;
-    sessionCache.authenticated = !!data.authenticated;
-    return data;
-  } catch {
-    sessionCache.authenticated = false;
-    return { authenticated: false };
   }
 }
 
@@ -425,6 +366,34 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
   const data = (await response.json()) as GetWorkspacesResult;
   if (data.workspaces) sessionCache.workspaces = data.workspaces;
   return data;
+}
+
+async function getPopupInfo({
+  url,
+  workspaceId,
+}: {
+  url: string;
+  workspaceId: string | null;
+}): Promise<PopupInfo> {
+  const baseUrl = await getBaseUrl();
+  const params = new URLSearchParams({ url });
+  if (workspaceId) params.set("workspace_id", workspaceId);
+
+  const response = await fetch(
+    `${baseUrl}/api/extension/popup?${params.toString()}`,
+    { credentials: "include" },
+  );
+
+  if (!response.ok) {
+    return {
+      authenticated: false,
+      workspaces: [],
+      lastWorkspace: null,
+      alreadySaved: false,
+      bookmarkId: null,
+    };
+  }
+  return response.json() as Promise<PopupInfo>;
 }
 
 interface CheckBookmarkParams {
