@@ -6,7 +6,6 @@ export const MESSAGE_TYPES = {
   GET_TAB_INFO: "GET_TAB_INFO",
   X_BOOKMARK_CAPTURED: "X_BOOKMARK_CAPTURED",
   CHECK_BOOKMARK: "CHECK_BOOKMARK",
-  CHECK_BOOKMARK_SETTLED: "CHECK_BOOKMARK_SETTLED",
   GET_POPUP: "GET_POPUP",
 } as const;
 
@@ -35,11 +34,6 @@ interface CheckBookmarkMessage extends MessageBase {
   data: { url: string; workspaceId?: string };
 }
 
-interface CheckBookmarkSettledMessage extends MessageBase {
-  type: typeof MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED;
-  data: { url: string; workspaceId: string };
-}
-
 interface GetPopupMessage extends MessageBase {
   type: typeof MESSAGE_TYPES.GET_POPUP;
   data: { url: string; workspaceId: string | null };
@@ -50,7 +44,6 @@ export type ExtensionMessage =
   | GetTabInfoMessage
   | XBookmarkCapturedMessage
   | CheckBookmarkMessage
-  | CheckBookmarkSettledMessage
   | GetPopupMessage;
 
 export interface SaveResult {

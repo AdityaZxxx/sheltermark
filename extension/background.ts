@@ -31,12 +31,8 @@ const sessionCache: SessionCache = {
   workspaces: null,
 };
 
-const checkCache = new Map<string, Promise<CheckResult | null>>();
-const CHECK_CACHE_TTL = 30_000;
-
 function invalidateCache(): void {
   sessionCache.workspaces = null;
-  checkCache.clear();
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -182,17 +178,6 @@ chrome.runtime.onMessage.addListener(
             bookmarkId: null,
           }),
         );
-      return true;
-    }
-
-    if (message.type === MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED) {
-      const { url, workspaceId } = message.data;
-      if (url && workspaceId) {
-        const key = `${workspaceId}::${url}`;
-        checkCache.set(key, Promise.resolve({ saved: true }));
-        setTimeout(() => checkCache.delete(key), CHECK_CACHE_TTL);
-      }
-      sendResponse({ ok: true });
       return true;
     }
   },

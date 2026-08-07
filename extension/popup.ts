@@ -118,11 +118,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
     });
 
-    chrome.runtime.sendMessage({
-      type: MESSAGE_TYPES.CHECK_BOOKMARK_SETTLED,
-      data: { url: currentUrl, workspaceId: selectedWorkspaceId ?? "" },
-    });
-
     setTimeout(() => window.close(), 400);
   });
 
