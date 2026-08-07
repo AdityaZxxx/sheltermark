@@ -111,7 +111,7 @@ export function WorkspaceMenu() {
               <DropdownMenuSeparator />
             </>
           )}
-          <div className="max-h-[50vh] overflow-y-auto overscroll-contain">
+          <div className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
             <DropdownMenuGroup>
               <DropdownMenuLabel className="sr-only">
                 Workspaces
