@@ -1,8 +1,5 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
-import { getBookmarks } from "~/app/action/bookmark.action";
-import { getProfile } from "~/app/action/setting.action";
-import { getWorkspaceTagsWithCount } from "~/app/action/tag.action";
 import { getWorkspaces } from "~/app/action/workspace.action";
 import { ShareDialogManager } from "~/components/add/share-dialog-manager";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
@@ -10,13 +7,7 @@ import { Header } from "~/components/header";
 import { UserProvider } from "~/components/providers/user-context";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
-import {
-  bookmarkKeys,
-  profileKeys,
-  tagKeys,
-  workspaceKeys,
-} from "~/lib/query-keys";
-import type { TagWithCount } from "~/lib/schemas/tag.schema";
+import { workspaceKeys } from "~/lib/query-keys";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 interface WorkspacePageProps {
@@ -29,47 +20,26 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
   const queryClient = makeQueryClient();
 
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: workspaceKeys.byUser(user?.id),
-      queryFn: async () => {
-        const result = await getWorkspaces();
-        if (!result.success) throw new Error(result.error);
-        return result.data as WorkspaceWithCount[];
-      },
-    }),
-    queryClient.prefetchQuery({
-      queryKey: bookmarkKeys.all,
-      queryFn: async () => {
-        const result = await getBookmarks();
-        if (!result.success) throw new Error(result.error);
-        return result.data;
-      },
-    }),
-    queryClient.prefetchQuery({
-      queryKey: profileKeys.byUser(user?.id),
-      queryFn: async () => {
-        const result = await getProfile();
-        if (!result.success) throw new Error(result.error);
-        return result.data?.profile ?? null;
-      },
-    }),
-    queryClient.prefetchQuery({
-      queryKey: tagKeys.byWorkspace(id),
-      queryFn: async () => {
-        const result = await getWorkspaceTagsWithCount(id);
-        if (!result.success) throw new Error(result.error);
-        return result.data as TagWithCount[];
-      },
-    }),
-  ]);
+  // Prefetch only the workspace list (the shell's navigation menu) on the
+  // server so the menu is never blank on a direct visit. Everything else
+  // (bookmarks, tags, profile) is fetched fresh by the client on the frame.
+  await queryClient.prefetchQuery({
+    queryKey: workspaceKeys.byUser(user?.id),
+    queryFn: async () => {
+      const result = await getWorkspaces();
+      if (!result.success) throw new Error(result.error);
+      return result.data as WorkspaceWithCount[];
+    },
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <UserProvider user={user}>
         <main className="min-h-dvh bg-background">
           <Header user={user} />
-          <BookmarkView scope={{ type: "workspace", id }} />
+          <Suspense>
+            <BookmarkView scope={{ type: "workspace", id }} />
+          </Suspense>
           <Suspense>
             <ShareDialogManager />
           </Suspense>
