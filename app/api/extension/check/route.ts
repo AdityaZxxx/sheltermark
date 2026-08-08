@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { logger } from "~/lib/logger";
+import { normalizeUrl } from "~/lib/utils";
 import { createClient } from "~/utils/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -41,11 +42,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ saved: false }, { status: 200 });
     }
 
+    // Match the insert path: stored URLs are normalized, so the raw tab URL
+    // must be normalized before comparing or dupes pre-save are missed.
+    const lookupUrl = normalizeUrl(url);
+
     let query = supabase
       .from("bookmarks")
       .select("id")
       .eq("user_id", user.id)
-      .eq("url", url);
+      .eq("url", lookupUrl);
 
     if (workspaceId) {
       query = query.eq("workspace_id", workspaceId);

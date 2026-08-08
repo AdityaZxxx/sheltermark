@@ -179,6 +179,12 @@ async function readState(): Promise<QueueState> {
   ])) as Partial<QueueState> & Record<string, unknown>;
 
   const items = (raw[STORAGE_KEYS.ITEMS] as QueueItem[] | undefined) ?? [];
+  // Backfill `tags` for items persisted by an older build — the field did not
+  // exist before quick metadata editing, and a missing value must behave
+  // exactly like an empty selection.
+  for (const item of items) {
+    if (!Array.isArray(item.tags)) item.tags = [];
+  }
   const seq = (raw[STORAGE_KEYS.SEQ] as number | undefined) ?? 0;
   const paused = (raw[STORAGE_KEYS.PAUSED] as boolean | undefined) ?? false;
   const notifiedOfflineAt =
@@ -202,6 +208,11 @@ export interface EnqueueInput {
   url: string;
   title: string | null;
   workspaceId: string | null;
+  /**
+   * Tag *names* chosen in the popup. Defaults to [] so the fast flows
+   * (command, context menu, X capture) keep their exact prior payload.
+   */
+  tags?: string[];
   source: SaveEntrySource;
   /**
    * Set when the entry point already attempted an inline POST and it failed
@@ -250,6 +261,7 @@ export async function enqueue(
     url: input.url,
     title: input.title,
     workspaceId: input.workspaceId,
+    tags: input.tags ?? [],
     status: "pending",
     attempts: seeded ? 1 : 0,
     lastAttemptAt: seeded ? now : null,

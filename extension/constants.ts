@@ -7,6 +7,7 @@ export const MESSAGE_TYPES = {
   X_BOOKMARK_CAPTURED: "X_BOOKMARK_CAPTURED",
   CHECK_BOOKMARK: "CHECK_BOOKMARK",
   GET_POPUP: "GET_POPUP",
+  GET_TAGS: "GET_TAGS",
 } as const;
 
 type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
@@ -17,7 +18,12 @@ interface MessageBase {
 
 interface SaveBookmarkMessage extends MessageBase {
   type: typeof MESSAGE_TYPES.SAVE_BOOKMARK;
-  data: { url: string; title?: string | null; workspaceId?: string | null };
+  data: {
+    url: string;
+    title?: string | null;
+    workspaceId?: string | null;
+    tags?: string[];
+  };
 }
 
 interface GetTabInfoMessage extends MessageBase {
@@ -39,12 +45,17 @@ interface GetPopupMessage extends MessageBase {
   data: { url: string; workspaceId: string | null };
 }
 
+interface GetTagsMessage extends MessageBase {
+  type: typeof MESSAGE_TYPES.GET_TAGS;
+}
+
 export type ExtensionMessage =
   | SaveBookmarkMessage
   | GetTabInfoMessage
   | XBookmarkCapturedMessage
   | CheckBookmarkMessage
-  | GetPopupMessage;
+  | GetPopupMessage
+  | GetTagsMessage;
 
 // ------------------- Save queue -------------------
 //
@@ -73,11 +84,14 @@ export interface QueueItem {
 
   // The save intent payload — exactly what POST /bookmark expects. `url` is
   // stored raw; the server is the canonical normalizer. `title` is a hint the
-  // server may override via metadata. `workspaceId` null means the server
-  // resolves the user's default workspace.
+  // server may override via metadata unless the user explicitly set it.
+  // `workspaceId` null means the server resolves the user's default workspace.
+  // `tags` are tag *names* (not ids) so a queued item is self-contained
+  // offline — names resolve against current tag state at apply time.
   url: string;
   title: string | null;
   workspaceId: string | null;
+  tags: string[];
 
   // Retry state.
   status: QueueItemStatus;
@@ -143,4 +157,15 @@ export interface PopupInfo {
   lastWorkspace: string | null;
   alreadySaved: boolean;
   bookmarkId: string | null;
+}
+
+export interface TagWithCount {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface TagsResult {
+  authenticated: boolean;
+  tags?: TagWithCount[];
 }

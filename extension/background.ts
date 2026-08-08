@@ -6,6 +6,8 @@ import {
   type PopupInfo,
   type SaveEntrySource,
   type SaveResult,
+  type TagsResult,
+  type TagWithCount,
   type Workspace,
 } from "./constants.js";
 import {
@@ -58,6 +60,7 @@ const queueHooks: QueueHookContext = {
       url: item.url,
       title: item.title,
       workspaceId: item.workspaceId,
+      tags: item.tags,
     }),
   notifyOfflineQueued: (count) => {
     showNotification(
@@ -138,7 +141,9 @@ async function saveCurrentTabWithNotification(): Promise<void> {
     const lastWorkspace = await getLastWorkspace();
     const outcome = await saveOrEnqueue("command", {
       url: tab.url,
-      title: tab.title ?? null,
+      // Fast flows don't author an explicit title; sending null keeps the
+      // metadata-driven behavior the user had before title precedence flipped.
+      title: null,
       workspaceId: lastWorkspace,
     });
     await handleSaveOutcome(outcome, lastWorkspace);
@@ -193,8 +198,8 @@ chrome.runtime.onMessage.addListener(
     sendResponse: (response?: unknown) => void,
   ) => {
     if (message.type === MESSAGE_TYPES.SAVE_BOOKMARK) {
-      const { url, title, workspaceId } = message.data;
-      saveOrEnqueue("popup", { url, title, workspaceId })
+      const { url, title, workspaceId, tags } = message.data;
+      saveOrEnqueue("popup", { url, title, workspaceId, tags })
         .then((outcome) => sendResponse(saveOutcomeToSaveResult(outcome)))
         .catch((error: Error) =>
           sendResponse({ success: false, error: error.message }),
@@ -230,6 +235,13 @@ chrome.runtime.onMessage.addListener(
       checkBookmark(message.data)
         .then((result) => sendResponse(result))
         .catch(() => sendResponse({ saved: false }));
+      return true;
+    }
+
+    if (message.type === MESSAGE_TYPES.GET_TAGS) {
+      getTags()
+        .then((tags) => sendResponse({ authenticated: true, tags }))
+        .catch(() => sendResponse({ authenticated: false, tags: [] }));
       return true;
     }
 
@@ -312,6 +324,7 @@ interface SaveBookmarkParams {
   url: string;
   title?: string | null;
   workspaceId?: string | null;
+  tags?: string[];
 }
 
 /**
@@ -326,6 +339,7 @@ async function postBookmarkRaw({
   url,
   title,
   workspaceId,
+  tags,
 }: SaveBookmarkParams): Promise<PostOutcome> {
   const baseUrl = await getBaseUrl();
   let response: Response;
@@ -338,6 +352,7 @@ async function postBookmarkRaw({
         url,
         title: title ?? null,
         workspace_id: workspaceId,
+        tags: tags ?? [],
       }),
     });
   } catch (err) {
@@ -398,6 +413,7 @@ async function saveOrEnqueue(
           url: params.url,
           title: params.title ?? null,
           workspaceId: params.workspaceId ?? null,
+          tags: params.tags ?? [],
           source,
         },
         { notifyOfflineQueued: () => undefined },
@@ -414,6 +430,7 @@ async function saveOrEnqueue(
           url: params.url,
           title: params.title ?? null,
           workspaceId: params.workspaceId ?? null,
+          tags: params.tags ?? [],
           source,
         },
         { notifyOfflineQueued: () => undefined },
@@ -433,6 +450,7 @@ async function saveOrEnqueue(
       url: params.url,
       title: params.title ?? null,
       workspaceId: params.workspaceId ?? null,
+      tags: params.tags ?? [],
       source,
       seedFailedAttempt: {
         status: outcome.status,
@@ -572,6 +590,21 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
   const data = (await response.json()) as GetWorkspacesResult;
   if (data.workspaces) sessionCache.workspaces = data.workspaces;
   return data;
+}
+
+/**
+ * Tag suggestions for the popup typeahead. Fetched from the background (which
+ * outlives the popup) so suggestions don't abort if the popup closes early,
+ * and cached for the session like workspaces.
+ */
+async function getTags(): Promise<TagWithCount[]> {
+  const baseUrl = await getBaseUrl();
+  const response = await fetch(`${baseUrl}/api/extension/tags`, {
+    credentials: "include",
+  });
+  if (!response.ok) return [];
+  const data = (await response.json()) as TagsResult;
+  return data.tags ?? [];
 }
 
 async function getPopupInfo({

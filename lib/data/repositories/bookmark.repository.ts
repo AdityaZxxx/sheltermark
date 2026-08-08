@@ -4,6 +4,7 @@ import type { ActionResult } from "~/lib/action-result";
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
 import type { DbClient } from "~/lib/data/db-client";
+import { upsertTag } from "~/lib/data/repositories/tag.repository";
 import { fetchMetadata } from "~/lib/metadata";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import {
@@ -23,7 +24,7 @@ import {
   generateAiTitleSchema,
 } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
+import type { Tag, Tag as TagRow } from "~/lib/schemas/tag.schema";
 import { resolveAndReplaceBookmarkTags } from "~/lib/services/tag.service";
 import { normalizeUrl } from "~/lib/utils";
 
@@ -31,17 +32,23 @@ type InsertBookmarkParams = {
   url: string;
   workspaceId?: string | null;
   clientTitle?: string | null;
+  /**
+   * Tag *names* to create-and-link atomically at insert time. Empty/absent is
+   * a no-op so fast flows (action shortcut, context menu, X capture) behave
+   * byte-identically to before.
+   */
+  tagNames?: string[];
 };
 
 type InsertBookmarkResult =
-  | { success: true; data: Bookmark }
+  | { success: true; data: Bookmark; tags: TagRow[] }
   | { success: false; duplicate: true }
   | { success: false; duplicate?: false; error: string };
 
 export async function insertBookmark(
   supabase: DbClient,
   userId: string,
-  { url, workspaceId, clientTitle }: InsertBookmarkParams,
+  { url, workspaceId, clientTitle, tagNames }: InsertBookmarkParams,
 ): Promise<InsertBookmarkResult> {
   const normalizedUrl = normalizeUrl(url);
 
@@ -67,7 +74,13 @@ export async function insertBookmark(
     return { success: false, duplicate: true };
   }
 
-  const title = metadata?.title ?? clientTitle ?? "Untitled";
+  // Explicit user-supplied title wins over fetched metadata; both fall back
+  // to "Untitled". (Previously metadata always won, which silently ignored
+  // any title the client sent.)
+  const title =
+    clientTitle && clientTitle.trim().length > 0
+      ? clientTitle
+      : (metadata?.title ?? "Untitled");
 
   const { data, error } = await supabase
     .from("bookmarks")
@@ -88,7 +101,51 @@ export async function insertBookmark(
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: data as Bookmark };
+  const bookmark = data as Bookmark;
+
+  // Apply optional tag names atomically-ish: resolve-or-create each by name
+  // (reusing existing primitives, not a parallel tag system), then link.
+  // Post-insert failures leave the bookmark saved but return an error so the
+  // caller never reports a broken partial state as success.
+  if (tagNames && tagNames.length > 0) {
+    const deduped = dedupeTagNames(tagNames);
+    const resolved: TagRow[] = [];
+    for (const name of deduped) {
+      const upserted = await upsertTag(
+        supabase as unknown as SupabaseClient,
+        userId,
+        name,
+      );
+      if (!upserted.success) return { success: false, error: upserted.error };
+      resolved.push(upserted.data);
+    }
+    if (resolved.length > 0) {
+      const { error: linkError } = await supabase.from("bookmark_tags").insert(
+        resolved.map((tag) => ({
+          bookmark_id: bookmark.id,
+          tag_id: tag.id,
+        })),
+      );
+      if (linkError) return { success: false, error: linkError.message };
+    }
+    return { success: true, data: bookmark, tags: resolved };
+  }
+
+  return { success: true, data: bookmark, tags: [] };
+}
+
+/** Case-insensitive, whitespace-trimmed dedup matching the citext collation. */
+function dedupeTagNames(names: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of names) {
+    const name = raw.trim();
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out;
 }
 
 export async function getBookmarks(

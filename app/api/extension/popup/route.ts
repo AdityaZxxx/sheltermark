@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { logger } from "~/lib/logger";
+import { normalizeUrl } from "~/lib/utils";
 import { createClient } from "~/utils/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -73,11 +74,15 @@ async function checkBookmark(
     return { saved: false, bookmarkId: null };
   }
 
+  // Stored URLs are normalized on insert; normalize here too or the
+  // "already saved" check misses dupes for the raw tab URL.
+  const lookupUrl = normalizeUrl(url);
+
   const { data, error } = await supabase
     .from("bookmarks")
     .select("id")
     .eq("user_id", userId)
-    .eq("url", url)
+    .eq("url", lookupUrl)
     .eq("workspace_id", workspaceId)
     .maybeSingle();
 
