@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
+import { getBaseUrl } from "~/lib/utils";
 import { createClient } from "~/utils/supabase/server";
 
 const signupSchema = z.object({
@@ -28,9 +29,10 @@ export async function signupWithEmail(
 
   const { name, email, password } = validated.data;
 
+  const baseUrl = getBaseUrl();
   const redirectUrl = next
-    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`
-    : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/dashboard`;
+    ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
+    : `${baseUrl}/auth/callback?next=/dashboard`;
 
   const {
     data: { user, session },

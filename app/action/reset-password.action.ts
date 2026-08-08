@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
+import { getBaseUrl } from "~/lib/utils";
 import { createClient } from "~/utils/supabase/server";
 
 const resetPasswordSchema = z.object({
@@ -30,7 +31,7 @@ export async function resetPasswordForEmail(
   const { error: resetError } = await supabase.auth.resetPasswordForEmail(
     email,
     {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
+      redirectTo: `${getBaseUrl()}/auth/callback?next=/reset-password`,
     },
   );
 
