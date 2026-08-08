@@ -1,25 +1,27 @@
 "use client";
 
 import {
+  HashIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
-  TagIcon,
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { TagDeleteDialog } from "~/components/bookmark/tag-delete-dialog";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "~/components/ui/dialog";
 import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
+import { formatCount } from "~/lib/utils";
 
 interface TagManageDialogProps {
   open: boolean;
@@ -38,11 +40,10 @@ export function TagManageDialog({
   const renameTag = useRenameTag(user?.id);
 
   const [search, setSearch] = useState("");
-  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
-    null,
-  );
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [deletingTag, setDeletingTag] = useState<TagWithCount | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const totalUsages = useMemo(
@@ -56,269 +57,269 @@ export function TagManageDialog({
     return tags.filter((t) => t.name.toLowerCase().includes(q));
   }, [tags, search]);
 
-  const startRenaming = (tag: TagWithCount) => {
-    setEditingTagId(tag.id);
+  // Focus the rename input when a row enters edit mode.
+  useEffect(() => {
+    if (editingId) {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }
+  }, [editingId]);
+
+  function startRename(tag: TagWithCount) {
+    setEditingId(tag.id);
     setEditingName(tag.name);
-    setConfirmingDeleteId(null);
-    // Double rAF, not one: the pencil unmounts when editingTagId flips, focus briefly
-    // lands on document.body, and Base UI's FloatingFocusManager (`restoreFocus:"popup"`)
-    // queues an rAF to steal focus back to the dialog container. A single rAF runs
-    // before that restore, so the input focuses then immediately blurs (onBlur →
-    // commitRename fires before the user sees anything). The second rAF schedules our
-    // focus after the restore, so the input keeps focus.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        editInputRef.current?.focus();
-      });
-    });
-  };
+    setInlineError(null);
+  }
 
-  const commitRename = () => {
-    const currentId = editingTagId;
-    if (!currentId) return;
+  function cancelRename() {
+    setEditingId(null);
+    setEditingName("");
+    setInlineError(null);
+  }
 
+  function commitRename(e?: React.FormEvent<HTMLFormElement>) {
+    e?.preventDefault();
+    if (!editingId) return;
     const trimmed = editingName.trim();
-    if (!trimmed || trimmed === tags.find((t) => t.id === currentId)?.name) {
-      setEditingTagId(null);
-      setEditingName("");
+    const original = tags.find((t) => t.id === editingId)?.name;
+    if (!trimmed || trimmed === original) {
+      cancelRename();
       return;
     }
-
     renameTag.mutate(
-      { tagId: currentId, name: trimmed },
+      { tagId: editingId, name: trimmed },
       {
-        onSuccess: () => {
-          setEditingTagId(null);
-          setEditingName("");
+        onSuccess: (result) => {
+          if (!result) return;
+          if (result.success) {
+            cancelRename();
+          } else {
+            setInlineError(result.error || "Unable to rename tag.");
+          }
         },
         onError: () => {
-          toast.error("Failed to rename tag. Please try again.");
+          setInlineError("Unable to rename tag. Check your connection.");
         },
       },
     );
-  };
+  }
 
-  const cancelRenaming = () => {
-    setEditingTagId(null);
-    setEditingName("");
-  };
-
-  const handleDeleteConfirm = (tagId: string) => {
+  function handleDeleteConfirm(tagId: string) {
     deleteTag.mutate(
       { tagId },
       {
-        onSuccess: () => {
-          setConfirmingDeleteId(null);
-        },
-        onError: () => {
-          toast.error("Failed to delete tag. Please try again.");
+        onSuccess: (result) => {
+          if (result?.success) {
+            setDeletingTag(null);
+          }
         },
       },
     );
-  };
+  }
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setEditingTagId(null);
-      setEditingName("");
-      setConfirmingDeleteId(null);
+  function handleOpenChange(next: boolean) {
+    if (!next) {
       setSearch("");
+      cancelRename();
+      setDeletingTag(null);
     }
-    onOpenChange(open);
-  };
+    onOpenChange(next);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md gap-0 p-0" showCloseButton={false}>
-        <div className="flex items-center justify-between p-4 pb-3">
-          <div>
-            <DialogTitle className="text-sm">Tags</DialogTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {tags.length} tag{tags.length !== 1 ? "s" : ""} in workspace
-              {totalUsages > 0 && ` · ${totalUsages} uses`}
-            </p>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent
+          className="sm:max-w-sm gap-0 p-0"
+          showCloseButton={false}
+        >
+          <div className="flex items-center justify-between px-3 pt-3 pb-1">
+            <div>
+              <DialogTitle className="text-sm">Tags</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                {formatCount(tags.length, "tag")} in workspace
+                {totalUsages > 0 && ` · ${formatCount(totalUsages, "use")}`}
+              </DialogDescription>
+            </div>
+            <DialogClose
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground active:scale-[0.97] transition-[colors,transform] duration-100 ease-out"
+                />
+              }
+            >
+              <XIcon className="size-3.5" aria-hidden="true" />
+              <span className="sr-only">Close</span>
+            </DialogClose>
           </div>
-          <DialogClose
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Close"
-                className="text-muted-foreground active:scale-[0.97] transition-[colors,transform] duration-100 ease-out"
+
+          <div className="px-3 pt-1 pb-2">
+            <div className="relative">
+              <MagnifyingGlassIcon
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60 pointer-events-none"
+                aria-hidden="true"
               />
-            }
-          >
-            <XIcon className="size-3.5" aria-hidden="true" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
-        </div>
-
-        <div className="px-4 pb-2">
-          <div className="relative">
-            <MagnifyingGlassIcon
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60 pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search tags…"
-              className="w-full h-9 rounded-md border border-input bg-input/20 pl-7 pr-2.5 text-sm outline-none placeholder:text-muted-foreground/60 transition-colors focus:border-ring focus:ring-1 focus:ring-ring/30"
-            />
+              <label htmlFor="tag-search" className="sr-only">
+                Search tags
+              </label>
+              <input
+                id="tag-search"
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tags…"
+                className="w-full h-9 rounded-md border border-input bg-input/20 pl-7 pr-2.5 text-sm outline-none placeholder:text-muted-foreground/60 transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="overflow-y-auto max-h-[50vh] px-1 py-1">
-          {isLoading && (
-            <p className="text-xs text-muted-foreground py-8 text-center">
-              Loading tags…
-            </p>
-          )}
+          <div className="overflow-y-auto max-h-[min(50vh,20rem)] px-3 pb-3">
+            {isLoading && (
+              <p
+                aria-live="polite"
+                className="text-xs text-muted-foreground py-8 text-center"
+              >
+                Loading tags…
+              </p>
+            )}
 
-          {!isLoading && filtered.length === 0 && (
-            <p className="text-xs text-muted-foreground py-8 text-center">
-              {search
-                ? "No tags match your search"
-                : "No tags in this workspace"}
-            </p>
-          )}
+            {!isLoading && filtered.length === 0 && (
+              <div className="py-6 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {search
+                    ? `No tags for “${search.trim()}”`
+                    : "No tags in this workspace"}
+                </p>
+                {search ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="mt-2 h-8 rounded-md px-3 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    Clear search
+                  </button>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground/80">
+                    Tags group your bookmarks. Add one from any bookmark.
+                  </p>
+                )}
+              </div>
+            )}
 
-          {!isLoading &&
-            filtered.map((tag) => {
-              if (confirmingDeleteId === tag.id) {
+            {!isLoading &&
+              filtered.map((tag) => {
+                if (editingId === tag.id) {
+                  return (
+                    <form
+                      key={tag.id}
+                      onSubmit={commitRename}
+                      className="flex items-center gap-2 rounded-md px-2 py-2 bg-muted/60 shadow-sm ring-1 ring-border"
+                    >
+                      <HashIcon
+                        className="size-3 shrink-0 text-muted-foreground/40"
+                        aria-hidden="true"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <label htmlFor="tag-rename" className="sr-only">
+                          Tag name
+                        </label>
+                        <input
+                          id="tag-rename"
+                          ref={editInputRef}
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelRename();
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Commit when focus leaves the row entirely; skip
+                            // when focus moves to the in-row Cancel button.
+                            const next = e.relatedTarget as HTMLElement | null;
+                            if (!next || !next.closest("form")) {
+                              commitRename();
+                            }
+                          }}
+                          className="min-w-0 w-full h-6 border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/60"
+                          maxLength={50}
+                          autoComplete="off"
+                          aria-invalid={inlineError ? true : undefined}
+                          aria-describedby={
+                            inlineError ? `tag-error-${tag.id}` : undefined
+                          }
+                        />
+                        {inlineError && (
+                          <p
+                            id={`tag-error-${tag.id}`}
+                            role="alert"
+                            className="mt-1 text-destructive text-xs"
+                          >
+                            {inlineError}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={cancelRename}
+                        aria-label="Cancel rename"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <XIcon className="size-3" aria-hidden="true" />
+                      </button>
+                    </form>
+                  );
+                }
+
                 return (
                   <div
                     key={tag.id}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-destructive/10"
+                    className="group flex items-center gap-2 rounded-md px-2 py-2 transition-[background-color,box-shadow] duration-150 ease-out hover-only:hover:bg-muted/50"
                   >
-                    <span className="text-xs text-foreground flex-1 min-w-0">
-                      Delete{" "}
-                      <span className="font-medium">
-                        &ldquo;{tag.name}&rdquo;
-                      </span>
-                      ?
-                      {tag.count > 0 && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          Removes it from{" "}
-                          <span className="font-medium text-foreground">
-                            {tag.count === 1
-                              ? "1 bookmark"
-                              : `${tag.count} bookmarks`}
-                          </span>
-                          .
-                        </span>
-                      )}
-                    </span>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setConfirmingDeleteId(null)}
-                        className="h-8 rounded-md px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground active:scale-[0.97] transition-[colors,transform] duration-100 ease-out"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteConfirm(tag.id)}
-                        disabled={deleteTag.isPending}
-                        className="h-8 rounded-md px-2.5 text-xs font-medium text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out disabled:pointer-events-none disabled:opacity-50"
-                      >
-                        {deleteTag.isPending ? "Deleting…" : "Delete"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-
-              const isEditing = editingTagId === tag.id;
-
-              return (
-                <div
-                  key={tag.id}
-                  className={`group flex items-center gap-3 rounded-lg px-4 py-2.5 transition-[background-color,box-shadow] duration-150 ease-out ${
-                    isEditing
-                      ? "bg-muted/60 -mx-1 px-5 shadow-sm ring-1 ring-border"
-                      : "hover-only:hover:bg-muted/50"
-                  }`}
-                >
-                  <TagIcon
-                    className="size-3 shrink-0 text-muted-foreground/40"
-                    aria-hidden="true"
-                  />
-
-                  {isEditing ? (
-                    <input
-                      ref={editInputRef}
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onBlur={(e) => {
-                        // Guard: skip committing if focus moved to an in-row sibling
-                        // (mousedown on a sibling button fires onBlur before the click
-                        // event reaches React — prevents the rename form from closing
-                        // silently on the first click).
-                        const related = e.relatedTarget as HTMLElement | null;
-                        if (!related?.closest("[class*='group']")) {
-                          commitRename();
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          commitRename();
-                        } else if (e.key === "Escape") {
-                          e.preventDefault();
-                          cancelRenaming();
-                        }
-                      }}
-                      className="min-w-0 flex-1 h-6 border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/60"
-                      maxLength={50}
-                      autoComplete="off"
+                    <HashIcon
+                      className="size-3 shrink-0 text-muted-foreground/40"
+                      aria-hidden="true"
                     />
-                  ) : (
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                       {tag.name}
                     </span>
-                  )}
+                    <span className="text-xs text-muted-foreground/60 shrink-0 tabular-nums">
+                      {formatCount(tag.count, "use")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => startRename(tag)}
+                      aria-label={`Rename ${tag.name}`}
+                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <PencilSimpleIcon className="size-3" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingTag(tag)}
+                      aria-label={`Delete ${tag.name}`}
+                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <TrashIcon className="size-3" aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-                  <span className="text-xs text-muted-foreground/60 shrink-0 tabular-nums">
-                    {tag.count === 1 ? "1 use" : `${tag.count} uses`}
-                  </span>
-
-                  {!isEditing && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => startRenaming(tag)}
-                        aria-label={`Rename ${tag.name}`}
-                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-0.5"
-                      >
-                        <PencilSimpleIcon
-                          className="size-3"
-                          aria-hidden="true"
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setConfirmingDeleteId(tag.id);
-                          setEditingTagId(null);
-                        }}
-                        aria-label={`Delete ${tag.name}`}
-                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mr-1"
-                      >
-                        <TrashIcon className="size-3" aria-hidden="true" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-
-          {/* Bottom spacer for scroll feel */}
-          <div className="h-1" />
-        </div>
-      </DialogContent>
-    </Dialog>
+      <TagDeleteDialog
+        tag={deletingTag}
+        onOpenChange={(open) => {
+          if (!open) setDeletingTag(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        isPending={deleteTag.isPending}
+      />
+    </>
   );
 }
