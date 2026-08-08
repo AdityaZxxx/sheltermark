@@ -159,7 +159,7 @@ export function useRenameTag(_userId: string | undefined) {
     queryKey: tagKeys.all,
     dependentQueryKeys: renameTagDependentKeys(),
     successMessage: "Tag renamed",
-    errorMessage: "Failed to rename tag. Please try again.",
+    errorMessage: "Unable to rename tag.",
     prepareOptimisticData: (oldData, { tagId, name }) => {
       return optimisticUpdate<Tag>(oldData, tagId, (t) => ({ ...t, name }));
     },
@@ -175,7 +175,7 @@ export function useDeleteTag(_userId: string | undefined) {
     queryKey: tagKeys.all,
     dependentQueryKeys: deleteTagDependentKeys(),
     successMessage: "Tag deleted",
-    errorMessage: "Failed to delete tag. Please try again.",
+    errorMessage: "Unable to delete tag.",
     prepareOptimisticData: (oldData, { tagId }) => {
       return optimisticRemove<Tag>(oldData, tagId);
     },

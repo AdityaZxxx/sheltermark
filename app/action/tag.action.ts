@@ -75,6 +75,21 @@ export async function renameTag(
   input: RenameTagInput,
 ): Promise<ActionResult<Tag>> {
   const { user, supabase } = await requireAuth();
+
+  // Friendly preflight: surface a clear duplicate-name error instead of a
+  // raw unique-violation message. The DB constraint remains the source of
+  // truth if this race misses.
+  const existing = await getUserTagsRepo(supabase, user.id);
+  if (existing.success) {
+    const candidate = input.name.trim().toLowerCase();
+    const duplicate = existing.data.some(
+      (t) => t.id !== input.tagId && t.name.toLowerCase() === candidate,
+    );
+    if (duplicate) {
+      return { success: false, error: "A tag with this name already exists" };
+    }
+  }
+
   return renameTagRepo(supabase, user.id, input);
 }
 
