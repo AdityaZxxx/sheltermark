@@ -91,7 +91,7 @@ export function BookmarkContextMenu({
               Move to...
             </ContextMenuSubTrigger>
             <ContextMenuSubContent>
-              <ContextMenuGroup>
+              <ContextMenuGroup className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
                 {availableWorkspaces.map((ws) => (
                   <ContextMenuItem
                     key={ws.id}
