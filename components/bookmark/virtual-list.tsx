@@ -62,7 +62,7 @@ export function VirtualList<T extends { id: string }>({
       <div
         ref={parentRef}
         data-virtual-scroll
-        className="scroll-fade scroll-fade"
+        className="scroll-fade"
         style={{
           height: listHeight > 0 ? `${listHeight}px` : "auto",
           overflowY: "auto",
