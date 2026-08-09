@@ -207,7 +207,7 @@ export function SettingsProfileTab({
       }}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <FieldGroup className="scroll-fade flex-1 overflow-y-auto px-4 pb-4">
+      <FieldGroup className="scroll-fade flex-1 overflow-y-auto px-4 py-4">
         <form.Field name="is_public">
           {(field) => (
             <Field orientation="horizontal">

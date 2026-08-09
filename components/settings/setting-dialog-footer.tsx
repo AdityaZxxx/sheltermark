@@ -18,7 +18,7 @@ export function SettingsDialogFooter({
   onSubmit,
 }: SettingsDialogFooterProps) {
   return (
-    <DialogFooter className="shrink-0 border-t bg-background px-4 py-3">
+    <DialogFooter className="shrink-0 border-t bg-background px-4 py-3 flex-row justify-end">
       <Button
         type="button"
         variant="outline"
