@@ -13,7 +13,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!components/ui"
+      "!components/ui",
+      "!**/__tests__/fixtures"
     ]
   },
   "formatter": {
