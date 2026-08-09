@@ -1,4 +1,5 @@
 import { parseCSVLine } from "~/lib/import/csv";
+import { parseNetscapeHTML } from "~/lib/import/netscape";
 
 export interface ParsedBookmark {
   id?: string;
@@ -8,17 +9,26 @@ export interface ParsedBookmark {
   og_image_url?: string;
   workspaceName?: string;
   workspaceId?: string;
+  /**
+   * Browser-folder breadcrumb, e.g. `["Bookmarks bar", "Programming", "React"]`.
+   * Present only for Netscape imports. Used for preview filtering and
+   * folder-tree display; never persisted. See ADR-0005.
+   */
+  folderPath?: string[];
 }
 
 export type ParseResult =
   | { success: true; bookmarks: ParsedBookmark[] }
   | { success: false; error: string };
 
+export type ImportFileType = "json" | "csv" | "netscape";
+
 export function parseImportFile(
   content: string,
-  fileType: "json" | "csv",
+  fileType: ImportFileType,
 ): ParseResult {
   if (fileType === "json") return parseJSON(content);
+  if (fileType === "netscape") return parseNetscapeHTML(content);
   return parseCSV(content);
 }
 

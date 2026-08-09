@@ -25,6 +25,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const {
     step,
     file,
+    fileType,
+    detectedFormat,
     preview,
     progress,
     result,
@@ -32,7 +34,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     newWorkspaceName,
     duplicateStrategy,
     isCheckingDuplicates,
+    isParsing,
     isNewWorkspace,
+    folderTree,
+    selectedFolders,
+    selectedCount,
     fileInputRef,
     handleFileChange,
     handleImport,
@@ -41,7 +47,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     setTargetWorkspaceId,
     setNewWorkspaceName,
     setDuplicateStrategy,
+    toggleFolder,
   } = useImportDialog();
+
+  const isNetscape = fileType === "netscape";
+  const importDisabled = isNetscape && selectedCount === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,7 +59,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <DialogHeader>
           <DialogTitle>Import Bookmarks</DialogTitle>
           <DialogDescription>
-            Import bookmarks from a JSON or CSV file.
+            Import bookmarks from a JSON, CSV, or browser bookmarks file
+            (Chrome, Firefox, Edge, Safari).
           </DialogDescription>
         </DialogHeader>
 
@@ -57,6 +68,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           <UploadStep
             file={file}
             fileInputRef={fileInputRef}
+            detectedFormat={detectedFormat}
+            isParsing={isParsing}
             onFileChange={handleFileChange}
           />
         )}
@@ -69,9 +82,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             newWorkspaceName={newWorkspaceName}
             duplicateStrategy={duplicateStrategy}
             isNewWorkspace={isNewWorkspace}
+            isNetscape={isNetscape}
+            folderTree={folderTree}
+            selectedFolders={selectedFolders}
+            selectedCount={selectedCount}
             onWorkspaceChange={(value) => setTargetWorkspaceId(value as string)}
             onWorkspaceNameChange={setNewWorkspaceName}
             onDuplicateStrategyChange={setDuplicateStrategy}
+            onToggleFolder={toggleFolder}
           />
         )}
 
@@ -93,9 +111,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               </Button>
               <Button
                 onClick={handleImport}
-                disabled={isNewWorkspace ? !newWorkspaceName.trim() : false}
+                disabled={
+                  importDisabled ||
+                  (isNewWorkspace ? !newWorkspaceName.trim() : false)
+                }
               >
-                Import
+                {importDisabled
+                  ? "Select at least one folder"
+                  : `Import ${selectedCount > 0 ? selectedCount : ""}`.trim()}
               </Button>
             </>
           )}

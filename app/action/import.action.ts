@@ -8,17 +8,21 @@ import {
   createWorkspaceRaw,
   getDefaultWorkspace,
 } from "~/lib/data/repositories/workspace.repository";
+import { filterByFolders } from "~/lib/import/folder-filter";
+import type { ImportFileType } from "~/lib/import/parsers";
 import { parseImportFile } from "~/lib/import/parsers";
 import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 import { importOptionsSchema } from "~/lib/schemas/profile.schema";
 
 export async function previewImport(
   fileContent: string,
-  fileType: "json" | "csv",
+  fileType: ImportFileType,
   options?: {
     targetWorkspaceId?: string | null;
     createWorkspace?: boolean;
     newWorkspaceName?: string;
+    /** Browser-import folder filter. Empty/undefined = all folders. */
+    folderPaths?: string[];
   },
 ): Promise<
   ActionResult<{
@@ -33,7 +37,16 @@ export async function previewImport(
     if (!parsed.success) {
       return { success: false, error: parsed.error ?? "Parse error" };
     }
-    const bookmarksFromParse = parsed.bookmarks ?? [];
+    const rawBookmarks = parsed.bookmarks ?? [];
+
+    // Apply browser-import folder filter. The client always sends
+    // folderPaths for Netscape imports (possibly empty if user deselected
+    // everything), so we apply the filter unconditionally for that case.
+    const applyFilter = fileType === "netscape";
+    const folderSet = new Set(options?.folderPaths ?? []);
+    const bookmarksFromParse = applyFilter
+      ? filterByFolders(rawBookmarks, folderSet)
+      : rawBookmarks;
 
     const { user, supabase } = await requireAuth();
 
@@ -83,7 +96,7 @@ type ImportResult = { imported: number; skipped: number; errors: string[] };
 
 export async function importBookmarks(
   fileContent: string,
-  fileType: "json" | "csv",
+  fileType: ImportFileType,
   options: ImportOptionsInput,
 ): Promise<ActionResult<ImportResult>> {
   const validated = importOptionsSchema.safeParse(options);
@@ -96,6 +109,20 @@ export async function importBookmarks(
   const parsed = parseImportFile(fileContent, fileType);
   if (!parsed.success) {
     return { success: false, error: parsed.error ?? "Parse error" };
+  }
+
+  // Apply browser-import folder filter unconditionally for Netscape.
+  const folderSet = new Set(validated.data.folderPaths ?? []);
+  const bookmarksToImport =
+    fileType === "netscape"
+      ? filterByFolders(parsed.bookmarks, folderSet)
+      : parsed.bookmarks;
+
+  if (bookmarksToImport.length === 0) {
+    return {
+      success: true,
+      data: { imported: 0, skipped: 0, errors: [] },
+    };
   }
 
   const { user, supabase } = await requireAuth();
@@ -136,7 +163,7 @@ export async function importBookmarks(
     supabase as unknown as DbClient,
     user.id,
     targetWorkspaceId ?? null,
-    parsed.bookmarks,
+    bookmarksToImport,
     {
       duplicateStrategy: validated.data.duplicateStrategy,
     },

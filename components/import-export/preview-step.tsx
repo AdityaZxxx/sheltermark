@@ -13,7 +13,9 @@ import {
 } from "~/components/ui/select";
 import type { PreviewData } from "~/hooks/use-import-dialog";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import type { FolderNode } from "~/lib/import/folder-filter";
 import { cn, getPastelColor } from "~/lib/utils";
+import { FolderTree } from "./folder-tree";
 
 interface PreviewStepProps {
   preview: PreviewData;
@@ -22,9 +24,14 @@ interface PreviewStepProps {
   newWorkspaceName: string;
   duplicateStrategy: "skip" | "replace";
   isNewWorkspace: boolean;
+  isNetscape: boolean;
+  folderTree: FolderNode[];
+  selectedFolders: Set<string>;
+  selectedCount: number;
   onWorkspaceChange: (value: string | null) => void;
   onWorkspaceNameChange: (value: string) => void;
   onDuplicateStrategyChange: (value: "skip" | "replace") => void;
+  onToggleFolder: (path: string[]) => void;
 }
 
 export function PreviewStep({
@@ -34,11 +41,23 @@ export function PreviewStep({
   newWorkspaceName,
   duplicateStrategy,
   isNewWorkspace,
+  isNetscape,
+  folderTree,
+  selectedFolders,
+  selectedCount,
   onWorkspaceChange,
   onWorkspaceNameChange,
   onDuplicateStrategyChange,
+  onToggleFolder,
 }: PreviewStepProps) {
   const { workspaces } = useWorkspaces();
+
+  const totalCount = isNetscape
+    ? folderTree.reduce(
+        (sum, f) => sum + (f.path.length === 0 ? f.directCount : 0),
+        0,
+      )
+    : preview.totalBookmarks;
 
   return (
     <div className="flex flex-col gap-4 py-4">
@@ -46,6 +65,10 @@ export function PreviewStep({
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Total bookmarks</span>
           <span className="font-medium">{preview.totalBookmarks}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">After folder filter</span>
+          <span className="font-medium">{preview.validBookmarks}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Potential duplicates</span>
@@ -57,11 +80,26 @@ export function PreviewStep({
             )}
           </span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Workspaces in file</span>
-          <span className="font-medium">{preview.workspaces.length}</span>
-        </div>
+        {!isNetscape && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Workspaces in file</span>
+            <span className="font-medium">{preview.workspaces.length}</span>
+          </div>
+        )}
       </div>
+
+      {isNetscape && folderTree.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Folders</Label>
+          <FolderTree
+            folders={folderTree}
+            selectedFolders={selectedFolders}
+            selectedCount={selectedCount}
+            totalCount={totalCount || preview.totalBookmarks}
+            onToggle={onToggleFolder}
+          />
+        </div>
+      )}
 
       <div className="space-y-3">
         <Label className="text-xs font-medium">Import to workspace</Label>

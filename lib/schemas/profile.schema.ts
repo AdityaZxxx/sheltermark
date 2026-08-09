@@ -88,6 +88,14 @@ export const importOptionsSchema = z.object({
   duplicateStrategy: z.enum(["skip", "replace"]),
   createWorkspace: z.boolean().optional(),
   newWorkspaceName: z.string().min(1).max(35).optional(),
+  /**
+   * Optional folder-path filter for browser (Netscape) imports. Each entry
+   * is a folder breadcrumb joined by NUL (`\u0000`). When provided, only
+   * bookmarks whose `folderPath` matches an allowed entry (or has an
+   * ancestor matching one) are imported. Empty/undefined = no filter.
+   * See ADR-0005.
+   */
+  folderPaths: z.array(z.string()).optional(),
 });
 
 export type Profile = z.infer<typeof profileSchema>;
