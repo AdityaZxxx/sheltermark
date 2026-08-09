@@ -34,9 +34,7 @@ export function TagDeleteDialog({
           <AlertDialogDescription>
             {tag && (
               <>
-                <span className="font-medium text-foreground">
-                  &ldquo;{tag.name}&rdquo;
-                </span>{" "}
+                <span className="font-medium text-foreground">#{tag.name}</span>{" "}
                 is used on{" "}
                 {tag.count === 0
                   ? "your tags"
