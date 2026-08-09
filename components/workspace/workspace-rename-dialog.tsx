@@ -55,7 +55,7 @@ export function WorkspaceRenameDialog({
             <Label htmlFor="workspace-name">Name</Label>
             <Input
               id="workspace-name"
-              placeholder="Enter workspace name"
+              placeholder="e.g. Research, Design, Inbox"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {

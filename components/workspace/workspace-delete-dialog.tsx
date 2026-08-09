@@ -34,7 +34,7 @@ export function WorkspaceDeleteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isDefault ? "Can’t delete workspace" : "Trash workspace"}
+            {isDefault ? "Can’t delete workspace" : "Trash Workspace"}
           </DialogTitle>
 
           <DialogDescription>
@@ -52,8 +52,8 @@ export function WorkspaceDeleteDialog({
                 <span className="font-medium text-foreground">
                   “{workspaceName}”
                 </span>{" "}
-                to trash? All bookmarks in this workspace will also be moved to
-                trash. You can restore them later.
+                to trash? All bookmarks in it go too. You can restore them from
+                Trash.
               </>
             )}
           </DialogDescription>
@@ -61,7 +61,8 @@ export function WorkspaceDeleteDialog({
 
         {error && !isDefault && (
           <p className="text-sm text-destructive">
-            Something went wrong. Please try again.
+            Unable to trash workspace. Try again, or refresh if it keeps
+            failing.
           </p>
         )}
 
