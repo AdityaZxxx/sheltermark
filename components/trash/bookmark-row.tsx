@@ -2,11 +2,14 @@
 
 import {
   ArrowBendUpLeftIcon,
+  ArrowSquareOutIcon,
+  DotsThreeIcon,
   GlobeIcon,
   SelectionPlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { ProgressiveImage } from "~/components/progressive-image";
+import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import {
   ContextMenu,
@@ -15,6 +18,13 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { formatRelativeTime } from "~/lib/format";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { cn, safeDomain } from "~/lib/utils";
@@ -96,28 +106,80 @@ export function BookmarkRow({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        <button
-          type="button"
-          className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:w-auto sm:px-2"
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Restore"
+          aria-label={`Restore ${bookmark.title || "bookmark"}`}
+          className="hidden sm:inline-flex"
           onClick={(e) => {
             e.stopPropagation();
             onRestore(bookmark.id);
           }}
-          title="Restore"
         >
           <ArrowBendUpLeftIcon className="size-4" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex size-7 items-center justify-center rounded-md text-destructive transition-colors hover:bg-destructive/10"
+        </Button>
+        <Button
+          variant="destructive"
+          size="icon"
+          title="Delete forever"
+          aria-label={`Delete ${bookmark.title || "bookmark"} forever`}
+          className="hidden sm:inline-flex"
           onClick={(e) => {
             e.stopPropagation();
             onPermanentDelete(bookmark.id);
           }}
-          title="Delete forever"
         >
           <TrashIcon className="size-4" />
-        </button>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Actions for ${bookmark.title || "bookmark"}`}
+                className="inline-flex sm:hidden"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              />
+            }
+          >
+            <DotsThreeIcon className="size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onRestore(bookmark.id);
+              }}
+            >
+              <ArrowBendUpLeftIcon />
+              Restore
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPermanentDelete(bookmark.id);
+              }}
+            >
+              <TrashIcon />
+              Delete forever
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(bookmark.url, "_blank");
+              }}
+            >
+              <ArrowSquareOutIcon />
+              Open link
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
