@@ -62,7 +62,7 @@ export function BookmarkSkeleton({
         : BookmarkListItemSkeleton;
 
   const keys = useMemo(
-    () => Array.from({ length: count }, () => crypto.randomUUID()),
+    () => Array.from({ length: count }, (_, i) => `bookmark-skeleton-${i}`),
     [count],
   );
 

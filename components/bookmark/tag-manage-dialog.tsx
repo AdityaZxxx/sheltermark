@@ -18,6 +18,8 @@ import {
   DialogDescription,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
@@ -161,16 +163,16 @@ export function TagManageDialog({
                 className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60 pointer-events-none"
                 aria-hidden="true"
               />
-              <label htmlFor="tag-search" className="sr-only">
+              <Label htmlFor="tag-search" className="sr-only">
                 Search tags
-              </label>
-              <input
+              </Label>
+              <Input
                 id="tag-search"
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search tags…"
-                className="w-full h-9 rounded-md border border-input bg-input/20 pl-7 pr-2.5 text-sm outline-none placeholder:text-muted-foreground/60 transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+                placeholder="Search…"
+                className="h-9 pl-7 pr-2.5 text-sm"
               />
             </div>
           </div>
@@ -193,13 +195,15 @@ export function TagManageDialog({
                     : "No tags in this workspace"}
                 </p>
                 {search ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
+                    size="default"
                     onClick={() => setSearch("")}
-                    className="mt-2 h-8 rounded-md px-3 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="mt-2 h-8 px-3 text-muted-foreground hover:text-foreground"
                   >
                     Clear search
-                  </button>
+                  </Button>
                 ) : (
                   <p className="mt-1 text-xs text-muted-foreground/80">
                     Tags group your bookmarks. Add one from any bookmark.
@@ -222,10 +226,10 @@ export function TagManageDialog({
                         aria-hidden="true"
                       />
                       <div className="flex-1 min-w-0">
-                        <label htmlFor="tag-rename" className="sr-only">
+                        <Label htmlFor="tag-rename" className="sr-only">
                           Tag name
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           id="tag-rename"
                           ref={editInputRef}
                           value={editingName}
@@ -244,7 +248,7 @@ export function TagManageDialog({
                               commitRename();
                             }
                           }}
-                          className="min-w-0 w-full h-6 border-0 bg-transparent p-0 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/60"
+                          className="min-w-0 h-6 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus-visible:ring-0"
                           maxLength={50}
                           autoComplete="off"
                           aria-invalid={inlineError ? true : undefined}
@@ -262,14 +266,16 @@ export function TagManageDialog({
                           </p>
                         )}
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-lg"
                         onClick={cancelRename}
                         aria-label="Cancel rename"
-                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="hover:bg-muted/50"
                       >
                         <XIcon className="size-3" aria-hidden="true" />
-                      </button>
+                      </Button>
                     </form>
                   );
                 }
@@ -289,22 +295,26 @@ export function TagManageDialog({
                     <span className="text-xs text-muted-foreground/60 shrink-0 tabular-nums">
                       {formatCount(tag.count, "use")}
                     </span>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-lg"
                       onClick={() => startRename(tag)}
                       aria-label={`Rename ${tag.name}`}
-                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="hover:bg-muted/50"
                     >
                       <PencilSimpleIcon className="size-3" aria-hidden="true" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-lg"
                       onClick={() => setDeletingTag(tag)}
                       aria-label={`Delete ${tag.name}`}
-                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.97] transition-[colors,transform] duration-100 ease-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="hover:bg-destructive/10 hover:text-destructive"
                     >
                       <TrashIcon className="size-3" aria-hidden="true" />
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
