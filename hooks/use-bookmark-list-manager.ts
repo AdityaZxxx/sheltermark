@@ -142,7 +142,6 @@ export function useBookmarkListManager(
   const executeDelete = useCallback(
     (ids: string[]) => {
       mutations.deleteBookmarks({ ids });
-      invalidate();
       if (ids.length > 0) clearSelection();
       const toastId = toast("Moved to trash", {
         action: {
@@ -154,7 +153,7 @@ export function useBookmarkListManager(
         },
       });
     },
-    [mutations, restoreBookmarks, invalidate, clearSelection],
+    [mutations, restoreBookmarks, clearSelection],
   );
 
   const handleDeleteTrigger = useCallback(

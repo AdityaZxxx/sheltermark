@@ -4,7 +4,12 @@ Three deployable surfaces, three deployment paths.
 
 ## Web App → Vercel
 
-The Next.js app deploys to Vercel on every push to the default branch (preview deploys on every PR). No special config beyond linking the repo.
+The Next.js app deploys to Vercel on every push. Branches:
+
+- `dev` — default branch; pushes trigger preview deployments only.
+- `prod` — production branch (set in Vercel → Settings → Environments → Production → Branch Tracking); pushes here deploy to `sheltermark.vercel.app`.
+
+No special config beyond linking the repo and pointing Production at `prod`. See `AGENTS.md` → Branch Model.
 
 Required Vercel environment variables (Project Settings → Environment Variables):
 
