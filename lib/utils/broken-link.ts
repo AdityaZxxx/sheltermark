@@ -40,6 +40,14 @@ export function getBrokenLinkMessage(
 export function resolveBrokenState(
   input: BrokenStateInput,
 ): RenderableBrokenState {
+  if (input.status == null && input.httpStatus == null) {
+    return {
+      showWarning: false,
+      message: "Not checked yet",
+      severity: "none",
+    };
+  }
+
   const status = resolveBrokenStatus(
     input.status ?? null,
     input.httpStatus ?? null,
