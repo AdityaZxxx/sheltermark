@@ -22,7 +22,17 @@ import {
   type QueueHookContext,
   resumeQueue,
 } from "./queue.js";
-import { getBaseUrl, getLastWorkspace, setLastWorkspace } from "./storage.js";
+import {
+  clearDataCaches,
+  getBaseUrl,
+  getCachedTags,
+  getCachedWorkspaces,
+  getLastWorkspace,
+  isCacheStale,
+  setCachedTags,
+  setCachedWorkspaces,
+  setLastWorkspace,
+} from "./storage.js";
 
 type NotificationType = "success" | "error" | "info";
 
@@ -48,6 +58,10 @@ const sessionCache: SessionCache = {
 
 function invalidateCache(): void {
   sessionCache.workspaces = null;
+  void clearDataCaches();
+  // Re-warm immediately so the next popup open is still cache-fast. Tag
+  // counts changed with the save; the workspaces re-fetch piggybacks.
+  void revalidateCaches();
 }
 
 // Queue hook wiring. Declared early because it's referenced by the top-level
@@ -113,8 +127,32 @@ void (async () => {
 chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
   if (isHeartbeatAlarm(alarm.name)) {
     void drain(queueHooks);
+    void revalidateCaches();
   }
 });
+
+/**
+ * Keep popup data warm in chrome.storage.session. Called from the 1-minute
+ * heartbeat, from every successful server response that carries fresh data,
+ * and after mutations. Never throws — cache warmup is best-effort.
+ */
+async function revalidateCaches(): Promise<void> {
+  // Fire in parallel; each fetch updates its cache entry independently.
+  await Promise.allSettled([
+    (async () => {
+      const cached = await getCachedWorkspaces();
+      if (cached && !(await isCacheStale(cached))) return;
+      const { workspaces } = await fetchWorkspacesRaw();
+      if (workspaces) await setCachedWorkspaces(workspaces);
+    })(),
+    (async () => {
+      const cached = await getCachedTags();
+      if (cached && !(await isCacheStale(cached))) return;
+      const tags = await fetchTagsRaw();
+      await setCachedTags(tags);
+    })(),
+  ]);
+}
 
 chrome.commands.onCommand.addListener(async (command: string) => {
   if (command === "save-current-tab") {
@@ -251,10 +289,16 @@ chrome.runtime.onMessage.addListener(
           // A successful, authenticated popup read means the user is signed in.
           // If the save queue was paused by a 401, resume it now — this survives
           // popup destruction (the popup's wasAuthenticated is per-session and
-          // resets on open, so the background must own the resume).
+          // resets on open, so the background must own the resume). Fire-and-
+          // forget: the popup doesn't need the resume result to render.
           if (result.authenticated) {
-            await resumeQueue();
-            void drain(queueHooks);
+            void resumeQueue().then(() => drain(queueHooks));
+          }
+          // Warm the session cache from the authenticated response so the next
+          // popup open renders instantly from local storage.
+          if (result.authenticated && result.workspaces) {
+            sessionCache.workspaces = result.workspaces;
+            void setCachedWorkspaces(result.workspaces);
           }
           return result;
         })
@@ -578,26 +622,39 @@ interface GetWorkspacesResult {
   error?: string;
 }
 
-async function getWorkspaces(): Promise<GetWorkspacesResult> {
-  if (sessionCache.workspaces) {
-    return { workspaces: sessionCache.workspaces };
-  }
+/** Raw network fetch. Never caches; callers write the cache on success. */
+async function fetchWorkspacesRaw(): Promise<GetWorkspacesResult> {
   const baseUrl = await getBaseUrl();
   const response = await fetch(`${baseUrl}/api/extension/workspaces`, {
     credentials: "include",
   });
   if (!response.ok) throw new Error("Failed to fetch workspaces");
-  const data = (await response.json()) as GetWorkspacesResult;
-  if (data.workspaces) sessionCache.workspaces = data.workspaces;
-  return data;
+  return (await response.json()) as GetWorkspacesResult;
 }
 
 /**
- * Tag suggestions for the popup typeahead. Fetched from the background (which
- * outlives the popup) so suggestions don't abort if the popup closes early,
- * and cached for the session like workspaces.
+ * Workspaces, cache-first: session cache (~1-3ms) → network → in-memory last
+ * resort. Survives MV3 service-worker restarts via chrome.storage.session.
  */
-async function getTags(): Promise<TagWithCount[]> {
+async function getWorkspaces(): Promise<GetWorkspacesResult> {
+  if (sessionCache.workspaces) {
+    return { workspaces: sessionCache.workspaces };
+  }
+  const cached = await getCachedWorkspaces();
+  if (cached) {
+    sessionCache.workspaces = cached.value;
+    return { workspaces: cached.value };
+  }
+  const data = await fetchWorkspacesRaw();
+  if (data.workspaces) {
+    sessionCache.workspaces = data.workspaces;
+    void setCachedWorkspaces(data.workspaces);
+  }
+  return data;
+}
+
+/** Raw network fetch for tags. Never caches; callers write the cache. */
+async function fetchTagsRaw(): Promise<TagWithCount[]> {
   const baseUrl = await getBaseUrl();
   const response = await fetch(`${baseUrl}/api/extension/tags`, {
     credentials: "include",
@@ -605,6 +662,21 @@ async function getTags(): Promise<TagWithCount[]> {
   if (!response.ok) return [];
   const data = (await response.json()) as TagsResult;
   return data.tags ?? [];
+}
+
+/**
+ * Tag suggestions for the popup typeahead. Cache-first (the session cache
+ * outlives the service worker, unlike in-memory state), with a staleness-based
+ * revalidation rather than a per-popup refetch.
+ */
+async function getTags(): Promise<TagWithCount[]> {
+  const cached = await getCachedTags();
+  if (cached && !(await isCacheStale(cached))) {
+    return cached.value;
+  }
+  const tags = await fetchTagsRaw();
+  void setCachedTags(tags);
+  return tags;
 }
 
 async function getPopupInfo({

@@ -6,6 +6,13 @@ import {
   type TagWithCount,
   type Workspace,
 } from "./constants.js";
+import {
+  getBaseUrl,
+  getCachedTags,
+  getCachedWorkspaces,
+  getLastWorkspace,
+  setLastWorkspace,
+} from "./storage.js";
 
 // Track whether the user actually edited the title. If untouched we send
 // `null` so the server falls back to fetched metadata, keeping the extension
@@ -24,10 +31,6 @@ interface TagChip {
 const selectedTags: TagChip[] = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const { getBaseUrl, getLastWorkspace, setLastWorkspace } = await import(
-    "./storage.js"
-  );
-
   const authSection = document.getElementById("auth-section") as HTMLElement;
   const mainSection = document.getElementById("main-section") as HTMLElement;
   const titleInput = document.getElementById("title-input") as HTMLInputElement;
@@ -57,19 +60,88 @@ document.addEventListener("DOMContentLoaded", async () => {
     void chrome.tabs.create({ url: `${baseUrl}/login` });
   });
 
-  currentTabInfo = await getCurrentTabInfo();
+  // ---- Phase 1: everything available locally, in parallel (~1-5ms). ----
+  // Tab info, cached workspaces/tags and the last-used workspace are all
+  // independent — await them together instead of serially. If the session
+  // cache has workspaces, the UI is fully usable before any network call.
+  const [tabInfo, cachedWorkspaces, cachedTags, lastWorkspaceId] =
+    await Promise.all([
+      getCurrentTabInfo(),
+      getCachedWorkspaces(),
+      getCachedTags(),
+      getLastWorkspace(),
+    ]);
+
+  currentTabInfo = tabInfo;
   currentUrl = currentTabInfo?.url ?? null;
 
-  await initPopup();
-  await fetchTags();
+  if (cachedTags) allTags = cachedTags.value;
+  if (cachedWorkspaces) {
+    renderWorkspaces(cachedWorkspaces.value, lastWorkspaceId);
+  }
 
   titleInput.value = currentTabInfo?.title ?? "";
   updateSaveButton();
-  titleInput.focus();
-  // Select the whole pre-filled title so typing immediately replaces it.
-  // Prevents left-edge clipping for long titles (scrollWidth > clientWidth).
-  if (titleInput.value.length > 0) {
-    titleInput.setSelectionRange(0, titleInput.value.length);
+  focusTitle();
+
+  // ---- Phase 2: authoritative server state in parallel, patch in. ----
+  // Runs concurrently (previously serial). With a warm cache this only
+  // refreshes the workspace list, tags, and the "already saved" flag —
+  // the user can already type and save by then.
+  void Promise.all([initPopup(), fetchTags()]);
+
+  // Render the workspace list from whichever source arrived: the session
+  // cache (phase 1) or the server (phase 2). Idempotent.
+  function renderWorkspaces(
+    list: Workspace[],
+    preferredId: string | null,
+  ): void {
+    workspaces = list;
+    workspaceSelect.innerHTML = "";
+
+    if (list.length === 0) {
+      workspaceSelect.classList.add("hidden");
+      return;
+    }
+
+    if (list.length === 1) {
+      workspaceSelect.classList.add("hidden");
+      selectedWorkspaceId = list[0]?.id ?? null;
+      if (selectedWorkspaceId) void setLastWorkspace(selectedWorkspaceId);
+      return;
+    }
+
+    workspaceSelect.classList.remove("hidden");
+    const defaultWs = list.find((w) => w.is_default);
+
+    list.forEach((ws) => {
+      const option = document.createElement("option");
+      option.value = ws.id;
+      option.textContent = ws.name + (ws.is_default ? " (Default)" : "");
+      workspaceSelect.appendChild(option);
+    });
+
+    // Preserve an already-rendered, still-valid selection so the phase-2
+    // network patch never overrides what the user is looking at.
+    const keepsCurrent =
+      workspaceSelect.value && list.some((w) => w.id === workspaceSelect.value);
+    if (!keepsCurrent) {
+      const chosen =
+        preferredId && list.some((w) => w.id === preferredId)
+          ? preferredId
+          : (defaultWs?.id ?? list[0]?.id ?? null);
+      if (chosen) workspaceSelect.value = chosen;
+    }
+    selectedWorkspaceId = workspaceSelect.value || null;
+  }
+
+  function focusTitle(): void {
+    titleInput.focus();
+    // Select the whole pre-filled title so typing immediately replaces it.
+    // Prevents left-edge clipping for long titles (scrollWidth > clientWidth).
+    if (titleInput.value.length > 0) {
+      titleInput.setSelectionRange(0, titleInput.value.length);
+    }
   }
 
   async function initPopup(): Promise<void> {
@@ -92,45 +164,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    workspaces = popupInfo.workspaces ?? [];
-
-    workspaceSelect.innerHTML = "";
-
-    if (workspaces.length === 0) {
-      workspaceSelect.classList.add("hidden");
-      return;
-    }
-
-    if (workspaces.length === 1) {
-      workspaceSelect.classList.add("hidden");
-      selectedWorkspaceId = workspaces[0]?.id ?? null;
-      await setLastWorkspace(selectedWorkspaceId);
-    } else {
-      const defaultWs = workspaces.find((w) => w.is_default);
-
-      workspaces.forEach((ws) => {
-        const option = document.createElement("option");
-        option.value = ws.id;
-        option.textContent = ws.name + (ws.is_default ? " (Default)" : "");
-        workspaceSelect.appendChild(option);
-      });
-
-      if (
-        popupInfo.lastWorkspace &&
-        workspaces.some((w) => w.id === popupInfo.lastWorkspace)
-      ) {
-        workspaceSelect.value = popupInfo.lastWorkspace;
-        selectedWorkspaceId = popupInfo.lastWorkspace;
-      } else if (defaultWs) {
-        workspaceSelect.value = defaultWs.id;
-        selectedWorkspaceId = defaultWs.id;
-      } else {
-        selectedWorkspaceId = workspaces[0]?.id ?? null;
-      }
-    }
+    renderWorkspaces(
+      popupInfo.workspaces ?? workspaces,
+      popupInfo.lastWorkspace ?? selectedWorkspaceId,
+    );
 
     isSaved = popupInfo.alreadySaved;
     updateSaveButton();
+    if (isSaved) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Already saved";
+    }
   }
 
   async function fetchTags(): Promise<void> {
@@ -446,17 +490,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function getCurrentTabInfo(): Promise<TabInfo | null> {
+    // Query tabs directly from the popup ("tabs" permission covers url/title)
+    // instead of a message round-trip through the service worker — one less
+    // hop, and no dependency on the worker being awake for first paint.
     return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { type: MESSAGE_TYPES.GET_TAB_INFO },
-        (response: unknown) => {
-          if (chrome.runtime.lastError) {
-            resolve(null);
-          } else {
-            resolve((response as TabInfo) ?? null);
-          }
-        },
-      );
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tab = tabs[0];
+        if (chrome.runtime.lastError || !tab) {
+          resolve(null);
+          return;
+        }
+        resolve({
+          url: tab.url,
+          title: tab.title,
+          favIconUrl: tab.favIconUrl,
+        });
+      });
     });
   }
 
@@ -466,14 +515,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function refreshAuthAndShowMain(): Promise<void> {
-    currentTabInfo = await getCurrentTabInfo();
+    // Fire-and-restore: all independent, so parallel (was serial). Tags read
+    // from the session cache first — they were warmed by the initial open —
+    // and the network refetch updates them when it lands.
+    const [tabInfo, cachedTagsEntry] = await Promise.all([
+      getCurrentTabInfo(),
+      getCachedTags(),
+    ]);
+    currentTabInfo = tabInfo;
     currentUrl = currentTabInfo?.url ?? null;
-    await initPopup();
-    await fetchTags();
+    if (cachedTagsEntry) allTags = cachedTagsEntry.value;
     if (!userEditedTitle) {
       titleInput.value = currentTabInfo?.title ?? "";
     }
     updateSaveButton();
+    await Promise.all([initPopup(), fetchTags()]);
   }
 
   window.addEventListener("focus", refreshAuthAndShowMain);
