@@ -1,20 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+
 import { FakeDbClient } from "~/lib/data/__tests__/fake-db-client";
 import {
   batchInsertBookmarks,
   insertBookmark,
   moveBookmarks,
 } from "~/lib/data/repositories/bookmark.repository";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-
-vi.mock("~/lib/metadata", () => ({
-  fetchMetadata: vi.fn().mockResolvedValue({
-    title: "Test Page",
-    description: null,
-    og_image_url: null,
-    favicon_url: "https://example.com/favicon.ico",
-  }),
-}));
 
 const USER_ID = "550e8400-e29b-41d4-a716-446655440001";
 const WORKSPACE_ID = "550e8400-e29b-41d4-a716-446655440002";
@@ -44,17 +37,23 @@ function bookmarkRow(overrides: Partial<Bookmark> = {}): Bookmark {
 }
 
 describe("insertBookmark (tracer-bullet)", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("inserts a new bookmark when the URL is not present", async () => {
     const db = new FakeDbClient();
 
-    const result = await insertBookmark(db, USER_ID, {
-      url: URL,
-      workspaceId: WORKSPACE_ID,
-    });
+    const result = await insertBookmark(
+      db,
+      USER_ID,
+      {
+        url: URL,
+        workspaceId: WORKSPACE_ID,
+      },
+      async () => ({
+        title: "Test Page",
+        description: null,
+        og_image_url: null,
+        favicon_url: "https://example.com/favicon.ico",
+      }),
+    );
 
     expect(result.success).toBe(true);
     if (!result.success) return;
@@ -207,7 +206,7 @@ describe("moveBookmarks", () => {
 
     const result = await moveBookmarks(db, USER_ID, {
       ids: [BM_A],
-      targetWorkspaceId: "null" as string,
+      targetWorkspaceId: "null",
     });
 
     expect(result.success).toBe(false);
