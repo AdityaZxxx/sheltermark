@@ -1,15 +1,16 @@
 import type { ActionResult } from "~/lib/action-result";
-import type { DbClient } from "~/lib/data/db-client";
-import { createWorkspaceRaw } from "~/lib/data/repositories/workspace.repository";
+import type { DbClient, DbRow } from "~/lib/data/db-client";
 import type {
   Bookmark,
   BookmarkRestoreInput,
 } from "~/lib/schemas/bookmark.schema";
-import { bookmarkRestoreSchema } from "~/lib/schemas/bookmark.schema";
 import type {
   TrashedWorkspace,
   WorkspaceWithCount,
 } from "~/lib/schemas/workspace.schema";
+
+import { createWorkspaceRaw } from "~/lib/data/repositories/workspace.repository";
+import { bookmarkRestoreSchema } from "~/lib/schemas/bookmark.schema";
 
 export type RestoreTarget = {
   ids: string[];
@@ -99,6 +100,7 @@ export async function restoreBookmarks(
       .in("id", ids)
       .eq("user_id", userId);
 
+    // SAFETY: the filter keeps only rows whose workspace_id is truthy, i.e. a non-null uuid string.
     const wsIds = [
       ...new Set(
         (bookmarks ?? [])
@@ -135,6 +137,7 @@ export async function restoreBookmarks(
   }
 
   type RestoreRow = { id: string; url: string; workspace_id: string | null };
+  // SAFETY: select("id, url, workspace_id") above yields exactly those columns per bookmark row.
   const restoreRows = toRestore as RestoreRow[];
 
   const restoreGroups = new Map<
@@ -165,6 +168,7 @@ export async function restoreBookmarks(
     }
 
     const { data: existing } = await query;
+    // SAFETY: select("url") returns rows whose only column is the url string.
     existingMap.set(
       wsKey,
       new Set((existing as { url: string }[] | null)?.map((b) => b.url) ?? []),
@@ -183,7 +187,7 @@ export async function restoreBookmarks(
     }
   }
 
-  const updateData: Record<string, unknown> = {
+  const updateData: DbRow = {
     deleted_at: null,
     updated_at: now,
   };
@@ -237,6 +241,7 @@ export async function restoreWorkspace(
     return { success: true, data: { restoredCount: 0, skippedCount: 0 } };
   }
 
+  // SAFETY: select("id, url") above yields exactly those columns per bookmark row.
   const trashedRows = trashedBookmarks as { id: string; url: string }[];
   const urls = trashedRows.map((b) => b.url);
 
@@ -248,6 +253,7 @@ export async function restoreWorkspace(
     .is("deleted_at", null)
     .in("url", urls);
 
+  // SAFETY: select("url") returns rows whose only column is the url string.
   const existingUrls = new Set(
     (existing as { url: string }[] | null)?.map((b) => b.url) ?? [],
   );

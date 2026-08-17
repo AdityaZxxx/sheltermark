@@ -1,7 +1,13 @@
+import { z } from "zod";
+
 import type { ActionResult } from "~/lib/action-result";
 import type { DbClient } from "~/lib/data/db-client";
 
-type RpcResult = { success: boolean; error?: string; data: null };
+const rpcResultSchema = z.object({
+  success: z.boolean(),
+  error: z.string().optional(),
+  data: z.null(),
+});
 
 export async function deleteWorkspaceWithBookmarks(
   supabase: DbClient,
@@ -18,9 +24,14 @@ export async function deleteWorkspaceWithBookmarks(
 
   if (error) return { success: false, error: error.message };
 
-  const result = data as unknown as RpcResult;
+  const result = rpcResultSchema.safeParse(data);
   if (!result.success)
-    return { success: false, error: result.error ?? "Unknown error" };
+    return {
+      success: false,
+      error: "Unexpected response from delete_workspace_with_bookmarks",
+    };
+  if (!result.data.success)
+    return { success: false, error: result.data.error ?? "Unknown error" };
   return { success: true, data: null };
 }
 
@@ -34,8 +45,13 @@ export async function emptyUserTrash(
 
   if (error) return { success: false, error: error.message };
 
-  const result = data as unknown as RpcResult;
+  const result = rpcResultSchema.safeParse(data);
   if (!result.success)
-    return { success: false, error: result.error ?? "Unknown error" };
+    return {
+      success: false,
+      error: "Unexpected response from empty_user_trash",
+    };
+  if (!result.data.success)
+    return { success: false, error: result.data.error ?? "Unknown error" };
   return { success: true, data: null };
 }

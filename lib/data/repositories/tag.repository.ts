@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
+import type { DbClient } from "~/lib/data/db-client";
 import type {
   AddTagToBookmarkInput,
   DeleteTagInput,
@@ -10,6 +10,7 @@ import type {
   Tag,
   TagWithCount,
 } from "~/lib/schemas/tag.schema";
+
 import {
   addTagToBookmarkSchema,
   deleteTagSchema,
@@ -21,7 +22,7 @@ import {
 import { resolveAndReplaceBookmarkTags } from "~/lib/services/tag.service";
 
 export async function getUserTags(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<Tag[]>> {
   const { data, error } = await supabase
@@ -31,11 +32,12 @@ export async function getUserTags(
     .order("name", { ascending: true });
 
   if (error) return { success: false, error: error.message };
+  // SAFETY: select("*") returns full tag rows scoped to user_id, matching the Tag schema shape.
   return { success: true, data: (data as Tag[]) ?? [] };
 }
 
 export async function getWorkspaceTagsWithCount(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   workspaceId: string,
 ): Promise<ActionResult<TagWithCount[]>> {
@@ -46,7 +48,8 @@ export async function getWorkspaceTagsWithCount(
     .eq("user_id", userId)
     .is("deleted_at", null);
 
-  const bookmarkIds = (bookmarks ?? []).map((b) => b.id);
+  // SAFETY: select("id") returns one non-null uuid column per bookmark row.
+  const bookmarkIds = (bookmarks ?? []).map((b) => b.id as string);
 
   if (bookmarkIds.length === 0) {
     return { success: true, data: [] };
@@ -72,6 +75,7 @@ export async function getWorkspaceTagsWithCount(
   >();
 
   for (const link of links ?? []) {
+    // SAFETY: the join select returns tag_id plus the joined tags row (or array) for each bookmark_tags link.
     const row = link as { tag_id: string; tags: Tag | Tag[] | null };
     const tag = Array.isArray(row.tags) ? row.tags[0] : row.tags;
     if (!tag) continue;
@@ -87,13 +91,13 @@ export async function getWorkspaceTagsWithCount(
       created_at: info.created_at,
       count: countByTag.get(id) ?? 0,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .toSorted((a, b) => a.name.localeCompare(b.name));
 
   return { success: true, data: tags };
 }
 
 export async function getTagsWithCount(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
 ): Promise<ActionResult<TagWithCount[]>> {
   const { data, error } = await supabase
@@ -112,6 +116,7 @@ export async function getTagsWithCount(
 
   if (error) return { success: false, error: error.message };
 
+  // SAFETY: the join select returns tag rows with bookmark_tags count arrays, matching the asserted shape.
   const tags = (
     (data ?? []) as Array<Tag & { bookmark_tags: Array<{ count: number }> }>
   ).map((tag) => ({
@@ -126,7 +131,7 @@ export async function getTagsWithCount(
 }
 
 export async function getBookmarkTags(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   input: GetBookmarkTagsInput,
 ): Promise<ActionResult<Tag[]>> {
   const validated = getBookmarkTagsSchema.safeParse(input);
@@ -153,7 +158,8 @@ export async function getBookmarkTags(
 
   const tags = (data ?? [])
     .flatMap((row) => {
-      const rowTags = (row as unknown as { tags: Tag[] | Tag | null }).tags;
+      // SAFETY: the join select returns each bookmark_tags row with the joined tags row (or array) attached.
+      const rowTags = (row as { tags: Tag[] | Tag | null }).tags;
       if (Array.isArray(rowTags)) return rowTags;
       if (rowTags) return [rowTags];
       return [];
@@ -164,7 +170,7 @@ export async function getBookmarkTags(
 }
 
 export async function upsertTag(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   name: string,
 ): Promise<ActionResult<Tag>> {
@@ -183,11 +189,12 @@ export async function upsertTag(
     .single();
 
   if (error) return { success: false, error: error.message };
+  // SAFETY: upsert().select().single() returns the upserted tag row scoped to user_id, matching the Tag schema shape.
   return { success: true, data: data as Tag };
 }
 
 export async function addTagToBookmark(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: AddTagToBookmarkInput,
 ): Promise<ActionResult<Tag>> {
@@ -211,6 +218,7 @@ export async function addTagToBookmark(
     if (tagError || !tag) {
       return { success: false, error: "Tag not found" };
     }
+    // SAFETY: select("*") returns the full tag row filtered by id and user_id, matching the Tag schema shape.
     resolvedTag = tag as Tag;
   } else if (name) {
     const upsertResult = await upsertTag(supabase, userId, name);
@@ -236,7 +244,7 @@ export async function addTagToBookmark(
 }
 
 export async function removeTagFromBookmark(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: RemoveTagFromBookmarkInput,
 ): Promise<ActionResult<null>> {
@@ -267,7 +275,7 @@ export async function removeTagFromBookmark(
 }
 
 export async function setBookmarkTags(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: SetBookmarkTagsInput,
 ): Promise<ActionResult<Tag[]>> {
@@ -290,7 +298,7 @@ export async function setBookmarkTags(
 }
 
 export async function renameTag(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: RenameTagInput,
 ): Promise<ActionResult<Tag>> {
@@ -310,11 +318,12 @@ export async function renameTag(
     .single();
 
   if (error) return { success: false, error: error.message };
+  // SAFETY: update().select().single() returns the renamed tag row, matching the Tag schema shape.
   return { success: true, data: data as Tag };
 }
 
 export async function deleteTag(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   input: DeleteTagInput,
 ): Promise<ActionResult<null>> {

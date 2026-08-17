@@ -1,12 +1,16 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { z } from "zod";
+
 import type { ActionResult } from "~/lib/action-result";
+import type { DbClient } from "~/lib/data/db-client";
+import type { Metadata } from "~/lib/metadata/types";
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
+import type { Tag, Tag as TagRow } from "~/lib/schemas/tag.schema";
+
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
-import type { DbClient } from "~/lib/data/db-client";
 import { upsertTag } from "~/lib/data/repositories/tag.repository";
 import { fetchMetadata } from "~/lib/metadata";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import {
   type BookmarkDeleteInput,
   type BookmarkEditInput,
@@ -23,10 +27,11 @@ import {
   type GenerateAiTitleInput,
   generateAiTitleSchema,
 } from "~/lib/schemas/bookmark.schema";
-import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
-import type { Tag, Tag as TagRow } from "~/lib/schemas/tag.schema";
 import { resolveAndReplaceBookmarkTags } from "~/lib/services/tag.service";
 import { normalizeUrl } from "~/lib/utils";
+
+/** Metadata lookup seam so tests can inject a deterministic fetcher. */
+export type MetadataFetcher = (url: string) => Promise<Metadata>;
 
 type InsertBookmarkParams = {
   url: string;
@@ -49,6 +54,7 @@ export async function insertBookmark(
   supabase: DbClient,
   userId: string,
   { url, workspaceId, clientTitle, tagNames }: InsertBookmarkParams,
+  fetchMetadataFn: MetadataFetcher = fetchMetadata,
 ): Promise<InsertBookmarkResult> {
   const normalizedUrl = normalizeUrl(url);
 
@@ -67,7 +73,7 @@ export async function insertBookmark(
 
   const [existing, metadata] = await Promise.all([
     existingQuery.maybeSingle(),
-    fetchMetadata(url),
+    fetchMetadataFn(url),
   ]);
 
   if (existing.data) {
@@ -101,6 +107,7 @@ export async function insertBookmark(
     return { success: false, error: error.message };
   }
 
+  // SAFETY: insert().select().single() returns the freshly inserted bookmark row with all default columns.
   const bookmark = data as Bookmark;
 
   // Apply optional tag names atomically-ish: resolve-or-create each by name
@@ -111,11 +118,7 @@ export async function insertBookmark(
     const deduped = dedupeTagNames(tagNames);
     const resolved: TagRow[] = [];
     for (const name of deduped) {
-      const upserted = await upsertTag(
-        supabase as unknown as SupabaseClient,
-        userId,
-        name,
-      );
+      const upserted = await upsertTag(supabase, userId, name);
       if (!upserted.success) return { success: false, error: upserted.error };
       resolved.push(upserted.data);
     }
@@ -170,6 +173,7 @@ export async function getBookmarks(
     return { success: false, error: error.message };
   }
 
+  // SAFETY: select("*") scopes to user_id and non-deleted rows, matching the Bookmark schema shape.
   return { success: true, data: (bookmarks as Bookmark[]) ?? [] };
 }
 
@@ -208,6 +212,7 @@ export async function getTrashedBookmarks(
     .order("deleted_at", { ascending: false });
 
   if (error) return { success: false, error: error.message };
+  // SAFETY: select("*") returns trashed bookmark rows scoped to user_id, matching the Bookmark schema shape.
   return { success: true, data: (data as Bookmark[]) ?? [] };
 }
 
@@ -249,7 +254,11 @@ export async function batchInsertBookmarks(
 
   for (const bookmark of bookmarks) {
     try {
-      new URL(bookmark.url);
+      const parsed = new URL(bookmark.url);
+      if (!(parsed instanceof URL)) {
+        errors.push(`Invalid URL: ${bookmark.url}`);
+        continue;
+      }
     } catch {
       errors.push(`Invalid URL: ${bookmark.url}`);
       continue;
@@ -406,6 +415,7 @@ export async function moveBookmarks(
   if (!sourceBookmarks || sourceBookmarks.length === 0)
     return { success: false, error: "No bookmarks found to move" };
 
+  // SAFETY: select("id, url") above returns rows whose url column is a non-null string.
   const sourceUrls = sourceBookmarks.map((b) => (b as { url: string }).url);
 
   // 2. Check for existing (non-trashed) URLs in the target workspace
@@ -430,7 +440,11 @@ export async function moveBookmarks(
   // 3. Separate IDs into those to move and those to skip
   const toMoveIds: string[] = [];
   let skippedCount = 0;
-  for (const bookmark of sourceBookmarks as { id: string; url: string }[]) {
+  // SAFETY: same rows as above — select("id, url") yields id and url string columns.
+  for (const bookmark of sourceBookmarks as Array<{
+    id: string;
+    url: string;
+  }>) {
     if (existingUrls.has(bookmark.url)) {
       skippedCount++;
     } else {
@@ -527,7 +541,7 @@ export async function updateBookmarkFields(
   }
 
   const tagResult = await resolveAndReplaceBookmarkTags(
-    supabase as unknown as SupabaseClient,
+    supabase,
     userId,
     id,
     tags,
@@ -558,7 +572,8 @@ export async function refetchMetadata(
     return { success: false, error: "Bookmark not found" };
   }
 
-  const bm = bookmark as { url: string; title: string };
+  // SAFETY: select("id, url, favicon_url, og_image_url") with .single() guarantees a row whose url is a string column.
+  const bm = bookmark as { url: string };
   const metadata = await fetchMetadata(bm.url);
 
   const { error: updateError } = await supabase
@@ -606,6 +621,7 @@ export async function generateAiTitleRepo(
     return { success: false, error: "Bookmark not found" };
   }
 
+  // SAFETY: select("url, title") with .single() guarantees a row whose url and title are string columns.
   const bm = bookmark as { url: string; title: string };
   const metadata = await fetchMetadata(bm.url);
 
@@ -674,6 +690,7 @@ export async function exportBookmarks(
     return { success: false, error: error.message };
   }
 
+  // SAFETY: the join select above returns bookmark rows with embedded workspaces(name) arrays, matching the asserted shape.
   const bookmarksData = (data ?? []) as BookmarkWithWorkspace[];
   return { success: true, data: bookmarksData };
 }

@@ -1,9 +1,11 @@
 "use server";
 
 import type { z } from "zod";
+
 import type { ActionResult } from "~/lib/action-result";
+
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
+import { asDbClient } from "~/lib/data/db-client";
 import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import { escapeCSV } from "~/lib/import/csv";
 import { exportOptionsSchema } from "~/lib/schemas/profile.schema";
@@ -41,7 +43,7 @@ export async function exportBookmarks(
 
   // Delegate data retrieval to the repository
   const repoResult = await repoExportBookmarks(
-    supabase as unknown as DbClient,
+    asDbClient(supabase),
     user.id,
     validated.data,
   );

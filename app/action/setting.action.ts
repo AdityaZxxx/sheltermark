@@ -1,6 +1,12 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type {
+  Profile,
+  UpdateProfileInput,
+  UpdatePublicProfileInput,
+} from "~/lib/schemas/profile.schema";
+
 import { requireAuth } from "~/lib/auth";
 import {
   deleteAccount as deleteAccountRepo,
@@ -10,11 +16,6 @@ import {
   updatePublicProfile as updatePublicProfileRepo,
   uploadAvatar as uploadAvatarRepo,
 } from "~/lib/data/repositories/profile.repository";
-import type {
-  Profile,
-  UpdateProfileInput,
-  UpdatePublicProfileInput,
-} from "~/lib/schemas/profile.schema";
 
 export async function updateProfile(
   data: UpdateProfileInput,

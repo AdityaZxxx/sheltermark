@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+
 import type { ActionResult } from "~/lib/action-result";
-import { logger } from "~/lib/logger";
 import type {
   BookmarkPreview,
   WorkspaceWithBookmarks,
 } from "~/lib/schemas/bookmark.schema";
 import type { Profile } from "~/lib/schemas/profile.schema";
+
+import { logger } from "~/lib/logger";
 import {
   getProfileByUsernameSchema,
   type UpdateProfileInput,
@@ -14,6 +16,21 @@ import {
   updatePublicProfileSchema,
 } from "~/lib/schemas/profile.schema";
 import { createAdminClient } from "~/utils/supabase/server";
+
+/** Editable profile columns accepted by {@link updateProfile}. */
+type ProfileEditPatch = {
+  name: string;
+  trash_cleanup_interval?: number;
+};
+
+/** Ensure a URL value has a scheme; prefix bare handles/values. */
+function normalizeProfileUrl(
+  value: string | null | undefined,
+  prefix: string,
+): string | null {
+  if (!value) return null;
+  return value.startsWith("http") ? value : `${prefix}${value}`;
+}
 
 // Helper: delete avatar from storage (moved logic)
 async function deleteAvatarFromStorage(
@@ -60,7 +77,7 @@ export async function updateProfile(
     return { success: false, error: authError.message };
   }
 
-  const profileUpdate: Record<string, unknown> = { name };
+  const profileUpdate: ProfileEditPatch = { name };
   if (trash_cleanup_interval !== undefined) {
     profileUpdate.trash_cleanup_interval = trash_cleanup_interval;
   }
@@ -107,20 +124,15 @@ export async function updatePublicProfile(
     return { success: false, error: "Username is already taken" };
   }
 
-  const normalizeUrl = (value: string | null | undefined, prefix: string) => {
-    if (!value) return null;
-    return value.startsWith("http") ? value : `${prefix}${value}`;
-  };
-
   const { error: updateError } = await supabase
     .from("profiles")
     .update({
       username,
       is_public,
       bio,
-      github_url: normalizeUrl(github_username, "https://github.com/"),
-      x_url: normalizeUrl(x_username, "https://x.com/"),
-      website_url: normalizeUrl(website, "https://"),
+      github_url: normalizeProfileUrl(github_username, "https://github.com/"),
+      x_url: normalizeProfileUrl(x_username, "https://x.com/"),
+      website_url: normalizeProfileUrl(website, "https://"),
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
@@ -149,6 +161,7 @@ export async function getProfile(
     return { success: false, error: getProfileError.message };
   }
 
+  // SAFETY: select("*").single() scopes to the authenticated user's profile row, matching the Profile schema shape.
   return { success: true, data: { profile: profile as Profile } };
 }
 
@@ -263,6 +276,7 @@ export async function uploadAvatar(
   userId: string,
   formData: FormData,
 ): Promise<ActionResult<{ avatarUrl: string }>> {
+  // SAFETY: the multipart form only ever carries a binary file under "file"; text entries are validated below via !file/type checks.
   const file = formData.get("file") as File;
   if (!file) {
     return { success: false, error: "No file provided" };
@@ -353,7 +367,7 @@ export async function deleteAvatar(
 
   try {
     if (profile?.avatar_url) {
-      await deleteAvatarFromStorage(supabase, profile.avatar_url as string);
+      await deleteAvatarFromStorage(supabase, profile.avatar_url);
     }
     const { error: authError } = await supabase.auth.updateUser({
       data: { avatar_url: null },
@@ -398,7 +412,7 @@ export async function deleteAccount(
       .maybeSingle();
 
     if (profile?.avatar_url) {
-      await deleteAvatarFromStorage(supabase, profile.avatar_url as string);
+      await deleteAvatarFromStorage(supabase, profile.avatar_url);
     }
 
     // Delete auth user via admin client

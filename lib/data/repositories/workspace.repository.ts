@@ -1,15 +1,21 @@
+import { z } from "zod";
+
 import type { ActionResult } from "~/lib/action-result";
 import type { DbClient } from "~/lib/data/db-client";
-import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
   TrashedWorkspace,
+  Workspace,
   WorkspaceWithCount,
 } from "~/lib/schemas/workspace.schema";
+
+import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
 import {
   workspaceCreateSchema,
   workspaceRenameSchema,
 } from "~/lib/schemas/workspace.schema";
+
+const workspaceIdRowSchema = z.object({ id: z.string().min(1) });
 
 export async function getWorkspaces(
   supabase: DbClient,
@@ -34,18 +40,23 @@ export async function getWorkspaces(
     return { success: false, error: workspacesResult.error.message };
 
   const countMap = new Map<string, number>();
-  for (const row of (countsResult.data ?? []) as { workspace_id: string }[]) {
+  // SAFETY: select("workspace_id") with .not("workspace_id","is",null) returns rows whose only column is a non-null uuid string.
+  for (const row of (countsResult.data ?? []) as Array<{
+    workspace_id: string;
+  }>) {
     countMap.set(row.workspace_id, (countMap.get(row.workspace_id) ?? 0) + 1);
   }
 
-  const result = (
-    (workspacesResult.data ?? []) as Array<Record<string, unknown>>
-  ).map((workspace) => ({
-    ...workspace,
-    bookmarks_count: countMap.get(workspace.id as string) ?? 0,
-  }));
+  // SAFETY: rows come from the workspaces table with all columns selected, matching the Workspace schema shape.
+  const workspaces = (workspacesResult.data ?? []) as Workspace[];
 
-  return { success: true, data: result as WorkspaceWithCount[] };
+  return {
+    success: true,
+    data: workspaces.map((workspace) => ({
+      ...workspace,
+      bookmarks_count: countMap.get(workspace.id) ?? 0,
+    })),
+  };
 }
 
 export async function createWorkspace(
@@ -76,11 +87,11 @@ export async function createWorkspace(
 
   if (error) return { success: false, error: error.message };
 
-  const id = (data as { id: string } | null)?.id;
-  if (typeof id !== "string") {
+  const parsed = workspaceIdRowSchema.safeParse(data);
+  if (!parsed.success) {
     return { success: false, error: "Invalid workspace data returned" };
   }
-  return { success: true, data: { id } };
+  return { success: true, data: { id: parsed.data.id } };
 }
 
 export async function deleteWorkspace(
@@ -119,6 +130,7 @@ export async function getTrashedWorkspaces(
 
   const bookmarksByWs = new Map<string, Bookmark[]>();
   const standaloneBookmarks: Bookmark[] = [];
+  // SAFETY: rows come from the bookmarks table with all columns selected, matching the Bookmark schema shape.
   for (const bm of (bookmarksResult.data ?? []) as Bookmark[]) {
     if (bm.workspace_id && trashedWorkspaceIds.has(bm.workspace_id)) {
       const list = bookmarksByWs.get(bm.workspace_id) ?? [];
@@ -129,17 +141,16 @@ export async function getTrashedWorkspaces(
     }
   }
 
-  const result = (
-    (workspacesResult.data ?? []) as Array<Record<string, unknown>>
-  ).map((workspace) => ({
-    ...workspace,
-    bookmarks_count: bookmarksByWs.get(workspace.id as string)?.length ?? 0,
-    bookmarks: bookmarksByWs.get(workspace.id as string) ?? [],
-  }));
+  // SAFETY: rows come from the workspaces table with all columns selected, matching the Workspace schema shape.
+  const workspaces = (workspacesResult.data ?? []) as Workspace[];
 
   return {
     success: true,
-    data: result as unknown as TrashedWorkspace[],
+    data: workspaces.map((workspace) => ({
+      ...workspace,
+      bookmarks_count: bookmarksByWs.get(workspace.id)?.length ?? 0,
+      bookmarks: bookmarksByWs.get(workspace.id) ?? [],
+    })),
   };
 }
 
@@ -272,6 +283,7 @@ export async function createWorkspaceRaw(
     };
   }
 
+  // SAFETY: select("id").single() above returns the inserted row whose only column is id: uuid string; the !data case already errored.
   return { success: true, data: { id: (data as { id: string }).id } };
 }
 
@@ -287,6 +299,7 @@ export async function getDefaultWorkspace(
     .maybeSingle();
 
   if (error) return { success: false, error: error.message };
+  // SAFETY: select("id") returns at most one row with a single id: uuid column, or null when no row matches.
   return { success: true, data: data as { id: string } | null };
 }
 

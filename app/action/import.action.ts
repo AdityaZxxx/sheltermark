@@ -1,17 +1,18 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type { ImportFileType } from "~/lib/import/parsers";
+import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
+
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
+import { asDbClient } from "~/lib/data/db-client";
 import { batchInsertBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import {
   createWorkspaceRaw,
   getDefaultWorkspace,
 } from "~/lib/data/repositories/workspace.repository";
 import { filterByFolders } from "~/lib/import/folder-filter";
-import type { ImportFileType } from "~/lib/import/parsers";
 import { parseImportFile } from "~/lib/import/parsers";
-import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 import { importOptionsSchema } from "~/lib/schemas/profile.schema";
 
 export async function previewImport(
@@ -132,7 +133,7 @@ export async function importBookmarks(
 
   if (validated.data.createWorkspace && validated.data.newWorkspaceName) {
     const result = await createWorkspaceRaw(
-      supabase as unknown as DbClient,
+      asDbClient(supabase),
       user.id,
       validated.data.newWorkspaceName,
     );
@@ -145,10 +146,7 @@ export async function importBookmarks(
   }
 
   if (!targetWorkspaceId && !validated.data.createWorkspace) {
-    const result = await getDefaultWorkspace(
-      supabase as unknown as DbClient,
-      user.id,
-    );
+    const result = await getDefaultWorkspace(asDbClient(supabase), user.id);
 
     if (!result.success) {
       return result;
@@ -160,7 +158,7 @@ export async function importBookmarks(
   }
 
   return batchInsertBookmarks(
-    supabase as unknown as DbClient,
+    asDbClient(supabase),
     user.id,
     targetWorkspaceId ?? null,
     bookmarksToImport,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import type { DbClient } from "~/lib/data/db-client";
+
+import { asDbClient } from "~/lib/data/db-client";
 import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
 import { logger } from "~/lib/logger";
 import { extensionBookmarkSaveSchema } from "~/lib/schemas/extension.schema";
@@ -69,16 +70,12 @@ export async function POST(req: Request) {
       workspaceId = defaultWorkspace.id;
     }
 
-    const result = await insertBookmark(
-      supabase as unknown as DbClient,
-      user.id,
-      {
-        url,
-        workspaceId,
-        clientTitle: clientTitle ?? null,
-        tagNames: tags,
-      },
-    );
+    const result = await insertBookmark(asDbClient(supabase), user.id, {
+      url,
+      workspaceId,
+      clientTitle: clientTitle ?? null,
+      tagNames: tags,
+    });
 
     if (!result.success) {
       if (result.duplicate) {

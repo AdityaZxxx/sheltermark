@@ -1,19 +1,6 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
-import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
-import {
-  deleteBookmarks as deleteBookmarksRepo,
-  generateAiTitleRepo,
-  getBookmarks as getBookmarksRepo,
-  insertBookmark as insertBookmarkRepo,
-  moveBookmarks as moveBookmarksRepo,
-  refetchMetadata as refetchMetadataRepo,
-  renameBookmark as renameBookmarkRepo,
-  updateBookmarkFields as updateBookmarkFieldsRepo,
-  updateBookmarkNote as updateBookmarkNoteRepo,
-} from "~/lib/data/repositories/bookmark.repository";
 import type {
   Bookmark,
   BookmarkCreateInput,
@@ -27,6 +14,20 @@ import type {
 } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
+import { requireAuth } from "~/lib/auth";
+import { asDbClient } from "~/lib/data/db-client";
+import {
+  deleteBookmarks as deleteBookmarksRepo,
+  generateAiTitleRepo,
+  getBookmarks as getBookmarksRepo,
+  insertBookmark as insertBookmarkRepo,
+  moveBookmarks as moveBookmarksRepo,
+  refetchMetadata as refetchMetadataRepo,
+  renameBookmark as renameBookmarkRepo,
+  updateBookmarkFields as updateBookmarkFieldsRepo,
+  updateBookmarkNote as updateBookmarkNoteRepo,
+} from "~/lib/data/repositories/bookmark.repository";
+
 /**
  * Returns the authenticated user and a DbClient-typed view of the
  * Supabase client. Cast through `unknown` because Supabase's recursive
@@ -36,7 +37,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
  */
 async function auth() {
   const { user, supabase } = await requireAuth();
-  return { user, db: supabase as unknown as DbClient };
+  return { user, db: asDbClient(supabase) };
 }
 
 export async function addBookmark(

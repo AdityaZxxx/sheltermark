@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+
 import type { ActionResult } from "~/lib/action-result";
+import type { Feed } from "~/lib/schemas/feed.schema";
+
 import { logger } from "~/lib/logger";
 import { fetchMetadata } from "~/lib/metadata";
 import { type ParsedFeed, parseFeed } from "~/lib/rss-parser";
-import type { Feed } from "~/lib/schemas/feed.schema";
 import {
   feedCreateSchema,
   feedDeleteSchema,
@@ -21,6 +23,7 @@ export async function getFeeds(
     .order("created_at", { ascending: false })
     .eq("user_id", userId);
   if (error) return { success: false, error: error.message };
+  // SAFETY: select("*") returns feed rows scoped by user_id, matching the Feed schema shape.
   return { success: true, data: (data ?? []) as Feed[] };
 }
 
@@ -130,6 +133,7 @@ export async function subscribeToFeed(
     await supabase.from("bookmarks").insert(bookmarksToInsert);
   }
 
+  // SAFETY: insert().select().single() returns the feed row created above, matching the Feed schema shape.
   return { success: true, data: feed as Feed };
 }
 
@@ -254,11 +258,13 @@ export async function refreshFeed(
     return { success: false, error: "Feed not found" };
   }
 
+  // SAFETY: select("*").single() above returns the full feed row, matching the Feed schema shape.
   const result = await syncSingleFeed(supabase, feed as Feed, userId, {
     maxItems: 20,
   });
   if (!result.success) return result;
 
+  // SAFETY: same row asserted above for the sync call.
   return {
     success: true,
     data: { ...(feed as Feed), last_synced_at: new Date().toISOString() },

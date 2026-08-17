@@ -1,6 +1,8 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type { Feed } from "~/lib/schemas/feed.schema";
+
 import { requireAuth } from "~/lib/auth";
 import {
   deleteFeed as deleteFeedRepo,
@@ -9,7 +11,6 @@ import {
   subscribeToFeed as subscribeToFeedRepo,
   syncAllFeeds as syncAllFeedsRepo,
 } from "~/lib/data/repositories/feed.repository";
-import type { Feed } from "~/lib/schemas/feed.schema";
 
 export async function getFeeds(): Promise<ActionResult<Feed[]>> {
   const { user, supabase } = await requireAuth();

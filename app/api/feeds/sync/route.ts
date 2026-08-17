@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+
 import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
 import { logger } from "~/lib/logger";
 

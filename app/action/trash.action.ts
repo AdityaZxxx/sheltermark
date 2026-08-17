@@ -1,8 +1,14 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type {
+  Bookmark,
+  BookmarkRestoreInput,
+} from "~/lib/schemas/bookmark.schema";
+import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
+
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
+import { asDbClient } from "~/lib/data/db-client";
 import {
   getTrashedBookmarks as getTrashedBookmarksRepo,
   permanentDeleteBookmarks as permanentDeleteBookmarksRepo,
@@ -16,11 +22,6 @@ import {
   restoreBookmarks as restoreBookmarksService,
   restoreWorkspace as restoreWorkspaceService,
 } from "~/lib/restore";
-import type {
-  Bookmark,
-  BookmarkRestoreInput,
-} from "~/lib/schemas/bookmark.schema";
-import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
 
 /**
  * Returns the authenticated user and a DbClient-typed view of the
@@ -28,7 +29,7 @@ import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
  */
 async function auth() {
   const { user, supabase } = await requireAuth();
-  return { user, db: supabase as unknown as DbClient };
+  return { user, db: asDbClient(supabase) };
 }
 
 export async function getTrashedBookmarks(): Promise<ActionResult<Bookmark[]>> {

@@ -1,12 +1,13 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionResult } from "~/lib/action-result";
-import { upsertTag } from "~/lib/data/repositories/tag.repository";
+import type { DbClient } from "~/lib/data/db-client";
 import type { Tag } from "~/lib/schemas/tag.schema";
+
+import { upsertTag } from "~/lib/data/repositories/tag.repository";
 
 export type TagServiceEntry = { id?: string; name?: string };
 
 export async function resolveAndReplaceBookmarkTags(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: string,
   bookmarkId: string,
   tags: TagServiceEntry[],
@@ -24,6 +25,7 @@ export async function resolveAndReplaceBookmarkTags(
       if (error || !tag) {
         return { success: false, error: "One or more tags not found" };
       }
+      // SAFETY: select("*") returns the full tag row filtered by id and user_id, matching the Tag schema shape.
       resolvedTags.push(tag as Tag);
     } else if (entry.name) {
       const upsertResult = await upsertTag(supabase, userId, entry.name);
