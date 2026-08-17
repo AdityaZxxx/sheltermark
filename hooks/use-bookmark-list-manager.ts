@@ -275,7 +275,7 @@ export function useBookmarkListManager(
     [handleKeyDown],
   );
 
-  // ── Global shortcuts (window-level, replaces useBookmarkGlobalShortcuts) ──
+  // ── Global shortcuts (window-level) ──────────────────────────
   const editDialogOpenRef = useRef(editDialogOpen);
   const moveDialogOpenRef = useRef(moveDialogOpen);
   const isSelectionModeRef = useRef(isSelectionMode);
@@ -288,7 +288,6 @@ export function useBookmarkListManager(
   focusedIndexRef.current = focusedIndex;
   selectedIdsRef.current = selectedIds;
 
-  // ── Global shortcuts (window-level) ──────────────────────────
   // Read changing values through refs; effect runs once on mount.
   const bookmarksRef = useRef(bookmarks);
   bookmarksRef.current = bookmarks;

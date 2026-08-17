@@ -139,7 +139,6 @@ export function useEmptyTrash() {
     successMessage: "Trash emptied",
     errorMessage: "Failed to empty trash",
     prepareOptimisticData: () => {
-      // Clear bookmarks list optimistically
       return [];
     },
     additionalOptimisticUpdates: () => [

@@ -33,7 +33,6 @@ export async function exportBookmarks(
 > {
   const validated = exportOptionsSchema.safeParse(options);
   if (!validated.success) {
-    // Guard against potential undefined properties under strict mode
     const msg =
       validated.error?.issues?.[0]?.message ?? "Invalid export options";
     return { success: false, error: msg };
@@ -41,7 +40,6 @@ export async function exportBookmarks(
 
   const { user, supabase } = await requireAuth();
 
-  // Delegate data retrieval to the repository
   const repoResult = await repoExportBookmarks(
     asDbClient(supabase),
     user.id,
@@ -52,12 +50,9 @@ export async function exportBookmarks(
     return { success: false, error: repoResult.error };
   }
 
-  // Normalization: repository returns BookmarkWithWorkspace[]
   const bookmarksData = repoResult.data;
 
   const format = validated.data.format;
-  // Normalize data into strongly-typed bookmarks data
-  // (BookmarkWithWorkspace is defined in this module for formatting logic)
   if (format === "json") {
     const exportData = {
       version: "1.0",

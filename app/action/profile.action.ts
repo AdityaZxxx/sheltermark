@@ -20,7 +20,6 @@ export async function getPublicProfile(
 ): Promise<
   ActionResult<{ profile?: Profile; workspaces: WorkspaceWithBookmarks[] }>
 > {
-  // Basic guard remains: if username invalid structure, repository will validate as well
   const { supabase } = await requireAuthSafe();
   return repoGetPublicProfile(supabase, username);
 }

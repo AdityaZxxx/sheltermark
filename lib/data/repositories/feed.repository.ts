@@ -12,7 +12,6 @@ import {
   feedRefreshSchema,
 } from "~/lib/schemas/feed.schema";
 
-// Get feeds for a user
 export async function getFeeds(
   supabase: SupabaseClient,
   userId: string,

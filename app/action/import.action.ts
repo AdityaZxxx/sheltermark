@@ -112,7 +112,6 @@ export async function importBookmarks(
     return { success: false, error: parsed.error ?? "Parse error" };
   }
 
-  // Apply browser-import folder filter unconditionally for Netscape.
   const folderSet = new Set(validated.data.folderPaths ?? []);
   const bookmarksToImport =
     fileType === "netscape"

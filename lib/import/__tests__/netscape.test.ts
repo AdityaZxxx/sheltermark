@@ -53,11 +53,6 @@ describe("parseNetscapeHTML", () => {
       ]);
     });
 
-    it("omits folderPath when bookmark is at the top level", () => {
-      // All chrome bookmarks in fixture are inside a folder, so this is
-      // implicit. The Firefox fixture covers the top-level case.
-    });
-
     it("rejects javascript: URLs", () => {
       if (!result.success) throw new Error("expected success");
       const jsBookmark = result.bookmarks.find((b) =>

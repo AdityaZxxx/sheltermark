@@ -36,7 +36,7 @@ function bookmarkRow(overrides: Partial<Bookmark> = {}): Bookmark {
   };
 }
 
-describe("insertBookmark (tracer-bullet)", () => {
+describe("insertBookmark", () => {
   it("inserts a new bookmark when the URL is not present", async () => {
     const db = new FakeDbClient();
 

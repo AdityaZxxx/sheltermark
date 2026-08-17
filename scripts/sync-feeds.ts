@@ -36,7 +36,6 @@ export async function syncFeeds(): Promise<{
   };
 }
 
-// Run if executed directly
 if (require.main === module) {
   syncFeeds().then((result) => {
     logger.info("Feed sync result", {

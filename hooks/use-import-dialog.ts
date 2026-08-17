@@ -367,7 +367,6 @@ export function useImportDialog(): UseImportDialogReturn {
    */
   const toggleFolder = useCallback(
     (path: string[]) => {
-      // Top-level toggle
       if (path.length === 0) {
         const allSelected = selectedCount === parsedBookmarks.length;
         if (allSelected) {

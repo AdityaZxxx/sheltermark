@@ -178,14 +178,14 @@ function anchorToBookmark(
 
   const title = extractText(anchor);
 
-  // Extract embedded favicon from ICON attribute, if present and reasonable.
   const iconAttr = getAttr(anchor, "icon");
   let favicon_url: string | undefined;
   if (iconAttr?.startsWith("data:")) {
+    // data: favicons above the size cap are likely clipped exports;
+    // skipping falls back to favicon-resolution strategies.
     if (iconAttr.length <= MAX_FAVICON_DATA_URL_LENGTH) {
       favicon_url = iconAttr;
     }
-    // else: too large, skip silently
   } else if (iconAttr) {
     favicon_url = iconAttr;
   }
@@ -233,7 +233,6 @@ export function parseNetscapeHTML(content: string): ParseResult {
 
   const bookmarks: ParsedBookmark[] = [];
 
-  // Find every top-level <DL> in the fragment.
   for (const node of document.childNodes) {
     if (!("tagName" in node)) continue;
     if (isDL(node)) {

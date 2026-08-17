@@ -25,7 +25,6 @@ async function cleanupTrash(): Promise<{
   let removedWorkspaces = 0;
   const errors: string[] = [];
 
-  // Get all users with auto-cleanup enabled
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
     .select("id, trash_cleanup_interval")
@@ -65,7 +64,6 @@ async function cleanupTrash(): Promise<{
       `Cleaning trash for user ${profile.id} (interval: ${interval}d, cutoff: ${cutoff.toISOString()})`,
     );
 
-    // Hard-delete expired trashed bookmarks
     const { data: deletedBms, error: bmError } = await supabase
       .from("bookmarks")
       .delete()
@@ -111,7 +109,6 @@ async function cleanupTrash(): Promise<{
   return { success: true, removedBookmarks, removedWorkspaces, errors };
 }
 
-// Run if executed directly
 if (require.main === module) {
   cleanupTrash().then((result) => {
     logger.info("Trash cleanup result", {

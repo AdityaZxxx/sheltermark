@@ -135,7 +135,6 @@ class FakeQueryTerminal<TData> implements DbQueryTerminal<TData> {
         error: null,
       };
     }
-    // single
     if (filtered.length === 0) {
       const error: DbError = {
         message: "JSON object requested, multiple (or no) rows returned",

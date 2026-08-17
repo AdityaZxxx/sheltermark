@@ -404,7 +404,6 @@ export async function moveBookmarks(
       ? null
       : validated.data.targetWorkspaceId;
 
-  // 1. Get the URLs of the bookmarks to be moved
   const { data: sourceBookmarks, error: fetchError } = await supabase
     .from("bookmarks")
     .select("id, url")
@@ -418,7 +417,6 @@ export async function moveBookmarks(
   // SAFETY: select("id, url") above returns rows whose url column is a non-null string.
   const sourceUrls = sourceBookmarks.map((b) => (b as { url: string }).url);
 
-  // 2. Check for existing (non-trashed) URLs in the target workspace
   let existingQuery = supabase
     .from("bookmarks")
     .select("url")
@@ -437,7 +435,6 @@ export async function moveBookmarks(
 
   const existingUrls = new Set(existingInTarget?.map((b) => b.url) ?? []);
 
-  // 3. Separate IDs into those to move and those to skip
   const toMoveIds: string[] = [];
   let skippedCount = 0;
   // SAFETY: same rows as above — select("id, url") yields id and url string columns.
@@ -452,7 +449,6 @@ export async function moveBookmarks(
     }
   }
 
-  // 4. Perform the move for non-duplicates
   if (toMoveIds.length > 0) {
     const { error: moveError } = await supabase
       .from("bookmarks")
@@ -643,8 +639,7 @@ export async function generateAiTitleRepo(
 }
 
 // ----------------- Export bookmarks (query only) -----------------
-// This function queries Supabase for bookmarks along with their associated
-// workspaces. It returns raw data which will be formatted by the action layer.
+// Repository returns raw rows; the action layer formats the export.
 type BookmarkWithWorkspace = {
   id: string;
   url: string;
@@ -661,7 +656,6 @@ export async function exportBookmarks(
   userId: string,
   options: z.infer<typeof exportOptionsSchema>,
 ): Promise<ActionResult<BookmarkWithWorkspace[]>> {
-  // Build base query to fetch bookmarks with their workspace information
   let query = supabase
     .from("bookmarks")
     .select(`
@@ -677,7 +671,6 @@ export async function exportBookmarks(
     .eq("user_id", userId)
     .is("deleted_at", null);
 
-  // Optional workspace filter
   if (options.workspaceId) {
     query = query.eq("workspace_id", options.workspaceId);
   }

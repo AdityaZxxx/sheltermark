@@ -200,9 +200,6 @@ const chromeMock = makeChromeMock();
 // installs a lookalike here so the (unmocked) queue modules use it.
 (globalThis as { chrome: unknown }).chrome = chromeMock.chrome;
 
-// Track per-test mutable mock state — the `chrome` object above wraps a plain
-// object `chromeMock.store` which we reset in beforeEach.
-
 beforeEach(() => {
   clearStore(chromeMock.store);
   chromeMock.createdAlarms.length = 0;
@@ -319,14 +316,12 @@ describe("backoffDelayMs", () => {
 
 describe("enqueue", () => {
   it("assigns a stable UUID id and a monotonically increasing sequence", async () => {
-    const { chrome } = chromeMock;
     rafChrome({
       queueItems: [],
       queueSeq: 0,
       queuePaused: false,
       queueNotifiedOfflineAt: null,
     });
-    void chrome; // retain for the mock; storage state is what matters
 
     const a = await enqueue(
       {

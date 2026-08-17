@@ -78,8 +78,8 @@ export function setTagsUpdates(
 }
 
 // ── useRenameTag ─────────────────────────────────────────────────
-// Fix: tagKeys.links was unnecessary (links are id-pairs, not names).
-// Fix: byBookmark prefix so all per-bookmark caches refresh (names changed).
+// Links are id-pairs, not names, so a rename doesn't touch tagKeys.links;
+// per-bookmark caches refresh via the byBookmark prefix.
 
 export function renameTagDependentKeys(): readonly QueryKey[] {
   return [bookmarkKeys.all, BY_BOOKMARK_PREFIX];
@@ -101,7 +101,6 @@ export function renameTagUpdates(
 }
 
 // ── useDeleteTag ─────────────────────────────────────────────────
-// Fix: added byBookmark prefix so per-bookmark caches remove deleted tag.
 
 export function deleteTagDependentKeys(): readonly QueryKey[] {
   return [bookmarkKeys.all, BY_BOOKMARK_PREFIX];
@@ -119,7 +118,6 @@ export function deleteTagUpdates(tagId: string): AdditionalOptimisticUpdate[] {
 }
 
 // ── useUpdateBookmarkFields ──────────────────────────────────────
-// Fix: added byBookmark(bookmarkId) to optimistic updates.
 
 export function updateBookmarkFieldsDependentKeys(): readonly QueryKey[] {
   return [tagKeys.all, tagKeys.links, tagKeys.withCount];

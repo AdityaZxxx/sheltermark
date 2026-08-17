@@ -99,7 +99,6 @@ export async function parseFeed(url: string): Promise<ParsedFeed> {
   const xml = await readResponseBody(response);
   const $ = cheerio.load(xml, { xmlMode: true });
 
-  // Detect feed type
   const isAtom = $("feed").length > 0;
   const isRSS = $("channel").length > 0 || $("rss").length > 0;
 

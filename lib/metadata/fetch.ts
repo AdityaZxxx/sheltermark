@@ -73,7 +73,7 @@ export async function resolveFavicon(
       return rootFavicon;
     }
   } catch {
-    // fall through to Google
+    // root /favicon.ico missing or unreachable: fall back to Google favicon
   }
 
   return getGoogleFavicon(hostname);

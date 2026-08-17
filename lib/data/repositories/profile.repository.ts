@@ -32,7 +32,6 @@ function normalizeProfileUrl(
   return value.startsWith("http") ? value : `${prefix}${value}`;
 }
 
-// Helper: delete avatar from storage (moved logic)
 async function deleteAvatarFromStorage(
   supabase: SupabaseClient,
   avatarUrl: string | null,
@@ -165,18 +164,15 @@ export async function getProfile(
   return { success: true, data: { profile: profile as Profile } };
 }
 
-// New: Get profile display name by username if public
 export async function getProfileDisplayName(
   supabase: SupabaseClient,
   username: { username: string },
 ): Promise<ActionResult<string | null>> {
   const validated = getProfileByUsernameSchema.safeParse(username);
   if (!validated.success) {
-    // Keep behavior consistent with existing action layer: return generic invalid username
     return { success: false, error: "Invalid username" };
   }
 
-  // Only fetch the name if the profile is public
   const { data } = await supabase
     .from("profiles")
     .select("name")
@@ -184,12 +180,11 @@ export async function getProfileDisplayName(
     .eq("is_public", true)
     .single();
 
-  // Preserve original behavior: do not surface errors from Supabase, just return name or null
-  // Note: we ignore the error field intentionally to mirror action.ts behavior
+  // Intentionally ignore the Supabase error: a missing/private profile is
+  // not a failure here; callers get null.
   return { success: true, data: data?.name ?? null };
 }
 
-// New: Get public profile and workspaces with bookmarks for a given username
 export async function getPublicProfile(
   supabase: SupabaseClient,
   username: string,
@@ -201,7 +196,6 @@ export async function getPublicProfile(
     return { success: false, error: "Invalid username" };
   }
 
-  // Fetch public profile
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
@@ -213,7 +207,6 @@ export async function getPublicProfile(
     return { success: false, error: "Profile not found" };
   }
 
-  // Fetch associated workspaces with bookmarks that are public
   const { data: workspaces, error: workspacesError } = await supabase
     .from("workspaces")
     .select(
@@ -246,7 +239,6 @@ export async function getPublicProfile(
     })),
   }));
 
-  // Construct a Profile object without using type casts
   const profileObj: Profile = {
     id: profile.id,
     username: profile.username,
@@ -391,7 +383,6 @@ export async function deleteAccount(
 ): Promise<ActionResult<null>> {
   const adminClient = await createAdminClient();
   try {
-    // Delete profile via admin client
     const { error: deleteProfileError } = await adminClient
       .from("profiles")
       .delete()
@@ -415,7 +406,6 @@ export async function deleteAccount(
       await deleteAvatarFromStorage(supabase, profile.avatar_url);
     }
 
-    // Delete auth user via admin client
     const { error: deleteUserError } =
       await adminClient.auth.admin.deleteUser(userId);
     if (deleteUserError) {

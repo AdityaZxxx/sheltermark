@@ -25,7 +25,6 @@ export function checkRateLimit(userId: string): RateLimitCheckResult {
   const entry = store.get(userId);
 
   if (!entry || entry.date !== today) {
-    // First use today or new day
     store.set(userId, { date: today, count: 1 });
     return { allowed: true, remaining: DAILY_LIMIT - 1 };
   }

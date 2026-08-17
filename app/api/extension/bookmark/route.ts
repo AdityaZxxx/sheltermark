@@ -49,7 +49,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Resolve workspace: if none provided, fall back to user's default
     let workspaceId: string | null = workspace_id ?? null;
 
     if (!workspaceId) {
