@@ -90,6 +90,17 @@ export async function generateMetadata({
   };
 }
 
+function ProfileNotFound() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center text-center">
+      <h3 className="text-foreground text-2xl">Profile not found</h3>
+      <p className="text-muted-foreground">
+        Please check the username and try again
+      </p>
+    </div>
+  );
+}
+
 export default async function PublicProfilePage({
   params,
 }: PublicProfilePageProps) {
@@ -100,37 +111,23 @@ export default async function PublicProfilePage({
   ]);
 
   if (!result.success || !result.data || !result.data.profile) {
-    return (
-      <div className="flex flex-col mx-auto items-center justify-center h-screen">
-        <h3 className="text-foreground text-2xl">Profile not found</h3>
-        <p className="text-muted-foreground">
-          Please check the username and try again
-        </p>
-      </div>
-    );
+    return <ProfileNotFound />;
   }
 
   const data = result.data;
   const profile = data?.profile;
   if (!profile) {
-    return (
-      <div className="flex flex-col mx-auto items-center justify-center h-screen">
-        <h3 className="text-foreground text-2xl">Profile not found</h3>
-        <p className="text-muted-foreground">
-          Please check the username and try again
-        </p>
-      </div>
-    );
+    return <ProfileNotFound />;
   }
   const workspaces = data?.workspaces ?? [];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-1">
         <PublicHeader user={user} />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
           <div className="lg:col-span-1">
-            <div className="flex flex-col items-start text-left gap-4 sticky top-8">
+            <div className="lg:sticky lg:top-18">
               <PublicProfileSidebar profile={profile} />
             </div>
           </div>

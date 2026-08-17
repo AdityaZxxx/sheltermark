@@ -35,7 +35,7 @@ export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
         </p>
       )}
 
-      <div className="flex justify-start gap-4">
+      <div className="flex justify-start gap-4 pt-3 border-t border-border/60">
         {profile.website_url && (
           <a
             href={profile.website_url}

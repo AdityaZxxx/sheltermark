@@ -10,7 +10,7 @@ interface PublicHeaderProps {
 export async function PublicHeader({ user }: PublicHeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
+      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-3">
         <Link
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
