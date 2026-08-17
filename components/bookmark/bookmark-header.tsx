@@ -1,8 +1,11 @@
 "use client";
 
 import type { RefObject } from "react";
+
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
+
 import { BookmarkInput } from "./bookmark-input";
 import { BookmarkMobileControls } from "./bookmark-mobile-controls";
 import { BookmarkSortSelect } from "./bookmark-sort";
@@ -61,7 +64,7 @@ export function BookmarkHeader({
       <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
         <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance tracking-wider">
           {searchQuery ? "Search Results" : title}
-          {typeof count === "number" && count > 0 && (
+          {count !== undefined && count > 0 && (
             <span className="ml-1.5 tabular-nums text-muted-foreground">
               · <span>{count}</span>
             </span>

@@ -29,12 +29,16 @@
  *      Prevents accidental DoS of a single domain and reduces 429s.
  *      Global concurrency is still capped at CONCURRENCY.
  */
-import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import { checkUrl } from "~/lib/link-health/checker";
+import { config } from "dotenv";
+
 import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
-import { type LogContext, logger } from "~/lib/logger";
+
+import { checkUrl } from "~/lib/link-health/checker";
+import { logger } from "~/lib/logger";
 import { safeDomain } from "~/lib/utils";
+
+config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -193,6 +197,9 @@ async function main(): Promise<void> {
     written: boolean;
   };
 
+  // SAFETY: the .select() above asks PostgREST for exactly id, url and
+  // user_id (the workspaces join only filters rows); every returned row
+  // therefore satisfies BookmarkToCheck.
   const outcomes = await runWithPerHostConcurrency<CheckOutcome>(
     (bookmarks as BookmarkToCheck[]).map((bm) => ({
       host: safeDomain(bm.url),
@@ -224,7 +231,7 @@ async function main(): Promise<void> {
     unknown: outcomes.filter((o) => o.result.brokenStatus === "unknown").length,
     updated: outcomes.filter((o) => o.written).length,
   };
-  logger.info("URL health check done", summary as unknown as LogContext);
+  logger.info("URL health check done", summary);
 }
 
 main().catch((err) => {

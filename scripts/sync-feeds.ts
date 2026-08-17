@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { createClient } from "@supabase/supabase-js";
+
 import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
 import { logger } from "~/lib/logger";
 

@@ -132,18 +132,18 @@ async function attemptWithRetry(
       }
 
       return response;
-    } catch (error) {
-      lastError = error as Error;
+    } catch (cause) {
+      lastError = cause instanceof Error ? cause : new Error(String(cause));
       if (
         attempt < retries &&
         !externalSignal?.aborted &&
-        isRetryableError(error)
+        isRetryableError(cause)
       ) {
         const delay = Math.min(1000 * 2 ** attempt, 5000);
         await sleep(delay, externalSignal);
         continue;
       }
-      throw error;
+      throw cause;
     }
   }
 
@@ -278,7 +278,7 @@ export async function httpFetch(
   const retryOnStatus = opts?.retryOnStatus ?? DEFAULT_RETRY_STATUSES;
   const userAgent = opts?.userAgent ?? DEFAULT_USER_AGENT;
 
-  const headers: Record<string, string> = {
+  const headers = {
     "User-Agent": userAgent,
     ...opts?.headers,
   };
@@ -290,7 +290,7 @@ export async function httpFetch(
 
   // Passthrough Next.js fetch cache config (e.g. next.revalidate)
   if (opts?.next) {
-    (baseOptions as Record<string, unknown>).next = opts.next;
+    baseOptions.next = opts.next;
   }
 
   const startTime = performance.now();
@@ -391,13 +391,13 @@ function externalAbortError(): Error {
  * Returns true for errors that are likely transient and worth retrying.
  * Permanent errors (invalid URL, bad TLS, unreachable host) return false.
  */
-function isRetryableError(error: unknown): boolean {
+function isRetryableError(cause: unknown): boolean {
   // Network-level failures from fetch() surface as TypeError in most runtimes
-  if (error instanceof TypeError) return true;
+  if (cause instanceof TypeError) return true;
   // Timeout from our own AbortController should be retried
-  if ((error as Error)?.name === "AbortError") return true;
+  if (cause instanceof Error && cause.name === "AbortError") return true;
   // DOMException covers some edge-runtime network errors
-  if (error instanceof DOMException) return true;
+  if (cause instanceof DOMException) return true;
   return false;
 }
 

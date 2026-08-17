@@ -1,5 +1,7 @@
 "use client";
 
+import type { TagWithCount } from "~/lib/schemas/tag.schema";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
-import type { TagWithCount } from "~/lib/schemas/tag.schema";
 import { formatCount } from "~/lib/utils";
 
 interface TagDeleteDialogProps {

@@ -1,6 +1,8 @@
 import { isAlwaysAliveDomain } from "~/lib/link-health/domains";
 import { httpFetch } from "~/lib/utils/http-fetch";
+
 import type { Metadata } from "./types";
+
 import { decodeHtmlEntities, getGoogleFavicon } from "./utils";
 
 type Platform = "twitter" | "youtube" | "js-heavy" | "generic";

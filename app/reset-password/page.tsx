@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { ResetPasswordForm } from "~/components/auth/reset-password-form";
 import { requireAuth } from "~/lib/auth";
 

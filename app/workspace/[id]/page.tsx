@@ -1,5 +1,6 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
+
 import { getWorkspaces } from "~/app/action/workspace.action";
 import { ShareDialogManager } from "~/components/add/share-dialog-manager";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
@@ -8,7 +9,6 @@ import { UserProvider } from "~/components/providers/user-context";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
 import { workspaceKeys } from "~/lib/query-keys";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 interface WorkspacePageProps {
   params: Promise<{ id: string }>;
@@ -28,7 +28,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     queryFn: async () => {
       const result = await getWorkspaces();
       if (!result.success) throw new Error(result.error);
-      return result.data as WorkspaceWithCount[];
+      return result.data;
     },
   });
 

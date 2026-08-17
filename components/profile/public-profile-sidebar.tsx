@@ -1,8 +1,10 @@
 "use client";
 
 import { GithubLogoIcon, GlobeIcon, XLogoIcon } from "@phosphor-icons/react";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+
 import type { Profile } from "~/lib/schemas/profile.schema";
+
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 interface PublicProfileSidebarProps {
   profile: Profile;

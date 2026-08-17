@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+
 import { cn } from "~/lib/utils";
 
 interface MatrixFaviconLoaderProps {
@@ -19,7 +20,6 @@ export function MatrixFaviconLoader({
     >
       {Array.from({ length: 9 }).map((_, i) => (
         <span
-          // biome-ignore lint/suspicious/noArrayIndexKey: allowed
           key={`dot-${i}`}
           className="block rounded-full bg-muted-foreground/40 matrix-dot-pulse"
           style={{
@@ -67,7 +67,7 @@ export function TextDecrypt({
       setDisplay(text);
 
       const chars = text.split("");
-      const revealed = new Array(chars.length).fill(false);
+      const revealed = Array.from({ length: chars.length }, () => false);
       let frame = 0;
 
       const interval = setInterval(() => {

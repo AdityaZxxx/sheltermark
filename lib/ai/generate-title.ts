@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+
 import { aiProvider } from "./client";
 
 export interface GenerateTitleInput {

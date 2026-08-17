@@ -17,7 +17,9 @@
  */
 
 import type { DefaultTreeAdapterMap } from "parse5";
+
 import { parseFragment } from "parse5";
+
 import type { ParsedBookmark, ParseResult } from "./parsers";
 
 type ChildNode = DefaultTreeAdapterMap["childNode"];
@@ -62,7 +64,7 @@ function extractText(element: Element): string {
   const parts: string[] = [];
   const walk = (node: ChildNode) => {
     if (node.nodeName === "#text") {
-      // After nodeName check, only TextNode has a `value` field.
+      // SAFETY: parse5 names only its TextNode as "#text", and TextNode always carries a `value` string.
       parts.push((node as { value: string }).value);
     } else if ("childNodes" in node && node.childNodes) {
       for (const child of node.childNodes) {

@@ -8,7 +8,7 @@ export function tagsToEntries(tags: Tag[]): TagEntry[] {
 
 export function entriesEqual(a: TagEntry[], b: TagEntry[]): boolean {
   if (a.length !== b.length) return false;
-  const aKeys = a.map((e) => e.id ?? `name:${e.name.toLowerCase()}`).sort();
-  const bKeys = b.map((e) => e.id ?? `name:${e.name.toLowerCase()}`).sort();
+  const aKeys = a.map((e) => e.id ?? `name:${e.name.toLowerCase()}`).toSorted();
+  const bKeys = b.map((e) => e.id ?? `name:${e.name.toLowerCase()}`).toSorted();
   return aKeys.every((k, i) => k === bKeys[i]);
 }

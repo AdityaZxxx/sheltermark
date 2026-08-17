@@ -8,6 +8,9 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+import type { TagWithCount } from "~/lib/schemas/tag.schema";
+
 import { TagDeleteDialog } from "~/components/bookmark/tag-delete-dialog";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { Button } from "~/components/ui/button";
@@ -22,7 +25,6 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
-import type { TagWithCount } from "~/lib/schemas/tag.schema";
 import { formatCount } from "~/lib/utils";
 
 interface TagManageDialogProps {
@@ -243,6 +245,8 @@ export function TagManageDialog({
                           onBlur={(e) => {
                             // Commit when focus leaves the row entirely; skip
                             // when focus moves to the in-row Cancel button.
+                            // SAFETY: for a focus event fired by an input, relatedTarget is
+                            // the element receiving focus — an HTMLElement or null.
                             const next = e.relatedTarget as HTMLElement | null;
                             if (!next || !next.closest("form")) {
                               commitRename();
@@ -324,8 +328,8 @@ export function TagManageDialog({
 
       <TagDeleteDialog
         tag={deletingTag}
-        onOpenChange={(open) => {
-          if (!open) setDeletingTag(null);
+        onOpenChange={(dialogOpen) => {
+          if (!dialogOpen) setDeletingTag(null);
         }}
         onConfirm={handleDeleteConfirm}
         isPending={deleteTag.isPending}

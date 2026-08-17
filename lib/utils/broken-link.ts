@@ -1,5 +1,6 @@
-import { resolveBrokenStatus } from "~/lib/link-health/classifier";
 import type { BrokenStatus } from "~/lib/link-health/types";
+
+import { resolveBrokenStatus } from "~/lib/link-health/classifier";
 
 export interface RenderableBrokenState {
   /** Should the warning icon be drawn? */
@@ -80,8 +81,8 @@ export function resolveBrokenState(
     default: {
       // Defensive: never reached unless BROKEN_STATUSES grows without
       // this switch being updated.
-      const _exhaustive: never = status;
-      return _exhaustive;
+      const exhaustive: never = status;
+      return exhaustive;
     }
   }
 }

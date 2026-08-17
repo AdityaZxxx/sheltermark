@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 interface UseBookmarkKeyboardOptions {

@@ -1,10 +1,12 @@
 import { WarningIcon } from "@phosphor-icons/react";
+
+import type { BrokenStatus } from "~/lib/link-health/types";
+
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import type { BrokenStatus } from "~/lib/link-health/types";
 import { cn, resolveBrokenState } from "~/lib/utils";
 
 export interface BrokenLinkWarningProps {

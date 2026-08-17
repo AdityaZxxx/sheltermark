@@ -1,5 +1,7 @@
 import type { User } from "@supabase/supabase-js";
+
 import { redirect } from "next/navigation";
+
 import Logo from "./logo";
 import { UserMenu } from "./settings/user-menu";
 import { WorkspaceMenu } from "./workspace/workspace-menu";

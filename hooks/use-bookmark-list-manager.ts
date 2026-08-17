@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
-import { useViewPreference } from "~/hooks/use-view-preference";
-import { useWorkspaces } from "~/hooks/use-workspaces";
-import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
+
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
+import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
+import { useViewPreference } from "~/hooks/use-view-preference";
+import { useWorkspaces } from "~/hooks/use-workspaces";
+import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
 
 interface ActiveBookmark {
   id: string;
@@ -208,11 +210,6 @@ export function useBookmarkListManager(
   // ── Keyboard navigation ─────────────────────────────────────
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const _focusInput = useCallback(() => {
-    inputRef.current?.focus();
-    setFocusedIndex(-1);
-  }, []);
 
   const getItem = useCallback(
     (index: number) => {

@@ -1,6 +1,8 @@
 import { ListIcon, RowsIcon, SquaresFourIcon } from "@phosphor-icons/react";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { cn } from "~/lib/utils";
 
 interface BookmarkViewToggleProps {
@@ -25,7 +27,10 @@ export function BookmarkViewToggle({
   return (
     <Tabs
       value={view}
-      onValueChange={(v) => onViewChange(v as BookmarkViewVariant)}
+      onValueChange={(v) =>
+        // SAFETY: triggers render only the three BookmarkViewVariant values above; the callback never receives anything else.
+        onViewChange(v as BookmarkViewVariant)
+      }
     >
       <TabsList
         className={cn("grid grid-cols-3 bg-muted/60 rounded-lg", className)}

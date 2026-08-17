@@ -1,14 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
+
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
   trashedBookmarksQueryOptions,
   trashedWorkspacesQueryOptions,
 } from "~/lib/queries/trash.queries";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
-import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
 
 export function useTrash() {
   const { user: supabaseUser } = useSupabase();

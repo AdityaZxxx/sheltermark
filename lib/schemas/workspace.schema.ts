@@ -1,5 +1,7 @@
 import { z } from "zod";
+
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
 const workspaceSchema = z.object({

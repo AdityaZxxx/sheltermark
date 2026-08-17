@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { ThemeMode } from "./theme-mode";
 
 export function Footer() {

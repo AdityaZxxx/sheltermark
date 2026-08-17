@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { createClient } from "@supabase/supabase-js";
+
 import { logger } from "~/lib/logger";
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -53,6 +54,9 @@ async function cleanupTrash(): Promise<{
   logger.info(`Found ${profiles.length} users with auto-cleanup enabled`);
 
   for (const profile of profiles) {
+    // SAFETY: the query above applies .not("trash_cleanup_interval", "is", null),
+    // so every returned row carries the interval; a null here would be a
+    // PostgREST contract violation.
     const interval = profile.trash_cleanup_interval as number;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - interval);

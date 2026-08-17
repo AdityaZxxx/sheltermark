@@ -6,6 +6,9 @@ import {
   TagIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useState } from "react";
+
+import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
 import { Button } from "~/components/ui/button";
 import {
   Drawer,
@@ -15,8 +18,9 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "~/components/ui/drawer";
-import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
+
 import { BookmarkSortSelect } from "./bookmark-sort";
 import { BookmarkViewToggle } from "./bookmark-view-toggle";
 

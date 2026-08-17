@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
 
 export const usernameSchema = z
@@ -21,8 +22,8 @@ const websiteSchema = z
   .refine(
     (val) => {
       try {
-        new URL(val.startsWith("http") ? val : `https://${val}`);
-        return true;
+        const parsed = new URL(val.startsWith("http") ? val : `https://${val}`);
+        return parsed instanceof URL;
       } catch {
         return false;
       }

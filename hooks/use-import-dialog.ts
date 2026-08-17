@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import type { ImportFileType, ParsedBookmark } from "~/lib/import/parsers";
+
 import { importBookmarks, previewImport } from "~/app/action/import.action";
 import { type DetectedFormat, detectFormat } from "~/lib/import/detect";
 import {
@@ -11,8 +13,6 @@ import {
   type FolderNode,
   pathKey,
 } from "~/lib/import/folder-filter";
-
-import type { ImportFileType, ParsedBookmark } from "~/lib/import/parsers";
 import { parseImportFile } from "~/lib/import/parsers";
 import { bookmarkKeys, workspaceKeys } from "~/lib/query-keys";
 
@@ -84,7 +84,7 @@ function buildFolderTree(bookmarks: ParsedBookmark[]): FolderNode[] {
   }
 
   // Sort by path length then alphabetically for stable UI ordering.
-  return Array.from(folderMap.values()).sort((a, b) => {
+  return Array.from(folderMap.values()).toSorted((a, b) => {
     if (a.path.length !== b.path.length) return a.path.length - b.path.length;
     return a.path.join("/").localeCompare(b.path.join("/"));
   });

@@ -1,5 +1,7 @@
 import { load } from "cheerio";
+
 import type { Metadata } from "./types";
+
 import { decodeHtmlEntities, resolveUrl } from "./utils";
 
 export function extractMetadataFromHtml(
