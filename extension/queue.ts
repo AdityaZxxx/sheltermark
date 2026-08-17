@@ -170,26 +170,39 @@ function truncateErr(msg: string): string {
 
 // ---------------- Storage access ----------------
 
+/**
+ * The chrome.storage.local payload this module owns. writeState serializes a
+ * QueueState field-for-field into exactly these keys, so reads can rely on
+ * this shape (per-field fallbacks below still guard against missing keys).
+ */
+interface QueueStoragePayload {
+  queueItems?: QueueItem[];
+  queueSeq?: number;
+  queuePaused?: boolean;
+  queueNotifiedOfflineAt?: number | null;
+}
+
 async function readState(): Promise<QueueState> {
+  // SAFETY: this extension is the sole writer of the queue storage keys
+  // (writeState below), so the stored payload matches QueueStoragePayload;
+  // each field below falls back to its empty default when the key is absent.
   const raw = (await chrome.storage.local.get([
     STORAGE_KEYS.ITEMS,
     STORAGE_KEYS.SEQ,
     STORAGE_KEYS.PAUSED,
     STORAGE_KEYS.NOTIFIED_OFFLINE_AT,
-  ])) as Partial<QueueState> & Record<string, unknown>;
+  ])) as QueueStoragePayload;
 
-  const items = (raw[STORAGE_KEYS.ITEMS] as QueueItem[] | undefined) ?? [];
+  const items = raw[STORAGE_KEYS.ITEMS] ?? [];
   // Backfill `tags` for items persisted by an older build — the field did not
   // exist before quick metadata editing, and a missing value must behave
   // exactly like an empty selection.
   for (const item of items) {
     if (!Array.isArray(item.tags)) item.tags = [];
   }
-  const seq = (raw[STORAGE_KEYS.SEQ] as number | undefined) ?? 0;
-  const paused = (raw[STORAGE_KEYS.PAUSED] as boolean | undefined) ?? false;
-  const notifiedOfflineAt =
-    (raw[STORAGE_KEYS.NOTIFIED_OFFLINE_AT] as number | null | undefined) ??
-    null;
+  const seq = raw[STORAGE_KEYS.SEQ] ?? 0;
+  const paused = raw[STORAGE_KEYS.PAUSED] ?? false;
+  const notifiedOfflineAt = raw[STORAGE_KEYS.NOTIFIED_OFFLINE_AT] ?? null;
   return { items, seq, paused, notifiedOfflineAt };
 }
 
@@ -514,11 +527,10 @@ async function safePost(
   try {
     outcome = await hooks.postBookmark(item);
   } catch (err) {
-    const e = err as { message?: string };
     outcome = {
       fetchThrew: true,
       status: null,
-      errorMessage: e?.message ?? "Network error",
+      errorMessage: err instanceof Error ? err.message : "Network error",
     };
   }
   const result = classifyResponse(

@@ -10,6 +10,8 @@ const STORAGE_KEYS = {
 } as const;
 
 export async function getBaseUrl(): Promise<string> {
+  // SAFETY: this extension is the only writer of the `baseUrl` key, and
+  // setBaseUrl always stores a trimmed http(s) URL string.
   const result = (await chrome.storage.sync.get(
     STORAGE_KEYS.BASE_URL,
   )) as Record<string, string>;
@@ -21,6 +23,8 @@ export async function setBaseUrl(url: string): Promise<void> {
 }
 
 export async function getLastWorkspace(): Promise<string | null> {
+  // SAFETY: this extension is the only writer of `lastWorkspace`, and
+  // setLastWorkspace always stores a workspace id string.
   const result = (await chrome.storage.local.get(
     STORAGE_KEYS.LAST_WORKSPACE,
   )) as Record<string, string>;
@@ -55,6 +59,9 @@ export interface CachedEntry<T> {
 }
 
 async function getCachedEntry<T>(key: string): Promise<CachedEntry<T> | null> {
+  // SAFETY: this extension is the only writer of the session cache keys, and
+  // setCachedEntry always stores a CachedEntry envelope for key `key`. The
+  // Array.isArray check below re-validates the payload shape at runtime.
   const result = (await chrome.storage.session.get(key)) as Record<
     string,
     CachedEntry<T> | undefined

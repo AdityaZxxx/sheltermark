@@ -1,10 +1,21 @@
 import { DEFAULT_BASE_URL } from "./constants.js";
 import { getBaseUrl, setBaseUrl } from "./storage.js";
 
-const baseUrlInput = document.getElementById("base-url") as HTMLInputElement;
-const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
-const resetBtn = document.getElementById("reset-btn") as HTMLButtonElement;
-const statusEl = document.getElementById("status") as HTMLElement;
+// SAFETY: options.html ships as a static document alongside this module; these
+// ids are its contract. A missing element is a packaging bug — fail loudly at
+// startup instead of dereferencing null on first interaction.
+function requiredElement<T extends Element>(selector: string): T {
+  const el = document.querySelector<T>(selector);
+  if (!el) {
+    throw new Error(`[Sheltermark] options.html is missing ${selector}`);
+  }
+  return el;
+}
+
+const baseUrlInput = requiredElement<HTMLInputElement>("#base-url");
+const saveBtn = requiredElement<HTMLButtonElement>("#save-btn");
+const resetBtn = requiredElement<HTMLButtonElement>("#reset-btn");
+const statusEl = requiredElement<HTMLElement>("#status");
 
 let statusTimer: ReturnType<typeof setTimeout> | null = null;
 
