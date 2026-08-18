@@ -404,10 +404,8 @@ describe("ALWAYS_ALIVE_DOMAINS", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // One checkUrl fallback scenario not covered by link-health-e2e.test.ts:
 // the HEAD 403 → GET 200 success path (reason ok_get).
-// ---------------------------------------------------------------------------
 
 describe("checkUrl fallback", () => {
   beforeEach(() => {

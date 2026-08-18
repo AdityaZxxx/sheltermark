@@ -88,7 +88,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     void chrome.tabs.create({ url: `${baseUrl}/login` });
   });
 
-  // ---- Phase 1: everything available locally, in parallel (~1-5ms). ----
   // Tab info, cached workspaces/tags and the last-used workspace are all
   // independent — await them together instead of serially. If the session
   // cache has workspaces, the UI is fully usable before any network call.
@@ -112,7 +111,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateSaveButton();
   focusTitle();
 
-  // ---- Phase 2: authoritative server state in parallel, patch in. ----
   // Runs concurrently (previously serial). With a warm cache this only
   // refreshes the workspace list, tags, and the "already saved" flag —
   // the user can already type and save by then.
@@ -220,7 +218,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // -------------------- Title --------------------
   titleInput.addEventListener("input", () => {
     userEditedTitle = true;
     updateSaveButton();
@@ -233,7 +230,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // -------------------- Tags --------------------
   tagBox.addEventListener("click", () => tagInput.focus());
 
   tagInput.addEventListener("input", () => {
@@ -438,7 +434,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     tagInput.removeAttribute("aria-activedescendant");
   }
 
-  // -------------------- Save --------------------
   saveBtn.addEventListener("click", async () => {
     if (isSaved || !currentUrl) return;
 

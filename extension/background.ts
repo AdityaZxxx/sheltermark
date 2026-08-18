@@ -429,7 +429,6 @@ async function postBookmarkRaw({
   };
 }
 
-// -------------------- Queue integration --------------------
 // Entry points call saveOrEnqueue(): it does everything inline first so the
 // existing happy-path notifications ("Saved!" / "Already saved" / "Login
 // required") fire exactly as before. Only on a network failure (transient/

@@ -61,10 +61,6 @@ type HttpFetchResult = {
   duration: number;
 };
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
 /**
  * Single fetch with timeout and external signal support.
  * Retry is NOT handled here — that's in attemptWithRetry.
@@ -244,10 +240,6 @@ async function followRedirectsManually(
   throw new Error(`Too many redirects (max ${maxHops})`);
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
 /**
  * Fetch a URL with configurable timeout, retries, and redirect handling.
  *
@@ -296,7 +288,6 @@ export async function httpFetch(
   const startTime = performance.now();
   const redirectConfig = opts?.followRedirect;
 
-  // --- Auto-follow via native fetch ---
   if (redirectConfig === undefined || redirectConfig === true) {
     baseOptions.redirect = "follow";
     const response = await attemptWithRetry(
@@ -314,7 +305,6 @@ export async function httpFetch(
     };
   }
 
-  // --- No redirect following ---
   if (redirectConfig === false) {
     baseOptions.redirect = "manual";
     const response = await attemptWithRetry(
@@ -332,7 +322,6 @@ export async function httpFetch(
     };
   }
 
-  // --- Manual redirect following with hop validation ---
   const maxHops = redirectConfig.maxHops ?? DEFAULT_MAX_HOPS;
   const { response, finalUrl } = await followRedirectsManually(
     url,
@@ -351,10 +340,6 @@ export async function httpFetch(
     duration: Math.round(performance.now() - startTime),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Companion utilities
-// ---------------------------------------------------------------------------
 
 /**
  * Read a response body with an optional byte limit.
@@ -376,10 +361,6 @@ export async function readResponseBody(
   }
   return readStreamWithLimit(response, maxBytes);
 }
-
-// ---------------------------------------------------------------------------
-// Internal utilities
-// ---------------------------------------------------------------------------
 
 function externalAbortError(): Error {
   const err = new Error("The operation was aborted");

@@ -689,7 +689,6 @@ export async function generateAiTitleRepo(
   }
 }
 
-// ----------------- Export bookmarks (query only) -----------------
 // Repository returns raw rows; the action layer formats the export.
 type BookmarkWithWorkspace = {
   id: string;

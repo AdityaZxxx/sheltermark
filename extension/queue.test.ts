@@ -41,8 +41,6 @@ import {
   resumeQueue,
 } from "./queue.js";
 
-// ---------------- chrome mock ----------------
-
 /** The exact chrome.storage.local payload queue.ts owns. */
 interface Store {
   queueItems?: QueueItem[];
@@ -223,8 +221,6 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-// ---------------- classifyResponse ----------------
-
 describe("classifyResponse", () => {
   it("2xx → ok", () => {
     expect(classifyResponse(200, false, null)).toEqual({ kind: "ok" });
@@ -295,8 +291,6 @@ describe("classifyResponse", () => {
   });
 });
 
-// ---------------- backoffDelayMs ----------------
-
 describe("backoffDelayMs", () => {
   it("attempt 1 ≈ 30s (jitter ±50%)", () => {
     for (let i = 0; i < 20; i++) {
@@ -322,8 +316,6 @@ describe("backoffDelayMs", () => {
     }
   });
 });
-
-// ---------------- enqueue ----------------
 
 describe("enqueue", () => {
   it("assigns a stable UUID id and a monotonically increasing sequence", async () => {
@@ -469,8 +461,6 @@ describe("enqueue", () => {
     expect(item.tags).toEqual([]);
   });
 });
-
-// ---------------- drain ----------------
 
 describe("drain", () => {
   it("is a no-op when the queue is empty or paused", async () => {
@@ -821,8 +811,6 @@ describe("drain", () => {
   });
 });
 
-// ---------------- restart recovery ----------------
-
 describe("drainOnStartup", () => {
   it("resets in_flight items back to pending (idempotent retry)", async () => {
     rafChrome(
@@ -872,8 +860,6 @@ describe("drainOnStartup", () => {
   });
 });
 
-// ---------------- bounded storage metadata ----------------
-
 describe("bounded storage metadata", () => {
   it("caps per-item history at the max", async () => {
     const item = makeItem({
@@ -920,8 +906,6 @@ describe("bounded storage metadata", () => {
   });
 });
 
-// ---------------- seeded failed attempts (no immediate double-POST) ----------------
-
 describe("seedFailedAttempt (offline double-POST prevention)", () => {
   it("a save that failed inline is NOT re-POSTed immediately by the heartbeat drain", async () => {
     // Simulates: user offline → saveOrEnqueue inline POST fails transiently →
@@ -966,8 +950,6 @@ describe("seedFailedAttempt (offline double-POST prevention)", () => {
   });
 });
 
-// ---------------- heartbeat ----------------
-
 describe("heartbeat", () => {
   it("reuses the existing keepAlive alarm as the queue heartbeat (1-min period)", () => {
     installHeartbeat();
@@ -976,8 +958,6 @@ describe("heartbeat", () => {
     expect(alarm?.periodInMinutes).toBe(1);
   });
 });
-
-// ---------------- pause / resume helpers ----------------
 
 describe("pause/resume", () => {
   it("isPaused reflects the persisted flag", async () => {

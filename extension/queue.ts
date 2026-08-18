@@ -33,8 +33,6 @@ import {
   type SaveEntrySource,
 } from "./constants.js";
 
-// ---------------- Storage layout ----------------
-
 const STORAGE_KEYS = {
   ITEMS: "queueItems",
   SEQ: "queueSeq",
@@ -49,12 +47,10 @@ interface QueueState {
   notifiedOfflineAt: number | null;
 }
 
-// ---------------- Drain guard ----------------
 // In-memory only; reset on worker wake via drainOnStartup.
 
 let drainInProgress = false;
 
-// ---------------- Hooks ----------------
 // Injected dependencies so background.ts owns chrome.* + fetch + notifications
 // and the queue stays pure/testable. All are optional; defaults are no-ops so
 // tests that don't care about notifications just don't pass them.
@@ -84,8 +80,6 @@ export interface PostOutcome {
   errorMessage?: string | null; // fetch-level error string
   retryAfterHeader?: string | null; // for 429
 }
-
-// ---------------- Attempt outcome classification ----------------
 
 export type QueueAttemptResult =
   | { kind: "ok" }
@@ -168,8 +162,6 @@ function truncateErr(msg: string): string {
     : msg;
 }
 
-// ---------------- Storage access ----------------
-
 /**
  * The chrome.storage.local payload this module owns. writeState serializes a
  * QueueState field-for-field into exactly these keys, so reads can rely on
@@ -214,8 +206,6 @@ async function writeState(state: QueueState): Promise<void> {
     [STORAGE_KEYS.NOTIFIED_OFFLINE_AT]: state.notifiedOfflineAt,
   });
 }
-
-// ---------------- Enqueue ----------------
 
 export interface EnqueueInput {
   url: string;
@@ -309,8 +299,6 @@ export async function enqueue(
   return item;
 }
 
-// ---------------- Queue introspection ----------------
-
 export async function pendingCount(): Promise<number> {
   const { items } = await readState();
   return items.filter((i) => i.status === "pending" || i.status === "in_flight")
@@ -321,8 +309,6 @@ export async function isPaused(): Promise<boolean> {
   const { paused } = await readState();
   return paused;
 }
-
-// ---------------- Restart recovery ----------------
 
 /**
  * Reset every `in_flight` item to `pending` (due immediately) and clear the
@@ -356,8 +342,6 @@ export async function drainOnStartup(): Promise<void> {
   if (changed) await writeState(state);
 }
 
-// ---------------- Pause / resume ----------------
-
 export async function pauseQueue(): Promise<void> {
   const state = await readState();
   if (state.paused) return;
@@ -381,8 +365,6 @@ export async function resumeQueue(): Promise<void> {
   }
   if (changed) await writeState(state);
 }
-
-// ---------------- Drain ----------------
 
 /**
  * Process due pending items serially, one POST at a time, until none are due
@@ -552,8 +534,6 @@ function appendHistory(item: QueueItem): void {
   }
 }
 
-// ---------------- Heartbeat wiring ----------------
-
 /**
  * Register the heartbeat alarm. Idempotent: recreates the alarm. The keep-alive
  * behavior falls out for free — `drain()` touches chrome.storage.local, which
@@ -567,8 +547,6 @@ export function installHeartbeat(): void {
 export function isHeartbeatAlarm(alarmName: string): boolean {
   return alarmName === QUEUE_HEARTBEAT_ALARM;
 }
-
-// ---------------- Status helpers ----------------
 
 /**
  * Whether a `pending` item is currently due (used by tests/observability; not

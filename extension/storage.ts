@@ -37,7 +37,6 @@ export async function setLastWorkspace(workspaceId: string): Promise<void> {
   });
 }
 
-// ------------------- Session cache -------------------
 //
 // Popup data (workspaces, tags) cached in chrome.storage.session so it survives
 // MV3 service-worker restarts and lets the popup render from a ~1-3ms local read
