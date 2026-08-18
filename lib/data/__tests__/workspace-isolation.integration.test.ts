@@ -1,6 +1,6 @@
 import "dotenv/config";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { and, eq, inArray } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { getDb } from "~/lib/data/drizzle";
 import {

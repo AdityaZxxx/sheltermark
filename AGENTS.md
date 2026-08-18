@@ -99,8 +99,8 @@ bun run build            # production build
 bun run lint             # Biome check (read-only)
 bun run format:fix       # Biome autofix
 bun run check:types      # tsc --noEmit
-bun run test             # vitest run
-bun run test:watch       # vitest watch
+bun run test             # bun test --isolate
+bun run test:watch       # bun test --isolate --watch
 bun run knip             # find dead code
 bun run ext:build        # build extension to extension/dist/
 bun run ext:watch        # esbuild watch for extension

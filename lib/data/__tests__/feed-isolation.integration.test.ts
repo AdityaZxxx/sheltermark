@@ -1,6 +1,6 @@
 import "dotenv/config";
+import { describe, expect, it } from "bun:test";
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
 
 import { getDb } from "~/lib/data/drizzle";
 import {

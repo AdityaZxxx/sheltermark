@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test";
 import {
   checkUrl,
   detectSoft404,
@@ -411,16 +411,15 @@ describe("ALWAYS_ALIVE_DOMAINS", () => {
 
 describe("checkUrl fallback", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   it("falls back to GET on HEAD 403 and classifies the GET result", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
+    const fetchSpy = spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(mockResponse(null, { status: 403 }))
       .mockResolvedValueOnce(mockResponse("y".repeat(10_000), { status: 200 }))
       .mockResolvedValueOnce(mockResponse("y".repeat(10_000), { status: 200 }));

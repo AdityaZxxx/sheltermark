@@ -11,7 +11,7 @@
     "noUncheckedSideEffectImports": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
-    "types": ["node", "vitest/globals"],
+    "types": ["node", "bun"],
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,

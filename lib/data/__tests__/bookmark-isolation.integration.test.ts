@@ -1,7 +1,7 @@
-import { and, eq, inArray, isNull, like } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import "dotenv/config";
+import { and, eq, inArray, isNull, like } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Metadata } from "~/lib/metadata/types";
 

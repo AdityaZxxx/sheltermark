@@ -1,7 +1,7 @@
 /**
  * Unit tests for extension/queue.ts — offline save queue.
  *
- * jsdom gives us crypto.randomUUID. We mock only the chrome.* surface the queue
+ * Bun provides crypto.randomUUID natively. We mock only the chrome.* surface the queue
  * actually uses:
  *   - chrome.storage.local.get / .set  (in-memory Map)
  *   - chrome.alarms.create             (records calls; never fires automatically)
@@ -10,7 +10,16 @@
  * Date.now is left real except where a test explicitly stubs it.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+  mock,
+  type Mock,
+} from "bun:test";
 
 import {
   QUEUE_MAX_ATTEMPTS,
@@ -80,17 +89,17 @@ function makeChromeMock(initial: Store = {}) {
   const chrome = {
     storage: {
       local: {
-        get: vi.fn(async (keys: string | string[]) => {
+        get: mock(async (keys: string | string[]) => {
           const list = Array.isArray(keys) ? keys : [keys];
           return pickStored(list, store);
         }),
-        set: vi.fn(async (items: Partial<Store>) => {
+        set: mock(async (items: Partial<Store>) => {
           Object.assign(store, items);
         }),
       },
     },
     alarms: {
-      create: vi.fn((name: string, opts?: { periodInMinutes?: number }) => {
+      create: mock((name: string, opts?: { periodInMinutes?: number }) => {
         createdAlarms.push({ name, periodInMinutes: opts?.periodInMinutes });
       }),
     },
@@ -134,10 +143,10 @@ function makeItem(overrides: Partial<QueueItem> = {}): QueueItem {
 interface HookHarness {
   ctx: QueueHookContext;
   spies: {
-    notifyOfflineQueued: ReturnType<typeof vi.fn>;
-    notifySynced: ReturnType<typeof vi.fn>;
-    notifyPermanentFailure: ReturnType<typeof vi.fn>;
-    onAuthPaused: ReturnType<typeof vi.fn>;
+    notifyOfflineQueued: Mock;
+    notifySynced: Mock;
+    notifyPermanentFailure: Mock;
+    onAuthPaused: Mock;
   };
 }
 
@@ -154,17 +163,17 @@ function hooks(
   > = {},
 ): HookHarness {
   const notifyOfflineQueued = overrides.notifyOfflineQueued
-    ? vi.fn(overrides.notifyOfflineQueued)
-    : vi.fn();
+    ? mock(overrides.notifyOfflineQueued)
+    : mock();
   const notifySynced = overrides.notifySynced
-    ? vi.fn(overrides.notifySynced)
-    : vi.fn();
+    ? mock(overrides.notifySynced)
+    : mock();
   const notifyPermanentFailure = overrides.notifyPermanentFailure
-    ? vi.fn(overrides.notifyPermanentFailure)
-    : vi.fn();
+    ? mock(overrides.notifyPermanentFailure)
+    : mock();
   const onAuthPaused = overrides.onAuthPaused
-    ? vi.fn(overrides.onAuthPaused)
-    : vi.fn();
+    ? mock(overrides.onAuthPaused)
+    : mock();
   const ctx: QueueHookContext = {
     postBookmark,
     notifyOfflineQueued,
@@ -208,8 +217,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
-  vi.useRealTimers();
+  // Bun's jest.restoreAllMocks only restores spies; mock() instances are
+  // cleared per test by the beforeEach clearStore + mockClear calls above.
+  jest.restoreAllMocks();
+  jest.useRealTimers();
 });
 
 // ---------------- classifyResponse ----------------
@@ -371,7 +382,7 @@ describe("enqueue", () => {
   });
 
   it("coalesces the offline notification within the debounce window", async () => {
-    const notice = vi.fn();
+    const notice = mock();
     await enqueue(
       {
         url: "https://a.test",
@@ -464,7 +475,7 @@ describe("enqueue", () => {
 describe("drain", () => {
   it("is a no-op when the queue is empty or paused", async () => {
     const callCount = { n: 0 };
-    const postCount = vi.fn(async () => {
+    const postCount = mock(async () => {
       callCount.n++;
       return okOutcome;
     });
@@ -667,8 +678,8 @@ describe("drain", () => {
     rafChrome(seedQueue([makeItem({ sequence: 1 })]));
 
     // Use fake timers so we can assert on the computed delay without waiting.
-    vi.useFakeTimers();
-    vi.setSystemTime(Date.now());
+    jest.useFakeTimers();
+    jest.setSystemTime(Date.now());
 
     await drain(hooks(async () => throwOutcome).ctx);
 
@@ -682,8 +693,8 @@ describe("drain", () => {
   });
 
   it("429 Retry-After defers both the failing item and other pending items", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(Date.now());
+    jest.useFakeTimers();
+    jest.setSystemTime(Date.now());
 
     const future = new Date(Date.now() + 5 * 60_000).toUTCString();
 
@@ -716,8 +727,8 @@ describe("drain", () => {
   });
 
   it("kills a transient item after MAX_ATTEMPTS (dead, no more retry)", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(Date.now());
+    jest.useFakeTimers();
+    jest.setSystemTime(Date.now());
     rafChrome(
       seedQueue([
         makeItem({
@@ -854,7 +865,7 @@ describe("drainOnStartup", () => {
     // Guard is module-internal; drainOnStartup must clear it. We test the
     // observable behavior: after restart reset, drain processes items normally.
     rafChrome(seedQueue([makeItem({ status: "in_flight", sequence: 1 })]));
-    const post = vi.fn(async () => okOutcome);
+    const post = mock(async () => okOutcome);
     await drainOnStartup();
     await drain(hooks(post).ctx);
     expect(post).toHaveBeenCalledOnce();
@@ -916,7 +927,7 @@ describe("seedFailedAttempt (offline double-POST prevention)", () => {
     // Simulates: user offline → saveOrEnqueue inline POST fails transiently →
     // enqueue with a seeded failed attempt → next drain must wait for backoff,
     // NOT re-fire the POST right away.
-    const post = vi.fn(async () => throwOutcome);
+    const post = mock(async () => throwOutcome);
     await enqueue(
       {
         url: "https://offline.test",
@@ -937,8 +948,8 @@ describe("seedFailedAttempt (offline double-POST prevention)", () => {
   });
 
   it("an inline 429 seed honors the explicit Retry-After delay, not backoff", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(Date.now());
+    jest.useFakeTimers();
+    jest.setSystemTime(Date.now());
     const retryAfterMs = 120_000; // 2 minutes
     await enqueue(
       {
