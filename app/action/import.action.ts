@@ -5,7 +5,7 @@ import type { ImportFileType } from "~/lib/import/parsers";
 import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { asDbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/drizzle";
 import { batchInsertBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import {
   createWorkspaceRaw,
@@ -125,14 +125,14 @@ export async function importBookmarks(
     };
   }
 
-  const { user, supabase } = await requireAuth();
+  const { user } = await requireAuth();
 
   let targetWorkspaceId: string | null | undefined =
     validated.data.targetWorkspaceId;
 
   if (validated.data.createWorkspace && validated.data.newWorkspaceName) {
     const result = await createWorkspaceRaw(
-      asDbClient(supabase),
+      getDb(),
       user.id,
       validated.data.newWorkspaceName,
     );
@@ -145,7 +145,7 @@ export async function importBookmarks(
   }
 
   if (!targetWorkspaceId && !validated.data.createWorkspace) {
-    const result = await getDefaultWorkspace(asDbClient(supabase), user.id);
+    const result = await getDefaultWorkspace(getDb(), user.id);
 
     if (!result.success) {
       return result;
@@ -157,7 +157,7 @@ export async function importBookmarks(
   }
 
   return batchInsertBookmarks(
-    asDbClient(supabase),
+    getDb(),
     user.id,
     targetWorkspaceId ?? null,
     bookmarksToImport,

@@ -5,13 +5,13 @@ import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
 
 import { requireAuth } from "~/lib/auth";
-import { asDbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/drizzle";
 import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import { escapeCSV } from "~/lib/import/csv";
 import { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 
 interface WorkspaceInfo {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -38,10 +38,10 @@ export async function exportBookmarks(
     return { success: false, error: msg };
   }
 
-  const { user, supabase } = await requireAuth();
+  const { user } = await requireAuth();
 
   const repoResult = await repoExportBookmarks(
-    asDbClient(supabase),
+    getDb(),
     user.id,
     validated.data,
   );

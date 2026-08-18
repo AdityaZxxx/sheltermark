@@ -10,6 +10,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // server-only throws outside Next's react-server condition; tests run
+      // server-side already, so map it to an inert stub.
+      "server-only": path.resolve(
+        __dirname,
+        "lib/__tests__/server-only-stub.ts",
+      ),
       "~": path.resolve(__dirname),
     },
   },

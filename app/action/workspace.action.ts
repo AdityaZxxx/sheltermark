@@ -4,7 +4,7 @@ import type { ActionResult } from "~/lib/action-result";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { asDbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/drizzle";
 import {
   createWorkspace as createWorkspaceRepo,
   deleteWorkspace as deleteWorkspaceRepo,
@@ -15,10 +15,9 @@ import {
   togglePublicStatus as togglePublicStatusRepo,
 } from "~/lib/data/repositories/workspace.repository";
 
-/** See bookmark.action.ts for the cast rationale. */
 async function auth() {
-  const { user, supabase } = await requireAuth();
-  return { user, db: asDbClient(supabase) };
+  const { user } = await requireAuth();
+  return { user, db: getDb() };
 }
 
 export async function getWorkspaces(): Promise<

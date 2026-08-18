@@ -35,11 +35,21 @@ GitHub Actions cron
 
 Every write goes through three layers. Bypassing any of them breaks invariants.
 
-1. **Server Action** (`app/action/<entity>.action.ts`) — gates with `requireAuth()` from `lib/auth.ts`, passes the user + supabase client to the repository.
-2. **Repository** (`lib/data/repositories/<entity>.repository.ts`) — validates input with a Zod schema from `lib/schemas/`, executes the Supabase query, returns typed results.
+1. **Server Action** (`app/action/<entity>.action.ts`) — gates with `requireAuth()` from `lib/auth.ts`, passes the user + Drizzle db to the repository.
+2. **Repository** (`lib/data/repositories/<entity>.repository.ts`) — validates input with a Zod schema from `lib/schemas/`, executes the database query, returns typed results.
 3. **Client Hook** (`hooks/use-*.ts` or `lib/mutations/<entity>.mutations.ts`) — wraps the server action in TanStack Query's `useMutation`, with optimistic updates against the matching `lib/queries/<entity>.queries.ts` cache.
 
 Reads go through TanStack Query hooks in `lib/queries/`. Query keys are centralized in `lib/query-keys.ts`.
+
+### Data layer
+
+All repositories use Drizzle ORM (the Supabase client is gone from the repository layer; it remains only in non-repository scripts like `scripts/check-urls.ts` and `scripts/cleanup-trash.ts`):
+
+- **Drizzle schema:** `lib/data/schema.ts` — a derived model of the public schema, hand-written and kept in sync with `supabase/migrations/` (the canonical migration history; drizzle-kit migrations are not used, and drizzle-kit `generate` offline is the parity check).
+- **Connection:** `lib/data/drizzle.ts` — server-only, pooled `DATABASE_URL` with `prepare: false`. Non-Next entrypoints (cron scripts) build instances via `lib/data/drizzle-instance.ts` (`createDb()` without `server-only`).
+- **Security contract:** the Drizzle connection uses the service-role credential and **bypasses RLS**. Every Drizzle query must enforce `user_id` ownership explicitly. Live-database isolation suites per entity (`lib/data/__tests__/*-isolation.integration.test.ts`) exercise this with another user's known IDs (run requires `DATABASE_URL`; skipped in CI without it).
+- Public-visibility reads (public profiles) re-implement the RLS SELECT policy in repository code since Drizzle bypasses RLS.
+- Cron scripts that touch Drizzle (`scripts/sync-feeds.ts`) require `DATABASE_URL`, not `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Auth
 

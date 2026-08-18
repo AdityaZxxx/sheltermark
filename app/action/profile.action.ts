@@ -3,6 +3,7 @@ import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark.schema";
 import type { Profile } from "~/lib/schemas/profile.schema";
 
 import { requireAuthSafe } from "~/lib/auth";
+import { getDb } from "~/lib/data/drizzle";
 import {
   getProfileDisplayName as repoGetProfileDisplayName,
   getPublicProfile as repoGetPublicProfile,
@@ -11,8 +12,8 @@ import {
 export async function getProfileDisplayName(username: {
   username: string;
 }): Promise<ActionResult<string | null>> {
-  const { supabase } = await requireAuthSafe();
-  return repoGetProfileDisplayName(supabase, username);
+  await requireAuthSafe();
+  return repoGetProfileDisplayName(getDb(), username);
 }
 
 export async function getPublicProfile(
@@ -20,6 +21,6 @@ export async function getPublicProfile(
 ): Promise<
   ActionResult<{ profile?: Profile; workspaces: WorkspaceWithBookmarks[] }>
 > {
-  const { supabase } = await requireAuthSafe();
-  return repoGetPublicProfile(supabase, username);
+  await requireAuthSafe();
+  return repoGetPublicProfile(getDb(), username);
 }

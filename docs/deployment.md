@@ -15,6 +15,7 @@ Required Vercel environment variables (Project Settings → Environment Variable
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`             | From Supabase project settings.                                                                                  |
 | `SUPABASE_URL`                              | Same value as the public one.                                                                                    |
 | `SUPABASE_SERVICE_ROLE_KEY`                 | Secret — never prefix with `NEXT_PUBLIC_`.                                                                       |
+| `DATABASE_URL`                              | Postgres connection string (session pooler) for Drizzle. Used by the web app repositories and `sync-feeds`.      |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | For Google OAuth. Configure the redirect URL in Google Cloud Console as `https://<vercel-domain>/auth/callback`. |
 | `OLLAMA_API_KEY`                            | For AI title generation. Optional — feature degrades gracefully if unset.                                        |
 | `NEXT_PUBLIC_LOG_LEVEL`                     | Optional, defaults to `info`.                                                                                    |
@@ -29,7 +30,7 @@ Three workflows in `.github/workflows/`, each with `schedule` + `workflow_dispat
 | ----------------------- | ----------------------------- | -------------------------- | ------------------------------------------- |
 | `check-urls-health.yml` | `0 18 * * 0` (Sun 18:00 UTC)  | `scripts/check-urls.ts`    | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | `cleanup-trash.yml`     | `0 0 * * *` (daily 00:00 UTC) | `scripts/cleanup-trash.ts` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| `sync-feeds.yml`        | `*/30 * * * *` (every 30 min) | `scripts/sync-feeds.ts`    | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
+| `sync-feeds.yml`        | `*/30 * * * *` (every 30 min) | `scripts/sync-feeds.ts`    | `DATABASE_URL`                              |
 
 All three use `oven-sh/setup-bun@v2` and `bun install`. The `check-urls-health.yml` workflow additionally installs `@supabase/supabase-js` and `dotenv` directly (it predates the consolidated install).
 

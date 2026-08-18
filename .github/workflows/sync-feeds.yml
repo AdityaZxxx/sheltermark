@@ -22,6 +22,5 @@ jobs:
       - name: Sync feeds
         run: bun run sync-feeds
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           NODE_ENV: production

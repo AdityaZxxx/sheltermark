@@ -39,7 +39,10 @@ export default defineConfig({
   ],
   rules: {
     "react/react-in-jsx-scope": "off",
-    "import/no-unassigned-import": ["error", { allow: ["**/*.css", "@/**/*"] }],
+    "import/no-unassigned-import": [
+      "error",
+      { allow: ["**/*.css", "@/**/*", "server-only", "dotenv/config"] },
+    ],
     "anti-slop/no-chained-type-assertions": "error",
     "anti-slop/no-conditional-empty-object-spread": "error",
     "anti-slop/no-known-value-widening": "error",

@@ -15,7 +15,7 @@ import type {
 import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { asDbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/drizzle";
 import {
   deleteBookmarks as deleteBookmarksRepo,
   generateAiTitleRepo,
@@ -28,16 +28,9 @@ import {
   updateBookmarkNote as updateBookmarkNoteRepo,
 } from "~/lib/data/repositories/bookmark.repository";
 
-/**
- * Returns the authenticated user and a DbClient-typed view of the
- * Supabase client. Cast through `unknown` because Supabase's recursive
- * generics hit TS's instantiation-depth limit when structurally checked
- * against DbClient — the runtime shape is compatible, the type system
- * just can't prove it without expanding to infinity.
- */
 async function auth() {
-  const { user, supabase } = await requireAuth();
-  return { user, db: asDbClient(supabase) };
+  const { user } = await requireAuth();
+  return { user, db: getDb() };
 }
 
 export async function addBookmark(

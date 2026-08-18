@@ -1,7 +1,9 @@
+import "server-only";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DbClient } from "~/lib/data/db-client";
+import type { DrizzleDb } from "~/lib/data/drizzle";
 
 const rpcResultSchema = z.object({
   success: z.boolean(),
@@ -9,49 +11,57 @@ const rpcResultSchema = z.object({
   data: z.null(),
 });
 
-export async function deleteWorkspaceWithBookmarks(
-  supabase: DbClient,
-  userId: string,
-  workspaceId: string,
-): Promise<ActionResult<null>> {
-  const { data, error } = await supabase.rpc(
-    "delete_workspace_with_bookmarks",
-    {
-      p_workspace_id: workspaceId,
-      p_user_id: userId,
-    },
-  );
-
-  if (error) return { success: false, error: error.message };
-
-  const result = rpcResultSchema.safeParse(data);
-  if (!result.success)
-    return {
-      success: false,
-      error: "Unexpected response from delete_workspace_with_bookmarks",
-    };
-  if (!result.data.success)
-    return { success: false, error: result.data.error ?? "Unknown error" };
+function parseRpcResult(
+  rows: unknown[],
+  errorLabel: string,
+): ActionResult<null> {
+  // SAFETY: the wrapped function returns a single jsonb column aliased
+  // "result"; db.execute yields one row per returned value.
+  const raw =
+    rows.length > 0 ? (rows[0] as { result?: unknown }).result : undefined;
+  const parsed = rpcResultSchema.safeParse(raw);
+  if (!parsed.success)
+    return { success: false, error: `Unexpected response from ${errorLabel}` };
+  if (!parsed.data.success)
+    return { success: false, error: parsed.data.error ?? "Unknown error" };
   return { success: true, data: null };
 }
 
-export async function emptyUserTrash(
-  supabase: DbClient,
+export async function deleteWorkspaceWithBookmarks(
+  db: DrizzleDb,
   userId: string,
+  workspaceId: string,
 ): Promise<ActionResult<null>> {
-  const { data, error } = await supabase.rpc("empty_user_trash", {
-    p_user_id: userId,
-  });
-
-  if (error) return { success: false, error: error.message };
-
-  const result = rpcResultSchema.safeParse(data);
-  if (!result.success)
+  try {
+    const rows = Array.from(
+      await db.execute(
+        sql`select public.delete_workspace_with_bookmarks(${workspaceId}::uuid, ${userId}::uuid) as "result"`,
+      ),
+    );
+    return parseRpcResult(rows, "delete_workspace_with_bookmarks");
+  } catch (cause) {
     return {
       success: false,
-      error: "Unexpected response from empty_user_trash",
+      error: cause instanceof Error ? cause.message : "Database error",
     };
-  if (!result.data.success)
-    return { success: false, error: result.data.error ?? "Unknown error" };
-  return { success: true, data: null };
+  }
+}
+
+export async function emptyUserTrash(
+  db: DrizzleDb,
+  userId: string,
+): Promise<ActionResult<null>> {
+  try {
+    const rows = Array.from(
+      await db.execute(
+        sql`select public.empty_user_trash(${userId}::uuid) as "result"`,
+      ),
+    );
+    return parseRpcResult(rows, "empty_user_trash");
+  } catch (cause) {
+    return {
+      success: false,
+      error: cause instanceof Error ? cause.message : "Database error",
+    };
+  }
 }

@@ -41,7 +41,7 @@ import {
   useRestoreBookmarks,
   useRestoreWorkspace,
 } from "~/lib/mutations/trash.mutations";
-import { getRestoreTargetForUI } from "~/lib/restore";
+import { getRestoreTargetForUI } from "~/lib/restore/restore-target";
 
 export function TrashView() {
   const { trashedBookmarks, trashedWorkspaces, isLoading, totalCount } =

@@ -80,6 +80,8 @@ Reads go through `lib/queries/*.ts` hooks.
 - **Server components by default.** Use `"use client"` only where interactivity is required.
 - **Keyboard-first.** All actions accessible via keyboard. See `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-global-shortcuts.ts`.
 - **Follow shadcn/ui patterns.** Components in `components/ui/` are vendored — don't hand-edit; regenerate via `shadcn` CLI.
+- **Do not add comments proactively** Only add comments for non-obvious intent, business rules, constraints, workarounds, security considerations, or important trade-offs.
+- **Do not add tests solely to increase coverage**
 
 ## Working Rules
 
