@@ -2,19 +2,21 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+
+import type { Bookmark, BookmarkSort } from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
+
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
-import { bookmarksQueryOptions } from "~/lib/queries/bookmark.queries";
 import {
   filterBookmarksBySearch,
   filterBookmarksByTags,
   filterBookmarksByWorkspace,
   sortBookmarks as sortBookmarksFn,
 } from "~/lib/queries/bookmark-filters";
+import { bookmarksQueryOptions } from "~/lib/queries/bookmark.queries";
 import { userTagsQueryOptions } from "~/lib/queries/tag.queries";
 import { bookmarkKeys, tagKeys, workspaceKeys } from "~/lib/query-keys";
-import type { Bookmark, BookmarkSort } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
 
 const DEFAULT_SORT: BookmarkSort = { sortBy: "created_at", sortOrder: "desc" };
 
@@ -30,6 +32,7 @@ async function fetchAllBookmarkTags(
     .eq("bookmarks.user_id", userId);
 
   if (error) throw new Error(error.message);
+  // SAFETY: select returns only bookmark_id/tag_id columns per join row, matching the BookmarkTagLink shape.
   return (data ?? []) as BookmarkTagLink[];
 }
 

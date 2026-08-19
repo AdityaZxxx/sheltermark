@@ -57,7 +57,6 @@ export type ExtensionMessage =
   | GetPopupMessage
   | GetTagsMessage;
 
-// ------------------- Save queue -------------------
 //
 // The queue persists failed/to-be-attempted saves in chrome.storage.local so they
 // survive MV3 service-worker idleness and Chrome restarts. See the offline-save

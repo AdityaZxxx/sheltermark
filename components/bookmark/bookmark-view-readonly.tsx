@@ -2,11 +2,14 @@
 
 import { useQueryState } from "nuqs";
 import { useState } from "react";
-import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+
 import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+
+import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { getPastelColor, safeDomain, slugify } from "~/lib/utils";
+
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkComfortItem } from "./bookmark-comfort-item";
 import { BookmarkListItem } from "./bookmark-list-item";

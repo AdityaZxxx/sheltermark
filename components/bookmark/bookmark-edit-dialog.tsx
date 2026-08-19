@@ -4,6 +4,10 @@ import { Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
+import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
+
 import { generateAiTitle } from "~/app/action/bookmark.action";
 import { MarkdownIcon } from "~/components/markdown-icon";
 import { Button } from "~/components/ui/button";
@@ -25,9 +29,8 @@ import {
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
 import { useUserTagsWithCount } from "~/hooks/use-user-tags";
-import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
 import { entriesEqual, type TagEntry, tagsToEntries } from "~/lib/utils";
+
 import { BookmarkNoteText } from "./bookmark-note-text";
 import { TagInput } from "./tag-input";
 
@@ -174,6 +177,7 @@ function EditFormInner({
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
+                    // oxlint-disable-next-line jsx-a11y/no-autofocus -- intentional: dialog opens with focus in the title input
                     autoFocus
                     maxLength={200}
                     required

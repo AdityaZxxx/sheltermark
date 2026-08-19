@@ -1,8 +1,9 @@
+import type { Metadata } from "./types";
+
 import { logger } from "../logger";
 import { extractMetadataFromHtml } from "./extract";
 import { isSafeUrl, resolveFavicon, safeFetchHtml } from "./fetch";
 import { fallbackStrategy, fetchViaMicrolink } from "./strategies";
-import type { Metadata } from "./types";
 import { createBasicMetadata } from "./utils";
 
 export async function fetchMetadata(url: string): Promise<Metadata> {

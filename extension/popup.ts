@@ -1,4 +1,5 @@
 import {
+  type CheckResult,
   MESSAGE_TYPES,
   type PopupInfo,
   type TabInfo,
@@ -30,22 +31,49 @@ interface TagChip {
 }
 const selectedTags: TagChip[] = [];
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const authSection = document.getElementById("auth-section") as HTMLElement;
-  const mainSection = document.getElementById("main-section") as HTMLElement;
-  const titleInput = document.getElementById("title-input") as HTMLInputElement;
-  const workspaceSelect = document.getElementById(
-    "workspace-select",
-  ) as HTMLSelectElement;
-  const tagBox = document.getElementById("tag-box") as HTMLElement;
-  const tagInput = document.getElementById("tag-input") as HTMLInputElement;
-  const tagSuggestions = document.getElementById(
-    "tag-suggestions",
-  ) as HTMLElement;
-  const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
-  const authBtn = document.getElementById("auth-btn") as HTMLButtonElement;
-  const statusDiv = document.getElementById("status") as HTMLElement;
+// SAFETY: popup.html ships as a static document alongside this module; these
+// ids are its contract. A missing element is a packaging bug — fail loudly at
+// startup instead of dereferencing null on first interaction.
+function requiredElement<T extends Element>(selector: string): T {
+  const el = document.querySelector<T>(selector);
+  if (!el) {
+    throw new Error(`[Sheltermark] popup.html is missing ${selector}`);
+  }
+  return el;
+}
 
+const authSection = requiredElement<HTMLElement>("#auth-section");
+const mainSection = requiredElement<HTMLElement>("#main-section");
+const titleInput = requiredElement<HTMLInputElement>("#title-input");
+const workspaceSelect = requiredElement<HTMLSelectElement>("#workspace-select");
+const tagBox = requiredElement<HTMLElement>("#tag-box");
+const tagInput = requiredElement<HTMLInputElement>("#tag-input");
+const tagSuggestions = requiredElement<HTMLElement>("#tag-suggestions");
+const saveBtn = requiredElement<HTMLButtonElement>("#save-btn");
+const authBtn = requiredElement<HTMLButtonElement>("#auth-btn");
+const statusDiv = requiredElement<HTMLElement>("#status");
+
+function getCurrentTabInfo(): Promise<TabInfo | null> {
+  // Query tabs directly from the popup ("tabs" permission covers url/title)
+  // instead of a message round-trip through the service worker — one less
+  // hop, and no dependency on the worker being awake for first paint.
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+      if (chrome.runtime.lastError || !tab) {
+        resolve(null);
+        return;
+      }
+      resolve({
+        url: tab.url,
+        title: tab.title,
+        favIconUrl: tab.favIconUrl,
+      });
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   let workspaces: Workspace[] = [];
   let selectedWorkspaceId: string | null = null;
   let currentTabInfo: TabInfo | null = null;
@@ -60,7 +88,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     void chrome.tabs.create({ url: `${baseUrl}/login` });
   });
 
-  // ---- Phase 1: everything available locally, in parallel (~1-5ms). ----
   // Tab info, cached workspaces/tags and the last-used workspace are all
   // independent — await them together instead of serially. If the session
   // cache has workspaces, the UI is fully usable before any network call.
@@ -84,7 +111,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateSaveButton();
   focusTitle();
 
-  // ---- Phase 2: authoritative server state in parallel, patch in. ----
   // Runs concurrently (previously serial). With a warm cache this only
   // refreshes the workspace list, tags, and the "already saved" flag —
   // the user can already type and save by then.
@@ -149,6 +175,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let popupInfo: PopupInfo;
     try {
+      // SAFETY: background.ts answers GET_POPUP with getPopupInfo(), which
+      // always resolves to the PopupInfo contract before sendResponse.
       popupInfo = (await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.GET_POPUP,
         data: { url: currentUrl ?? "", workspaceId: lastWorkspace },
@@ -179,6 +207,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function fetchTags(): Promise<void> {
     try {
+      // SAFETY: background.ts answers GET_TAGS with TagsResult
+      // ({ authenticated, tags }) on both the success and failure paths.
       const result = (await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.GET_TAGS,
       })) as TagsResult;
@@ -188,7 +218,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // -------------------- Title --------------------
   titleInput.addEventListener("input", () => {
     userEditedTitle = true;
     updateSaveButton();
@@ -201,7 +230,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // -------------------- Tags --------------------
   tagBox.addEventListener("click", () => tagInput.focus());
 
   tagInput.addEventListener("input", () => {
@@ -406,7 +434,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     tagInput.removeAttribute("aria-activedescendant");
   }
 
-  // -------------------- Save --------------------
   saveBtn.addEventListener("click", async () => {
     if (isSaved || !currentUrl) return;
 
@@ -457,10 +484,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!currentUrl || !selectedWorkspaceId) return;
 
     try {
+      // SAFETY: background.ts answers CHECK_BOOKMARK with CheckResult
+      // ({ saved }) on both the success and the error fallback path.
       const result = (await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.CHECK_BOOKMARK,
         data: { url: currentUrl, workspaceId: selectedWorkspaceId },
-      })) as { saved?: boolean };
+      })) as CheckResult;
 
       if (result.saved) {
         isSaved = true;
@@ -489,26 +518,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function getCurrentTabInfo(): Promise<TabInfo | null> {
-    // Query tabs directly from the popup ("tabs" permission covers url/title)
-    // instead of a message round-trip through the service worker — one less
-    // hop, and no dependency on the worker being awake for first paint.
-    return new Promise((resolve) => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tab = tabs[0];
-        if (chrome.runtime.lastError || !tab) {
-          resolve(null);
-          return;
-        }
-        resolve({
-          url: tab.url,
-          title: tab.title,
-          favIconUrl: tab.favIconUrl,
-        });
-      });
-    });
-  }
-
   function showAuthRequired(): void {
     authSection.classList.remove("hidden");
     mainSection.classList.add("hidden");
@@ -518,11 +527,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Fire-and-restore: all independent, so parallel (was serial). Tags read
     // from the session cache first — they were warmed by the initial open —
     // and the network refetch updates them when it lands.
-    const [tabInfo, cachedTagsEntry] = await Promise.all([
+    const [refreshedTabInfo, cachedTagsEntry] = await Promise.all([
       getCurrentTabInfo(),
       getCachedTags(),
     ]);
-    currentTabInfo = tabInfo;
+    currentTabInfo = refreshedTabInfo;
     currentUrl = currentTabInfo?.url ?? null;
     if (cachedTagsEntry) allTags = cachedTagsEntry.value;
     if (!userEditedTitle) {

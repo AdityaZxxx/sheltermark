@@ -1,81 +1,99 @@
 import {
   type MutationKey,
+  type QueryClient,
   type QueryKey,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import type { ActionResult } from "~/lib/action-result";
+
 import { logger } from "~/lib/logger";
 
-function defaultKey<T>(item: T): string {
-  return (item as { id: string }).id as string;
-}
-
-export function optimisticRemove<T>(
-  oldData: unknown,
+export function optimisticRemove<T extends { id: string }>(
+  oldData: T[] | undefined,
   id: string | string[],
-  getKey: (item: T) => string = defaultKey,
+  getKey: (item: T) => string = (item) => item.id,
 ): T[] {
-  const prev = (oldData as T[]) ?? [];
+  const prev = oldData ?? [];
   const idsToRemove = new Set(Array.isArray(id) ? id : [id]);
   return prev.filter((item) => !idsToRemove.has(getKey(item)));
 }
 
-export function optimisticUpdate<T>(
-  oldData: unknown,
+export function optimisticUpdate<T extends { id: string }>(
+  oldData: T[] | undefined,
   id: string,
   updater: (item: T) => T,
-  getKey: (item: T) => string = defaultKey,
+  getKey: (item: T) => string = (item) => item.id,
 ): T[] {
-  const prev = (oldData as T[]) ?? [];
+  const prev = oldData ?? [];
   return prev.map((item) => (getKey(item) === id ? updater(item) : item));
 }
 
-export function optimisticAppend<T>(oldData: unknown, item: T): T[] {
-  const prev = (oldData as T[]) ?? [];
-  return [...prev, item];
+export function optimisticAppend<T>(oldData: T[] | undefined, item: T): T[] {
+  return [...(oldData ?? []), item];
 }
 
-export function optimisticPrepend<T>(oldData: unknown, item: T): T[] {
-  const prev = (oldData as T[]) ?? [];
-  return [item, ...prev];
+export function optimisticPrepend<T>(oldData: T[] | undefined, item: T): T[] {
+  return [item, ...(oldData ?? [])];
 }
 
-interface AdditionalOptimisticUpdate {
+/**
+ * A secondary cache write applied during optimistic update.
+ *
+ * `apply` receives the live QueryClient so each update reads and writes
+ * its own cache entry with the owner's concrete data type instead of a
+ * type-erased updater.
+ */
+export interface AdditionalOptimisticUpdate {
   key: QueryKey;
-  updater: (oldData: unknown) => unknown;
+  apply: (client: QueryClient) => void;
 }
 
-interface OptimisticMutationOptions<TVariables, TData> {
+/**
+ * Wrap a typed cache update as an AdditionalOptimisticUpdate.
+ * The updater's TData is the owner contract of `key`'s cache entry.
+ */
+export function typedUpdate<TData>(
+  key: QueryKey,
+  updater: (oldData: TData | undefined) => TData,
+): AdditionalOptimisticUpdate {
+  return {
+    key,
+    apply: (client) => {
+      client.setQueryData(key, updater(client.getQueryData<TData>(key)));
+    },
+  };
+}
+
+interface OptimisticMutationOptions<TVariables, TData, TQueryData> {
   mutationFn: (variables: TVariables) => Promise<ActionResult<TData>>;
   mutationKey?: MutationKey;
   queryKey: QueryKey;
   dependentQueryKeys?: readonly QueryKey[];
   additionalOptimisticUpdates?: (
     variables: TVariables,
-    optimisticPrimaryData: unknown,
+    optimisticPrimaryData: TQueryData,
   ) => AdditionalOptimisticUpdate[];
   successMessage?: string | null;
   successMessageOnMutate?: boolean;
   errorMessage?: string;
-  prepareOptimisticData: (oldData: unknown, variables: TVariables) => unknown;
+  prepareOptimisticData: (
+    oldData: TQueryData | undefined,
+    variables: TVariables,
+  ) => TQueryData;
   onSuccess?: (result: ActionResult<TData>) => void;
 }
 
-interface AdditionalPreviousData {
-  key: QueryKey;
-  data: unknown;
-}
-
 interface MutationContext {
-  previousData?: unknown;
-  additionalPreviousData: AdditionalPreviousData[];
+  rollback: () => void;
+  additionalKeys: readonly QueryKey[];
   successToastId?: string | number;
 }
 
-export function useOptimisticMutation<TVariables, TData = unknown>(
-  options: OptimisticMutationOptions<TVariables, TData>,
+export function useOptimisticMutation<TVariables, TData, TQueryData>(
+  options: OptimisticMutationOptions<TVariables, TData, TQueryData>,
 ) {
   const queryClient = useQueryClient();
   const {
@@ -96,7 +114,7 @@ export function useOptimisticMutation<TVariables, TData = unknown>(
     mutationKey,
     onMutate: async (variables: TVariables) => {
       await queryClient.cancelQueries({ queryKey });
-      const previousData = queryClient.getQueryData(queryKey);
+      const previousData = queryClient.getQueryData<TQueryData>(queryKey);
 
       const optimisticPrimaryData = prepareOptimisticData(
         previousData,
@@ -113,12 +131,19 @@ export function useOptimisticMutation<TVariables, TData = unknown>(
         ),
       );
 
-      const additionalPreviousData: AdditionalPreviousData[] = [];
+      const restoreSteps: Array<() => void> = [];
+      if (previousData !== undefined) {
+        restoreSteps.push(() => {
+          queryClient.setQueryData(queryKey, previousData);
+        });
+      }
       for (const update of additionalUpdates) {
         const prev = queryClient.getQueryData(update.key);
-        additionalPreviousData.push({ key: update.key, data: prev });
         if (prev !== undefined) {
-          queryClient.setQueryData(update.key, update.updater(prev));
+          restoreSteps.push(() => {
+            queryClient.setQueryData(update.key, prev);
+          });
+          update.apply(queryClient);
         }
       }
 
@@ -127,7 +152,13 @@ export function useOptimisticMutation<TVariables, TData = unknown>(
         successToastId = toast.success(successMessage);
       }
 
-      return { previousData, additionalPreviousData, successToastId };
+      return {
+        rollback: () => {
+          for (const step of restoreSteps) step();
+        },
+        additionalKeys: additionalUpdates.map((update) => update.key),
+        successToastId,
+      };
     },
     onError: (
       error: Error,
@@ -139,16 +170,7 @@ export function useOptimisticMutation<TVariables, TData = unknown>(
         variables,
         mutationKey: queryKey,
       });
-      if (context?.previousData !== undefined) {
-        queryClient.setQueryData(queryKey, context.previousData);
-      }
-      if (context?.additionalPreviousData) {
-        for (const entry of context.additionalPreviousData) {
-          if (entry.data !== undefined) {
-            queryClient.setQueryData(entry.key, entry.data);
-          }
-        }
-      }
+      context?.rollback();
       if (context?.successToastId !== undefined) {
         toast.dismiss(context.successToastId);
       }
@@ -174,9 +196,9 @@ export function useOptimisticMutation<TVariables, TData = unknown>(
       context: MutationContext | undefined,
     ) => {
       queryClient.invalidateQueries({ queryKey });
-      if (context?.additionalPreviousData) {
-        for (const entry of context.additionalPreviousData) {
-          queryClient.invalidateQueries({ queryKey: entry.key });
+      if (context?.additionalKeys) {
+        for (const key of context.additionalKeys) {
+          queryClient.invalidateQueries({ queryKey: key });
         }
       }
       for (const depKey of dependentQueryKeys) {

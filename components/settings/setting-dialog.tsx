@@ -1,9 +1,11 @@
 "use client";
 
-import { GearIcon, UserIcon } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
+
+import { GearIcon, UserIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { deleteAccount } from "~/app/action/setting.action";
 import { ExportDialog } from "~/components/import-export/export-dialog";
 import { ImportDialog } from "~/components/import-export/import-dialog";
@@ -26,6 +28,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+
 import { SettingsDialogFooter } from "./setting-dialog-footer";
 import { SettingsGeneralTab } from "./setting-general-tab";
 import { SettingsProfileTab } from "./setting-profile-tab";

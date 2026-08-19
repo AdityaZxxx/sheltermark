@@ -1,3 +1,5 @@
+import type { UrlHealthResult } from "~/lib/link-health/types";
+
 import {
   AMBIGUOUS_CLIENT_PROTOCOL_STATUSES,
   classifyByHttpStatus,
@@ -5,7 +7,6 @@ import {
   VALID_HIGH_STATUS,
 } from "~/lib/link-health/classifier";
 import { isAlwaysAliveDomain } from "~/lib/link-health/domains";
-import type { UrlHealthResult } from "~/lib/link-health/types";
 import { logger } from "~/lib/logger";
 import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
 
@@ -143,7 +144,7 @@ async function tryGetFallback(
           : "ok_get",
     };
   } catch (error) {
-    return classifyFetchError(error);
+    return classifyFetchError(error instanceof Error ? error : String(error));
   }
 }
 
@@ -209,7 +210,7 @@ export async function checkUrl(
     });
     response = result.response;
   } catch (error) {
-    return classifyFetchError(error);
+    return classifyFetchError(error instanceof Error ? error : String(error));
   }
 
   const status = response.status;

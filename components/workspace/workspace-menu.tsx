@@ -11,6 +11,7 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
+
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
 import { Switch } from "~/components/ui/switch";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
+
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog";
 import { WorkspaceRenameDialog } from "./workspace-rename-dialog";

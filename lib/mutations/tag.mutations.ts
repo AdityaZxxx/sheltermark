@@ -1,3 +1,12 @@
+import type {
+  AddTagToBookmarkInput,
+  DeleteTagInput,
+  RemoveTagFromBookmarkInput,
+  RenameTagInput,
+  SetBookmarkTagsInput,
+  Tag,
+} from "~/lib/schemas/tag.schema";
+
 import {
   addTagToBookmark,
   deleteTag,
@@ -23,14 +32,6 @@ import {
   setTagsUpdates,
 } from "~/lib/mutations/tag.invalidation";
 import { tagKeys } from "~/lib/query-keys";
-import type {
-  AddTagToBookmarkInput,
-  DeleteTagInput,
-  RemoveTagFromBookmarkInput,
-  RenameTagInput,
-  SetBookmarkTagsInput,
-  Tag,
-} from "~/lib/schemas/tag.schema";
 
 type BookmarkTagLink = { bookmark_id: string; tag_id: string };
 
@@ -55,6 +56,7 @@ function resolveTagsFromLibrary(
   const byName = new Map(userTags.map((t) => [t.name.toLowerCase(), t]));
   return tags.map((entry) => {
     if (entry.id && byId.has(entry.id)) {
+      // SAFETY: byId.has(entry.id) guarantees the Map lookup succeeds.
       return byId.get(entry.id) as Tag;
     }
     if (entry.name) {
@@ -66,7 +68,7 @@ function resolveTagsFromLibrary(
 }
 
 export function useAddTagToBookmark(userId: string | undefined) {
-  return useOptimisticMutation<AddTagToBookmarkInput, Tag>({
+  return useOptimisticMutation<AddTagToBookmarkInput, Tag, Tag[]>({
     mutationFn: addTagToBookmark,
     mutationKey: ["addTagToBookmark"],
     queryKey: tagKeys.all,
@@ -74,7 +76,7 @@ export function useAddTagToBookmark(userId: string | undefined) {
     successMessage: null,
     errorMessage: "Failed to add tag. Check the name and try again.",
     prepareOptimisticData: (oldData, { tagId, name }) => {
-      const prev = (oldData as Tag[]) ?? [];
+      const prev = oldData ?? [];
       if (!tagId && name) {
         const exists = prev.some(
           (t) => t.name.toLowerCase() === name.toLowerCase(),
@@ -89,7 +91,7 @@ export function useAddTagToBookmark(userId: string | undefined) {
       { bookmarkId, tagId, name },
       optimisticPrimary,
     ) => {
-      const userTags = (optimisticPrimary as Tag[]) ?? [];
+      const userTags = optimisticPrimary;
       const byId = new Map(userTags.map((t) => [t.id, t]));
       const byName = new Map(userTags.map((t) => [t.name.toLowerCase(), t]));
 
@@ -105,14 +107,14 @@ export function useAddTagToBookmark(userId: string | undefined) {
 }
 
 export function useRemoveTagFromBookmark(_userId: string | undefined) {
-  return useOptimisticMutation<RemoveTagFromBookmarkInput, null>({
+  return useOptimisticMutation<RemoveTagFromBookmarkInput, null, Tag[]>({
     mutationFn: removeTagFromBookmark,
     mutationKey: ["removeTagFromBookmark"],
     queryKey: tagKeys.all,
     dependentQueryKeys: removeTagDependentKeys(),
     successMessage: null,
     errorMessage: "Failed to remove tag. Please try again.",
-    prepareOptimisticData: (oldData) => (oldData as Tag[]) ?? [],
+    prepareOptimisticData: (oldData) => oldData ?? [],
     additionalOptimisticUpdates: ({ bookmarkId, tagId }) =>
       removeTagUpdates(bookmarkId, tagId),
   });
@@ -121,7 +123,7 @@ export function useRemoveTagFromBookmark(_userId: string | undefined) {
 export function useSetBookmarkTags(userId: string | undefined) {
   const uid = userId ?? "";
 
-  return useOptimisticMutation<SetBookmarkTagsInput, Tag[]>({
+  return useOptimisticMutation<SetBookmarkTagsInput, Tag[], Tag[]>({
     mutationFn: setBookmarkTags,
     mutationKey: ["setBookmarkTags"],
     queryKey: tagKeys.all,
@@ -129,19 +131,19 @@ export function useSetBookmarkTags(userId: string | undefined) {
     successMessage: "Tags updated",
     errorMessage: "Failed to update tags. Please try again.",
     prepareOptimisticData: (oldData, { tags }) => {
-      const prev = (oldData as Tag[]) ?? [];
+      const prev = oldData ?? [];
       const existingNames = new Set(prev.map((t) => t.name.toLowerCase()));
       const newTags: Tag[] = [];
       for (const entry of tags) {
         if (entry.id) continue;
-        if (typeof entry.name !== "string" || entry.name.length === 0) continue;
+        if (!entry.name) continue;
         if (existingNames.has(entry.name.toLowerCase())) continue;
         newTags.push(createTempTag(entry.name, uid));
       }
       return newTags.length > 0 ? [...prev, ...newTags] : prev;
     },
     additionalOptimisticUpdates: ({ bookmarkId, tags }, optimisticPrimary) => {
-      const userTags = (optimisticPrimary as Tag[]) ?? [];
+      const userTags = optimisticPrimary;
       const resolvedTags = resolveTagsFromLibrary(tags, userTags, uid);
       const links: BookmarkTagLink[] = resolvedTags.map((t) => ({
         bookmark_id: bookmarkId,
@@ -153,7 +155,7 @@ export function useSetBookmarkTags(userId: string | undefined) {
 }
 
 export function useRenameTag(_userId: string | undefined) {
-  return useOptimisticMutation<RenameTagInput, Tag>({
+  return useOptimisticMutation<RenameTagInput, Tag, Tag[]>({
     mutationFn: renameTag,
     mutationKey: ["renameTag"],
     queryKey: tagKeys.all,
@@ -161,7 +163,7 @@ export function useRenameTag(_userId: string | undefined) {
     successMessage: "Tag renamed",
     errorMessage: "Unable to rename tag.",
     prepareOptimisticData: (oldData, { tagId, name }) => {
-      return optimisticUpdate<Tag>(oldData, tagId, (t) => ({ ...t, name }));
+      return optimisticUpdate(oldData, tagId, (t) => ({ ...t, name }));
     },
     additionalOptimisticUpdates: ({ tagId, name }) =>
       renameTagUpdates(tagId, name),
@@ -169,7 +171,7 @@ export function useRenameTag(_userId: string | undefined) {
 }
 
 export function useDeleteTag(_userId: string | undefined) {
-  return useOptimisticMutation<DeleteTagInput, null>({
+  return useOptimisticMutation<DeleteTagInput, null, Tag[]>({
     mutationFn: deleteTag,
     mutationKey: ["deleteTag"],
     queryKey: tagKeys.all,
@@ -177,7 +179,7 @@ export function useDeleteTag(_userId: string | undefined) {
     successMessage: "Tag deleted",
     errorMessage: "Unable to delete tag.",
     prepareOptimisticData: (oldData, { tagId }) => {
-      return optimisticRemove<Tag>(oldData, tagId);
+      return optimisticRemove(oldData, tagId);
     },
     additionalOptimisticUpdates: ({ tagId }) => deleteTagUpdates(tagId),
   });

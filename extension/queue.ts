@@ -33,8 +33,6 @@ import {
   type SaveEntrySource,
 } from "./constants.js";
 
-// ---------------- Storage layout ----------------
-
 const STORAGE_KEYS = {
   ITEMS: "queueItems",
   SEQ: "queueSeq",
@@ -49,12 +47,10 @@ interface QueueState {
   notifiedOfflineAt: number | null;
 }
 
-// ---------------- Drain guard ----------------
 // In-memory only; reset on worker wake via drainOnStartup.
 
 let drainInProgress = false;
 
-// ---------------- Hooks ----------------
 // Injected dependencies so background.ts owns chrome.* + fetch + notifications
 // and the queue stays pure/testable. All are optional; defaults are no-ops so
 // tests that don't care about notifications just don't pass them.
@@ -84,8 +80,6 @@ export interface PostOutcome {
   errorMessage?: string | null; // fetch-level error string
   retryAfterHeader?: string | null; // for 429
 }
-
-// ---------------- Attempt outcome classification ----------------
 
 export type QueueAttemptResult =
   | { kind: "ok" }
@@ -168,28 +162,39 @@ function truncateErr(msg: string): string {
     : msg;
 }
 
-// ---------------- Storage access ----------------
+/**
+ * The chrome.storage.local payload this module owns. writeState serializes a
+ * QueueState field-for-field into exactly these keys, so reads can rely on
+ * this shape (per-field fallbacks below still guard against missing keys).
+ */
+interface QueueStoragePayload {
+  queueItems?: QueueItem[];
+  queueSeq?: number;
+  queuePaused?: boolean;
+  queueNotifiedOfflineAt?: number | null;
+}
 
 async function readState(): Promise<QueueState> {
+  // SAFETY: this extension is the sole writer of the queue storage keys
+  // (writeState below), so the stored payload matches QueueStoragePayload;
+  // each field below falls back to its empty default when the key is absent.
   const raw = (await chrome.storage.local.get([
     STORAGE_KEYS.ITEMS,
     STORAGE_KEYS.SEQ,
     STORAGE_KEYS.PAUSED,
     STORAGE_KEYS.NOTIFIED_OFFLINE_AT,
-  ])) as Partial<QueueState> & Record<string, unknown>;
+  ])) as QueueStoragePayload;
 
-  const items = (raw[STORAGE_KEYS.ITEMS] as QueueItem[] | undefined) ?? [];
+  const items = raw[STORAGE_KEYS.ITEMS] ?? [];
   // Backfill `tags` for items persisted by an older build — the field did not
   // exist before quick metadata editing, and a missing value must behave
   // exactly like an empty selection.
   for (const item of items) {
     if (!Array.isArray(item.tags)) item.tags = [];
   }
-  const seq = (raw[STORAGE_KEYS.SEQ] as number | undefined) ?? 0;
-  const paused = (raw[STORAGE_KEYS.PAUSED] as boolean | undefined) ?? false;
-  const notifiedOfflineAt =
-    (raw[STORAGE_KEYS.NOTIFIED_OFFLINE_AT] as number | null | undefined) ??
-    null;
+  const seq = raw[STORAGE_KEYS.SEQ] ?? 0;
+  const paused = raw[STORAGE_KEYS.PAUSED] ?? false;
+  const notifiedOfflineAt = raw[STORAGE_KEYS.NOTIFIED_OFFLINE_AT] ?? null;
   return { items, seq, paused, notifiedOfflineAt };
 }
 
@@ -201,8 +206,6 @@ async function writeState(state: QueueState): Promise<void> {
     [STORAGE_KEYS.NOTIFIED_OFFLINE_AT]: state.notifiedOfflineAt,
   });
 }
-
-// ---------------- Enqueue ----------------
 
 export interface EnqueueInput {
   url: string;
@@ -296,8 +299,6 @@ export async function enqueue(
   return item;
 }
 
-// ---------------- Queue introspection ----------------
-
 export async function pendingCount(): Promise<number> {
   const { items } = await readState();
   return items.filter((i) => i.status === "pending" || i.status === "in_flight")
@@ -308,8 +309,6 @@ export async function isPaused(): Promise<boolean> {
   const { paused } = await readState();
   return paused;
 }
-
-// ---------------- Restart recovery ----------------
 
 /**
  * Reset every `in_flight` item to `pending` (due immediately) and clear the
@@ -343,8 +342,6 @@ export async function drainOnStartup(): Promise<void> {
   if (changed) await writeState(state);
 }
 
-// ---------------- Pause / resume ----------------
-
 export async function pauseQueue(): Promise<void> {
   const state = await readState();
   if (state.paused) return;
@@ -368,8 +365,6 @@ export async function resumeQueue(): Promise<void> {
   }
   if (changed) await writeState(state);
 }
-
-// ---------------- Drain ----------------
 
 /**
  * Process due pending items serially, one POST at a time, until none are due
@@ -514,11 +509,10 @@ async function safePost(
   try {
     outcome = await hooks.postBookmark(item);
   } catch (err) {
-    const e = err as { message?: string };
     outcome = {
       fetchThrew: true,
       status: null,
-      errorMessage: e?.message ?? "Network error",
+      errorMessage: err instanceof Error ? err.message : "Network error",
     };
   }
   const result = classifyResponse(
@@ -540,8 +534,6 @@ function appendHistory(item: QueueItem): void {
   }
 }
 
-// ---------------- Heartbeat wiring ----------------
-
 /**
  * Register the heartbeat alarm. Idempotent: recreates the alarm. The keep-alive
  * behavior falls out for free — `drain()` touches chrome.storage.local, which
@@ -555,8 +547,6 @@ export function installHeartbeat(): void {
 export function isHeartbeatAlarm(alarmName: string): boolean {
   return alarmName === QUEUE_HEARTBEAT_ALARM;
 }
-
-// ---------------- Status helpers ----------------
 
 /**
  * Whether a `pending` item is currently due (used by tests/observability; not

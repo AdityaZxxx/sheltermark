@@ -1,13 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+
+import type { TagWithCount } from "~/lib/schemas/tag.schema";
+
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
   tagsWithCountQueryOptions,
   workspaceTagsWithCountQueryOptions,
 } from "~/lib/queries/tag.queries";
-import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
 export function useUserTagsWithCount() {
   const { user: supabaseUser } = useSupabase();

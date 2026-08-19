@@ -3,9 +3,10 @@
  * Usage: bun run scripts/build-extension.ts [--watch]
  */
 
+import * as esbuild from "esbuild";
 import { existsSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
-import * as esbuild from "esbuild";
+
 import { logger } from "~/lib/logger";
 
 const ROOT = resolve(import.meta.dirname, "..");

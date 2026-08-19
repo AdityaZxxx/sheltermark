@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
+
 import { loginWithGoogle } from "~/app/action/login.action";
 import { signupWithEmail } from "~/app/action/signup.action";
 import { GoogleIcon } from "~/components/google-icon";
@@ -20,6 +21,7 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
+
 import { AuthError } from "./auth-error";
 
 export function SignupForm({
@@ -48,7 +50,11 @@ export function SignupForm({
     if (next) {
       formData.append("next", next);
     }
+    // SAFETY: this form renders a "password" input below, so FormData.get
+    // returns the input's string value (never a File) for that field.
     const password = formData.get("password") as string;
+    // SAFETY: same invariant — the "confirmPassword" input below is a plain
+    // text input, so FormData.get returns its string value.
     const confirmPassword = formData.get("confirmPassword") as string;
 
     if (password !== confirmPassword) {

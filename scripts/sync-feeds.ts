@@ -1,26 +1,21 @@
 #!/usr/bin/env tsx
-import { createClient } from "@supabase/supabase-js";
+import { createDb } from "~/lib/data/drizzle-instance";
 import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
 import { logger } from "~/lib/logger";
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  logger.error(
-    "Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY",
-  );
+if (!process.env.DATABASE_URL) {
+  logger.error("Missing required env var: DATABASE_URL");
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const db = createDb();
 
 export async function syncFeeds(): Promise<{
   success: boolean;
   synced: number;
   errors: string[];
 }> {
-  const result = await syncAllFeedsGlobal(supabase);
+  const result = await syncAllFeedsGlobal(db);
 
   if (!result.success) {
     logger.error("Feed sync failed", { error: result.error });
@@ -35,7 +30,6 @@ export async function syncFeeds(): Promise<{
   };
 }
 
-// Run if executed directly
 if (require.main === module) {
   syncFeeds().then((result) => {
     logger.info("Feed sync result", {

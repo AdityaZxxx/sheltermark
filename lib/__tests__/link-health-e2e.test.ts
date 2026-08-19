@@ -11,7 +11,7 @@
  * documented input class: 2xx, 3xx, 4xx, 5xx, network errors, redirects,
  * soft-404s, login walls, and always-alive domains.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test";
 import { checkUrl } from "~/lib/link-health/checker";
 
 const LT = "<";
@@ -40,11 +40,11 @@ function _mockRedirect(location: string, status: number = 302): Response {
 
 describe("checkUrl — state machine E2E", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   // ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ describe("checkUrl — state machine E2E", () => {
 
   describe("2xx responses", () => {
     it("alive on HEAD 200 with a long, non-soft-404 body", async () => {
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(
           mockResponse("y".repeat(10_000), {
@@ -75,7 +75,7 @@ describe("checkUrl — state machine E2E", () => {
           block("body", "Page not found"),
       );
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(mockResponse(soft404Body, { status: 200 }));
 
@@ -95,7 +95,7 @@ describe("checkUrl — state machine E2E", () => {
         block("head", link) + block("body", filler),
       );
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(mockResponse(soft404Body, { status: 200 }));
 
@@ -107,7 +107,7 @@ describe("checkUrl — state machine E2E", () => {
     it("likely_broken on 200 + error-page CSS class (tier-1)", async () => {
       const soft404Body = `${LT}div class="error-page"${GT}Oops${LT}${SL}div${GT}`;
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(mockResponse(soft404Body, { status: 200 }));
 
@@ -119,7 +119,7 @@ describe("checkUrl — state machine E2E", () => {
     it("likely_broken on 200 + JSON error payload", async () => {
       const jsonBody = JSON.stringify({ error: "not found" });
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(
           mockResponse(jsonBody, {
@@ -146,7 +146,7 @@ describe("checkUrl — state machine E2E", () => {
           block("body", filler + prose + filler),
       );
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(mockResponse(body, { status: 200 }));
 
@@ -161,7 +161,7 @@ describe("checkUrl — state machine E2E", () => {
 
   describe("redirects", () => {
     it("alive on 301 → 200 final (auto-followed)", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse("y".repeat(10_000), {
           status: 200,
           url: "https://example.com/final",
@@ -173,7 +173,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("confirmed_broken on 301 → 404 final (redirect to gone page)", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse(null, { status: 404, url: "https://example.com/gone" }),
       );
 
@@ -186,7 +186,7 @@ describe("checkUrl — state machine E2E", () => {
       // Under native auto-follow, a redirect loop surfaces as a fetch
       // error. classifyFetchError inspects the message and routes
       // "Redirect loop" to reason='redirect_loop'.
-      vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      spyOn(globalThis, "fetch").mockRejectedValue(
         new Error("Redirect loop detected: a -> b -> a"),
       );
 
@@ -202,7 +202,7 @@ describe("checkUrl — state machine E2E", () => {
 
   describe("4xx responses", () => {
     it("confirmed_broken on HEAD 404", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      spyOn(globalThis, "fetch").mockResolvedValueOnce(
         mockResponse(null, { status: 404 }),
       );
 
@@ -213,7 +213,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("confirmed_broken with reason=gone on HEAD 410", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      spyOn(globalThis, "fetch").mockResolvedValueOnce(
         mockResponse(null, { status: 410 }),
       );
 
@@ -223,7 +223,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("confirmed_broken on HEAD 451 (legal block)", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      spyOn(globalThis, "fetch").mockResolvedValueOnce(
         mockResponse(null, { status: 451 }),
       );
 
@@ -233,7 +233,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on HEAD 401 (auth-required is ambiguous)", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      spyOn(globalThis, "fetch").mockResolvedValueOnce(
         mockResponse(null, { status: 401 }),
       );
 
@@ -247,7 +247,7 @@ describe("checkUrl — state machine E2E", () => {
     it("unknown on HEAD 429 (rate-limited, not broken)", async () => {
       // 429 is retried by httpFetch; after exhaustion it's classified
       // as unknown, not confirmed_broken.
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse("too many requests", { status: 429 }),
       );
 
@@ -258,7 +258,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on HEAD 408 (request timeout is transient)", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      spyOn(globalThis, "fetch").mockResolvedValueOnce(
         mockResponse(null, { status: 408 }),
       );
 
@@ -268,7 +268,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("alive on HEAD 405 → GET fallback returns 200", async () => {
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 405 }))
         .mockResolvedValueOnce(
           mockResponse("y".repeat(10_000), { status: 200 }),
@@ -283,7 +283,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on HEAD 403 → GET fallback also 403 (bot-walled)", async () => {
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 403 }))
         .mockResolvedValueOnce(mockResponse(null, { status: 403 }));
 
@@ -300,7 +300,7 @@ describe("checkUrl — state machine E2E", () => {
   describe("5xx responses", () => {
     it("unknown on HEAD 500 (server error is transient)", async () => {
       // mockResolvedValue (not Once) because httpFetch retries on 500.
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse("error", { status: 500 }),
       );
 
@@ -311,7 +311,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on HEAD 503 (maintenance window is spec-explicit transient)", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse("maintenance", { status: 503 }),
       );
 
@@ -324,7 +324,7 @@ describe("checkUrl — state machine E2E", () => {
       // 504 was previously NOT retried and went straight to
       // confirmed_broken. Now it's in DEFAULT_RETRY_STATUSES and
       // classified as unknown after retry exhaustion.
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse("gateway timeout", { status: 504 }),
       );
 
@@ -343,7 +343,7 @@ describe("checkUrl — state machine E2E", () => {
       const abortError = Object.assign(new Error("aborted"), {
         name: "AbortError",
       });
-      vi.spyOn(globalThis, "fetch").mockRejectedValue(abortError);
+      spyOn(globalThis, "fetch").mockRejectedValue(abortError);
 
       const result = await checkUrl("https://example.com/slow");
       expect(result.brokenStatus).toBe("unknown");
@@ -352,7 +352,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on DNS failure (TypeError)", async () => {
-      vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      spyOn(globalThis, "fetch").mockRejectedValue(
         new TypeError("fetch failed: ENOTFOUND"),
       );
 
@@ -362,7 +362,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on TLS failure (TypeError)", async () => {
-      vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      spyOn(globalThis, "fetch").mockRejectedValue(
         new TypeError("fetch failed: certificate has expired"),
       );
 
@@ -372,7 +372,7 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("unknown on connection refused (TypeError)", async () => {
-      vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      spyOn(globalThis, "fetch").mockRejectedValue(
         new TypeError("fetch failed: ECONNREFUSED"),
       );
 
@@ -388,7 +388,7 @@ describe("checkUrl — state machine E2E", () => {
 
   describe("always-alive domains", () => {
     it("alive (no fetch) for twitter.com", async () => {
-      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      const fetchSpy = spyOn(globalThis, "fetch");
       const result = await checkUrl("https://twitter.com/user/status/123");
       expect(result.brokenStatus).toBe("alive");
       expect(result.reason).toBe("always_alive");
@@ -396,14 +396,14 @@ describe("checkUrl — state machine E2E", () => {
     });
 
     it("alive (no fetch) for subdomain of always-alive (api.twitter.com)", async () => {
-      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      const fetchSpy = spyOn(globalThis, "fetch");
       const result = await checkUrl("https://api.twitter.com/2/tweets");
       expect(result.brokenStatus).toBe("alive");
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it("alive (no fetch) for youtube.com", async () => {
-      const fetchSpy = vi.spyOn(globalThis, "fetch");
+      const fetchSpy = spyOn(globalThis, "fetch");
       const result = await checkUrl("https://youtube.com/watch?v=abc");
       expect(result.brokenStatus).toBe("alive");
       expect(fetchSpy).not.toHaveBeenCalled();
@@ -411,7 +411,7 @@ describe("checkUrl — state machine E2E", () => {
 
     it("fetches normally when always-alive domain is only a path segment", async () => {
       // Regression: https://evil.com/twitter.com must NOT short-circuit.
-      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      const fetchSpy = spyOn(globalThis, "fetch").mockResolvedValue(
         mockResponse("y".repeat(10_000), {
           status: 200,
           url: "https://evil.com/twitter.com",
@@ -438,7 +438,7 @@ describe("checkUrl — state machine E2E", () => {
           block("body", `${LT}form${GT}Username: ...${LT}${SL}form${GT}`),
       );
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(mockResponse(loginBody, { status: 200 }));
 
@@ -456,7 +456,7 @@ describe("checkUrl — state machine E2E", () => {
           block("body", "Checking your browser..."),
       );
 
-      vi.spyOn(globalThis, "fetch")
+      spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
         .mockResolvedValueOnce(mockResponse(challengeBody, { status: 200 }));
 

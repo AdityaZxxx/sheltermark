@@ -8,6 +8,9 @@ import {
   SelectionPlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
+
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -26,7 +29,6 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { formatRelativeTime } from "~/lib/format";
-import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { cn, safeDomain } from "~/lib/utils";
 
 export function BookmarkRow({
@@ -49,8 +51,8 @@ export function BookmarkRow({
   const domain = safeDomain(bookmark.url);
 
   const rowContent = (
-    // biome-ignore lint/a11y/useSemanticElements: must be <div> to avoid <button> inside <button> hydration error; inner action buttons need a non-button parent
     <div
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- must be <div> to avoid <button> inside <button> hydration error; inner action buttons need a non-button parent
       role="button"
       tabIndex={showCheckbox ? 0 : -1}
       className={cn(

@@ -1,8 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test";
 import {
   checkUrl,
   detectSoft404,
-  SOFT_404_KEYWORDS,
 } from "~/lib/link-health/checker";
 import {
   classifyByHttpStatus,
@@ -405,225 +404,27 @@ describe("ALWAYS_ALIVE_DOMAINS", () => {
   });
 });
 
-describe("SOFT_404_KEYWORDS", () => {
-  it("is a non-empty array of conservative phrases", () => {
-    expect(Array.isArray(SOFT_404_KEYWORDS)).toBe(true);
-    expect(SOFT_404_KEYWORDS.length).toBeGreaterThan(0);
-  });
-});
+// One checkUrl fallback scenario not covered by link-health-e2e.test.ts:
+// the HEAD 403 → GET 200 success path (reason ok_get).
 
-// ---------------------------------------------------------------------------
-// Integration tests for the checkUrl orchestrator. These mock globalThis.fetch
-// so we can exercise the HEAD → GET fallback, soft-404 probe, always-alive
-// short-circuit, and 401/403-as-unknown paths end-to-end.
-// ---------------------------------------------------------------------------
-
-describe("checkUrl (integration)", () => {
+describe("checkUrl fallback", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("short-circuits to alive for an always-alive domain (no fetch)", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const result = await checkUrl("https://twitter.com/some/path");
-    expect(result.brokenStatus).toBe("alive");
-    expect(result.reason).toBe("always_alive");
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it("short-circuits to alive for a subdomain of an always-alive domain", async () => {
-    // api.twitter.com should match the twitter.com entry — the old
-    // substring matcher would have matched this too, but only because
-    // it was matching substrings anywhere in the URL.
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const result = await checkUrl("https://api.twitter.com/2/tweets");
-    expect(result.brokenStatus).toBe("alive");
-    expect(result.reason).toBe("always_alive");
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it("does NOT short-circuit when an always-alive domain appears only as a path segment", async () => {
-    // Regression for the substring-match bug: `https://evil.com/twitter.com`
-    // used to falsely match. Now we use hostname matching, so this URL
-    // should be fetched normally.
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(mockResponse("ok", { status: 200 }));
-    const result = await checkUrl("https://evil.com/twitter.com");
-    expect(fetchSpy).toHaveBeenCalled();
-    expect(result.brokenStatus).toBe("alive");
-    expect(result.reason).toBe("ok");
-  });
-
-  it("returns alive on HEAD 200 with a non-soft-404 body", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      // HEAD response
-      .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
-      // Soft-404 probe GET (returns a long, normal-looking body)
-      .mockResolvedValueOnce(
-        mockResponse("y".repeat(10_000), {
-          status: 200,
-          headers: { "content-type": "text/html" },
-        }),
-      );
-
-    const result = await checkUrl("https://example.com/post");
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.brokenStatus).toBe("alive");
-    expect(result.httpStatus).toBe(200);
-    expect(result.reason).toBe("ok");
-  });
-
-  it("returns likely_broken on HEAD 200 + soft-404 body (title + keyword)", async () => {
-    const soft404Body = block(
-      "html",
-      block("head", block("title", "404 - Not Found")) +
-        block("body", "Page not found"),
-    );
-
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(mockResponse(null, { status: 200 }))
-      .mockResolvedValueOnce(mockResponse(soft404Body, { status: 200 }));
-
-    const result = await checkUrl("https://example.com/missing");
-    expect(result.brokenStatus).toBe("likely_broken");
-    expect(result.isBroken).toBe(true);
-    expect(result.reason).toBe("soft404_combined");
-  });
-
-  it("returns confirmed_broken on HEAD 404 (no soft-404 probe)", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(mockResponse(null, { status: 404 }));
-
-    const result = await checkUrl("https://example.com/gone");
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(result.brokenStatus).toBe("confirmed_broken");
-    expect(result.httpStatus).toBe(404);
-    expect(result.reason).toBe("client_error");
-  });
-
-  it("returns confirmed_broken with reason=gone on HEAD 410", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockResponse(null, { status: 410 }),
-    );
-
-    const result = await checkUrl("https://example.com/gone");
-    expect(result.brokenStatus).toBe("confirmed_broken");
-    expect(result.reason).toBe("gone");
-  });
-
-  it("returns unknown on HEAD 401 (auth-required is ambiguous)", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      mockResponse(null, { status: 401 }),
-    );
-
-    const result = await checkUrl("https://example.com/protected");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.isBroken).toBe(false);
-    expect(result.httpStatus).toBe(401);
+    jest.restoreAllMocks();
   });
 
   it("falls back to GET on HEAD 403 and classifies the GET result", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      // HEAD returns 403 (blocked)
+    const fetchSpy = spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(mockResponse(null, { status: 403 }))
-      // GET fallback returns 200
       .mockResolvedValueOnce(mockResponse("y".repeat(10_000), { status: 200 }))
-      // Soft-404 probe GET returns the same long body
       .mockResolvedValueOnce(mockResponse("y".repeat(10_000), { status: 200 }));
 
     const result = await checkUrl("https://example.com/behind-bot-wall");
     expect(fetchSpy).toHaveBeenCalledTimes(3); // HEAD + GET fallback + soft-404 probe
     expect(result.brokenStatus).toBe("alive");
     expect(result.reason).toBe("ok_get");
-  });
-
-  it("classifies GET 403 fallback as unknown (not confirmed_broken)", async () => {
-    // If GET also returns 403, we don't know if the page is really gone
-    // or just bot-walled. Ambiguous, not broken.
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(mockResponse(null, { status: 403 }))
-      .mockResolvedValueOnce(mockResponse(null, { status: 403 }));
-
-    const result = await checkUrl("https://example.com/blocked");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.httpStatus).toBe(403);
-  });
-
-  it("falls back to GET on HEAD 405 (method not allowed)", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(mockResponse(null, { status: 405 }))
-      .mockResolvedValueOnce(mockResponse("y".repeat(10_000), { status: 200 }))
-      .mockResolvedValueOnce(mockResponse("y".repeat(10_000), { status: 200 }));
-
-    const result = await checkUrl("https://example.com/no-head");
-    expect(result.brokenStatus).toBe("alive");
-  });
-
-  it("returns unknown on HEAD 5xx (server error is transient, not 'gone')", async () => {
-    // 5xx is now `unknown` — a server-side failure doesn't mean the
-    // resource is gone. Use mockResolvedValue (not Once) because
-    // httpFetch retries on 500.
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse("error", { status: 500 }),
-    );
-
-    const result = await checkUrl("https://example.com/down");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.isBroken).toBe(false);
-    expect(result.reason).toBe("server_error");
-  });
-
-  it("returns unknown on HEAD 429 (rate-limited, not broken)", async () => {
-    // 429 after retry exhaustion is `unknown` — the resource is fine,
-    // we're being throttled.
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse("too many requests", { status: 429 }),
-    );
-
-    const result = await checkUrl("https://example.com/rate-limited");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.isBroken).toBe(false);
-    expect(result.reason).toBe("rate_limited");
-  });
-
-  it("returns unknown on HEAD 408 (request timeout is transient)", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockResponse(null, { status: 408 }),
-    );
-
-    const result = await checkUrl("https://example.com/slow-client");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.reason).toBe("transient");
-  });
-
-  it("classifies a HEAD timeout as unknown (never alive)", async () => {
-    // Simulate the AbortError fired by our own timeout.
-    const abortError = Object.assign(new Error("aborted"), {
-      name: "AbortError",
-    });
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(abortError);
-
-    const result = await checkUrl("https://example.com/slow");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.reason).toBe("timeout");
-    expect(result.isBroken).toBe(false);
-  });
-
-  it("classifies a network TypeError as unknown", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new TypeError("fetch failed"),
-    );
-
-    const result = await checkUrl("https://example.unreachable.invalid");
-    expect(result.brokenStatus).toBe("unknown");
-    expect(result.reason).toBe("network_error");
   });
 });

@@ -3,6 +3,9 @@
 import { CaretUpDownIcon, GlobeIcon, LinkIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -21,7 +24,6 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useBookmarkMutations } from "~/hooks/use-bookmarks";
-import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 import { getPastelColor } from "~/lib/utils";
 
 interface ShareDialogProps {

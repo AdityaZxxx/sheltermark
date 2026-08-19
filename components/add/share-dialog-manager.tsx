@@ -2,7 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
+
 import { useWorkspaces } from "~/hooks/use-workspaces";
+
 import { ShareDialog } from "./share-dialog";
 
 export function ShareDialogManager() {

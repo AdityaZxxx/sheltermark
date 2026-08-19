@@ -9,7 +9,6 @@ export function MarkdownIcon({ className }: MarkdownIconProps) {
       viewBox="0 0 208 128"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Markdown"
-      role="img"
     >
       <title>Markdown</title>
       <path

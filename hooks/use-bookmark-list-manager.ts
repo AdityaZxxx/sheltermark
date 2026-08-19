@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
-import { useViewPreference } from "~/hooks/use-view-preference";
-import { useWorkspaces } from "~/hooks/use-workspaces";
-import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
+
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
+import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
+import { useViewPreference } from "~/hooks/use-view-preference";
+import { useWorkspaces } from "~/hooks/use-workspaces";
+import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
 
 interface ActiveBookmark {
   id: string;
@@ -209,11 +211,6 @@ export function useBookmarkListManager(
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const _focusInput = useCallback(() => {
-    inputRef.current?.focus();
-    setFocusedIndex(-1);
-  }, []);
-
   const getItem = useCallback(
     (index: number) => {
       const bookmark = bookmarks[index];
@@ -278,7 +275,7 @@ export function useBookmarkListManager(
     [handleKeyDown],
   );
 
-  // ── Global shortcuts (window-level, replaces useBookmarkGlobalShortcuts) ──
+  // ── Global shortcuts (window-level) ──────────────────────────
   const editDialogOpenRef = useRef(editDialogOpen);
   const moveDialogOpenRef = useRef(moveDialogOpen);
   const isSelectionModeRef = useRef(isSelectionMode);
@@ -291,7 +288,6 @@ export function useBookmarkListManager(
   focusedIndexRef.current = focusedIndex;
   selectedIdsRef.current = selectedIds;
 
-  // ── Global shortcuts (window-level) ──────────────────────────
   // Read changing values through refs; effect runs once on mount.
   const bookmarksRef = useRef(bookmarks);
   bookmarksRef.current = bookmarks;

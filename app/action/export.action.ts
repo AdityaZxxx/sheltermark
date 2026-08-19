@@ -1,15 +1,17 @@
 "use server";
 
 import type { z } from "zod";
+
 import type { ActionResult } from "~/lib/action-result";
+
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/drizzle";
 import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import { escapeCSV } from "~/lib/import/csv";
 import { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 
 interface WorkspaceInfo {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -31,17 +33,15 @@ export async function exportBookmarks(
 > {
   const validated = exportOptionsSchema.safeParse(options);
   if (!validated.success) {
-    // Guard against potential undefined properties under strict mode
     const msg =
       validated.error?.issues?.[0]?.message ?? "Invalid export options";
     return { success: false, error: msg };
   }
 
-  const { user, supabase } = await requireAuth();
+  const { user } = await requireAuth();
 
-  // Delegate data retrieval to the repository
   const repoResult = await repoExportBookmarks(
-    supabase as unknown as DbClient,
+    getDb(),
     user.id,
     validated.data,
   );
@@ -50,12 +50,9 @@ export async function exportBookmarks(
     return { success: false, error: repoResult.error };
   }
 
-  // Normalization: repository returns BookmarkWithWorkspace[]
   const bookmarksData = repoResult.data;
 
   const format = validated.data.format;
-  // Normalize data into strongly-typed bookmarks data
-  // (BookmarkWithWorkspace is defined in this module for formatting logic)
   if (format === "json") {
     const exportData = {
       version: "1.0",

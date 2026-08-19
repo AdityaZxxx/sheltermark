@@ -3,6 +3,7 @@
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useEffect, useReducer, useRef } from "react";
+
 import { checkUsernameAvailability } from "~/app/action/setting.action";
 import {
   Field,
@@ -16,6 +17,7 @@ import { Switch } from "~/components/ui/switch";
 import { useDebounce } from "~/hooks/use-debounce";
 import { useProfile } from "~/hooks/use-profile";
 import { usernameSchema } from "~/lib/schemas/profile.schema";
+
 import { Textarea } from "../ui/textarea";
 
 interface SettingsProfileTabProps {

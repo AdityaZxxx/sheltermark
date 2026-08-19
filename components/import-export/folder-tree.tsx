@@ -1,7 +1,8 @@
 "use client";
 
-import { Checkbox } from "~/components/ui/checkbox";
 import type { FolderNode } from "~/lib/import/folder-filter";
+
+import { Checkbox } from "~/components/ui/checkbox";
 import { FOLDER_PATH_SEPARATOR } from "~/lib/import/folder-filter";
 import { cn } from "~/lib/utils";
 

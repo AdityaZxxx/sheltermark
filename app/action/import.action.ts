@@ -1,17 +1,18 @@
 "use server";
 
 import type { ActionResult } from "~/lib/action-result";
+import type { ImportFileType } from "~/lib/import/parsers";
+import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
+
 import { requireAuth } from "~/lib/auth";
-import type { DbClient } from "~/lib/data/db-client";
+import { getDb } from "~/lib/data/drizzle";
 import { batchInsertBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import {
   createWorkspaceRaw,
   getDefaultWorkspace,
 } from "~/lib/data/repositories/workspace.repository";
 import { filterByFolders } from "~/lib/import/folder-filter";
-import type { ImportFileType } from "~/lib/import/parsers";
 import { parseImportFile } from "~/lib/import/parsers";
-import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 import { importOptionsSchema } from "~/lib/schemas/profile.schema";
 
 export async function previewImport(
@@ -111,7 +112,6 @@ export async function importBookmarks(
     return { success: false, error: parsed.error ?? "Parse error" };
   }
 
-  // Apply browser-import folder filter unconditionally for Netscape.
   const folderSet = new Set(validated.data.folderPaths ?? []);
   const bookmarksToImport =
     fileType === "netscape"
@@ -125,14 +125,14 @@ export async function importBookmarks(
     };
   }
 
-  const { user, supabase } = await requireAuth();
+  const { user } = await requireAuth();
 
   let targetWorkspaceId: string | null | undefined =
     validated.data.targetWorkspaceId;
 
   if (validated.data.createWorkspace && validated.data.newWorkspaceName) {
     const result = await createWorkspaceRaw(
-      supabase as unknown as DbClient,
+      getDb(),
       user.id,
       validated.data.newWorkspaceName,
     );
@@ -145,10 +145,7 @@ export async function importBookmarks(
   }
 
   if (!targetWorkspaceId && !validated.data.createWorkspace) {
-    const result = await getDefaultWorkspace(
-      supabase as unknown as DbClient,
-      user.id,
-    );
+    const result = await getDefaultWorkspace(getDb(), user.id);
 
     if (!result.success) {
       return result;
@@ -160,7 +157,7 @@ export async function importBookmarks(
   }
 
   return batchInsertBookmarks(
-    supabase as unknown as DbClient,
+    getDb(),
     user.id,
     targetWorkspaceId ?? null,
     bookmarksToImport,

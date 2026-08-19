@@ -2,10 +2,12 @@
 
 import { TagIcon, XIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import { Badge } from "~/components/ui/badge";
-import { Label } from "~/components/ui/label";
+
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 import type { TagEntry } from "~/lib/utils";
+
+import { Badge } from "~/components/ui/badge";
+import { Label } from "~/components/ui/label";
 
 interface TagInputProps {
   value: TagEntry[];

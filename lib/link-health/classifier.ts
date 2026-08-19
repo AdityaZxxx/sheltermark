@@ -1,4 +1,5 @@
 import type { BrokenStatus, UrlHealthResult } from "./types";
+
 import { BROKEN_STATUSES } from "./types";
 
 export const VALID_HIGH_STATUS: ReadonlyArray<number> = [410, 451];
@@ -38,7 +39,12 @@ export function classifyByHttpStatus(
   return { isBroken: false, brokenStatus: "unknown", httpStatus };
 }
 
-export function classifyFetchError(error: unknown): UrlHealthResult {
+// A fetch failure surfaces as an Error (TypeError for network drops,
+// DOMException for aborts) in every runtime this runs in; anything else has
+// been stringified upstream before reaching this boundary.
+export type FetchFailure = Error | string | { message?: string };
+
+export function classifyFetchError(error: FetchFailure): UrlHealthResult {
   const isTimeout =
     error instanceof Error &&
     (error.name === "AbortError" || /aborted/i.test(error.message));
@@ -82,12 +88,18 @@ export function classifyFetchError(error: unknown): UrlHealthResult {
   };
 }
 
+const BROKEN_STATUS_SET: ReadonlySet<string> = new Set(BROKEN_STATUSES);
+
+function isBrokenStatus(value: string): value is BrokenStatus {
+  return BROKEN_STATUS_SET.has(value);
+}
+
 export function resolveBrokenStatus(
   dbStatus: BrokenStatus | string | null | undefined,
   httpStatus: number | null,
 ): BrokenStatus {
-  if (dbStatus && (BROKEN_STATUSES as readonly string[]).includes(dbStatus)) {
-    return dbStatus as BrokenStatus;
+  if (dbStatus && isBrokenStatus(dbStatus)) {
+    return dbStatus;
   }
   return classifyByHttpStatus(httpStatus).brokenStatus;
 }

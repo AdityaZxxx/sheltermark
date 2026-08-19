@@ -3,6 +3,7 @@
 import { EnvelopeIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+
 import { resetPasswordForEmail } from "~/app/action/reset-password.action";
 import {
   Field,
@@ -11,6 +12,7 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+
 import { Button } from "../ui/button";
 import { AuthError } from "./auth-error";
 

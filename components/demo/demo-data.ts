@@ -198,20 +198,20 @@ export const INITIAL_DEMO_BOOKMARKS: DemoBookmark[] = [
   },
 ];
 
-export const TAGS_BY_BOOKMARK_ID: Record<string, string[]> = {
-  p1: ["tag-dev"],
-  p2: ["tag-social"],
-  p3: ["tag-video", "tag-learning"],
-  p4: ["tag-dev"],
-  w1: ["tag-design", "tag-ui"],
-  w2: ["tag-productivity"],
-  w3: ["tag-dev", "tag-productivity"],
-  w4: ["tag-dev"],
-  w5: ["tag-dev", "tag-database"],
-};
+const TAGS_BY_BOOKMARK_ID = new Map<string, readonly string[]>([
+  ["p1", ["tag-dev"]],
+  ["p2", ["tag-social"]],
+  ["p3", ["tag-video", "tag-learning"]],
+  ["p4", ["tag-dev"]],
+  ["w1", ["tag-design", "tag-ui"]],
+  ["w2", ["tag-productivity"]],
+  ["w3", ["tag-dev", "tag-productivity"]],
+  ["w4", ["tag-dev"]],
+  ["w5", ["tag-dev", "tag-database"]],
+]);
 
 export function getBookmarkTags(bookmarkId: string): Tag[] {
-  const tagIds = TAGS_BY_BOOKMARK_ID[bookmarkId] ?? [];
+  const tagIds = TAGS_BY_BOOKMARK_ID.get(bookmarkId) ?? [];
   return tagIds
     .map((id) => DEMO_TAGS.find((t) => t.id === id))
     .filter((t): t is Tag => t !== undefined);

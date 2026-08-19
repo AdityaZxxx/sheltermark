@@ -1,7 +1,9 @@
+import type { NextRequest } from "next/server";
+
+import { ImageResponse } from "next/og";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ImageResponse } from "next/og";
-import type { NextRequest } from "next/server";
+
 import { getProfileDisplayName } from "~/app/action/profile.action";
 import { OGImage } from "~/components/og/og-image";
 
@@ -26,7 +28,6 @@ export async function GET(req: NextRequest) {
 
   if (username) {
     const res = await getProfileDisplayName({ username });
-    // unwrap ActionResult
     display_name = res.success ? (res.data ?? undefined) : undefined;
   }
 

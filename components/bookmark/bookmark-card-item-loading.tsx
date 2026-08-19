@@ -1,5 +1,7 @@
 import { GlobeIcon } from "@phosphor-icons/react";
+
 import { safeDomain } from "~/lib/utils";
+
 import { MatrixFaviconLoader, TextDecrypt } from "./loading-animations";
 
 interface BookmarkCardItemLoadingProps {
