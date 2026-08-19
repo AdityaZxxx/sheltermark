@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "~/lib/data/drizzle";
 import { getTagsWithCount } from "~/lib/data/repositories/tag.repository";
 import { logger } from "~/lib/logger";
-import { createClient } from "~/utils/supabase/server";
+import { createClient } from "~/lib/supabase/server";
 
 /**
  * Tag suggestions for the extension popup. Tags are user-scoped (not

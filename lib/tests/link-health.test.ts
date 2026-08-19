@@ -1,14 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test";
 import {
-  checkUrl,
-  detectSoft404,
-} from "~/lib/link-health/checker";
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+  spyOn,
+} from "bun:test";
+
+import type { BrokenStatus } from "~/lib/link-health/types";
+
+import { checkUrl, detectSoft404 } from "~/lib/link-health/checker";
 import {
   classifyByHttpStatus,
   classifyFetchError,
 } from "~/lib/link-health/classifier";
 import { ALWAYS_ALIVE_DOMAINS } from "~/lib/link-health/domains";
-import type { BrokenStatus } from "~/lib/link-health/types";
 
 // Build HTML programmatically to avoid closing-tag character sequences
 // in this file source itself.

@@ -17,8 +17,8 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 - **Validation:** Zod
 - **Extension:** Chrome Extension (Manifest V3), TypeScript, esbuild
 - **Package Manager:** Bun (always use `bun`, not `npm`)
-- **Lint/Format:** Biome
-- **Tests:** Vitest
+- **Lint/Format:** oxlint + oxfmt
+- **Tests:** bun test
 
 ## Project Structure
 
@@ -41,8 +41,8 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 │   ├── metadata/           # Multi-strategy URL metadata fetcher
 │   ├── link-health/        # URL health checker (used by cron)
 │   ├── ai/                 # Ollama-backed title generation + rate limit
+│   ├── supabase/           # Supabase client factories (server, browser, route handler)
 │   └── auth.ts             # requireAuth() / requireAuthSafe()
-├── utils/supabase/         # Supabase client factories (server, browser, route handler)
 ├── scripts/                # Cron jobs (check-urls, sync-feeds, cleanup-trash) + ext:build
 ├── supabase/migrations/   # SQL migrations
 ├── extension/              # Chrome extension (separate build)
@@ -96,8 +96,9 @@ Reads go through `lib/queries/*.ts` hooks.
 bun install              # install deps
 bun run dev              # Next.js dev server (http://localhost:3000)
 bun run build            # production build
-bun run lint             # Biome check (read-only)
-bun run format:fix       # Biome autofix
+bun run lint             # oxlint check (read-only)
+bun run format           # oxfmt format
+bun run format:check     # oxfmt check
 bun run check:types      # tsc --noEmit
 bun run test             # bun test --isolate
 bun run test:watch       # bun test --isolate --watch

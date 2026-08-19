@@ -47,13 +47,13 @@ All repositories use Drizzle ORM (the Supabase client is gone from the repositor
 
 - **Drizzle schema:** `lib/data/schema.ts` — a derived model of the public schema, hand-written and kept in sync with `supabase/migrations/` (the canonical migration history; drizzle-kit migrations are not used, and drizzle-kit `generate` offline is the parity check).
 - **Connection:** `lib/data/drizzle.ts` — server-only, pooled `DATABASE_URL` with `prepare: false`. Non-Next entrypoints (cron scripts) build instances via `lib/data/drizzle-instance.ts` (`createDb()` without `server-only`).
-- **Security contract:** the Drizzle connection uses the service-role credential and **bypasses RLS**. Every Drizzle query must enforce `user_id` ownership explicitly. Live-database isolation suites per entity (`lib/data/__tests__/*-isolation.integration.test.ts`) exercise this with another user's known IDs (run requires `DATABASE_URL`; skipped in CI without it).
+- **Security contract:** the Drizzle connection uses the service-role credential and **bypasses RLS**. Every Drizzle query must enforce `user_id` ownership explicitly. Live-database isolation suites per entity (`lib/data/tests/*-isolation.integration.test.ts`) exercise this with another user's known IDs (run requires `DATABASE_URL`; skipped in CI without it).
 - Public-visibility reads (public profiles) re-implement the RLS SELECT policy in repository code since Drizzle bypasses RLS.
 - Cron scripts that touch Drizzle (`scripts/sync-feeds.ts`) require `DATABASE_URL`, not `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Auth
 
-Supabase Auth with two providers: Google OAuth + email/password. Sessions are managed via cookies through `@supabase/ssr` (see `utils/supabase/server.ts`, `utils/supabase/browser.ts`, `utils/supabase/route-handler.ts` — three client factories for three contexts).
+Supabase Auth with two providers: Google OAuth + email/password. Sessions are managed via cookies through `@supabase/ssr` (see `lib/supabase/server.ts`, `lib/supabase/browser.ts`, `lib/supabase/route-handler.ts` — three client factories for three contexts).
 
 `lib/auth.ts` exports two helpers:
 

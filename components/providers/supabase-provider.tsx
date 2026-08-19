@@ -5,7 +5,7 @@ import type { User } from "@supabase/supabase-js";
 
 import { createContext, use, useEffect, useState } from "react";
 
-import { createClient } from "~/utils/supabase/client";
+import { createClient } from "~/lib/supabase/client";
 
 interface SupabaseContextValue {
   supabase: ReturnType<typeof createBrowserClient>;

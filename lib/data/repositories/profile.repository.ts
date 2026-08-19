@@ -21,7 +21,7 @@ import {
   updatePublicProfileSchema,
   usernameSchema,
 } from "~/lib/schemas/profile.schema";
-import { createAdminClient } from "~/utils/supabase/server";
+import { createAdminClient } from "~/lib/supabase/server";
 
 type ProfileRow = typeof profiles.$inferSelect;
 

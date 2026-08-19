@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
 
+import { createClient } from "~/lib/supabase/server";
 import { getBaseUrl } from "~/lib/utils";
-import { createClient } from "~/utils/supabase/server";
 
 const resetPasswordSchema = z.object({
   email: z.email("Invalid email address"),

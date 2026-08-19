@@ -6,7 +6,7 @@ import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
 import { workspaces } from "~/lib/data/schema";
 import { logger } from "~/lib/logger";
 import { extensionBookmarkSaveSchema } from "~/lib/schemas/extension.schema";
-import { createClient } from "~/utils/supabase/server";
+import { createClient } from "~/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {

@@ -3,7 +3,7 @@
 **Date**: 2026-07-23
 **Status**: Superseded
 
-> Superseded by the Drizzle migration (2026-08). `lib/data/db-client.ts` and `FakeDbClient` were deleted; repositories now take `DrizzleDb` directly (see `docs/architecture.md` "Data layer"). The replacement test seam is the real database: live-database isolation suites in `lib/data/__tests__/*-isolation.integration.test.ts` exercise the exact service-role/RLS-bypassed posture, and `insertBookmark` keeps an injected `fetchMetadataFn` seam for deterministic non-network tests. The test-first rule and `peek()` design notes below are kept as historical record.
+> Superseded by the Drizzle migration (2026-08). `lib/data/db-client.ts` and `FakeDbClient` were deleted; repositories now take `DrizzleDb` directly (see `docs/architecture.md` "Data layer"). The replacement test seam is the real database: live-database isolation suites in `lib/data/tests/*-isolation.integration.test.ts` exercise the exact service-role/RLS-bypassed posture, and `insertBookmark` keeps an injected `fetchMetadataFn` seam for deterministic non-network tests. The test-first rule and `peek()` design notes below are kept as historical record.
 
 ## Context
 

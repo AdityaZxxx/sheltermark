@@ -21,7 +21,7 @@ mock.module("~/lib/data/repositories/bookmark.repository", () => ({
 
 const createClientMock = mock();
 
-mock.module("~/utils/supabase/server", () => ({
+mock.module("~/lib/supabase/server", () => ({
   createClient: () => createClientMock(),
 }));
 

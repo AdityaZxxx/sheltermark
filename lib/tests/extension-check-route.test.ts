@@ -14,7 +14,7 @@ import { NextRequest as NextRequestImpl } from "next/server";
 
 const createClientMock = mock();
 
-mock.module("~/utils/supabase/server", () => ({
+mock.module("~/lib/supabase/server", () => ({
   createClient: () => createClientMock(),
 }));
 

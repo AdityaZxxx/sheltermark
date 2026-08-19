@@ -20,7 +20,7 @@ export default defineConfig({
     "dist/**",
     "build/**",
     "components/ui/**",
-    "**/__tests__/fixtures/**",
+    "**/tests/fixtures/**",
     ".agent/**",
     ".agents/**",
     ".claude/**",

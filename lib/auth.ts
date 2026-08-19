@@ -2,7 +2,7 @@
 
 import type { User } from "@supabase/supabase-js";
 
-import { createClient } from "~/utils/supabase/server";
+import { createClient } from "~/lib/supabase/server";
 
 interface AuthResult {
   user: User;

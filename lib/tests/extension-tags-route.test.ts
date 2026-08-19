@@ -17,7 +17,7 @@ mock.module("~/lib/data/repositories/tag.repository", () => ({
 
 const createClientMock = mock();
 
-mock.module("~/utils/supabase/server", () => ({
+mock.module("~/lib/supabase/server", () => ({
   createClient: () => createClientMock(),
 }));
 
