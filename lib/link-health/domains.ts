@@ -8,6 +8,7 @@ export const ALWAYS_ALIVE_DOMAINS = [
   "tiktok.com",
   "facebook.com",
   "fb.com",
+  "arxiv.org",
 ] as const;
 
 function getHostname(url: string): string {
