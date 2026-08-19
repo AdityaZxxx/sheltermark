@@ -10,6 +10,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { generateAiTitle } from "~/app/action/bookmark.action";
 import { MarkdownIcon } from "~/components/markdown-icon";
+import { Orb } from "~/components/orb";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -190,10 +191,13 @@ function EditFormInner({
                     aria-label="Generate title with AI"
                     className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <Sparkle
-                      className={`h-4 w-auto ${generating ? "animate-spin" : ""}`}
-                      aria-hidden="true"
-                    />
+                    {generating ? (
+                      <span aria-hidden="true" className="inline-flex">
+                        <Orb size={24} />
+                      </span>
+                    ) : (
+                      <Sparkle className="h-4 w-auto" aria-hidden="true" />
+                    )}
                   </button>
                 </div>
                 {aiSuggestion && (
