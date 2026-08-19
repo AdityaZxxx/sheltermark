@@ -86,11 +86,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <Label className="text-xs font-medium">Format</Label>
             <RadioGroup
               value={format}
-              onValueChange={(value) =>
-                // SAFETY: every RadioGroupItem below only offers "json" |
-                // "csv", so the emitted value is always one of those.
-                setFormat(value as "json" | "csv")
-              }
+              onValueChange={(value) => {
+                if (value === "json" || value === "csv") setFormat(value);
+              }}
               className="flex gap-4"
             >
               <div className="flex items-center gap-2">
@@ -118,9 +116,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <Label className="text-xs font-medium">Workspace</Label>
             <Select
               value={workspaceId}
-              // SAFETY: Select items are "all" plus workspace uuid ids, so the
-              // emitted value is always "all" or a concrete string id.
-              onValueChange={(value) => setWorkspaceId(value as "all" | string)}
+              onValueChange={(value) => {
+                if (value !== null) setWorkspaceId(value);
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue>

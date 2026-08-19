@@ -55,10 +55,8 @@ function resolveTagsFromLibrary(
   const byId = new Map(userTags.map((t) => [t.id, t]));
   const byName = new Map(userTags.map((t) => [t.name.toLowerCase(), t]));
   return tags.map((entry) => {
-    if (entry.id && byId.has(entry.id)) {
-      // SAFETY: byId.has(entry.id) guarantees the Map lookup succeeds.
-      return byId.get(entry.id) as Tag;
-    }
+    const existing = entry.id ? byId.get(entry.id) : undefined;
+    if (existing) return existing;
     if (entry.name) {
       const match = byName.get(entry.name.toLowerCase());
       if (match) return match;

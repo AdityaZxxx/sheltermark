@@ -32,6 +32,7 @@ import {
   type QueueItemStatus,
   type SaveEntrySource,
 } from "./constants.js";
+import { queueStorageSchema } from "./schema.js";
 
 const STORAGE_KEYS = {
   ITEMS: "queueItems",
@@ -52,8 +53,7 @@ interface QueueState {
 let drainInProgress = false;
 
 // Injected dependencies so background.ts owns chrome.* + fetch + notifications
-// and the queue stays pure/testable. All are optional; defaults are no-ops so
-// tests that don't care about notifications just don't pass them.
+// and the queue stays pure/testable.
 
 export interface QueueHookContext {
   /**
@@ -163,39 +163,31 @@ function truncateErr(msg: string): string {
 }
 
 /**
- * The chrome.storage.local payload this module owns. writeState serializes a
- * QueueState field-for-field into exactly these keys, so reads can rely on
- * this shape (per-field fallbacks below still guard against missing keys).
+ * Read the persisted queue state. The schema applies per-field defaults, so a
+ * fresh install (absent keys) reads back as an empty queue. A payload that
+ * fails to parse (corruption, an older incompatible shape) falls back to the
+ * empty state rather than stalling every later drain.
  */
-interface QueueStoragePayload {
-  queueItems?: QueueItem[];
-  queueSeq?: number;
-  queuePaused?: boolean;
-  queueNotifiedOfflineAt?: number | null;
-}
-
 async function readState(): Promise<QueueState> {
-  // SAFETY: this extension is the sole writer of the queue storage keys
-  // (writeState below), so the stored payload matches QueueStoragePayload;
-  // each field below falls back to its empty default when the key is absent.
-  const raw = (await chrome.storage.local.get([
+  const raw = await chrome.storage.local.get([
     STORAGE_KEYS.ITEMS,
     STORAGE_KEYS.SEQ,
     STORAGE_KEYS.PAUSED,
     STORAGE_KEYS.NOTIFIED_OFFLINE_AT,
-  ])) as QueueStoragePayload;
-
-  const items = raw[STORAGE_KEYS.ITEMS] ?? [];
-  // Backfill `tags` for items persisted by an older build — the field did not
-  // exist before quick metadata editing, and a missing value must behave
-  // exactly like an empty selection.
-  for (const item of items) {
-    if (!Array.isArray(item.tags)) item.tags = [];
+  ]);
+  const parsed = queueStorageSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.warn("[Sheltermark] queue storage unreadable; starting empty", {
+      error: parsed.error.message,
+    });
+    return { items: [], seq: 0, paused: false, notifiedOfflineAt: null };
   }
-  const seq = raw[STORAGE_KEYS.SEQ] ?? 0;
-  const paused = raw[STORAGE_KEYS.PAUSED] ?? false;
-  const notifiedOfflineAt = raw[STORAGE_KEYS.NOTIFIED_OFFLINE_AT] ?? null;
-  return { items, seq, paused, notifiedOfflineAt };
+  return {
+    items: parsed.data[STORAGE_KEYS.ITEMS],
+    seq: parsed.data[STORAGE_KEYS.SEQ],
+    paused: parsed.data[STORAGE_KEYS.PAUSED],
+    notifiedOfflineAt: parsed.data[STORAGE_KEYS.NOTIFIED_OFFLINE_AT],
+  };
 }
 
 async function writeState(state: QueueState): Promise<void> {
@@ -255,7 +247,6 @@ export async function enqueue(
   const seeded = input.seedFailedAttempt;
   // If the inline attempt failed transiently, apply backoff (or an explicit
   // Retry-After) so the next drain (heartbeat) doesn't re-fire immediately.
-  // Otherwise due now.
   const seededDelayMs = seeded?.retryAfterMs ?? backoffDelayMs(1);
   const item: QueueItem = {
     id: crypto.randomUUID(),
@@ -372,19 +363,20 @@ export async function resumeQueue(): Promise<void> {
  * Heartbeat calls this; alarms/onStartup/resume also call this.
  */
 export async function drain(hooks: QueueHookContext): Promise<void> {
+  // Claim the guard synchronously before any await so a concurrent drain()
+  // call interleaved during readState() cannot slip through.
   if (drainInProgress) return;
-  const state = await readState();
-  if (state.paused) return;
-
   drainInProgress = true;
   try {
+    const state = await readState();
+    if (state.paused) return;
+
     let syncedCount = 0;
     const wasOfflineNotified = state.notifiedOfflineAt != null;
 
     // Loop: re-read only items we mutate, mutating a working copy, writing
     // once per processed item so a mid-drain kill loses at most one item's
     // forward progress (and even that is safe: in_flight → pending on restart).
-    // Use a local copy; we persist after each successful transition.
     const working = state.items.slice();
 
     for (let i = 0; i < working.length; i++) {

@@ -1,8 +1,8 @@
 import { DEFAULT_BASE_URL } from "./constants.js";
 import { getBaseUrl, setBaseUrl } from "./storage.js";
 
-// SAFETY: options.html ships as a static document alongside this module; these
-// ids are its contract. A missing element is a packaging bug — fail loudly at
+// options.html ships as a static document alongside this module; these ids
+// are its contract. A missing element is a packaging bug — fail loudly at
 // startup instead of dereferencing null on first interaction.
 function requiredElement<T extends Element>(selector: string): T {
   const el = document.querySelector<T>(selector);

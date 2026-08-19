@@ -160,11 +160,11 @@ export function PreviewStep({
         <Label className="text-xs font-medium">Duplicate handling</Label>
         <RadioGroup
           value={duplicateStrategy}
-          onValueChange={(value) =>
-            // SAFETY: duplicateStrategy is seeded from the importOptions schema
-            // and every RadioGroupItem below only offers "skip" | "replace".
-            onDuplicateStrategyChange(value as "skip" | "replace")
-          }
+          onValueChange={(value) => {
+            if (value === "skip" || value === "replace") {
+              onDuplicateStrategyChange(value);
+            }
+          }}
           className="flex flex-col gap-2"
         >
           <div className="flex items-center gap-2">

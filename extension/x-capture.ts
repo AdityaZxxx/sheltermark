@@ -94,15 +94,14 @@
 
       btn.addEventListener(
         "click",
-        (e: Event) => {
-          // SAFETY: the listener is only registered on Elements returned by
-          // querySelectorAll, so currentTarget is that same element here.
-          const target = e.currentTarget as Element;
+        () => {
+          // The listener is registered on this button alone, so `btn` is the
+          // event target — no need to read it off the event.
           const isBookmarkAction =
-            target.getAttribute("data-testid") === "bookmark";
+            btn.getAttribute("data-testid") === "bookmark";
           if (!isBookmarkAction) return;
 
-          const article = findClosestTweetArticle(target);
+          const article = findClosestTweetArticle(btn);
           const tweetUrl = extractTweetUrlFromArticle(article);
           if (!tweetUrl) return;
 

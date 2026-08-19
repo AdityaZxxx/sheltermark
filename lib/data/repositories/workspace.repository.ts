@@ -38,9 +38,6 @@ function toWorkspace(row: WorkspaceRow): Workspace {
 }
 
 function toBookmark(row: BookmarkRow): Bookmark {
-  // SAFETY: the DB check constraint limits broken_status to the Bookmark enum
-  // values; the column itself is plain text, hence the narrowing cast.
-  const brokenStatus = row.brokenStatus as Bookmark["broken_status"];
   return {
     id: row.id,
     user_id: row.userId,
@@ -51,7 +48,7 @@ function toBookmark(row: BookmarkRow): Bookmark {
     og_image_url: row.ogImageUrl,
     is_public: row.isPublic ?? false,
     is_broken: row.isBroken ?? false,
-    broken_status: brokenStatus ?? "alive",
+    broken_status: row.brokenStatus ?? "alive",
     http_status: row.httpStatus,
     last_checked_at: row.lastCheckedAt?.toISOString() ?? null,
     created_at: row.createdAt.toISOString(),

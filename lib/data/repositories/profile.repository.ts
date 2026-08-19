@@ -19,6 +19,7 @@ import {
   type UpdatePublicProfileInput,
   updateProfileSchema,
   updatePublicProfileSchema,
+  usernameSchema,
 } from "~/lib/schemas/profile.schema";
 import { createAdminClient } from "~/utils/supabase/server";
 
@@ -30,9 +31,8 @@ type ProfileEditPatch = Partial<
 >;
 
 function toProfile(row: ProfileRow): Profile {
-  // SAFETY: signup and update paths validate usernames against the same Zod
-  // rules before writing; the cast preserves the stored value's shape.
-  const username = row.username as Profile["username"];
+  const parsed = usernameSchema.safeParse(row.username);
+  const username = parsed.success ? parsed.data : "";
   return {
     id: row.id,
     username,
@@ -321,9 +321,8 @@ export async function uploadAvatar(
   userId: string,
   formData: FormData,
 ): Promise<ActionResult<{ avatarUrl: string }>> {
-  // SAFETY: the multipart form only ever carries a binary file under "file"; text entries are validated below via !file/type checks.
-  const file = formData.get("file") as File;
-  if (!file) {
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
     return { success: false, error: "No file provided" };
   }
 

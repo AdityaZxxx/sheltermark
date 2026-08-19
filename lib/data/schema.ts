@@ -13,6 +13,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { BrokenStatus } from "~/lib/link-health/types";
+
 /**
  * Drizzle schema — derived model of the public schema.
  *
@@ -117,7 +119,7 @@ export const bookmarks = pgTable(
     httpStatus: integer("http_status"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     note: text(),
-    brokenStatus: text("broken_status"),
+    brokenStatus: text("broken_status").$type<BrokenStatus | null>(),
   },
   (table) => [
     index("bookmarks_user_id_idx").on(table.userId),

@@ -3,6 +3,12 @@ import {
   type TagWithCount,
   type Workspace,
 } from "./constants.js";
+import {
+  baseUrlStorageSchema,
+  cachedTagsSchema,
+  cachedWorkspacesSchema,
+  lastWorkspaceStorageSchema,
+} from "./schema.js";
 
 const STORAGE_KEYS = {
   BASE_URL: "baseUrl",
@@ -10,12 +16,10 @@ const STORAGE_KEYS = {
 } as const;
 
 export async function getBaseUrl(): Promise<string> {
-  // SAFETY: this extension is the only writer of the `baseUrl` key, and
-  // setBaseUrl always stores a trimmed http(s) URL string.
-  const result = (await chrome.storage.sync.get(
-    STORAGE_KEYS.BASE_URL,
-  )) as Record<string, string>;
-  return result[STORAGE_KEYS.BASE_URL] || DEFAULT_BASE_URL;
+  const parsed = baseUrlStorageSchema.safeParse(
+    await chrome.storage.sync.get(STORAGE_KEYS.BASE_URL),
+  );
+  return parsed.success ? parsed.data.baseUrl : DEFAULT_BASE_URL;
 }
 
 export async function setBaseUrl(url: string): Promise<void> {
@@ -23,12 +27,10 @@ export async function setBaseUrl(url: string): Promise<void> {
 }
 
 export async function getLastWorkspace(): Promise<string | null> {
-  // SAFETY: this extension is the only writer of `lastWorkspace`, and
-  // setLastWorkspace always stores a workspace id string.
-  const result = (await chrome.storage.local.get(
-    STORAGE_KEYS.LAST_WORKSPACE,
-  )) as Record<string, string>;
-  return result[STORAGE_KEYS.LAST_WORKSPACE] || null;
+  const parsed = lastWorkspaceStorageSchema.safeParse(
+    await chrome.storage.local.get(STORAGE_KEYS.LAST_WORKSPACE),
+  );
+  return parsed.success ? parsed.data.lastWorkspace : null;
 }
 
 export async function setLastWorkspace(workspaceId: string): Promise<void> {
@@ -57,46 +59,44 @@ export interface CachedEntry<T> {
   baseUrl: string;
 }
 
-async function getCachedEntry<T>(key: string): Promise<CachedEntry<T> | null> {
-  // SAFETY: this extension is the only writer of the session cache keys, and
-  // setCachedEntry always stores a CachedEntry envelope for key `key`. The
-  // Array.isArray check below re-validates the payload shape at runtime.
-  const result = (await chrome.storage.session.get(key)) as Record<
-    string,
-    CachedEntry<T> | undefined
-  >;
-  const entry = result[key];
-  if (!entry || !Array.isArray(entry.value)) return null;
-  return entry;
-}
-
-async function setCachedEntry<T>(key: string, value: T): Promise<void> {
-  const baseUrl = await getBaseUrl();
-  await chrome.storage.session.set({
-    [key]: { value, updatedAt: Date.now(), baseUrl },
-  });
-}
-
+// A failed parse is a cache miss: the caller re-fetches and overwrites the
+// entry, so a corrupt or stale-format value repairs itself on the next read.
 export async function getCachedWorkspaces(): Promise<CachedEntry<
   Workspace[]
 > | null> {
-  return getCachedEntry<Workspace[]>(SESSION_KEYS.WORKSPACES);
+  const parsed = cachedWorkspacesSchema.safeParse(
+    await chrome.storage.session.get(SESSION_KEYS.WORKSPACES),
+  );
+  return parsed.success ? parsed.data.cachedWorkspaces : null;
 }
 
 export async function setCachedWorkspaces(
   workspaces: Workspace[],
 ): Promise<void> {
-  await setCachedEntry(SESSION_KEYS.WORKSPACES, workspaces);
+  const baseUrl = await getBaseUrl();
+  await chrome.storage.session.set({
+    [SESSION_KEYS.WORKSPACES]: {
+      value: workspaces,
+      updatedAt: Date.now(),
+      baseUrl,
+    },
+  });
 }
 
 export async function getCachedTags(): Promise<CachedEntry<
   TagWithCount[]
 > | null> {
-  return getCachedEntry<TagWithCount[]>(SESSION_KEYS.TAGS);
+  const parsed = cachedTagsSchema.safeParse(
+    await chrome.storage.session.get(SESSION_KEYS.TAGS),
+  );
+  return parsed.success ? parsed.data.cachedTags : null;
 }
 
 export async function setCachedTags(tags: TagWithCount[]): Promise<void> {
-  await setCachedEntry(SESSION_KEYS.TAGS, tags);
+  const baseUrl = await getBaseUrl();
+  await chrome.storage.session.set({
+    [SESSION_KEYS.TAGS]: { value: tags, updatedAt: Date.now(), baseUrl },
+  });
 }
 
 export async function clearDataCaches(): Promise<void> {

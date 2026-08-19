@@ -27,10 +27,11 @@ export function BookmarkViewToggle({
   return (
     <Tabs
       value={view}
-      onValueChange={(v) =>
-        // SAFETY: triggers render only the three BookmarkViewVariant values above; the callback never receives anything else.
-        onViewChange(v as BookmarkViewVariant)
-      }
+      onValueChange={(v) => {
+        if (v === "list" || v === "card" || v === "comfort") {
+          onViewChange(v);
+        }
+      }}
     >
       <TabsList
         className={cn("grid grid-cols-3 bg-muted/60 rounded-lg", className)}

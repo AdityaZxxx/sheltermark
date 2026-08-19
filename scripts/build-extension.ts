@@ -30,11 +30,14 @@ if (existsSync(OUT_DIR)) {
 const config: esbuild.BuildOptions = {
   entryPoints,
   outdir: OUT_DIR,
-  bundle: false, // keep separate files (Chrome extension needs them separate)
+  // Bundle each entry with its dependencies (e.g. zod) inlined: Chrome
+  // extension scripts resolve only explicit file URLs, not bare module names.
+  bundle: true,
   format: "esm",
+  platform: "browser",
   target: "esnext",
   sourcemap: false,
-  minify: false,
+  minify: true,
 };
 
 const watch = process.argv.includes("--watch");
