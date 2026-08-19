@@ -11,7 +11,16 @@
  * documented input class: 2xx, 3xx, 4xx, 5xx, network errors, redirects,
  * soft-404s, login walls, and always-alive domains.
  */
-import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+  spyOn,
+} from "bun:test";
+
 import { checkUrl } from "~/lib/link-health/checker";
 
 const LT = "<";
@@ -32,10 +41,6 @@ function mockResponse(
     });
   }
   return response;
-}
-
-function _mockRedirect(location: string, status: number = 302): Response {
-  return new Response(null, { status, headers: { location } });
 }
 
 describe("checkUrl — state machine E2E", () => {

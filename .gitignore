@@ -47,7 +47,8 @@ opencode.json
 prd.md
 trace-*.json
 
-lib/__tests__*
+# local Supabase CLI state (project link, pooler URL)
+/supabase/.temp/
 
 # throwaway debug / probe scripts
 /.scratch/
