@@ -3,10 +3,14 @@ import {
   MESSAGE_TYPES,
   type PopupInfo,
   type TabInfo,
-  type TagsResult,
   type TagWithCount,
   type Workspace,
 } from "./constants.js";
+import {
+  checkResultSchema,
+  popupInfoSchema,
+  tagsResultSchema,
+} from "./schema.js";
 import {
   getBaseUrl,
   getCachedTags,
@@ -31,9 +35,9 @@ interface TagChip {
 }
 const selectedTags: TagChip[] = [];
 
-// SAFETY: popup.html ships as a static document alongside this module; these
-// ids are its contract. A missing element is a packaging bug — fail loudly at
-// startup instead of dereferencing null on first interaction.
+// popup.html ships as a static document alongside this module; these ids are
+// its contract. A missing element is a packaging bug — fail loudly at startup
+// instead of dereferencing null on first interaction.
 function requiredElement<T extends Element>(selector: string): T {
   const el = document.querySelector<T>(selector);
   if (!el) {
@@ -111,9 +115,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateSaveButton();
   focusTitle();
 
-  // Runs concurrently (previously serial). With a warm cache this only
-  // refreshes the workspace list, tags, and the "already saved" flag —
-  // the user can already type and save by then.
+  // With a warm cache this only refreshes the workspace list, tags, and the
+  // "already saved" flag — the user can already type and save by then.
   void Promise.all([initPopup(), fetchTags()]);
 
   // Render the workspace list from whichever source arrived: the session
@@ -175,12 +178,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let popupInfo: PopupInfo;
     try {
-      // SAFETY: background.ts answers GET_POPUP with getPopupInfo(), which
-      // always resolves to the PopupInfo contract before sendResponse.
-      popupInfo = (await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.GET_POPUP,
-        data: { url: currentUrl ?? "", workspaceId: lastWorkspace },
-      })) as PopupInfo;
+      popupInfo = popupInfoSchema.parse(
+        await chrome.runtime.sendMessage({
+          type: MESSAGE_TYPES.GET_POPUP,
+          data: { url: currentUrl ?? "", workspaceId: lastWorkspace },
+        }),
+      );
     } catch {
       statusDiv.textContent = "Failed to load";
       statusDiv.style.color = "#ef4444";
@@ -207,12 +210,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function fetchTags(): Promise<void> {
     try {
-      // SAFETY: background.ts answers GET_TAGS with TagsResult
-      // ({ authenticated, tags }) on both the success and failure paths.
-      const result = (await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.GET_TAGS,
-      })) as TagsResult;
-      if (result?.tags) allTags = result.tags;
+      const result = tagsResultSchema.safeParse(
+        await chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_TAGS }),
+      );
+      if (result.success && result.data.tags) allTags = result.data.tags;
     } catch {
       // Suggestions are optional; the input still works without them.
     }
@@ -484,12 +485,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!currentUrl || !selectedWorkspaceId) return;
 
     try {
-      // SAFETY: background.ts answers CHECK_BOOKMARK with CheckResult
-      // ({ saved }) on both the success and the error fallback path.
-      const result = (await chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.CHECK_BOOKMARK,
-        data: { url: currentUrl, workspaceId: selectedWorkspaceId },
-      })) as CheckResult;
+      const parsed = checkResultSchema.safeParse(
+        await chrome.runtime.sendMessage({
+          type: MESSAGE_TYPES.CHECK_BOOKMARK,
+          data: { url: currentUrl, workspaceId: selectedWorkspaceId },
+        }),
+      );
+      const result: CheckResult = parsed.success ? parsed.data : {};
 
       if (result.saved) {
         isSaved = true;
@@ -524,9 +526,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function refreshAuthAndShowMain(): Promise<void> {
-    // Fire-and-restore: all independent, so parallel (was serial). Tags read
-    // from the session cache first — they were warmed by the initial open —
-    // and the network refetch updates them when it lands.
+    // Tags read from the session cache first — they were warmed by the
+    // initial open — and the network refetch updates them when it lands.
     const [refreshedTabInfo, cachedTagsEntry] = await Promise.all([
       getCurrentTabInfo(),
       getCachedTags(),

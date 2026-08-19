@@ -9,8 +9,6 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import type { Feed } from "~/lib/schemas/feed.schema";
-
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
 import {
@@ -33,9 +31,7 @@ interface FeedManagerProps {
 
 export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
   const feedsHook = useFeeds();
-  // SAFETY: useFeeds' query returns Feed[] (feed action → zod-parsed rows);
-  // the placeholder default [] matches that same type.
-  const feeds = feedsHook.feeds as Feed[];
+  const { feeds } = feedsHook;
   const { subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } = feedsHook;
   const { workspaces } = useWorkspaces();
   const [url, setUrl] = useState("");

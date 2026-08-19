@@ -31,11 +31,13 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
+import { z } from "zod";
 
 import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
 
 import { checkUrl } from "~/lib/link-health/checker";
 import { logger } from "~/lib/logger";
+import { urlSchema, uuidSchema } from "~/lib/schemas/common";
 import { safeDomain } from "~/lib/utils";
 
 config();
@@ -58,11 +60,13 @@ const MAX_RETRIES = 2;
 const MAX_BOOKMARKS_PER_RUN = 500;
 const STALE_CHECK_DAYS = 7;
 
-interface BookmarkToCheck {
-  id: string;
-  url: string;
-  user_id: string;
-}
+const bookmarkToCheckSchema = z.object({
+  id: uuidSchema,
+  url: urlSchema,
+  user_id: uuidSchema,
+});
+
+type BookmarkToCheck = z.infer<typeof bookmarkToCheckSchema>;
 
 interface RunSummary {
   checked: number;
@@ -197,11 +201,15 @@ async function main(): Promise<void> {
     written: boolean;
   };
 
-  // SAFETY: the .select() above asks PostgREST for exactly id, url and
-  // user_id (the workspaces join only filters rows); every returned row
-  // therefore satisfies BookmarkToCheck.
+  const parsed = z.array(bookmarkToCheckSchema).safeParse(bookmarks ?? []);
+  if (!parsed.success) {
+    logger.error("Unexpected bookmark shape", {
+      message: parsed.error.message,
+    });
+    process.exit(1);
+  }
   const outcomes = await runWithPerHostConcurrency<CheckOutcome>(
-    (bookmarks as BookmarkToCheck[]).map((bm) => ({
+    parsed.data.map((bm) => ({
       host: safeDomain(bm.url),
       run: async () => {
         const result = await checkUrl(bm.url, {

@@ -1,6 +1,7 @@
 import {
   type CheckResult,
   type ExtensionMessage,
+  type GetWorkspacesResult,
   MESSAGE_TYPES,
   NOTIFICATION_DURATION,
   type PopupInfo,
@@ -23,6 +24,13 @@ import {
   type QueueHookContext,
   resumeQueue,
 } from "./queue.js";
+import {
+  checkResultSchema,
+  extensionMessageSchema,
+  getWorkspacesResultSchema,
+  popupInfoSchema,
+  tagsResultSchema,
+} from "./schema.js";
 import {
   clearDataCaches,
   getBaseUrl,
@@ -147,7 +155,6 @@ chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
  * and after mutations. Never throws — cache warmup is best-effort.
  */
 async function revalidateCaches(): Promise<void> {
-  // Fire in parallel; each fetch updates its cache entry independently.
   await Promise.allSettled([
     (async () => {
       const cached = await getCachedWorkspaces();
@@ -242,10 +249,16 @@ chrome.contextMenus.onClicked.addListener(
 
 chrome.runtime.onMessage.addListener(
   (
-    message: ExtensionMessage,
+    rawMessage: ExtensionMessage,
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response?: ExtensionResponse) => void,
   ) => {
+    // Messages arrive untyped across the extension runtime; any payload that
+    // fails the contract is ignored rather than half-handled.
+    const parsedMessage = extensionMessageSchema.safeParse(rawMessage);
+    if (!parsedMessage.success) return false;
+    const message = parsedMessage.data;
+
     if (message.type === MESSAGE_TYPES.SAVE_BOOKMARK) {
       const { url, title, workspaceId, tags } = message.data;
       saveOrEnqueue("popup", { url, title, workspaceId, tags })
@@ -305,8 +318,6 @@ chrome.runtime.onMessage.addListener(
           if (result.authenticated) {
             void resumeQueue().then(() => drain(queueHooks));
           }
-          // Warm the session cache from the authenticated response so the next
-          // popup open renders instantly from local storage.
           if (result.authenticated && result.workspaces) {
             sessionCache.workspaces = result.workspaces;
             void setCachedWorkspaces(result.workspaces);
@@ -450,7 +461,6 @@ async function saveOrEnqueue(
 
   if (!outcome.fetchThrew) {
     const status = outcome.status ?? 0;
-    // Happy path: surface the existing notification behavior.
     if (status >= 200 && status < 300) {
       if (params.workspaceId) {
         await setLastWorkspace(params.workspaceId);
@@ -460,7 +470,6 @@ async function saveOrEnqueue(
     }
     if (status === 409) return { kind: "duplicate" };
     if (status === 401) {
-      // Enqueue + pause + trigger existing login flow.
       await enqueue(
         {
           url: params.url,
@@ -626,11 +635,6 @@ function showNotification(
   );
 }
 
-interface GetWorkspacesResult {
-  workspaces?: Workspace[];
-  error?: string;
-}
-
 /** Raw network fetch. Never caches; callers write the cache on success. */
 async function fetchWorkspacesRaw(): Promise<GetWorkspacesResult> {
   const baseUrl = await getBaseUrl();
@@ -638,9 +642,7 @@ async function fetchWorkspacesRaw(): Promise<GetWorkspacesResult> {
     credentials: "include",
   });
   if (!response.ok) throw new Error("Failed to fetch workspaces");
-  // SAFETY: GET /api/extension/workspaces answers { workspaces: Workspace[] }
-  // on 2xx (checked above); the `?` keeps it tolerant of an empty account.
-  return (await response.json()) as GetWorkspacesResult;
+  return getWorkspacesResultSchema.parse(await response.json());
 }
 
 /**
@@ -671,10 +673,7 @@ async function fetchTagsRaw(): Promise<TagWithCount[]> {
     credentials: "include",
   });
   if (!response.ok) return [];
-  // SAFETY: GET /api/extension/tags answers the TagsResult contract
-  // ({ authenticated, tags }) on 2xx (checked above).
-  const data = (await response.json()) as TagsResult;
-  return data.tags ?? [];
+  return tagsResultSchema.parse(await response.json()).tags ?? [];
 }
 
 /**
@@ -717,9 +716,7 @@ async function getPopupInfo({
       bookmarkId: null,
     };
   }
-  // SAFETY: GET /api/extension/popup answers the PopupInfo contract on 2xx
-  // (checked above); the !response.ok branch already mapped every error shape.
-  return response.json() as Promise<PopupInfo>;
+  return popupInfoSchema.parse(await response.json());
 }
 
 interface CheckBookmarkParams {
@@ -741,7 +738,5 @@ async function checkBookmark({
   );
 
   if (!response.ok) return { saved: false };
-  // SAFETY: GET /api/extension/check answers the CheckResult contract
-  // ({ saved, bookmark_id }) on 2xx (checked above).
-  return response.json() as Promise<CheckResult>;
+  return checkResultSchema.parse(await response.json());
 }

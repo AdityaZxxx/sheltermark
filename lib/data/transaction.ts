@@ -11,14 +11,14 @@ const rpcResultSchema = z.object({
   data: z.null(),
 });
 
+const rpcRowSchema = z.object({ result: z.unknown() });
+
 function parseRpcResult(
   rows: unknown[],
   errorLabel: string,
 ): ActionResult<null> {
-  // SAFETY: the wrapped function returns a single jsonb column aliased
-  // "result"; db.execute yields one row per returned value.
-  const raw =
-    rows.length > 0 ? (rows[0] as { result?: unknown }).result : undefined;
+  const row = rpcRowSchema.safeParse(rows[0]);
+  const raw = row.success ? row.data.result : undefined;
   const parsed = rpcResultSchema.safeParse(raw);
   if (!parsed.success)
     return { success: false, error: `Unexpected response from ${errorLabel}` };

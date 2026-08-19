@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useState } from "react";
+import { z } from "zod";
 
 import { loginWithGoogle } from "~/app/action/login.action";
 import { signupWithEmail } from "~/app/action/signup.action";
@@ -23,6 +24,11 @@ import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
 
 import { AuthError } from "./auth-error";
+
+const passwordFieldsSchema = z.object({
+  password: z.string(),
+  confirmPassword: z.string(),
+});
 
 export function SignupForm({
   className,
@@ -50,14 +56,16 @@ export function SignupForm({
     if (next) {
       formData.append("next", next);
     }
-    // SAFETY: this form renders a "password" input below, so FormData.get
-    // returns the input's string value (never a File) for that field.
-    const password = formData.get("password") as string;
-    // SAFETY: same invariant — the "confirmPassword" input below is a plain
-    // text input, so FormData.get returns its string value.
-    const confirmPassword = formData.get("confirmPassword") as string;
+    const parsed = passwordFieldsSchema.safeParse(
+      Object.fromEntries(formData.entries()),
+    );
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid password input");
+      setIsLoadingEmail(false);
+      return;
+    }
 
-    if (password !== confirmPassword) {
+    if (parsed.data.password !== parsed.data.confirmPassword) {
       setError("Passwords do not match");
       setIsLoadingEmail(false);
       return;

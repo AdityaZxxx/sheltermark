@@ -245,9 +245,10 @@ export function TagManageDialog({
                           onBlur={(e) => {
                             // Commit when focus leaves the row entirely; skip
                             // when focus moves to the in-row Cancel button.
-                            // SAFETY: for a focus event fired by an input, relatedTarget is
-                            // the element receiving focus — an HTMLElement or null.
-                            const next = e.relatedTarget as HTMLElement | null;
+                            const next =
+                              e.relatedTarget instanceof HTMLElement
+                                ? e.relatedTarget
+                                : null;
                             if (!next || !next.closest("form")) {
                               commitRename();
                             }

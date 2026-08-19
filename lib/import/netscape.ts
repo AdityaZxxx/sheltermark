@@ -25,7 +25,12 @@ import type { ParsedBookmark, ParseResult } from "./parsers";
 type ChildNode = DefaultTreeAdapterMap["childNode"];
 type ParentNode = DefaultTreeAdapterMap["parentNode"];
 type Element = DefaultTreeAdapterMap["element"];
+type TextNode = DefaultTreeAdapterMap["textNode"];
 type Node = DefaultTreeAdapterMap["node"];
+
+function isTextNode(node: ChildNode): node is TextNode {
+  return node.nodeName === "#text";
+}
 
 /** Schemes we refuse to import. Matches the metadata pipeline's safety policy. */
 const REJECTED_SCHEMES = new Set([
@@ -62,10 +67,9 @@ function decodeEntities(text: string): string {
 /** Collect all text content from an element, concatenated. */
 function extractText(element: Element): string {
   const parts: string[] = [];
-  const walk = (node: ChildNode) => {
-    if (node.nodeName === "#text") {
-      // SAFETY: parse5 names only its TextNode as "#text", and TextNode always carries a `value` string.
-      parts.push((node as { value: string }).value);
+  const walk = (node: ChildNode): void => {
+    if (isTextNode(node)) {
+      parts.push(node.value);
     } else if ("childNodes" in node && node.childNodes) {
       for (const child of node.childNodes) {
         walk(child);

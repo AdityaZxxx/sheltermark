@@ -8,7 +8,7 @@ import type { DrizzleDb } from "~/lib/data/drizzle";
 import type { Metadata } from "~/lib/metadata/types";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
-import type { Tag, Tag as TagRow } from "~/lib/schemas/tag.schema";
+import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
@@ -52,14 +52,11 @@ type InsertBookmarkParams = {
 };
 
 type InsertBookmarkResult =
-  | { success: true; data: Bookmark; tags: TagRow[] }
+  | { success: true; data: Bookmark; tags: Tag[] }
   | { success: false; duplicate: true }
   | { success: false; duplicate?: false; error: string };
 
 function toBookmark(row: BookmarkRow): Bookmark {
-  // SAFETY: the DB check constraint limits broken_status to the Bookmark enum
-  // values; the column is plain text, hence the narrowing cast.
-  const brokenStatus = row.brokenStatus as Bookmark["broken_status"];
   return {
     id: row.id,
     user_id: row.userId,
@@ -70,7 +67,7 @@ function toBookmark(row: BookmarkRow): Bookmark {
     og_image_url: row.ogImageUrl,
     is_public: row.isPublic ?? false,
     is_broken: row.isBroken ?? false,
-    broken_status: brokenStatus ?? "alive",
+    broken_status: row.brokenStatus ?? "alive",
     http_status: row.httpStatus,
     last_checked_at: row.lastCheckedAt?.toISOString() ?? null,
     created_at: row.createdAt.toISOString(),
@@ -163,7 +160,7 @@ export async function insertBookmark(
   // broken partial state as success.
   if (tagNames && tagNames.length > 0) {
     const deduped = dedupeTagNames(tagNames);
-    const resolved: TagRow[] = [];
+    const resolved: Tag[] = [];
     for (const name of deduped) {
       const upserted = await upsertTag(db, userId, name);
       if (!upserted.success) return { success: false, error: upserted.error };

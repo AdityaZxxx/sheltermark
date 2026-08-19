@@ -31,13 +31,11 @@ const SORT_OPTIONS: { value: BookmarkSortBy; label: string }[] = [
 
 export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
   const handleSortByChange = (value: string | null) => {
-    if (value) {
-      onSortChange({
-        ...sort,
-        // SAFETY: SelectItem below renders only SORT_OPTIONS values, all typed as BookmarkSortBy.
-        sortBy: value as BookmarkSortBy,
-      });
-    }
+    const matched = value
+      ? SORT_OPTIONS.find((o) => o.value === value)
+      : undefined;
+    if (!matched) return;
+    onSortChange({ ...sort, sortBy: matched.value });
   };
 
   const toggleSortOrder = () => {

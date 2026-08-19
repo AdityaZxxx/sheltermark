@@ -86,11 +86,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             folderTree={folderTree}
             selectedFolders={selectedFolders}
             selectedCount={selectedCount}
-            onWorkspaceChange={(value) =>
-              // SAFETY: Select items here are workspace ids (uuid strings), so
-              // the change handler always receives a concrete string id.
-              setTargetWorkspaceId(value as string)
-            }
+            onWorkspaceChange={(value) => {
+              if (value !== null) setTargetWorkspaceId(value);
+            }}
             onWorkspaceNameChange={setNewWorkspaceName}
             onDuplicateStrategyChange={setDuplicateStrategy}
             onToggleFolder={toggleFolder}

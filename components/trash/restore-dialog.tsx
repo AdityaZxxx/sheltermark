@@ -134,10 +134,11 @@ export function RestoreDialog({
 
         <RadioGroup
           value={destination}
-          onValueChange={(v) =>
-            // SAFETY: RadioGroupItem renders only the controlled Destination values below; the callback never receives anything else.
-            setDestination(v as Destination)
-          }
+          onValueChange={(v) => {
+            if (v === "original" || v === "other" || v === "new") {
+              setDestination(v);
+            }
+          }}
           className="gap-2"
         >
           {!hasTrashedOrigin && (originalWs || originalWorkspaceName) && (

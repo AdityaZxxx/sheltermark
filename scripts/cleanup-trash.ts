@@ -1,7 +1,14 @@
 #!/usr/bin/env tsx
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 import { logger } from "~/lib/logger";
+import { uuidSchema } from "~/lib/schemas/common";
+
+const cleanupProfileSchema = z.object({
+  id: uuidSchema,
+  trash_cleanup_interval: z.number().int().positive(),
+});
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -40,7 +47,22 @@ async function cleanupTrash(): Promise<{
     };
   }
 
-  if (!profiles || profiles.length === 0) {
+  const profilesParsed = z
+    .array(cleanupProfileSchema)
+    .safeParse(profiles ?? []);
+  if (!profilesParsed.success) {
+    logger.error("Unexpected profile shape in cleanup query", {
+      message: profilesParsed.error.message,
+    });
+    return {
+      success: false,
+      removedBookmarks: 0,
+      removedWorkspaces: 0,
+      errors: [profilesParsed.error.message],
+    };
+  }
+
+  if (profilesParsed.data.length === 0) {
     logger.info("No users with auto-cleanup enabled");
     return {
       success: true,
@@ -50,13 +72,12 @@ async function cleanupTrash(): Promise<{
     };
   }
 
-  logger.info(`Found ${profiles.length} users with auto-cleanup enabled`);
+  logger.info(
+    `Found ${profilesParsed.data.length} users with auto-cleanup enabled`,
+  );
 
-  for (const profile of profiles) {
-    // SAFETY: the query above applies .not("trash_cleanup_interval", "is", null),
-    // so every returned row carries the interval; a null here would be a
-    // PostgREST contract violation.
-    const interval = profile.trash_cleanup_interval as number;
+  for (const profile of profilesParsed.data) {
+    const interval = profile.trash_cleanup_interval;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - interval);
 
