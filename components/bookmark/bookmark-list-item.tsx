@@ -6,8 +6,8 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
-import { formatRelativeTime } from "~/lib/format";
 import { cn } from "~/lib/utils";
+import { formatRelativeTime } from "~/lib/utils/format";
 
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BrokenLinkWarning } from "./broken-link-warning";

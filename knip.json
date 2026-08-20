@@ -2,5 +2,12 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreDependencies": ["postcss"],
   "ignore": ["components/ui/*.{ts,tsx}"],
-  "tags": ["-lintignore"]
+  "tags": ["-lintignore"],
+  "entry": [
+    "extension/background.ts",
+    "extension/popup.ts",
+    "extension/options.ts",
+    "extension/storage.ts",
+    "extension/x-capture.ts"
+  ]
 }

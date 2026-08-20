@@ -28,8 +28,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { formatRelativeTime } from "~/lib/format";
 import { cn, safeDomain } from "~/lib/utils";
+import { formatRelativeTime } from "~/lib/utils/format";
 
 export function BookmarkRow({
   bookmark,

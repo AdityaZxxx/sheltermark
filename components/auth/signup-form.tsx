@@ -12,7 +12,7 @@ import { z } from "zod";
 
 import { loginWithGoogle } from "~/app/action/login.action";
 import { signupWithEmail } from "~/app/action/signup.action";
-import { GoogleIcon } from "~/components/google-icon";
+import { GoogleIcon } from "~/components/auth/google-icon";
 import { Button } from "~/components/ui/button";
 import {
   Field,

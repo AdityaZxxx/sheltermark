@@ -13,7 +13,7 @@ import type {
 } from "~/lib/schemas/tag.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   addTagToBookmark as addTagToBookmarkRepo,
   deleteTag as deleteTagRepo,

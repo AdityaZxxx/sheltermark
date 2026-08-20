@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { useBookmarkMutations } from "~/hooks/use-bookmarks";
+import { useBookmarkMutations } from "~/hooks/use-bookmark-mutations";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
 
 interface BookmarkTrashProps {

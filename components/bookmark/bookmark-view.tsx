@@ -2,6 +2,7 @@
 
 import type { BookmarkScope } from "~/lib/schemas/common";
 
+import { TagManageDialog } from "~/components/tag/tag-manage-dialog";
 import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
 
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
@@ -9,7 +10,6 @@ import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
-import { TagManageDialog } from "./tag-manage-dialog";
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
   const vm = useBookmarkListManager(scope);

@@ -16,7 +16,7 @@ import { useState, useTransition } from "react";
 
 import { logout } from "~/app/action/login.action";
 import { FeedManager } from "~/components/feed/feed-manager";
-import { ShortcutButton } from "~/components/keyboard-shortcuts-dialog";
+import { ThemeMode } from "~/components/layout/theme-mode";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -27,8 +27,8 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { useProfile } from "~/hooks/use-profile";
 
-import { ThemeMode } from "../theme-mode";
 import { Button } from "../ui/button";
+import { ShortcutButton } from "./keyboard-shortcuts-dialog";
 import { SettingsDialog } from "./setting-dialog";
 
 interface UserMenuProps {

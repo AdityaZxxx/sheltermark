@@ -5,6 +5,7 @@ import {
   customType,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -16,14 +17,15 @@ import {
 import type { BrokenStatus } from "~/lib/link-health/types";
 
 /**
- * Drizzle schema — derived model of the public schema.
+ * Drizzle schema — the source of truth for migration generation.
  *
- * The canonical migration history lives in supabase/migrations/. This file
- * mirrors it for typed query building only; drizzle-kit migrations are NOT
- * used here. Keep in sync manually (verify via drizzle-kit generate).
+ * Migrations: edit this file, run `bun run db:generate`, review the SQL,
+ * then apply with `supabase db push` (see docs/setup.md). drizzle-kit only
+ * models tables/columns/indexes/checks — RLS, triggers, and plpgsql functions
+ * are hand-spliced into the generated files (see the audit_events migration).
  *
  * Not modeled: RLS policies (enforced per-connection by Supabase; see
- * lib/data/drizzle.ts for the service-role caveat), triggers, functions,
+ * lib/data/db.ts for the service-role caveat), triggers, functions,
  * and the FK from profiles.id to auth.users.
  */
 
@@ -245,5 +247,57 @@ export const bookmarkTags = pgTable(
     primaryKey({ columns: [table.bookmarkId, table.tagId] }),
     index("idx_bookmark_tags_bookmark_id").on(table.bookmarkId),
     index("idx_bookmark_tags_tag_id").on(table.tagId),
+  ],
+);
+
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: uuid()
+      .primaryKey()
+      .notNull()
+      .default(sql`gen_random_uuid()`),
+    actorType: text("actor_type").notNull(),
+    actorId: text("actor_id").notNull(),
+    action: text("action").notNull(),
+    resourceType: text("resource_type").notNull(),
+    resourceId: uuid("resource_id"),
+    reason: text("reason").notNull(),
+    metadata: jsonb("metadata").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .default(sql`timezone('utc'::text, now())`),
+  },
+  (table) => [
+    index("idx_audit_events_created_at").on(table.createdAt.desc()),
+    index("idx_audit_events_action").on(table.action),
+    check(
+      "audit_events_actor_type_check",
+      sql`actor_type IN ('cron', 'developer', 'system')`,
+    ),
+    // Structural content rules mirrored from lib/audit.ts: identity fields
+    // match a machine-identifier grammar (no spaces, `/`, `@`) so URLs,
+    // emails, and prose are impossible here. See docs/policies/data-access.md.
+    check(
+      "audit_events_actor_id_check",
+      sql`actor_id ~ '^[A-Za-z][A-Za-z0-9_:#.-]{0,199}$'`,
+    ),
+    check(
+      "audit_events_action_check",
+      sql`char_length(action) <= 100 AND action ~ '^[a-z0-9]+([._][a-z0-9]+)*$'`,
+    ),
+    check(
+      "audit_events_resource_type_check",
+      sql`resource_type ~ '^[a-z][a-z0-9_.-]{0,99}$'`,
+    ),
+    check(
+      "audit_events_reason_check",
+      sql`char_length(reason) >= 3 AND char_length(reason) <= 500`,
+    ),
+    // helper function lives in the migration file (drizzle-kit can't model it)
+    check(
+      "audit_events_metadata_content_check",
+      sql`audit_metadata_is_content_free(metadata)`,
+    ),
   ],
 );

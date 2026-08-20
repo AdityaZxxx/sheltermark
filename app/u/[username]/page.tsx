@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { getPublicProfile } from "~/app/action/profile.action";
 import { BookmarkViewReadOnly } from "~/components/bookmark/bookmark-view-readonly";
-import { Footer } from "~/components/footer";
+import { Footer } from "~/components/layout/footer";
 import { PublicHeader } from "~/components/profile/public-header";
 import { PublicProfileSidebar } from "~/components/profile/public-profile-sidebar";
 import { requireAuthSafe } from "~/lib/auth";

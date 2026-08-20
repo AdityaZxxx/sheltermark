@@ -1,12 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
 import { workspaces } from "~/lib/data/schema";
-import { logger } from "~/lib/logger";
 import { extensionBookmarkSaveSchema } from "~/lib/schemas/extension.schema";
 import { createClient } from "~/lib/supabase/server";
+import { logger } from "~/lib/utils/logger";
 
 export async function POST(req: Request) {
   try {

@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Label } from "~/components/ui/label";
-import { useBookmarkMutations } from "~/hooks/use-bookmarks";
+import { useBookmarkMutations } from "~/hooks/use-bookmark-mutations";
 import { getPastelColor } from "~/lib/utils";
 
 interface BookmarkMoveDialogProps {

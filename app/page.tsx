@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 import { DemoBookmarkViewLazy } from "~/components/demo/demo-bookmark-view-lazy";
-import { FeaturesSection } from "~/components/features-section";
-import { Footer } from "~/components/footer";
-import Logo from "~/components/logo";
+import { FeaturesSection } from "~/components/landing/features-section";
+import { YCIcon } from "~/components/landing/yc-icon";
+import { Footer } from "~/components/layout/footer";
+import Logo from "~/components/layout/logo";
 import { Button } from "~/components/ui/button";
-import { YCIcon } from "~/components/yc-icon";
 
 export default function Page() {
   return (

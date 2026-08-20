@@ -7,8 +7,8 @@ import {
   VALID_HIGH_STATUS,
 } from "~/lib/link-health/classifier";
 import { isAlwaysAliveDomain } from "~/lib/link-health/domains";
-import { logger } from "~/lib/logger";
 import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
+import { logger } from "~/lib/utils/logger";
 
 const TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;

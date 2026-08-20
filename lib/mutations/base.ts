@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 import type { ActionResult } from "~/lib/action-result";
 
-import { logger } from "~/lib/logger";
+import { logger } from "~/lib/utils/logger";
 
 export function optimisticRemove<T extends { id: string }>(
   oldData: T[] | undefined,

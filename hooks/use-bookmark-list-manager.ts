@@ -8,7 +8,8 @@ import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
-import { useBookmarkMutations, useBookmarks } from "~/hooks/use-bookmarks";
+import { useBookmarkMutations } from "~/hooks/use-bookmark-mutations";
+import { useBookmarks } from "~/hooks/use-bookmarks";
 import { useViewPreference } from "~/hooks/use-view-preference";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";

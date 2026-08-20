@@ -4,7 +4,7 @@ import type { ActionResult } from "~/lib/action-result";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   createWorkspace as createWorkspaceRepo,
   deleteWorkspace as deleteWorkspaceRepo,

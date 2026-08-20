@@ -1,6 +1,12 @@
 # Sheltermark Domain Model
 
-A clean, minimalist bookmark manager. Organize and access your bookmarks from anywhere.
+> Visual companion to [`CONTEXT.md`](../CONTEXT.md). `CONTEXT.md` is the
+> canonical source for domain vocabulary and rules; this document adds the
+> diagrams, entity models, and cross-context relationships. Where wording
+> differs, `CONTEXT.md` wins.
+
+A cross-device bookmark manager: save URLs enriched with fetched metadata,
+organize them into workspaces, share public collections.
 
 ---
 

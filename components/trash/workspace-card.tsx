@@ -15,8 +15,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
-import { formatRelativeTime } from "~/lib/format";
 import { getPastelColor } from "~/lib/utils";
+import { formatRelativeTime } from "~/lib/utils/format";
 
 export function WorkspaceCard({
   workspace,

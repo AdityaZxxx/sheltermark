@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 import type { Metadata } from "~/lib/metadata/types";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
@@ -14,7 +14,7 @@ import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
 import { upsertTag } from "~/lib/data/repositories/tag.repository";
 import { bookmarkTags, bookmarks, workspaces } from "~/lib/data/schema";
-import { fetchMetadata } from "~/lib/metadata";
+import { fetchMetadata } from "~/lib/metadata/pipeline";
 import {
   type BookmarkDeleteInput,
   type BookmarkEditInput,

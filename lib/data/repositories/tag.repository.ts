@@ -2,7 +2,7 @@ import "server-only";
 import { and, count, eq, inArray, isNull } from "drizzle-orm";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 import type {
   AddTagToBookmarkInput,
   DeleteTagInput,

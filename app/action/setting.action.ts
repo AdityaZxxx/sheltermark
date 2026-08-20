@@ -8,7 +8,7 @@ import type {
 } from "~/lib/schemas/profile.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   deleteAccount as deleteAccountRepo,
   deleteAvatar as deleteAvatarRepo,
