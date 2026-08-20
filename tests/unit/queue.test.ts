@@ -1,3 +1,4 @@
+/// <reference types="chrome" />
 /**
  * Unit tests for extension/queue.ts — offline save queue.
  *
@@ -26,7 +27,7 @@ import {
   QUEUE_MAX_HISTORY,
   QUEUE_MAX_ITEMS,
   type QueueItem,
-} from "./constants.js";
+} from "~/extension/constants.js";
 import {
   backoffDelayMs,
   classifyResponse,
@@ -39,7 +40,7 @@ import {
   pauseQueue,
   type QueueHookContext,
   resumeQueue,
-} from "./queue.js";
+} from "~/extension/queue.js";
 
 /** The exact chrome.storage.local payload queue.ts owns. */
 interface Store {
@@ -141,10 +142,10 @@ function makeItem(overrides: Partial<QueueItem> = {}): QueueItem {
 interface HookHarness {
   ctx: QueueHookContext;
   spies: {
-    notifyOfflineQueued: Mock;
-    notifySynced: Mock;
-    notifyPermanentFailure: Mock;
-    onAuthPaused: Mock;
+    notifyOfflineQueued: Mock<QueueHookContext["notifyOfflineQueued"]>;
+    notifySynced: Mock<QueueHookContext["notifySynced"]>;
+    notifyPermanentFailure: Mock<QueueHookContext["notifyPermanentFailure"]>;
+    onAuthPaused: Mock<QueueHookContext["onAuthPaused"]>;
   };
 }
 
@@ -205,7 +206,8 @@ const throwOutcome: PostOutcome = {
 const chromeMock = makeChromeMock();
 // SAFETY: in a browser extension `chrome` is the extension global; the test
 // installs a lookalike here so the (unmocked) queue modules use it.
-(globalThis as { chrome: unknown }).chrome = chromeMock.chrome;
+// @ts-expect-error - installs a chrome.* lookalike over the browser-extension global types so unmocked queue code uses it.
+globalThis.chrome = chromeMock.chrome;
 
 beforeEach(() => {
   clearStore(chromeMock.store);
@@ -633,7 +635,7 @@ describe("drain", () => {
 
     await drain(ctx);
 
-    expect(spies.onAuthPaused).toHaveBeenCalledOnce();
+    expect(spies.onAuthPaused).toHaveBeenCalledTimes(1);
     expect(chromeMock.store.queuePaused).toBe(true);
     // Both items should remain pending (queue paused before the second POST).
     expect(chromeMock.store.queueItems ?? []).toHaveLength(2);
@@ -654,7 +656,7 @@ describe("drain", () => {
 
     await drain(ctx);
     expect(chromeMock.store.queuePaused).toBe(true);
-    expect(spies.onAuthPaused).toHaveBeenCalledOnce();
+    expect(spies.onAuthPaused).toHaveBeenCalledTimes(1);
 
     // Resume simulates successful login.
     await resumeQueue();
@@ -745,7 +747,7 @@ describe("drain", () => {
     const [item] = chromeMock.store.queueItems ?? [];
     expect(item?.status).toBe("dead");
     expect(item?.failureClass).toBe("permanent");
-    expect(spies.notifyPermanentFailure).toHaveBeenCalledOnce();
+    expect(spies.notifyPermanentFailure).toHaveBeenCalledTimes(1);
     expect(spies.notifyPermanentFailure).toHaveBeenCalledWith(
       "https://bad.test",
       expect.stringContaining("422"),
@@ -768,7 +770,7 @@ describe("drain", () => {
     const { ctx, spies } = hooks(async () => okOutcome);
     await drain(ctx);
 
-    expect(spies.notifySynced).toHaveBeenCalledOnce();
+    expect(spies.notifySynced).toHaveBeenCalledTimes(1);
     expect(spies.notifySynced).toHaveBeenCalledWith(3);
     expect(chromeMock.store.queueNotifiedOfflineAt).toBeNull();
   });
@@ -856,7 +858,7 @@ describe("drainOnStartup", () => {
     const post = mock(async () => okOutcome);
     await drainOnStartup();
     await drain(hooks(post).ctx);
-    expect(post).toHaveBeenCalledOnce();
+    expect(post).toHaveBeenCalledTimes(1);
   });
 });
 

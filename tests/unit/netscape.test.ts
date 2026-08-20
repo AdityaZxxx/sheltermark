@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { parseNetscapeHTML } from "~/lib/import/netscape";
 
-const fixturesDir = path.join(import.meta.dirname, "fixtures");
+const fixturesDir = path.join(import.meta.dirname, "../fixtures");
 
 function loadFixture(name: string): string {
   return readFileSync(path.join(fixturesDir, name), "utf-8");
