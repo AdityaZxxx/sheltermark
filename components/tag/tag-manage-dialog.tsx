@@ -22,7 +22,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
+import { useWorkspaceTagsWithCount } from "~/hooks/use-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
 import { formatCount } from "~/lib/utils";
 

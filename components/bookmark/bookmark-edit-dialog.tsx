@@ -28,7 +28,7 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
-import { useUserTagsWithCount } from "~/hooks/use-user-tags";
+import { useUserTagsWithCount } from "~/hooks/use-tags";
 import { entriesEqual, type TagEntry, tagsToEntries } from "~/lib/utils";
 
 import { BookmarkNoteText } from "./bookmark-note-text";

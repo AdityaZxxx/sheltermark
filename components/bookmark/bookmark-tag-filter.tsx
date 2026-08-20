@@ -2,7 +2,7 @@
 
 import { TagIcon } from "@phosphor-icons/react";
 
-import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
+import { useWorkspaceTagsWithCount } from "~/hooks/use-tags";
 import { cn } from "~/lib/utils";
 
 interface BookmarkTagFilterProps {
