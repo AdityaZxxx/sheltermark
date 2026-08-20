@@ -45,7 +45,7 @@ Reads go through TanStack Query hooks in `lib/queries/`. Query keys are centrali
 
 All repositories use Drizzle ORM (the Supabase client is gone from the repository layer; it remains only in non-repository scripts like `scripts/check-urls.ts` and `scripts/cleanup-trash.ts`):
 
-- **Drizzle schema:** `lib/data/schema.ts` — a derived model of the public schema, hand-written and kept in sync with `supabase/migrations/` (the canonical migration history; drizzle-kit migrations are not used, and drizzle-kit `generate` offline is the parity check).
+- **Drizzle schema:** `lib/data/schema.ts` — the source of truth for migration generation. drizzle-kit generates migrations into `supabase/migrations/` (see [`docs/setup.md`](./setup.md)); RLS, triggers, and plpgsql functions are hand-spliced into the generated files because drizzle-kit can't express them.
 - **Connection:** `lib/data/drizzle.ts` — server-only, pooled `DATABASE_URL` with `prepare: false`. Non-Next entrypoints (cron scripts) build instances via `lib/data/drizzle-instance.ts` (`createDb()` without `server-only`).
 - **Security contract:** the Drizzle connection uses the service-role credential and **bypasses RLS**. Every Drizzle query must enforce `user_id` ownership explicitly. Live-database isolation suites per entity (`lib/data/tests/*-isolation.integration.test.ts`) exercise this with another user's known IDs (run requires `DATABASE_URL`; skipped in CI without it).
 - Public-visibility reads (public profiles) re-implement the RLS SELECT policy in repository code since Drizzle bypasses RLS.
@@ -101,6 +101,8 @@ All three load `dotenv/config`, require `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_
 ## Row Level Security (RLS)
 
 Every table has RLS policies. The web app and extension use the anon key + user's auth context (RLS-enforced). Cron scripts use the service role key (RLS-bypassed, by design — they need to read/write across users).
+
+Privileged access rules (including when service-role capability may be used, and the audit trail for cron runs) live in [`docs/policies/data-access.md`](./policies/data-access.md).
 
 Invariants enforced at the database level:
 

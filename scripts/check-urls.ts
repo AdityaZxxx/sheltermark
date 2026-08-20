@@ -35,6 +35,7 @@ import { z } from "zod";
 
 import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
 
+import { cronActor, insertAuditEventSupabase } from "~/lib/audit";
 import { checkUrl } from "~/lib/link-health/checker";
 import { logger } from "~/lib/logger";
 import { urlSchema, uuidSchema } from "~/lib/schemas/common";
@@ -171,6 +172,30 @@ async function persistResult(
   return { written: true };
 }
 
+async function recordRun(summary: RunSummary): Promise<void> {
+  // Privileged cross-user run: documented in docs/policies/data-access.md §5.
+  // A run that cannot be audited is a failed run (§5.4), so this helper
+  // throws rather than swallowing — callers decide the exit code.
+  await insertAuditEventSupabase(supabase, {
+    actorType: "cron",
+    actorId: cronActor("check-urls"),
+    action: "url_health_check.run",
+    resourceType: "bookmark",
+    reason: "Scheduled URL health check for auto-check workspaces",
+    metadata: {
+      checked: summary.checked,
+      confirmedBroken: summary.broken,
+      likelyBroken: summary.likely,
+      unresolved: summary.unknown,
+      updated: summary.updated,
+    },
+  });
+}
+
+function emptySummary(): RunSummary {
+  return { checked: 0, broken: 0, likely: 0, unknown: 0, updated: 0 };
+}
+
 async function main(): Promise<void> {
   logger.info("Starting URL health check");
 
@@ -190,6 +215,9 @@ async function main(): Promise<void> {
   }
   if (!bookmarks?.length) {
     logger.info("No bookmarks need checking");
+    // Still record the run: the audit trail must show the job ran and found
+    // nothing (§5.3 promises one event per privileged run).
+    await recordRun(emptySummary());
     return;
   }
 
@@ -240,6 +268,8 @@ async function main(): Promise<void> {
     updated: outcomes.filter((o) => o.written).length,
   };
   logger.info("URL health check done", summary);
+
+  await recordRun(summary);
 }
 
 main().catch((err) => {

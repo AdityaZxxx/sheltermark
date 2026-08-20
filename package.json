@@ -18,6 +18,7 @@
     "format:check": "oxfmt --check",
     "prepare": "husky",
     "knip": "knip",
+    "db:generate": "drizzle-kit generate",
     "sync-feeds": "bun run scripts/sync-feeds.ts",
     "cleanup-trash": "bun run scripts/cleanup-trash.ts",
     "ext:build": "bun run scripts/build-extension.ts",
