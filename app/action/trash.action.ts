@@ -8,7 +8,7 @@ import type {
 import type { TrashedWorkspace } from "~/lib/schemas/workspace.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   getTrashedBookmarks as getTrashedBookmarksRepo,
   permanentDeleteBookmarks as permanentDeleteBookmarksRepo,
@@ -21,7 +21,7 @@ import { emptyUserTrash } from "~/lib/data/transaction";
 import {
   restoreBookmarks as restoreBookmarksService,
   restoreWorkspace as restoreWorkspaceService,
-} from "~/lib/restore";
+} from "~/lib/restore/service";
 
 async function auth() {
   const { user } = await requireAuth();

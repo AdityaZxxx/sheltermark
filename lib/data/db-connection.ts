@@ -14,7 +14,7 @@ export type DrizzleDb = PostgresJsDatabase<typeof schema>;
  * prepared statements are incompatible with transaction pooling.
  *
  * Kept free of `server-only` so non-Next entrypoints (cron scripts) can build
- * an instance directly. App code must use `getDb()` in lib/data/drizzle.ts.
+ * an instance directly. App code must use `getDb()` in lib/data/db.ts.
  */
 export function createDb(): DrizzleDb {
   const url = process.env.DATABASE_URL;

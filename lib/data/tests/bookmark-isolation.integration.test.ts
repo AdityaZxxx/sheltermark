@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Metadata } from "~/lib/metadata/types";
 
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   batchInsertBookmarks,
   deleteBookmarks,

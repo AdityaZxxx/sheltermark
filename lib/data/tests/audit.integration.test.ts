@@ -12,7 +12,7 @@ import {
   insertAuditEvent,
   insertAuditEventSupabase,
 } from "~/lib/audit";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import { auditEvents } from "~/lib/data/schema";
 
 /**

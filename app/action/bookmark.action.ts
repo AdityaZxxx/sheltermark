@@ -15,7 +15,7 @@ import type {
 import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   deleteBookmarks as deleteBookmarksRepo,
   generateAiTitleRepo,

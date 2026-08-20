@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { cronActor, insertAuditEventSupabase } from "~/lib/audit";
-import { logger } from "~/lib/logger";
 import { uuidSchema } from "~/lib/schemas/common";
+import { logger } from "~/lib/utils/logger";
 
 const cleanupProfileSchema = z.object({
   id: uuidSchema,

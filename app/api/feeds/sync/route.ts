@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
-import { logger } from "~/lib/logger";
+import { logger } from "~/lib/utils/logger";
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");

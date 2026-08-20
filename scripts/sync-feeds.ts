@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
-import type { DrizzleDb } from "~/lib/data/drizzle-instance";
+import type { DrizzleDb } from "~/lib/data/db-connection";
 
 import { cronActor, insertAuditEvent } from "~/lib/audit";
-import { createDb } from "~/lib/data/drizzle-instance";
+import { createDb } from "~/lib/data/db-connection";
 import { syncAllFeedsGlobal } from "~/lib/data/repositories/feed.repository";
-import { logger } from "~/lib/logger";
+import { logger } from "~/lib/utils/logger";
 
 if (!process.env.DATABASE_URL) {
   logger.error("Missing required env var: DATABASE_URL");

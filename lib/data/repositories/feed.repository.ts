@@ -1,18 +1,18 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 import type { Feed } from "~/lib/schemas/feed.schema";
 
 import { bookmarks, feedEntries, feeds, workspaces } from "~/lib/data/schema";
-import { logger } from "~/lib/logger";
-import { fetchMetadata } from "~/lib/metadata";
-import { type ParsedFeed, parseFeed } from "~/lib/rss-parser";
+import { type ParsedFeed, parseFeed } from "~/lib/feeds/rss-parser";
+import { fetchMetadata } from "~/lib/metadata/pipeline";
 import {
   feedCreateSchema,
   feedDeleteSchema,
   feedRefreshSchema,
 } from "~/lib/schemas/feed.schema";
+import { logger } from "~/lib/utils/logger";
 
 type FeedRow = typeof feeds.$inferSelect;
 

@@ -10,7 +10,6 @@ import {
   subscribeToFeed,
   syncAllFeeds,
 } from "~/app/action/feed.action";
-import { logger } from "~/lib/logger";
 import {
   optimisticAppend,
   optimisticRemove,
@@ -18,6 +17,7 @@ import {
   useOptimisticMutation,
 } from "~/lib/mutations/base";
 import { feedKeys } from "~/lib/query-keys";
+import { logger } from "~/lib/utils/logger";
 
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;

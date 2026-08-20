@@ -3,7 +3,7 @@ import { and, asc, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
   TrashedWorkspace,

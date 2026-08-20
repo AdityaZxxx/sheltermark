@@ -2,17 +2,12 @@ import "server-only";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 import type { BookmarkRestoreInput } from "~/lib/schemas/bookmark.schema";
 
 import { createWorkspaceRaw } from "~/lib/data/repositories/workspace.repository";
 import { bookmarks, workspaces } from "~/lib/data/schema";
 import { bookmarkRestoreSchema } from "~/lib/schemas/bookmark.schema";
-
-export {
-  getRestoreTargetForUI,
-  type RestoreTarget,
-} from "~/lib/restore/restore-target";
 
 export async function restoreBookmarks(
   db: DrizzleDb,

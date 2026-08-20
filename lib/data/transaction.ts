@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 
 const rpcResultSchema = z.object({
   success: z.boolean(),

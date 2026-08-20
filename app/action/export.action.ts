@@ -5,7 +5,7 @@ import type { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import { exportBookmarks as repoExportBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import { escapeCSV } from "~/lib/import/csv";
 import { exportOptionsSchema } from "~/lib/schemas/profile.schema";

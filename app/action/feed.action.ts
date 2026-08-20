@@ -4,7 +4,7 @@ import type { ActionResult } from "~/lib/action-result";
 import type { Feed } from "~/lib/schemas/feed.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   deleteFeed as deleteFeedRepo,
   getFeeds as getFeedsRepo,

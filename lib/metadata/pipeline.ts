@@ -1,6 +1,6 @@
 import type { Metadata } from "./types";
 
-import { logger } from "../logger";
+import { logger } from "../utils/logger";
 import { extractMetadataFromHtml } from "./extract";
 import { isSafeUrl, resolveFavicon, safeFetchHtml } from "./fetch";
 import { fallbackStrategy, fetchViaMicrolink } from "./strategies";

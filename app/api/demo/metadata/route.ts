@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { logger } from "~/lib/logger";
-import { fetchMetadata } from "~/lib/metadata";
+import { fetchMetadata } from "~/lib/metadata/pipeline";
+import { logger } from "~/lib/utils/logger";
 
 const requestSchema = z.object({
   url: z.url("Invalid URL format"),

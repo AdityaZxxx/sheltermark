@@ -2,7 +2,7 @@ import "dotenv/config";
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { and, eq, inArray } from "drizzle-orm";
 
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   createWorkspaceRaw,
   deleteWorkspace,
@@ -17,7 +17,7 @@ import {
 } from "~/lib/data/repositories/workspace.repository";
 import { bookmarks, workspaces } from "~/lib/data/schema";
 import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
-import { restoreWorkspace } from "~/lib/restore";
+import { restoreWorkspace } from "~/lib/restore/service";
 
 /**
  * Live-database cross-user isolation tests for the workspace repository.

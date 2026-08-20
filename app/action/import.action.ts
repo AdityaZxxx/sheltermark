@@ -5,7 +5,7 @@ import type { ImportFileType } from "~/lib/import/parsers";
 import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 
 import { requireAuth } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import { batchInsertBookmarks } from "~/lib/data/repositories/bookmark.repository";
 import {
   createWorkspaceRaw,

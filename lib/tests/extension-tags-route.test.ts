@@ -23,7 +23,7 @@ mock.module("~/lib/supabase/server", () => ({
 
 // Route passes getDb() through to the (mocked) repository; stub it so the
 // test never needs a live DATABASE_URL.
-mock.module("~/lib/data/drizzle", () => ({
+mock.module("~/lib/data/db", () => ({
   getDb: () => ({}),
 }));
 

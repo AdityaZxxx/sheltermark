@@ -3,7 +3,7 @@ import type { WorkspaceWithBookmarks } from "~/lib/schemas/bookmark.schema";
 import type { Profile } from "~/lib/schemas/profile.schema";
 
 import { requireAuthSafe } from "~/lib/auth";
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   getProfileDisplayName as repoGetProfileDisplayName,
   getPublicProfile as repoGetPublicProfile,

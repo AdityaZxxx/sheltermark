@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { z } from "zod";
 
-import type { DrizzleDb } from "~/lib/data/drizzle-instance";
+import type { DrizzleDb } from "~/lib/data/db-connection";
 
 import { auditEvents } from "~/lib/data/schema";
 

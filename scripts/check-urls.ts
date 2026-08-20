@@ -37,9 +37,9 @@ import type { BrokenStatus, UrlHealthResult } from "~/lib/link-health/types";
 
 import { cronActor, insertAuditEventSupabase } from "~/lib/audit";
 import { checkUrl } from "~/lib/link-health/checker";
-import { logger } from "~/lib/logger";
 import { urlSchema, uuidSchema } from "~/lib/schemas/common";
 import { safeDomain } from "~/lib/utils";
+import { logger } from "~/lib/utils/logger";
 
 config();
 

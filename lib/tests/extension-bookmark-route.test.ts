@@ -27,7 +27,7 @@ mock.module("~/lib/supabase/server", () => ({
 
 let defaultWorkspaceId: string | null = null;
 
-mock.module("~/lib/data/drizzle", () => ({
+mock.module("~/lib/data/db", () => ({
   getDb: () => ({
     select: () => ({
       from: () => ({

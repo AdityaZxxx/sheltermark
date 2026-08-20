@@ -7,7 +7,7 @@ import * as esbuild from "esbuild";
 import { existsSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { logger } from "~/lib/logger";
+import { logger } from "~/lib/utils/logger";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const EXT_DIR = resolve(ROOT, "extension");

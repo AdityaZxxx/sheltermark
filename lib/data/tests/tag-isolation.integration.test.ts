@@ -2,7 +2,7 @@ import "dotenv/config";
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { and, eq, inArray } from "drizzle-orm";
 
-import { getDb } from "~/lib/data/drizzle";
+import { getDb } from "~/lib/data/db";
 import {
   addTagToBookmark,
   deleteTag,

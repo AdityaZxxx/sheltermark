@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { logger } from "~/lib/logger";
 import { createClient } from "~/lib/supabase/server";
+import { logger } from "~/lib/utils/logger";
 
 export async function GET() {
   try {

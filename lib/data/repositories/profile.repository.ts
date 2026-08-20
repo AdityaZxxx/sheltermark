@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
 import type { ActionResult } from "~/lib/action-result";
-import type { DrizzleDb } from "~/lib/data/drizzle";
+import type { DrizzleDb } from "~/lib/data/db";
 import type {
   BookmarkPreview,
   WorkspaceWithBookmarks,
@@ -12,7 +12,6 @@ import type {
 import type { Profile } from "~/lib/schemas/profile.schema";
 
 import { bookmarks, profiles, workspaces } from "~/lib/data/schema";
-import { logger } from "~/lib/logger";
 import {
   getProfileByUsernameSchema,
   type UpdateProfileInput,
@@ -22,6 +21,7 @@ import {
   usernameSchema,
 } from "~/lib/schemas/profile.schema";
 import { createAdminClient } from "~/lib/supabase/server";
+import { logger } from "~/lib/utils/logger";
 
 type ProfileRow = typeof profiles.$inferSelect;
 
