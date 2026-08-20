@@ -7,7 +7,7 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 - For architecture, see [`docs/architecture.md`](./docs/architecture.md).
 - For deployment, see [`docs/deployment.md`](./docs/deployment.md).
 - For domain entities and bounded contexts, see [`docs/domain-model.md`](./docs/domain-model.md).
-- Architectural decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/).
+- Architectural decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/). Project layout rules live in [`ADR-0006`](./docs/adr/0006-project-layout.md) — read it before moving or naming files.
 
 ## Tech Stack
 
@@ -34,15 +34,21 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 ├── components/             # React components (shadcn/ui in components/ui/, untouched by lint)
 ├── hooks/                  # Client hooks (queries, mutations, keyboard, dialogs)
 ├── lib/
-│   ├── data/repositories/  # Supabase queries, one per entity
-│   ├── mutations/          # TanStack Query mutation wrappers (optimistic UI)
-│   ├── queries/            # TanStack Query hooks (read side)
-│   ├── schemas/            # Zod schemas, one per entity
-│   ├── metadata/           # Multi-strategy URL metadata fetcher
+│   ├── data/               # Drizzle schema, db connections, repositories (one per entity)
+│   ├── feeds/              # RSS/Atom parsing (feed-domain infrastructure)
+│   ├── import/             # Browser bookmark import parsers
 │   ├── link-health/        # URL health checker (used by cron)
-│   ├── ai/                 # Ollama-backed title generation + rate limit
-│   ├── supabase/           # Supabase client factories (server, browser, route handler)
+│   ├── metadata/           # Multi-strategy URL metadata fetcher (pipeline.ts)
+│   ├── mutations/          # TanStack Query mutation wrappers (optimistic UI)
+│   ├── queries/            # TanStack Query options (read side)
+│   ├── restore/            # Trash restore logic
+│   ├── schemas/            # Zod schemas, one per entity
+│   ├── services/           # Cross-entity server logic
+│   ├── supabase/           # Supabase client factories (client.ts, server.ts, middleware.ts)
+│   ├── utils/              # Domain-agnostic helpers only (last resort, see ADR-0006)
 │   └── auth.ts             # requireAuth() / requireAuthSafe()
+├── hooks/                  # Client hooks, flat: use-*.ts only
+├── tests/                  # All tests: unit/, integration/, fixtures/, preload.ts
 ├── scripts/                # Cron jobs (check-urls, sync-feeds, cleanup-trash) + ext:build
 ├── supabase/migrations/   # SQL migrations
 ├── extension/              # Chrome extension (separate build)
@@ -50,9 +56,12 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 │   ├── setup.md            # Local dev setup
 │   ├── architecture.md    # Codebase shape & patterns
 │   ├── deployment.md       # Vercel + GitHub Actions cron + extension build
-│   ├── domain-model.md    # Bounded contexts & entities
+│   ├── domain-model.md    # Visual companion to CONTEXT.md (diagrams & entities)
 │   ├── adr/                # Architectural Decision Records
-│   └── agents/             # Issue tracker, triage labels, domain doc conventions
+│   ├── agents/             # Issue tracker, triage labels, domain doc conventions
+│   ├── api/                # Public API contracts (extension-api.md)
+│   ├── archive/            # Superseded working papers (historical only)
+│   └── policies/           # Access & data policies
 └── prd.md                  # (gitignored) Personal planning scratch
 ```
 

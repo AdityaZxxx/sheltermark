@@ -1,5 +1,11 @@
 # Broken-Link Detection — E2E State-Machine Audit
 
+> **ARCHIVED — superseded.** This working paper predates the current migration
+> history and the current code; treated as a historical record only. The live
+> design lives in ADR-0001 (`../adr/0001-broken-status-enum.md`) and
+> ADR-0002 (`../adr/0002-remove-manual-override.md`). Migration file names and
+> `file:line` citations below may no longer exist.
+
 > A read-only audit. **No code changes are proposed for execution.** Every claim is
 > grounded in the current source with `file:line`. "Observed behavior" is what the
 > code does today; "Recommendation" is a suggestion only.

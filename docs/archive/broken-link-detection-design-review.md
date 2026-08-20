@@ -1,7 +1,11 @@
 # Broken-Link Detection — Design Review
 
+> **ARCHIVED — superseded.** Historical record only; the live design lives in
+> ADR-0001 and ADR-0002. Internal links reference sibling papers now in this
+> `archive/` directory.
+
 > A **design review**, not a code audit. The companion audit
-> (`docs/broken-link-detection-audit.md`) already reconstructs the implementation
+> (`docs/archive/broken-link-detection-audit.md`) already reconstructs the implementation
 > with `file:line` provenance. This document evaluates the _design_ of that
 > implementation against HTTP RFCs, browser behavior, and industry link
 > checkers, then proposes a production-grade target with measurable confidence.
@@ -1684,7 +1688,7 @@ This is a derivation function, not a persisted field, until 6.19 ships.
 
 ## Appendix B — Mapping to the companion audit
 
-This review references the audit (`docs/broken-link-detection-audit.md`)
+This review references the audit (`docs/archive/broken-link-detection-audit.md`)
 throughout. Cross-reference:
 
 | This review       | Audit section                            |
@@ -1730,4 +1734,4 @@ thing to do?" Together they form the complete design record.
 ---
 
 _End of design review. For the implementation audit with `file:line`
-provenance, see `docs/broken-link-detection-audit.md`._
+provenance, see `docs/archive/broken-link-detection-audit.md`._

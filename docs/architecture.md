@@ -23,7 +23,7 @@ Browser (web app)
 
 Browser extension
   └── background.ts / popup.ts
-        └── fetch /api/extension/{auth,bookmark,check,workspaces}
+        └── fetch /api/extension/{bookmark,check,popup,tags,workspaces}
               └── (same server action → repository → Supabase path as web app)
 
 GitHub Actions cron
@@ -46,14 +46,14 @@ Reads go through TanStack Query hooks in `lib/queries/`. Query keys are centrali
 All repositories use Drizzle ORM (the Supabase client is gone from the repository layer; it remains only in non-repository scripts like `scripts/check-urls.ts` and `scripts/cleanup-trash.ts`):
 
 - **Drizzle schema:** `lib/data/schema.ts` — the source of truth for migration generation. drizzle-kit generates migrations into `supabase/migrations/` (see [`docs/setup.md`](./setup.md)); RLS, triggers, and plpgsql functions are hand-spliced into the generated files because drizzle-kit can't express them.
-- **Connection:** `lib/data/drizzle.ts` — server-only, pooled `DATABASE_URL` with `prepare: false`. Non-Next entrypoints (cron scripts) build instances via `lib/data/drizzle-instance.ts` (`createDb()` without `server-only`).
-- **Security contract:** the Drizzle connection uses the service-role credential and **bypasses RLS**. Every Drizzle query must enforce `user_id` ownership explicitly. Live-database isolation suites per entity (`lib/data/tests/*-isolation.integration.test.ts`) exercise this with another user's known IDs (run requires `DATABASE_URL`; skipped in CI without it).
+- **Connection:** `lib/data/db.ts` — server-only, pooled `DATABASE_URL` with `prepare: false`. Non-Next entrypoints (cron scripts) build instances via `lib/data/db-connection.ts` (`createDb()` without `server-only`).
+- **Security contract:** the Drizzle connection uses the service-role credential and **bypasses RLS**. Every Drizzle query must enforce `user_id` ownership explicitly. Live-database isolation suites per entity (`tests/integration/*-isolation.test.ts`) exercise this with another user's known IDs (run requires `DATABASE_URL`; skipped in CI without it).
 - Public-visibility reads (public profiles) re-implement the RLS SELECT policy in repository code since Drizzle bypasses RLS.
 - Cron scripts that touch Drizzle (`scripts/sync-feeds.ts`) require `DATABASE_URL`, not `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Auth
 
-Supabase Auth with two providers: Google OAuth + email/password. Sessions are managed via cookies through `@supabase/ssr` (see `lib/supabase/server.ts`, `lib/supabase/browser.ts`, `lib/supabase/route-handler.ts` — three client factories for three contexts).
+Supabase Auth with two providers: Google OAuth + email/password. Sessions are managed via cookies through `@supabase/ssr` (see `lib/supabase/client.ts` for the browser factory, `lib/supabase/server.ts` for the server factory, and `lib/supabase/middleware.ts` for session refresh).
 
 `lib/auth.ts` exports two helpers:
 
@@ -69,13 +69,16 @@ The extension does **not** talk to Supabase directly. It authenticates by callin
 | `/api/extension/bookmark`   | POST   | Save a bookmark (reuses the same repository as the web app). Returns 401 if not authenticated, 409 on duplicate. |
 | `/api/extension/check`      | GET    | Check if a URL is already saved in a workspace.                                                                  |
 | `/api/extension/popup`      | GET    | Popup init: auth state + workspace list + duplicate check in one round-trip.                                     |
+| `/api/extension/tags`       | GET    | List the user's tags with per-tag bookmark counts.                                                               |
 | `/api/extension/workspaces` | GET    | List user's workspaces (for the popup's workspace selector).                                                     |
+
+These URLs are a public contract consumed by the extension (see [`docs/api/extension-api.md`](./api/extension-api.md)) and are not renamed without a coordinated web + extension release.
 
 The `externally_connectable` field in `extension/manifest.json` allows the web app to message the extension directly on `https://sheltermark.vercel.app/*`. An X/Twitter content script (`extension/x-capture.ts`) runs on `x.com` / `twitter.com` to extract tweet metadata before saving.
 
 ## Metadata Fetching
 
-`lib/metadata/index.ts` runs a multi-strategy pipeline when a bookmark is created or refetched:
+`lib/metadata/pipeline.ts` runs a multi-strategy pipeline when a bookmark is created or refetched:
 
 1. **URL safety check** — reject private/loopback hosts.
 2. **Platform-specific fallback** — e.g. fxtwitter for Twitter, YouTube oembed, Microlink for JS-heavy sites.

@@ -1,6 +1,10 @@
 # Broken-Link Detection — Implementation Report
 
-> Companion to `docs/broken-link-detection-design-review.md`. This report
+> **ARCHIVED — superseded.** Historical record only; the live design lives in
+> ADR-0001 and ADR-0002. Internal links reference sibling papers now in this
+> `archive/` directory.
+
+> Companion to `docs/archive/broken-link-detection-design-review.md`. This report
 > documents the high-impact changes shipped from the design review's
 > roadmap (§6 P0–P1), the test coverage added, and the design decisions
 > that remain intentionally unchanged.
@@ -109,7 +113,7 @@ Rationale:
 
 - `lib/link-health/checker.ts` module docstring updated with HTTP
   classification semantics and the GET-primary decision rationale.
-- Inline comments reference the design review (`docs/broken-link-detection
+- Inline comments reference the design review (`docs/archive/broken-link-detection
 -design-review.md §2 R-D, R-E, R-F, R-G`) for full RFC citations.
 
 ---
@@ -254,6 +258,6 @@ changed**:
 ---
 
 _End of implementation report. For the full design rationale and RFC
-citations, see `docs/broken-link-detection-design-review.md`. For the
+citations, see `docs/archive/broken-link-detection-design-review.md`. For the
 implementation audit with `file:line` provenance, see
-`docs/broken-link-detection-audit.md`._
+`docs/archive/broken-link-detection-audit.md`._
