@@ -2,10 +2,10 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 
 import { getWorkspaces } from "~/app/action/workspace.action";
-import { ShareDialogManager } from "~/components/add/share-dialog-manager";
 import { BookmarkView } from "~/components/bookmark/bookmark-view";
-import { Header } from "~/components/header";
+import { Header } from "~/components/layout/header";
 import { UserProvider } from "~/components/providers/user-context";
+import { ShareDialogManager } from "~/components/share/share-dialog-manager";
 import { requireAuth } from "~/lib/auth";
 import { makeQueryClient } from "~/lib/query-client";
 import { workspaceKeys } from "~/lib/query-keys";

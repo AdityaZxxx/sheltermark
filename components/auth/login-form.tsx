@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { loginWithEmail, loginWithGoogle } from "~/app/action/login.action";
-import { GoogleIcon } from "~/components/google-icon";
+import { GoogleIcon } from "~/components/auth/google-icon";
 import { Button } from "~/components/ui/button";
 import {
   Field,

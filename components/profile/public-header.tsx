@@ -2,7 +2,7 @@ import type { User } from "@supabase/supabase-js";
 
 import Link from "next/link";
 
-import Logo from "~/components/logo";
+import Logo from "~/components/layout/logo";
 import { Button } from "~/components/ui/button";
 
 interface PublicHeaderProps {

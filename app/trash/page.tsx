@@ -4,7 +4,7 @@ import {
   getTrashedBookmarks,
   getTrashedWorkspaces,
 } from "~/app/action/trash.action";
-import { Header } from "~/components/header";
+import { Header } from "~/components/layout/header";
 import { UserProvider } from "~/components/providers/user-context";
 import { TrashView } from "~/components/trash/trash-view";
 import { requireAuth } from "~/lib/auth";

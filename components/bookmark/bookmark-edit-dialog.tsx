@@ -9,8 +9,7 @@ import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { generateAiTitle } from "~/app/action/bookmark.action";
-import { MarkdownIcon } from "~/components/markdown-icon";
-import { Orb } from "~/components/orb";
+import { TagInput } from "~/components/tag/tag-input";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -33,7 +32,8 @@ import { useUserTagsWithCount } from "~/hooks/use-user-tags";
 import { entriesEqual, type TagEntry, tagsToEntries } from "~/lib/utils";
 
 import { BookmarkNoteText } from "./bookmark-note-text";
-import { TagInput } from "./tag-input";
+import { MarkdownIcon } from "./markdown-icon";
+import { Orb } from "./orb";
 
 interface BookmarkEditDialogProps {
   open: boolean;

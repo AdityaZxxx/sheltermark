@@ -11,7 +11,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
-import { TagDeleteDialog } from "~/components/bookmark/tag-delete-dialog";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { Button } from "~/components/ui/button";
 import {
@@ -26,6 +25,8 @@ import { Label } from "~/components/ui/label";
 import { useWorkspaceTagsWithCount } from "~/hooks/use-user-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
 import { formatCount } from "~/lib/utils";
+
+import { TagDeleteDialog } from "./tag-delete-dialog";
 
 interface TagManageDialogProps {
   open: boolean;
