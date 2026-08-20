@@ -25,7 +25,7 @@ import type { BrokenStatus } from "~/lib/link-health/types";
  * are hand-spliced into the generated files (see the audit_events migration).
  *
  * Not modeled: RLS policies (enforced per-connection by Supabase; see
- * lib/data/drizzle.ts for the service-role caveat), triggers, functions,
+ * lib/data/db.ts for the service-role caveat), triggers, functions,
  * and the FK from profiles.id to auth.users.
  */
 

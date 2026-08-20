@@ -90,7 +90,7 @@ Import semantics, per the acceptance criterion:
 - `lib/import/netscape.ts` — Netscape parser using `parse5`
 - `lib/import/folder-filter.ts` — folder-path key encoding and filtering
 - `lib/import/parsers.ts` — extended `fileType` union
-- `lib/import/tests/fixtures/` — real-world browser export fixtures
+- `tests/fixtures/` — real-world browser export fixtures
 - `app/action/import.action.ts` — `folderPaths` filter support
 - `lib/schemas/profile.schema.ts` — `importOptionsSchema.folderPaths`
 - `hooks/use-import-dialog.ts` — folder-selection state, content-based detection
