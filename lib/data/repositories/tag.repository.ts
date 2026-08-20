@@ -4,26 +4,19 @@ import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
 import type {
-  AddTagToBookmarkInput,
   DeleteTagInput,
   GetBookmarkTagsInput,
-  RemoveTagFromBookmarkInput,
   RenameTagInput,
-  SetBookmarkTagsInput,
   Tag,
   TagWithCount,
 } from "~/lib/schemas/tag.schema";
 
 import { bookmarkTags, bookmarks, tags } from "~/lib/data/schema";
 import {
-  addTagToBookmarkSchema,
   deleteTagSchema,
   getBookmarkTagsSchema,
-  removeTagFromBookmarkSchema,
   renameTagSchema,
-  setBookmarkTagsSchema,
 } from "~/lib/schemas/tag.schema";
-import { resolveAndReplaceBookmarkTags } from "~/lib/services/tag.service";
 
 function toTag(row: typeof tags.$inferSelect): Tag {
   return {
@@ -205,133 +198,6 @@ export async function upsertTag(
   } catch (err) {
     return dbError(err);
   }
-}
-
-export async function addTagToBookmark(
-  db: DrizzleDb,
-  userId: string,
-  input: AddTagToBookmarkInput,
-): Promise<ActionResult<Tag>> {
-  const validated = addTagToBookmarkSchema.safeParse(input);
-  if (!validated.success) {
-    return { success: false, error: validated.error.message };
-  }
-
-  const { bookmarkId, tagId, name } = validated.data;
-
-  let resolvedTag: Tag | null = null;
-
-  if (tagId) {
-    try {
-      const [tag] = await db
-        .select()
-        .from(tags)
-        .where(and(eq(tags.id, tagId), eq(tags.userId, userId)));
-      if (!tag) {
-        return { success: false, error: "Tag not found" };
-      }
-      resolvedTag = toTag(tag);
-    } catch (err) {
-      return dbError(err);
-    }
-  } else if (name) {
-    const upsertResult = await upsertTag(db, userId, name);
-    if (!upsertResult.success) return upsertResult;
-    resolvedTag = upsertResult.data;
-  } else {
-    return { success: false, error: "Tag id or name required" };
-  }
-
-  if (!resolvedTag) {
-    return { success: false, error: "Tag id or name required" };
-  }
-
-  // SECURITY: without RLS, verify the bookmark belongs to the user before
-  // linking — RLS insert policy previously enforced bookmark ownership.
-  try {
-    const [bookmark] = await db
-      .select({ id: bookmarks.id })
-      .from(bookmarks)
-      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)));
-    if (!bookmark) {
-      return { success: false, error: "Bookmark not found" };
-    }
-
-    await db
-      .insert(bookmarkTags)
-      .values({ bookmarkId, tagId: resolvedTag.id })
-      .onConflictDoNothing({
-        target: [bookmarkTags.bookmarkId, bookmarkTags.tagId],
-      });
-  } catch (err) {
-    return dbError(err);
-  }
-
-  return { success: true, data: resolvedTag };
-}
-
-export async function removeTagFromBookmark(
-  db: DrizzleDb,
-  userId: string,
-  input: RemoveTagFromBookmarkInput,
-): Promise<ActionResult<null>> {
-  const validated = removeTagFromBookmarkSchema.safeParse(input);
-  if (!validated.success) {
-    return { success: false, error: validated.error.message };
-  }
-
-  const { bookmarkId, tagId } = validated.data;
-
-  try {
-    const [tag] = await db
-      .select({ id: tags.id })
-      .from(tags)
-      .where(and(eq(tags.id, tagId), eq(tags.userId, userId)));
-    if (!tag) return { success: false, error: "Tag not found" };
-
-    // SECURITY: RLS delete policy checked bookmark ownership; enforce here.
-    const [bookmark] = await db
-      .select({ id: bookmarks.id })
-      .from(bookmarks)
-      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)));
-    if (!bookmark) return { success: false, error: "Bookmark not found" };
-
-    await db
-      .delete(bookmarkTags)
-      .where(
-        and(
-          eq(bookmarkTags.bookmarkId, bookmarkId),
-          eq(bookmarkTags.tagId, tagId),
-        ),
-      );
-  } catch (err) {
-    return dbError(err);
-  }
-
-  return { success: true, data: null };
-}
-
-export async function setBookmarkTags(
-  db: DrizzleDb,
-  userId: string,
-  input: SetBookmarkTagsInput,
-): Promise<ActionResult<Tag[]>> {
-  const validated = setBookmarkTagsSchema.safeParse(input);
-  if (!validated.success) {
-    return { success: false, error: validated.error.message };
-  }
-
-  const { bookmarkId, tags: tagEntries } = validated.data;
-
-  const tagResult = await resolveAndReplaceBookmarkTags(
-    db,
-    userId,
-    bookmarkId,
-    tagEntries,
-  );
-  if (!tagResult.success) return tagResult;
-
-  return { success: true, data: tagResult.data };
 }
 
 export async function renameTag(

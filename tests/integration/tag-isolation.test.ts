@@ -4,14 +4,11 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "~/lib/data/db";
 import {
-  addTagToBookmark,
   deleteTag,
   getBookmarkTags,
   getTagsWithCount,
   getUserTags,
-  removeTagFromBookmark,
   renameTag,
-  setBookmarkTags,
   upsertTag,
 } from "~/lib/data/repositories/tag.repository";
 import { bookmarkTags, bookmarks, tags } from "~/lib/data/schema";
@@ -120,81 +117,6 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
       }
     });
 
-    it("addTagToBookmark cannot link my tag onto another user's bookmark", async () => {
-      const mine = await upsertTag(getDb(), AGENT_USER, `${PREFIX}attack-link`);
-      expect(mine.success).toBe(true);
-      if (!mine.success) return;
-
-      const result = await addTagToBookmark(getDb(), AGENT_USER, {
-        bookmarkId: foreignBookmarkId,
-        tagId: mine.data.id,
-      });
-      expect(result.success).toBe(false);
-
-      const links = await getDb()
-        .select()
-        .from(bookmarkTags)
-        .where(
-          and(
-            eq(bookmarkTags.bookmarkId, foreignBookmarkId),
-            eq(bookmarkTags.tagId, mine.data.id),
-          ),
-        );
-      expect(links).toHaveLength(0);
-    });
-
-    it("addTagToBookmark cannot link another user's tag onto my bookmark", async () => {
-      const result = await addTagToBookmark(getDb(), AGENT_USER, {
-        bookmarkId: agentBookmarkId,
-        tagId: foreignTagId,
-      });
-      expect(result.success).toBe(false);
-      if (result.success) return;
-      expect(result.error).toBe("Tag not found");
-
-      const links = await getDb()
-        .select()
-        .from(bookmarkTags)
-        .where(
-          and(
-            eq(bookmarkTags.bookmarkId, agentBookmarkId),
-            eq(bookmarkTags.tagId, foreignTagId),
-          ),
-        );
-      expect(links).toHaveLength(0);
-    });
-
-    it("setBookmarkTags cannot replace another user's bookmark tags", async () => {
-      const beforeLinks = await getDb()
-        .select()
-        .from(bookmarkTags)
-        .where(eq(bookmarkTags.bookmarkId, foreignBookmarkId));
-
-      const mine = await upsertTag(getDb(), AGENT_USER, `${PREFIX}hijack`);
-      expect(mine.success).toBe(true);
-      if (!mine.success) return;
-
-      const result = await setBookmarkTags(getDb(), AGENT_USER, {
-        bookmarkId: foreignBookmarkId,
-        tags: [{ id: mine.data.id }],
-      });
-      expect(result.success).toBe(false);
-
-      const afterLinks = await getDb()
-        .select()
-        .from(bookmarkTags)
-        .where(eq(bookmarkTags.bookmarkId, foreignBookmarkId));
-      expect(afterLinks).toEqual(beforeLinks);
-    });
-
-    it("removeTagFromBookmark cannot unlink on another user's bookmark", async () => {
-      const result = await removeTagFromBookmark(getDb(), AGENT_USER, {
-        bookmarkId: foreignBookmarkId,
-        tagId: foreignTagId,
-      });
-      expect(result.success).toBe(false);
-    });
-
     it("renameTag cannot rename another user's tag", async () => {
       const result = await renameTag(getDb(), AGENT_USER, {
         tagId: foreignTagId,
@@ -245,16 +167,17 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
       });
     });
 
-    it("links, reads, replaces, unlinks, and deletes tags on my own bookmark", async () => {
+    it("links, reads, renames, unlinks, and deletes tags on my own bookmark", async () => {
       const db = getDb();
 
-      const add = await addTagToBookmark(db, AGENT_USER, {
-        bookmarkId: agentBookmarkId,
-        name: `${PREFIX}mine`,
-      });
+      const add = await upsertTag(db, AGENT_USER, `${PREFIX}mine`);
       expect(add.success).toBe(true);
       if (!add.success) return;
       const tagId = add.data.id;
+
+      await db
+        .insert(bookmarkTags)
+        .values({ bookmarkId: agentBookmarkId, tagId });
 
       const read = await getBookmarkTags(db, AGENT_USER, {
         bookmarkId: agentBookmarkId,
@@ -262,14 +185,6 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
       expect(read.success).toBe(true);
       if (!read.success) return;
       expect(read.data.map((t) => t.id)).toContain(tagId);
-
-      const set = await setBookmarkTags(db, AGENT_USER, {
-        bookmarkId: agentBookmarkId,
-        tags: [{ id: tagId }],
-      });
-      expect(set.success).toBe(true);
-      if (!set.success) return;
-      expect(set.data.map((t) => t.id)).toEqual([tagId]);
 
       const rename = await renameTag(db, AGENT_USER, {
         tagId,
@@ -280,11 +195,14 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
       expect(rename.data.id).toBe(tagId);
       expect(rename.data.name.toLowerCase()).toBe(`${PREFIX}mine-renamed`);
 
-      const remove = await removeTagFromBookmark(db, AGENT_USER, {
-        bookmarkId: agentBookmarkId,
-        tagId,
-      });
-      expect(remove.success).toBe(true);
+      await db
+        .delete(bookmarkTags)
+        .where(
+          and(
+            eq(bookmarkTags.bookmarkId, agentBookmarkId),
+            eq(bookmarkTags.tagId, tagId),
+          ),
+        );
 
       const afterRemove = await getBookmarkTags(db, AGENT_USER, {
         bookmarkId: agentBookmarkId,

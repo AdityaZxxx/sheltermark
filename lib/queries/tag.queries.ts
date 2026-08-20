@@ -1,7 +1,6 @@
 import type { Tag, TagWithCount } from "~/lib/schemas/tag.schema";
 
 import {
-  getBookmarkTags,
   getTagsWithCount,
   getUserTags,
   getWorkspaceTagsWithCount,
@@ -45,19 +44,4 @@ export const workspaceTagsWithCountQueryOptions = (
   enabled: !!userId && !!workspaceId,
   refetchOnMount: false,
   placeholderData: (previousData: TagWithCount[] | undefined) => previousData,
-});
-
-export const bookmarkTagsQueryOptions = (
-  bookmarkId: string,
-  userId: string | undefined,
-) => ({
-  queryKey: tagKeys.byBookmark(bookmarkId),
-  queryFn: async () => {
-    const result = await getBookmarkTags({ bookmarkId });
-    if (!result.success) throw new Error(result.error);
-    return result.data;
-  },
-  enabled: !!userId && !!bookmarkId,
-  refetchOnMount: false,
-  placeholderData: (previousData: Tag[] | undefined) => previousData,
 });

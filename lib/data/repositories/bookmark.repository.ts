@@ -37,7 +37,7 @@ import { normalizeUrl } from "~/lib/utils";
 type BookmarkRow = typeof bookmarks.$inferSelect;
 
 /** Metadata lookup seam so tests can inject a deterministic fetcher. */
-export type MetadataFetcher = (url: string) => Promise<Metadata>;
+type MetadataFetcher = (url: string) => Promise<Metadata>;
 
 type InsertBookmarkParams = {
   url: string;
@@ -267,7 +267,7 @@ export async function getTrashedBookmarks(
   }
 }
 
-export type BatchBookmarkInput = {
+type BatchBookmarkInput = {
   url: string;
   title: string;
   favicon_url?: string | null;

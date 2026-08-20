@@ -2,7 +2,7 @@ import type { BrokenStatus } from "~/lib/link-health/types";
 
 import { resolveBrokenStatus } from "~/lib/link-health/classifier";
 
-export interface RenderableBrokenState {
+interface RenderableBrokenState {
   /** Should the warning icon be drawn? */
   showWarning: boolean;
   /** Tooltip / a11y label explaining the current state. */

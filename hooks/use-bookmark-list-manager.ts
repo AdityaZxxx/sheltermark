@@ -21,7 +21,7 @@ interface ActiveBookmark {
   tags: Tag[];
 }
 
-export interface BookmarkListManager {
+interface BookmarkListManager {
   view: BookmarkViewVariant;
   setView: (v: BookmarkViewVariant) => void;
   bookmarks: ReturnType<typeof useBookmarks>["bookmarks"];

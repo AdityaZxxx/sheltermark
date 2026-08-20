@@ -32,12 +32,9 @@ export const QUEUE_HEARTBEAT_ALARM = "keepAlive";
 export type {
   CheckResult,
   ExtensionMessage,
-  FailureClass,
   GetWorkspacesResult,
   PopupInfo,
   QueueItem,
-  QueueItemStatus,
-  QueueStoragePayload,
   SaveEntrySource,
   SaveResult,
   TabInfo,

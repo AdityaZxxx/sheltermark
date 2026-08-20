@@ -8,7 +8,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 import { upsertTag } from "~/lib/data/repositories/tag.repository";
 import { bookmarkTags, bookmarks, tags } from "~/lib/data/schema";
 
-export type TagServiceEntry = { id?: string; name?: string };
+type TagServiceEntry = { id?: string; name?: string };
 
 /**
  * SECURITY: Drizzle bypasses RLS — every operation here enforces ownership

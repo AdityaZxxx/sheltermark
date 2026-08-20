@@ -29,7 +29,6 @@ import {
   QUEUE_MAX_ITEMS,
   QUEUE_OFFLINE_NOTICE_DEBOUNCE_MS,
   type QueueItem,
-  type QueueItemStatus,
   type SaveEntrySource,
 } from "./constants.js";
 import { queueStorageSchema } from "./schema.js";
@@ -81,7 +80,7 @@ export interface PostOutcome {
   retryAfterHeader?: string | null; // for 429
 }
 
-export type QueueAttemptResult =
+type QueueAttemptResult =
   | { kind: "ok" }
   | { kind: "duplicate" }
   | { kind: "auth" }
@@ -199,7 +198,7 @@ async function writeState(state: QueueState): Promise<void> {
   });
 }
 
-export interface EnqueueInput {
+interface EnqueueInput {
   url: string;
   title: string | null;
   workspaceId: string | null;
@@ -288,12 +287,6 @@ export async function enqueue(
   }
 
   return item;
-}
-
-export async function pendingCount(): Promise<number> {
-  const { items } = await readState();
-  return items.filter((i) => i.status === "pending" || i.status === "in_flight")
-    .length;
 }
 
 export async function isPaused(): Promise<boolean> {
@@ -539,25 +532,3 @@ export function installHeartbeat(): void {
 export function isHeartbeatAlarm(alarmName: string): boolean {
   return alarmName === QUEUE_HEARTBEAT_ALARM;
 }
-
-/**
- * Whether a `pending` item is currently due (used by tests/observability; not
- * on the drain hot path).
- */
-export function itemIsDue(item: QueueItem, now: number): boolean {
-  return item.status === "pending" && (item.nextAttemptAt ?? 0) <= now;
-}
-
-export function statusRank(status: QueueItemStatus): number {
-  switch (status) {
-    case "pending":
-      return 0;
-    case "in_flight":
-      return 1;
-    case "dead":
-      return 2;
-  }
-}
-
-export type { QueueState };
-export { STORAGE_KEYS };

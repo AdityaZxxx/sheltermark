@@ -4,7 +4,7 @@ import type {
   WorkspaceWithCount,
 } from "~/lib/schemas/workspace.schema";
 
-export type RestoreTarget = {
+type RestoreTarget = {
   ids: string[];
   hasTrashedOrigin: boolean;
   trashedWorkspaceName: string | null;
