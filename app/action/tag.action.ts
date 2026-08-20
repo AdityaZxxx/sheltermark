@@ -2,12 +2,8 @@
 
 import type { ActionResult } from "~/lib/action-result";
 import type {
-  AddTagToBookmarkInput,
   DeleteTagInput,
-  GetBookmarkTagsInput,
-  RemoveTagFromBookmarkInput,
   RenameTagInput,
-  SetBookmarkTagsInput,
   Tag,
   TagWithCount,
 } from "~/lib/schemas/tag.schema";
@@ -15,15 +11,11 @@ import type {
 import { requireAuth } from "~/lib/auth";
 import { getDb } from "~/lib/data/db";
 import {
-  addTagToBookmark as addTagToBookmarkRepo,
   deleteTag as deleteTagRepo,
-  getBookmarkTags as getBookmarkTagsRepo,
   getTagsWithCount as getTagsWithCountRepo,
   getUserTags as getUserTagsRepo,
   getWorkspaceTagsWithCount as getWorkspaceTagsWithCountRepo,
-  removeTagFromBookmark as removeTagFromBookmarkRepo,
   renameTag as renameTagRepo,
-  setBookmarkTags as setBookmarkTagsRepo,
 } from "~/lib/data/repositories/tag.repository";
 
 export async function getUserTags(): Promise<ActionResult<Tag[]>> {
@@ -43,34 +35,6 @@ export async function getWorkspaceTagsWithCount(
 ): Promise<ActionResult<TagWithCount[]>> {
   const { user } = await requireAuth();
   return getWorkspaceTagsWithCountRepo(getDb(), user.id, workspaceId);
-}
-
-export async function getBookmarkTags(
-  input: GetBookmarkTagsInput,
-): Promise<ActionResult<Tag[]>> {
-  const { user } = await requireAuth();
-  return getBookmarkTagsRepo(getDb(), user.id, input);
-}
-
-export async function addTagToBookmark(
-  input: AddTagToBookmarkInput,
-): Promise<ActionResult<Tag>> {
-  const { user } = await requireAuth();
-  return addTagToBookmarkRepo(getDb(), user.id, input);
-}
-
-export async function removeTagFromBookmark(
-  input: RemoveTagFromBookmarkInput,
-): Promise<ActionResult<null>> {
-  const { user } = await requireAuth();
-  return removeTagFromBookmarkRepo(getDb(), user.id, input);
-}
-
-export async function setBookmarkTags(
-  input: SetBookmarkTagsInput,
-): Promise<ActionResult<Tag[]>> {
-  const { user } = await requireAuth();
-  return setBookmarkTagsRepo(getDb(), user.id, input);
 }
 
 export async function renameTag(

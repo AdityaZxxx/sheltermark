@@ -42,7 +42,7 @@ export function classifyByHttpStatus(
 // A fetch failure surfaces as an Error (TypeError for network drops,
 // DOMException for aborts) in every runtime this runs in; anything else has
 // been stringified upstream before reaching this boundary.
-export type FetchFailure = Error | string | { message?: string };
+type FetchFailure = Error | string | { message?: string };
 
 export function classifyFetchError(error: FetchFailure): UrlHealthResult {
   const isTimeout =

@@ -16,7 +16,7 @@ const extensionBookmarkTitleSchema = z
  * ids) so a queue payload is self-contained offline — names resolve against
  * current tag state at apply time on the server.
  */
-export const extensionBookmarkCreateSchema = z.object({
+const extensionBookmarkCreateSchema = z.object({
   url: z.url("Invalid URL format"),
   workspace_id: uuidSchema.nullish(),
   title: extensionBookmarkTitleSchema.nullish(),
@@ -28,10 +28,3 @@ export const extensionBookmarkSaveSchema = extensionBookmarkCreateSchema.extend(
     tags: z.array(tagNameSchema).max(50, "Too many tags").optional(),
   },
 );
-
-export type ExtensionBookmarkCreateInput = z.infer<
-  typeof extensionBookmarkCreateSchema
->;
-export type ExtensionBookmarkSaveInput = z.infer<
-  typeof extensionBookmarkSaveSchema
->;

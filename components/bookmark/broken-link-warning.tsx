@@ -9,7 +9,7 @@ import {
 } from "~/components/ui/tooltip";
 import { cn, resolveBrokenState } from "~/lib/utils";
 
-export interface BrokenLinkWarningProps {
+interface BrokenLinkWarningProps {
   brokenStatus: BrokenStatus | string | null | undefined;
   httpStatus?: number | null;
   autoCheckBroken?: boolean;

@@ -34,7 +34,6 @@ const websiteSchema = z
   .or(z.literal(""));
 
 export const TRASH_CLEANUP_INTERVALS = [7, 30] as const;
-export type TrashCleanupInterval = (typeof TRASH_CLEANUP_INTERVALS)[number];
 
 const profileSchema = z.object({
   id: uuidSchema,

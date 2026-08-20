@@ -37,16 +37,6 @@ export function checkRateLimit(userId: string): RateLimitCheckResult {
   return { allowed: true, remaining: DAILY_LIMIT - entry.count };
 }
 
-/**
- * Returns remaining generations for a user today.
- */
-export function getRemainingGenerations(userId: string): number {
-  const today = getTodayKey();
-  const entry = store.get(userId);
-  if (!entry || entry.date !== today) return DAILY_LIMIT;
-  return Math.max(0, DAILY_LIMIT - entry.count);
-}
-
 // Periodic cleanup every hour to prevent memory leaks. Feature-detected with
 // an `in` capability check so the module also loads in timer-less environments.
 if ("setInterval" in globalThis) {

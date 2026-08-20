@@ -5,7 +5,7 @@ type LogLevel = "debug" | "info" | "warn" | "error";
  * only — callers name what they are logging, and the console transport prints
  * whatever it receives.
  */
-export interface LogContext {
+interface LogContext {
   module?: string;
   message?: string;
   error?: unknown;

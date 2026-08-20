@@ -13,7 +13,7 @@ import { logger } from "~/lib/utils/logger";
 const TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;
 
-export const SOFT_404_KEYWORDS = [
+const SOFT_404_KEYWORDS = [
   "page not found",
   "doesn't exist",
   "not available",
@@ -53,7 +53,7 @@ function reasonForClientOrServerError(status: number): string {
   return "client_error";
 }
 
-export interface Soft404Detection {
+interface Soft404Detection {
   isSoft404: boolean;
   reason?:
     | "soft404_combined"

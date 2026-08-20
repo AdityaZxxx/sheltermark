@@ -122,8 +122,6 @@ export const queueItemSchema = z.object({
   source: z.enum(["command", "contextmenu", "popup", "x_capture"]),
 });
 export type QueueItem = z.infer<typeof queueItemSchema>;
-export type QueueItemStatus = QueueItem["status"];
-export type FailureClass = NonNullable<QueueItem["failureClass"]>;
 export type SaveEntrySource = QueueItem["source"];
 
 // Per-field defaults make absent keys read back as the empty state (fresh
@@ -134,7 +132,6 @@ export const queueStorageSchema = z.object({
   queuePaused: z.boolean().default(false),
   queueNotifiedOfflineAt: z.number().nullable().default(null),
 });
-export type QueueStoragePayload = z.infer<typeof queueStorageSchema>;
 
 export const baseUrlStorageSchema = z.object({
   baseUrl: z.string(),
@@ -154,14 +151,10 @@ const cachedEntrySchema = <T extends z.ZodType>(value: T) =>
 export const cachedWorkspacesSchema = z.object({
   cachedWorkspaces: cachedEntrySchema(z.array(workspaceSchema)),
 });
-export type CachedWorkspacesEntry = z.infer<
-  typeof cachedWorkspacesSchema
->["cachedWorkspaces"];
 
 export const cachedTagsSchema = z.object({
   cachedTags: cachedEntrySchema(z.array(tagWithCountSchema)),
 });
-export type CachedTagsEntry = z.infer<typeof cachedTagsSchema>["cachedTags"];
 
 export const extensionMessageSchema = z.discriminatedUnion("type", [
   z.object({

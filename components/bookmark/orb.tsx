@@ -8,13 +8,10 @@ const STAGE = 28;
 /** Default rendered size — 20×20 indicator box. */
 const SIZE = 20;
 
-export type LatticeVariant = "S5";
-export type OrbVariant = LatticeVariant;
+type LatticeVariant = "S5";
+type OrbVariant = LatticeVariant;
 
-export const ORB_TASKS = { S5: "Finalizing" } satisfies Record<
-  OrbVariant,
-  string
->;
+const ORB_TASKS = { S5: "Finalizing" } satisfies Record<OrbVariant, string>;
 
 const N = 3; // lattice is N×N
 const PITCH = 6; // centre-to-centre spacing in stage px; the dot size is CSS
@@ -100,7 +97,7 @@ const CELLS: Cell[] = (() => {
   return cells;
 })();
 
-export interface OrbProps {
+interface OrbProps {
   variant?: OrbVariant;
   /** Rendered edge length in px. The 28px geometry scales to fit. */
   size?: number;
