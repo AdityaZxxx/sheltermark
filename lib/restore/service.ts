@@ -50,7 +50,7 @@ export async function restoreBookmarks(
         .select({ id: workspaces.id })
         .from(workspaces)
         .where(
-          and(inArray(workspaces.id, wsIds), isNotNull(workspaces.deletedAt)),
+          and(inArray(workspaces.id, wsIds), isNotNull(workspaces.deleted_at)),
         );
 
       if (trashed.length > 0) {
@@ -180,8 +180,8 @@ export async function restoreWorkspace(
   try {
     await db
       .update(workspaces)
-      .set({ deletedAt: null })
-      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+      .set({ deleted_at: null })
+      .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
   } catch (cause) {
     return {
       success: false,

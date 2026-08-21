@@ -43,7 +43,7 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
     const [foreignTag] = await db
       .select({ id: tags.id, name: tags.name })
       .from(tags)
-      .where(eq(tags.userId, FOREIGN_USER))
+      .where(eq(tags.user_id, FOREIGN_USER))
       .limit(1);
     if (!foreignTag)
       throw new Error("Seed data missing: foreign user has no tags");
@@ -74,7 +74,7 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
     const agentTags = await db
       .select({ name: tags.name })
       .from(tags)
-      .where(eq(tags.userId, AGENT_USER));
+      .where(eq(tags.user_id, AGENT_USER));
     const createdNames = agentTags
       .filter((t) => t.name.toLowerCase().startsWith(PREFIX))
       .map((t) => t.name);

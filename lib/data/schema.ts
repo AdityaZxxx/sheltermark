@@ -9,7 +9,6 @@ import {
   pgTable,
   primaryKey,
   text,
-  timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -68,19 +67,17 @@ export const profiles = pgTable(
     id: uuid().primaryKey().notNull(),
     username: text(),
     name: text(),
-    avatarUrl: text("avatar_url"),
+    avatar_url: text(),
     bio: text(),
-    websiteUrl: text("website_url"),
-    githubUrl: text("github_url"),
-    xUrl: text("x_url"),
-    isPublic: boolean("is_public").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    website_url: text(),
+    github_url: text(),
+    x_url: text(),
+    is_public: boolean().notNull().default(false),
+    created_at: isoTimestamptz()
       .notNull()
       .default(sql`timezone('utc'::text, now())`),
-    updatedAt: timestamp("updated_at", { withTimezone: true }),
-    trashCleanupInterval: integer("trash_cleanup_interval")
-      .notNull()
-      .default(30),
+    updated_at: isoTimestamptz(),
+    trash_cleanup_interval: integer().notNull().default(30),
   },
   (table) => [
     uniqueIndex("profiles_username_key").on(table.username),
@@ -95,28 +92,28 @@ export const workspaces = pgTable(
       .primaryKey()
       .notNull()
       .default(sql`uuid_generate_v4()`),
-    userId: uuid("user_id")
+    user_id: uuid()
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     name: text().notNull(),
-    isPublic: boolean("is_public").default(false),
-    isDefault: boolean("is_default").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    is_public: boolean().default(false),
+    is_default: boolean().notNull().default(false),
+    created_at: isoTimestamptz()
       .notNull()
       .default(sql`timezone('utc'::text, now())`),
-    updatedAt: timestamp("updated_at", { withTimezone: true }),
-    autoCheckBroken: boolean("auto_check_broken").default(true),
-    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    updated_at: isoTimestamptz(),
+    auto_check_broken: boolean().default(true),
+    deleted_at: isoTimestamptz(),
   },
   (table) => [
-    index("workspaces_user_id_idx").on(table.userId),
+    index("workspaces_user_id_idx").on(table.user_id),
     index("workspaces_one_default_per_user")
-      .on(table.userId)
+      .on(table.user_id)
       .where(sql`(is_default = true)`),
-    index("idx_workspaces_user_default").on(table.userId, table.isDefault),
-    index("idx_workspaces_user_public").on(table.userId, table.isPublic),
+    index("idx_workspaces_user_default").on(table.user_id, table.is_default),
+    index("idx_workspaces_user_public").on(table.user_id, table.is_public),
     index("idx_workspaces_deleted_at")
-      .on(table.deletedAt)
+      .on(table.deleted_at)
       .where(sql`(deleted_at IS NOT NULL)`),
   ],
 );
@@ -182,28 +179,24 @@ export const feeds = pgTable(
       .primaryKey()
       .notNull()
       .default(sql`gen_random_uuid()`),
-    userId: uuid("user_id")
+    user_id: uuid()
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+    workspace_id: uuid().references(() => workspaces.id, {
       onDelete: "set null",
     }),
     url: text().notNull(),
     title: text(),
     description: text(),
-    siteUrl: text("site_url"),
-    iconUrl: text("icon_url"),
-    lastSyncedAt: timestamp("last_synced_at", {
-      withTimezone: true,
-    }),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    }).defaultNow(),
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    }).defaultNow(),
+    site_url: text(),
+    icon_url: text(),
+    last_synced_at: isoTimestamptz(),
+    created_at: isoTimestamptz().default(sql`now()`),
+    updated_at: isoTimestamptz().default(sql`now()`),
   },
-  (table) => [uniqueIndex("feeds_user_id_url_key").on(table.userId, table.url)],
+  (table) => [
+    uniqueIndex("feeds_user_id_url_key").on(table.user_id, table.url),
+  ],
 );
 
 export const feedEntries = pgTable(
@@ -213,7 +206,7 @@ export const feedEntries = pgTable(
       .primaryKey()
       .notNull()
       .default(sql`gen_random_uuid()`),
-    feedId: uuid("feed_id")
+    feed_id: uuid()
       .notNull()
       .references(() => feeds.id, { onDelete: "cascade" }),
     title: text().notNull(),
@@ -221,13 +214,11 @@ export const feedEntries = pgTable(
     content: text(),
     summary: text(),
     guid: text().notNull(),
-    published: timestamp("published", { withTimezone: true }),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    }).defaultNow(),
+    published: isoTimestamptz(),
+    created_at: isoTimestamptz().default(sql`now()`),
   },
   (table) => [
-    uniqueIndex("feed_entries_feed_id_guid_key").on(table.feedId, table.guid),
+    uniqueIndex("feed_entries_feed_id_guid_key").on(table.feed_id, table.guid),
   ],
 );
 
@@ -238,20 +229,18 @@ export const tags = pgTable(
       .primaryKey()
       .notNull()
       .default(sql`gen_random_uuid()`),
-    userId: uuid("user_id")
+    user_id: uuid()
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     name: citext().notNull(),
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
+    created_at: isoTimestamptz()
       .notNull()
-      .defaultNow(),
+      .default(sql`now()`),
   },
   (table) => [
-    index("idx_tags_user_id").on(table.userId),
-    index("idx_tags_user_name").on(table.userId, table.name),
-    uniqueIndex("tags_user_id_name_key").on(table.userId, table.name),
+    index("idx_tags_user_id").on(table.user_id),
+    index("idx_tags_user_name").on(table.user_id, table.name),
+    uniqueIndex("tags_user_id_name_key").on(table.user_id, table.name),
   ],
 );
 
@@ -282,19 +271,19 @@ export const auditEvents = pgTable(
       .primaryKey()
       .notNull()
       .default(sql`gen_random_uuid()`),
-    actorType: text("actor_type").notNull(),
-    actorId: text("actor_id").notNull(),
-    action: text("action").notNull(),
-    resourceType: text("resource_type").notNull(),
-    resourceId: uuid("resource_id"),
-    reason: text("reason").notNull(),
-    metadata: jsonb("metadata").notNull().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    actor_type: text().notNull(),
+    actor_id: text().notNull(),
+    action: text().notNull(),
+    resource_type: text().notNull(),
+    resource_id: uuid(),
+    reason: text().notNull(),
+    metadata: jsonb().notNull().default({}),
+    created_at: isoTimestamptz()
       .notNull()
       .default(sql`timezone('utc'::text, now())`),
   },
   (table) => [
-    index("idx_audit_events_created_at").on(table.createdAt.desc()),
+    index("idx_audit_events_created_at").on(table.created_at.desc()),
     index("idx_audit_events_action").on(table.action),
     check(
       "audit_events_actor_type_check",

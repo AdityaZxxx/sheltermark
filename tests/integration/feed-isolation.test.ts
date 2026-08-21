@@ -28,12 +28,12 @@ const HAS_DB = Boolean(process.env.DATABASE_URL);
 describe.skipIf(!HAS_DB)("feed repository — Drizzle isolation suite", () => {
   async function getForeignFeed(): Promise<{
     id: string;
-    lastSyncedAt: Date | null;
+    lastSyncedAt: string | null;
   }> {
     const [feed] = await getDb()
-      .select({ id: feeds.id, lastSyncedAt: feeds.lastSyncedAt })
+      .select({ id: feeds.id, lastSyncedAt: feeds.last_synced_at })
       .from(feeds)
-      .where(eq(feeds.userId, FOREIGN_USER))
+      .where(eq(feeds.user_id, FOREIGN_USER))
       .limit(1);
     if (!feed) throw new Error("Seed data missing: foreign user has no feeds");
     return feed;
@@ -63,12 +63,10 @@ describe.skipIf(!HAS_DB)("feed repository — Drizzle isolation suite", () => {
     expect(result).toEqual({ success: false, error: "Feed not found" });
 
     const [after] = await getDb()
-      .select({ lastSyncedAt: feeds.lastSyncedAt })
+      .select({ lastSyncedAt: feeds.last_synced_at })
       .from(feeds)
       .where(eq(feeds.id, foreignFeed.id));
-    expect(after?.lastSyncedAt?.getTime() ?? null).toBe(
-      foreignFeed.lastSyncedAt?.getTime() ?? null,
-    );
+    expect(after?.lastSyncedAt ?? null).toBe(foreignFeed.lastSyncedAt ?? null);
   });
 
   it("deleteFeed cannot delete another user's subscription", async () => {

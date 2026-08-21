@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         .select({ id: workspaces.id })
         .from(workspaces)
         .where(
-          and(eq(workspaces.userId, user.id), eq(workspaces.isDefault, true)),
+          and(eq(workspaces.user_id, user.id), eq(workspaces.is_default, true)),
         )
         .limit(1);
 

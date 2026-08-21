@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
+import { profiles } from "~/lib/data/schema";
+import { uuidSchema } from "~/lib/schemas/common";
 
 export const usernameSchema = z
   .string()
@@ -34,25 +35,6 @@ const websiteSchema = z
   .or(z.literal(""));
 
 export const TRASH_CLEANUP_INTERVALS = [7, 30] as const;
-
-const profileSchema = z.object({
-  id: uuidSchema,
-  username: usernameSchema,
-  name: z.string().nullable(),
-  avatar_url: z.url().nullable(),
-  bio: z
-    .string()
-    .max(160, "Bio must be less than 160 characters")
-    .optional()
-    .or(z.literal("")),
-  website_url: websiteSchema.nullable(),
-  github_url: z.url().nullable(),
-  x_url: z.url().nullable(),
-  is_public: z.boolean(),
-  trash_cleanup_interval: z.number().int().default(30),
-  created_at: timestampSchema,
-  updated_at: timestampSchema.nullable(),
-});
 
 export const updatePublicProfileSchema = z.object({
   username: usernameSchema,
@@ -98,7 +80,7 @@ export const importOptionsSchema = z.object({
   folderPaths: z.array(z.string()).optional(),
 });
 
-export type Profile = z.infer<typeof profileSchema>;
+export type Profile = typeof profiles.$inferSelect;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePublicProfileInput = z.infer<
   typeof updatePublicProfileSchema

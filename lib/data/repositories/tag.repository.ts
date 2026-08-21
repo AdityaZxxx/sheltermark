@@ -21,9 +21,9 @@ import {
 function toTag(row: typeof tags.$inferSelect): Tag {
   return {
     id: row.id,
-    user_id: row.userId,
+    user_id: row.user_id,
     name: row.name,
-    created_at: row.createdAt.toISOString(),
+    created_at: row.created_at,
   };
 }
 
@@ -48,7 +48,7 @@ export async function getUserTags(
     const rows = await db
       .select()
       .from(tags)
-      .where(eq(tags.userId, userId))
+      .where(eq(tags.user_id, userId))
       .orderBy(tags.name);
     return { success: true, data: rows.map(toTag) };
   } catch (err) {
@@ -87,7 +87,7 @@ export async function getWorkspaceTagsWithCount(
       .where(
         and(
           inArray(bookmarkTags.bookmark_id, bookmarkIds),
-          eq(tags.userId, userId),
+          eq(tags.user_id, userId),
         ),
       );
 
@@ -120,12 +120,12 @@ export async function getTagsWithCount(
       .select({
         id: tags.id,
         name: tags.name,
-        createdAt: tags.createdAt,
+        created_at: tags.created_at,
         count: count(bookmarkTags.tag_id),
       })
       .from(tags)
       .leftJoin(bookmarkTags, eq(bookmarkTags.tag_id, tags.id))
-      .where(eq(tags.userId, userId))
+      .where(eq(tags.user_id, userId))
       .groupBy(tags.id)
       .orderBy(tags.name);
 
@@ -133,7 +133,7 @@ export async function getTagsWithCount(
       id: row.id,
       user_id: userId,
       name: row.name,
-      created_at: row.createdAt.toISOString(),
+      created_at: row.created_at,
       count: row.count,
     }));
     return { success: true, data };
@@ -163,7 +163,7 @@ export async function getBookmarkTags(
           // Tag ownership is enforced here (RLS "view bookmark_tags" allowed
           // any link row whose bookmark belonged to the user; tags join
           // filtered by the same policy).
-          eq(tags.userId, userId),
+          eq(tags.user_id, userId),
         ),
       );
     return { success: true, data: rows.map((r) => toTag(r.tag)) };
@@ -185,9 +185,9 @@ export async function upsertTag(
   try {
     const [row] = await db
       .insert(tags)
-      .values({ userId, name: trimmed })
+      .values({ user_id: userId, name: trimmed })
       .onConflictDoUpdate({
-        target: [tags.userId, tags.name],
+        target: [tags.user_id, tags.name],
         set: { name: trimmed },
       })
       .returning();
@@ -216,7 +216,7 @@ export async function renameTag(
     const [row] = await db
       .update(tags)
       .set({ name })
-      .where(and(eq(tags.id, tagId), eq(tags.userId, userId)))
+      .where(and(eq(tags.id, tagId), eq(tags.user_id, userId)))
       .returning();
     if (!row) {
       return { success: false, error: "Tag not found" };
@@ -240,7 +240,7 @@ export async function deleteTag(
   try {
     await db
       .delete(tags)
-      .where(and(eq(tags.id, validated.data.tagId), eq(tags.userId, userId)));
+      .where(and(eq(tags.id, validated.data.tagId), eq(tags.user_id, userId)));
   } catch (err) {
     return dbError(err);
   }

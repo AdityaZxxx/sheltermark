@@ -52,7 +52,7 @@ describe.skipIf(!HAS_DB)("audit trail — live database", () => {
       .select()
       .from(auditEvents)
       .where(
-        and(eq(auditEvents.actorId, RUN_TAG), eq(auditEvents.action, action)),
+        and(eq(auditEvents.actor_id, RUN_TAG), eq(auditEvents.action, action)),
       );
     expect(rows).toHaveLength(1);
     // Non-null: toHaveLength(1) above guarantees a single row.
@@ -67,8 +67,8 @@ describe.skipIf(!HAS_DB)("audit trail — live database", () => {
       .where(
         and(
           like(auditEvents.action, "audit_test.%"),
-          ne(auditEvents.actorId, RUN_TAG),
-          lt(auditEvents.createdAt, cutoff),
+          ne(auditEvents.actor_id, RUN_TAG),
+          lt(auditEvents.created_at, cutoff.toISOString()),
         ),
       );
   });
@@ -88,12 +88,14 @@ describe.skipIf(!HAS_DB)("audit trail — live database", () => {
     const row = await fetchSingle("audit_test.drizzle_roundtrip");
     insertedIds.push(row.id);
 
-    expect(row.actorType).toBe("system");
-    expect(row.resourceType).toBe("audit");
+    expect(row.actor_type).toBe("system");
+    expect(row.resource_type).toBe("audit");
     expect(row.reason).toBe("audit integration test row");
-    expect(row.resourceId).toBeNull();
+    expect(row.resource_id).toBeNull();
     expect(row.metadata).toEqual({ synced: 2, success: true });
-    expect(row.createdAt).toBeInstanceOf(Date);
+    expect(row.created_at).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+    );
   });
 
   it("persists an event through the supabase-js transport", async () => {
@@ -147,7 +149,7 @@ describe.skipIf(!HAS_DB)("audit trail — live database", () => {
       .from(auditEvents)
       .where(
         and(
-          eq(auditEvents.actorId, RUN_TAG),
+          eq(auditEvents.actor_id, RUN_TAG),
           eq(auditEvents.action, "audit_test.content_smuggling"),
         ),
       );

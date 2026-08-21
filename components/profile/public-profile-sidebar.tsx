@@ -11,7 +11,7 @@ interface PublicProfileSidebarProps {
 }
 
 export function PublicProfileSidebar({ profile }: PublicProfileSidebarProps) {
-  const displayName = profile.name || profile.username;
+  const displayName = profile.name || profile.username || "";
   const initials = displayName.charAt(0).toUpperCase();
 
   return (

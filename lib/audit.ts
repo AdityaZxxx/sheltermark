@@ -155,11 +155,11 @@ export async function insertAuditEvent(
 ): Promise<void> {
   const row = buildAuditEventRow(input);
   await db.insert(auditEvents).values({
-    actorType: row.actor_type,
-    actorId: row.actor_id,
+    actor_type: row.actor_type,
+    actor_id: row.actor_id,
     action: row.action,
-    resourceType: row.resource_type,
-    resourceId: row.resource_id,
+    resource_type: row.resource_type,
+    resource_id: row.resource_id,
     reason: row.reason,
     metadata: row.metadata,
   });
