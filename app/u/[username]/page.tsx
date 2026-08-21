@@ -54,7 +54,7 @@ export async function generateMetadata({
   let description: string;
 
   const ogParams = new URLSearchParams({
-    username: profile.username,
+    username: profile.username ?? "",
   });
 
   if (workspace) {

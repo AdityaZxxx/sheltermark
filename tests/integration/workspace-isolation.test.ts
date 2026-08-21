@@ -49,7 +49,7 @@ describe.skipIf(!HAS_DB)(
       const [foreignWorkspace] = await db
         .select({ id: workspaces.id })
         .from(workspaces)
-        .where(eq(workspaces.userId, FOREIGN_USER))
+        .where(eq(workspaces.user_id, FOREIGN_USER))
         .limit(1);
       if (!foreignWorkspace)
         throw new Error("Seed data missing: foreign user has no workspaces");
@@ -66,7 +66,7 @@ describe.skipIf(!HAS_DB)(
       const wsRows = await db
         .select()
         .from(workspaces)
-        .where(eq(workspaces.userId, AGENT_USER));
+        .where(eq(workspaces.user_id, AGENT_USER));
       const createdIds = wsRows
         .filter((ws) => ws.name.startsWith(PREFIX))
         .map((ws) => ws.id);
@@ -119,7 +119,7 @@ describe.skipIf(!HAS_DB)(
         expect(result.success).toBe(false);
 
         const [row] = await getDb()
-          .select({ deletedAt: workspaces.deletedAt })
+          .select({ deletedAt: workspaces.deleted_at })
           .from(workspaces)
           .where(eq(workspaces.id, foreignWorkspaceId));
         expect(row?.deletedAt).toBeNull();
@@ -148,7 +148,7 @@ describe.skipIf(!HAS_DB)(
 
       it("togglePublicStatus cannot toggle another user's workspace", async () => {
         const [before] = await getDb()
-          .select({ isPublic: workspaces.isPublic })
+          .select({ isPublic: workspaces.is_public })
           .from(workspaces)
           .where(eq(workspaces.id, foreignWorkspaceId));
 
@@ -160,7 +160,7 @@ describe.skipIf(!HAS_DB)(
         );
 
         const [after] = await getDb()
-          .select({ isPublic: workspaces.isPublic })
+          .select({ isPublic: workspaces.is_public })
           .from(workspaces)
           .where(eq(workspaces.id, foreignWorkspaceId));
         expect(after?.isPublic).toBe(before?.isPublic);
@@ -168,7 +168,7 @@ describe.skipIf(!HAS_DB)(
 
       it("toggleAutoCheckBroken cannot toggle another user's workspace", async () => {
         const [before] = await getDb()
-          .select({ autoCheckBroken: workspaces.autoCheckBroken })
+          .select({ autoCheckBroken: workspaces.auto_check_broken })
           .from(workspaces)
           .where(eq(workspaces.id, foreignWorkspaceId));
 
@@ -180,7 +180,7 @@ describe.skipIf(!HAS_DB)(
         );
 
         const [after] = await getDb()
-          .select({ autoCheckBroken: workspaces.autoCheckBroken })
+          .select({ autoCheckBroken: workspaces.auto_check_broken })
           .from(workspaces)
           .where(eq(workspaces.id, foreignWorkspaceId));
         expect(after?.autoCheckBroken).toBe(before?.autoCheckBroken);
@@ -234,8 +234,8 @@ describe.skipIf(!HAS_DB)(
         await toggleAutoCheckBroken(db, AGENT_USER, wsId, false);
         const [toggled] = await db
           .select({
-            isPublic: workspaces.isPublic,
-            autoCheckBroken: workspaces.autoCheckBroken,
+            isPublic: workspaces.is_public,
+            autoCheckBroken: workspaces.auto_check_broken,
           })
           .from(workspaces)
           .where(eq(workspaces.id, wsId));
@@ -278,7 +278,7 @@ describe.skipIf(!HAS_DB)(
           .select({ id: workspaces.id })
           .from(workspaces)
           .where(
-            and(eq(workspaces.id, wsId), eq(workspaces.userId, AGENT_USER)),
+            and(eq(workspaces.id, wsId), eq(workspaces.user_id, AGENT_USER)),
           );
         expect(gone).toBeUndefined();
       });
@@ -295,7 +295,7 @@ describe.skipIf(!HAS_DB)(
         createdWorkspaceIds.push(created.data.id);
 
         const [row] = await db
-          .select({ userId: workspaces.userId, name: workspaces.name })
+          .select({ userId: workspaces.user_id, name: workspaces.name })
           .from(workspaces)
           .where(eq(workspaces.id, created.data.id));
         expect(row?.userId).toBe(AGENT_USER);

@@ -27,7 +27,7 @@ type ProfileRow = typeof profiles.$inferSelect;
 
 /** Editable profile columns accepted by {@link updateProfile}. */
 type ProfileEditPatch = Partial<
-  Pick<ProfileRow, "name" | "trashCleanupInterval">
+  Pick<ProfileRow, "name" | "trash_cleanup_interval">
 >;
 
 function toProfile(row: ProfileRow): Profile {
@@ -37,15 +37,15 @@ function toProfile(row: ProfileRow): Profile {
     id: row.id,
     username,
     name: row.name,
-    avatar_url: row.avatarUrl,
-    bio: row.bio ?? undefined,
-    website_url: row.websiteUrl,
-    github_url: row.githubUrl,
-    x_url: row.xUrl,
-    is_public: row.isPublic,
-    trash_cleanup_interval: row.trashCleanupInterval,
-    created_at: row.createdAt.toISOString(),
-    updated_at: row.updatedAt?.toISOString() ?? null,
+    avatar_url: row.avatar_url,
+    bio: row.bio,
+    website_url: row.website_url,
+    github_url: row.github_url,
+    x_url: row.x_url,
+    is_public: row.is_public,
+    trash_cleanup_interval: row.trash_cleanup_interval,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 }
 
@@ -118,7 +118,7 @@ export async function updateProfile(
 
   const profileUpdate: ProfileEditPatch = { name };
   if (trash_cleanup_interval !== undefined) {
-    profileUpdate.trashCleanupInterval = trash_cleanup_interval;
+    profileUpdate.trash_cleanup_interval = trash_cleanup_interval;
   }
 
   try {
@@ -160,12 +160,12 @@ export async function updatePublicProfile(
       .update(profiles)
       .set({
         username: cleanUsername,
-        isPublic: is_public,
+        is_public,
         bio,
-        githubUrl: normalizeProfileUrl(github_username, "https://github.com/"),
-        xUrl: normalizeProfileUrl(x_username, "https://x.com/"),
-        websiteUrl: normalizeProfileUrl(website, "https://"),
-        updatedAt: new Date(),
+        github_url: normalizeProfileUrl(github_username, "https://github.com/"),
+        x_url: normalizeProfileUrl(x_username, "https://x.com/"),
+        website_url: normalizeProfileUrl(website, "https://"),
+        updated_at: new Date().toISOString(),
       })
       .where(eq(profiles.id, userId));
   } catch (cause) {
@@ -216,7 +216,7 @@ export async function getProfileDisplayName(
       .where(
         and(
           eq(profiles.username, validated.data.username),
-          eq(profiles.isPublic, true),
+          eq(profiles.is_public, true),
         ),
       )
       .limit(1);
@@ -244,7 +244,7 @@ export async function getPublicProfile(
       .select()
       .from(profiles)
       .where(
-        and(eq(profiles.username, cleanUsername), eq(profiles.isPublic, true)),
+        and(eq(profiles.username, cleanUsername), eq(profiles.is_public, true)),
       )
       .limit(1);
 
@@ -257,11 +257,11 @@ export async function getPublicProfile(
       .from(workspaces)
       .where(
         and(
-          eq(workspaces.userId, profileRow.id),
-          eq(workspaces.isPublic, true),
+          eq(workspaces.user_id, profileRow.id),
+          eq(workspaces.is_public, true),
         ),
       )
-      .orderBy(asc(workspaces.createdAt));
+      .orderBy(asc(workspaces.created_at));
 
     const workspaceIds = workspaceRows.map((ws) => ws.id);
 
@@ -341,7 +341,7 @@ export async function uploadAvatar(
 
   try {
     const [currentProfile] = await db
-      .select({ avatarUrl: profiles.avatarUrl })
+      .select({ avatarUrl: profiles.avatar_url })
       .from(profiles)
       .where(eq(profiles.id, userId))
       .limit(1);
@@ -387,7 +387,7 @@ export async function uploadAvatar(
 
     await db
       .update(profiles)
-      .set({ avatarUrl, updatedAt: new Date() })
+      .set({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
       .where(eq(profiles.id, userId));
     return { success: true, data: { avatarUrl } };
   } catch (error) {
@@ -402,7 +402,7 @@ export async function deleteAvatar(
   userId: string,
 ): Promise<ActionResult<null>> {
   const [profile] = await db
-    .select({ avatarUrl: profiles.avatarUrl })
+    .select({ avatarUrl: profiles.avatar_url })
     .from(profiles)
     .where(eq(profiles.id, userId))
     .limit(1);
@@ -417,7 +417,7 @@ export async function deleteAvatar(
     if (authError) return { success: false, error: authError.message };
     await db
       .update(profiles)
-      .set({ avatarUrl: null, updatedAt: new Date() })
+      .set({ avatar_url: null, updated_at: new Date().toISOString() })
       .where(eq(profiles.id, userId));
     return { success: true, data: null };
   } catch (error) {
@@ -436,7 +436,7 @@ export async function deleteAccount(
     // Read the avatar URL before removing the row so storage cleanup can run
     // against the last known avatar.
     const [profile] = await db
-      .select({ avatarUrl: profiles.avatarUrl })
+      .select({ avatarUrl: profiles.avatar_url })
       .from(profiles)
       .where(eq(profiles.id, userId))
       .limit(1);

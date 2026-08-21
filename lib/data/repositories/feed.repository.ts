@@ -19,16 +19,16 @@ type FeedRow = typeof feeds.$inferSelect;
 function toFeed(row: FeedRow): Feed {
   return {
     id: row.id,
-    user_id: row.userId,
-    workspace_id: row.workspaceId,
+    user_id: row.user_id,
+    workspace_id: row.workspace_id,
     url: row.url,
     title: row.title,
     description: row.description,
-    site_url: row.siteUrl,
-    icon_url: row.iconUrl,
-    last_synced_at: row.lastSyncedAt?.toISOString() ?? null,
-    created_at: row.createdAt?.toISOString() ?? new Date().toISOString(),
-    updated_at: row.updatedAt?.toISOString() ?? null,
+    site_url: row.site_url,
+    icon_url: row.icon_url,
+    last_synced_at: row.last_synced_at,
+    created_at: row.created_at ?? new Date().toISOString(),
+    updated_at: row.updated_at,
   };
 }
 
@@ -54,8 +54,8 @@ export async function getFeeds(
     const rows = await db
       .select()
       .from(feeds)
-      .where(eq(feeds.userId, userId))
-      .orderBy(desc(feeds.createdAt));
+      .where(eq(feeds.user_id, userId))
+      .orderBy(desc(feeds.created_at));
     return { success: true, data: rows.map(toFeed) };
   } catch (cause) {
     return dbError(cause);
@@ -82,7 +82,7 @@ export async function subscribeToFeed(
     existing = await db
       .select({ id: feeds.id })
       .from(feeds)
-      .where(and(eq(feeds.url, parsedUrl), eq(feeds.userId, userId)))
+      .where(and(eq(feeds.url, parsedUrl), eq(feeds.user_id, userId)))
       .limit(1);
   } catch (cause) {
     return dbError(cause);
@@ -118,13 +118,13 @@ export async function subscribeToFeed(
       .insert(feeds)
       .values({
         url: parsedUrl,
-        userId,
-        workspaceId: targetWorkspaceId,
+        user_id: userId,
+        workspace_id: targetWorkspaceId,
         title: feedData.title,
         description: feedData.description,
-        siteUrl: feedData.link,
-        iconUrl: siteMeta?.favicon_url || null,
-        lastSyncedAt: new Date(),
+        site_url: feedData.link,
+        icon_url: siteMeta?.favicon_url || null,
+        last_synced_at: new Date().toISOString(),
       })
       .returning();
     const first = inserted[0];
@@ -140,7 +140,7 @@ export async function subscribeToFeed(
         .select({ id: workspaces.id })
         .from(workspaces)
         .where(
-          and(eq(workspaces.userId, userId), eq(workspaces.isDefault, true)),
+          and(eq(workspaces.user_id, userId), eq(workspaces.is_default, true)),
         )
         .limit(1);
 
@@ -198,7 +198,7 @@ async function syncSingleFeed(
   } catch (err) {
     await db
       .update(feeds)
-      .set({ lastSyncedAt: new Date() })
+      .set({ last_synced_at: new Date().toISOString() })
       .where(eq(feeds.id, feed.id));
     return {
       success: false,
@@ -209,7 +209,7 @@ async function syncSingleFeed(
   const existingGuidRows = await db
     .select({ guid: feedEntries.guid })
     .from(feedEntries)
-    .where(eq(feedEntries.feedId, feed.id));
+    .where(eq(feedEntries.feed_id, feed.id));
   const existingGuids = new Set(existingGuidRows.map((e) => e.guid));
 
   let newItems = feedData.items.filter((item) => !existingGuids.has(item.guid));
@@ -219,13 +219,13 @@ async function syncSingleFeed(
 
   if (newItems.length > 0) {
     const entriesToInsert = newItems.map((item) => ({
-      feedId: feed.id,
+      feed_id: feed.id,
       title: item.title,
       link: item.link,
       content: item.content ?? null,
       summary: item.contentSnippet ?? null,
       guid: item.guid,
-      published: item.pubDate ? new Date(item.pubDate) : null,
+      published: item.pubDate ? new Date(item.pubDate).toISOString() : null,
     }));
     await db.insert(feedEntries).values(entriesToInsert);
 
@@ -235,7 +235,7 @@ async function syncSingleFeed(
         .select({ id: workspaces.id })
         .from(workspaces)
         .where(
-          and(eq(workspaces.userId, userId), eq(workspaces.isDefault, true)),
+          and(eq(workspaces.user_id, userId), eq(workspaces.is_default, true)),
         )
         .limit(1);
       targetWorkspaceId = defaultWorkspace?.id ?? null;
@@ -277,9 +277,9 @@ async function syncSingleFeed(
     .set({
       title: feedData.title,
       description: feedData.description,
-      siteUrl: feedData.link,
-      iconUrl: siteMeta?.favicon_url || null,
-      lastSyncedAt: new Date(),
+      site_url: feedData.link,
+      icon_url: siteMeta?.favicon_url || null,
+      last_synced_at: new Date().toISOString(),
     })
     .where(eq(feeds.id, feed.id));
 
@@ -302,7 +302,7 @@ export async function refreshFeed(
     const rows = await db
       .select()
       .from(feeds)
-      .where(and(eq(feeds.id, validated.data.id), eq(feeds.userId, userId)))
+      .where(and(eq(feeds.id, validated.data.id), eq(feeds.user_id, userId)))
       .limit(1);
     feedRow = rows[0];
   } catch (cause) {
@@ -339,7 +339,7 @@ export async function deleteFeed(
   try {
     await db
       .delete(feeds)
-      .where(and(eq(feeds.id, validated.data.id), eq(feeds.userId, userId)));
+      .where(and(eq(feeds.id, validated.data.id), eq(feeds.user_id, userId)));
   } catch (cause) {
     return dbError(cause);
   }
@@ -352,7 +352,7 @@ export async function syncAllFeeds(
 ): Promise<ActionResult<{ synced: number; errors: string[] }>> {
   let feedRows: FeedRow[];
   try {
-    feedRows = await db.select().from(feeds).where(eq(feeds.userId, userId));
+    feedRows = await db.select().from(feeds).where(eq(feeds.user_id, userId));
   } catch (cause) {
     return dbError(cause);
   }
@@ -393,7 +393,7 @@ export async function syncAllFeedsGlobal(
 ): Promise<ActionResult<{ synced: number; errors: string[] }>> {
   let userRows: { userId: string }[];
   try {
-    userRows = await db.selectDistinct({ userId: feeds.userId }).from(feeds);
+    userRows = await db.selectDistinct({ userId: feeds.user_id }).from(feeds);
   } catch (cause) {
     return dbError(cause);
   }

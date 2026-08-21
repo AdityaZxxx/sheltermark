@@ -26,14 +26,14 @@ const workspaceIdRowSchema = z.object({ id: z.string().min(1) });
 function toWorkspace(row: WorkspaceRow): Workspace {
   return {
     id: row.id,
-    user_id: row.userId,
+    user_id: row.user_id,
     name: row.name,
-    is_public: row.isPublic ?? false,
-    is_default: row.isDefault,
-    auto_check_broken: row.autoCheckBroken ?? true,
-    created_at: row.createdAt.toISOString(),
-    updated_at: row.updatedAt?.toISOString() ?? null,
-    deleted_at: row.deletedAt?.toISOString() ?? null,
+    is_public: row.is_public ?? false,
+    is_default: row.is_default,
+    auto_check_broken: row.auto_check_broken ?? true,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    deleted_at: row.deleted_at,
   };
 }
 
@@ -79,8 +79,10 @@ export async function getWorkspaces(
       db
         .select()
         .from(workspaces)
-        .where(and(eq(workspaces.userId, userId), isNull(workspaces.deletedAt)))
-        .orderBy(asc(workspaces.createdAt)),
+        .where(
+          and(eq(workspaces.user_id, userId), isNull(workspaces.deleted_at)),
+        )
+        .orderBy(asc(workspaces.created_at)),
       db
         .select({ workspaceId: bookmarks.workspace_id })
         .from(bookmarks)
@@ -132,10 +134,10 @@ export async function createWorkspace(
     const [row] = await db
       .insert(workspaces)
       .values({
-        userId,
+        user_id: userId,
         name: validated.data.name,
-        isDefault: false,
-        isPublic: false,
+        is_default: false,
+        is_public: false,
       })
       .returning({ id: workspaces.id });
 
@@ -167,9 +169,9 @@ export async function getTrashedWorkspaces(
         .select()
         .from(workspaces)
         .where(
-          and(eq(workspaces.userId, userId), isNotNull(workspaces.deletedAt)),
+          and(eq(workspaces.user_id, userId), isNotNull(workspaces.deleted_at)),
         )
-        .orderBy(desc(workspaces.deletedAt)),
+        .orderBy(desc(workspaces.deleted_at)),
       db
         .select()
         .from(bookmarks)
@@ -225,7 +227,7 @@ export async function permanentDeleteWorkspace(
 
     await db
       .delete(workspaces)
-      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+      .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
     return dbError(cause);
@@ -241,8 +243,8 @@ export async function togglePublicStatus(
   try {
     await db
       .update(workspaces)
-      .set({ isPublic })
-      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+      .set({ is_public: isPublic })
+      .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
     return dbError(cause);
@@ -257,13 +259,13 @@ export async function setDefaultWorkspace(
   try {
     await db
       .update(workspaces)
-      .set({ isDefault: false })
-      .where(eq(workspaces.userId, userId));
+      .set({ is_default: false })
+      .where(eq(workspaces.user_id, userId));
 
     await db
       .update(workspaces)
-      .set({ isDefault: true })
-      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+      .set({ is_default: true })
+      .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
     return dbError(cause);
@@ -279,8 +281,8 @@ export async function toggleAutoCheckBroken(
   try {
     await db
       .update(workspaces)
-      .set({ autoCheckBroken: enabled })
-      .where(and(eq(workspaces.id, id), eq(workspaces.userId, userId)));
+      .set({ auto_check_broken: enabled })
+      .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
     return dbError(cause);
@@ -295,7 +297,7 @@ export async function createWorkspaceRaw(
   try {
     const [row] = await db
       .insert(workspaces)
-      .values({ userId, name, isDefault: false, isPublic: false })
+      .values({ user_id: userId, name, is_default: false, is_public: false })
       .returning({ id: workspaces.id });
 
     if (!row) {
@@ -319,7 +321,9 @@ export async function getDefaultWorkspace(
     const [row] = await db
       .select({ id: workspaces.id })
       .from(workspaces)
-      .where(and(eq(workspaces.userId, userId), eq(workspaces.isDefault, true)))
+      .where(
+        and(eq(workspaces.user_id, userId), eq(workspaces.is_default, true)),
+      )
       .limit(1);
     return { success: true, data: row ? { id: row.id } : null };
   } catch (cause) {
@@ -347,7 +351,7 @@ export async function renameWorkspace(
       .where(
         and(
           eq(workspaces.id, validated.data.id),
-          eq(workspaces.userId, userId),
+          eq(workspaces.user_id, userId),
         ),
       );
     return { success: true, data: null };

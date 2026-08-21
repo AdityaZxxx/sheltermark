@@ -1,0 +1,40 @@
+# Enforces the schema-migrations contract: lib/data/schema.ts is the source
+# of truth and every change lands as a committed migration. If schema.ts
+# changes without a matching generated migration, `db:generate` writes new
+# SQL into supabase/migrations/ and the tree diff fails the run.
+# drizzle-kit generate diffs against supabase/migrations/meta/ only — no
+# database connection is required (generate never applies anything).
+name: Schema Drift Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  migration-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Generate migrations from schema
+        run: bun run db:generate
+        env:
+          # drizzle.config.ts requires DATABASE_URL at import time; generate
+          # never connects, so a placeholder is sufficient for the diff.
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
+      - name: Fail if schema.ts changed without a migration
+        run: |
+          if ! git diff --exit-code supabase/migrations; then
+            echo "::error::schema.ts is out of sync with supabase/migrations — run 'bun run db:generate' and commit the result."
+            exit 1
+          fi

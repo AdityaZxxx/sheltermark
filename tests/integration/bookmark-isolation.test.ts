@@ -89,11 +89,14 @@ describe.skipIf(!HAS_DB)(
       const agentWorkspaces = await db
         .select({
           id: workspaces.id,
-          isDefault: workspaces.isDefault,
+          isDefault: workspaces.is_default,
         })
         .from(workspaces)
         .where(
-          and(eq(workspaces.userId, AGENT_USER), isNull(workspaces.deletedAt)),
+          and(
+            eq(workspaces.user_id, AGENT_USER),
+            isNull(workspaces.deleted_at),
+          ),
         );
       const defaultWs = agentWorkspaces.find((ws) => ws.isDefault);
       const otherWs = agentWorkspaces.find((ws) => !ws.isDefault);
@@ -118,7 +121,7 @@ describe.skipIf(!HAS_DB)(
       const agentTags = await db
         .select({ name: tags.name })
         .from(tags)
-        .where(eq(tags.userId, AGENT_USER));
+        .where(eq(tags.user_id, AGENT_USER));
       const createdNames = agentTags
         .filter((t) => t.name.toLowerCase().startsWith(PREFIX))
         .map((t) => t.name);

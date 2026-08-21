@@ -36,15 +36,15 @@ export async function resolveAndReplaceBookmarkTags(
         const [tag] = await db
           .select()
           .from(tags)
-          .where(and(eq(tags.id, entry.id), eq(tags.userId, userId)));
+          .where(and(eq(tags.id, entry.id), eq(tags.user_id, userId)));
         if (!tag) {
           return { success: false, error: "One or more tags not found" };
         }
         resolvedTags.push({
           id: tag.id,
-          user_id: tag.userId,
+          user_id: tag.user_id,
           name: tag.name,
-          created_at: tag.createdAt.toISOString(),
+          created_at: tag.created_at,
         });
       } else if (entry.name) {
         const upsertResult = await upsertTag(db, userId, entry.name);

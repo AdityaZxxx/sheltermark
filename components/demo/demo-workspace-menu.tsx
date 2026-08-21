@@ -25,7 +25,7 @@ interface DemoWorkspaceMenuProps {
   workspaces: {
     id: string;
     name: string;
-    is_public?: boolean;
+    is_public: boolean | null;
     bookmarks_count?: number;
   }[];
   currentWorkspaceId: string;
