@@ -1,26 +1,8 @@
 import { z } from "zod";
 
-import { BROKEN_STATUSES } from "~/lib/link-health/types";
-import { timestampSchema, uuidSchema } from "~/lib/schemas/common";
+import type { bookmarks } from "~/lib/data/schema";
 
-const bookmarkSchema = z.object({
-  id: uuidSchema,
-  user_id: uuidSchema,
-  workspace_id: uuidSchema.nullable(),
-  url: z.url(),
-  title: z.string(),
-  favicon_url: z.url().nullable(),
-  og_image_url: z.url().nullable(),
-  is_public: z.boolean().default(false),
-  is_broken: z.boolean().default(false),
-  broken_status: z.enum(BROKEN_STATUSES).optional().nullable().default("alive"),
-  http_status: z.number().int().nullable(),
-  last_checked_at: timestampSchema.nullable(),
-  created_at: timestampSchema,
-  updated_at: timestampSchema.nullable(),
-  deleted_at: timestampSchema.nullable(),
-  note: z.string().nullable().default(null),
-});
+import { uuidSchema } from "~/lib/schemas/common";
 
 const bookmarkCreateSchema = z.object({
   url: z.url("Invalid URL format"),
@@ -97,7 +79,7 @@ const workspaceWithBookmarksSchema = z.object({
   bookmarks: z.array(bookmarkPreviewSchema),
 });
 
-export type Bookmark = z.infer<typeof bookmarkSchema>;
+export type Bookmark = typeof bookmarks.$inferSelect;
 export type BookmarkCreateInput = z.infer<typeof bookmarkCreateSchema>;
 export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
 export type BookmarkRestoreInput = z.infer<typeof bookmarkRestoreSchema>;

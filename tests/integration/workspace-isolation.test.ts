@@ -75,8 +75,8 @@ describe.skipIf(!HAS_DB)(
           .delete(bookmarks)
           .where(
             and(
-              inArray(bookmarks.workspaceId, createdIds),
-              eq(bookmarks.userId, AGENT_USER),
+              inArray(bookmarks.workspace_id, createdIds),
+              eq(bookmarks.user_id, AGENT_USER),
             ),
           );
         await db.delete(workspaces).where(inArray(workspaces.id, createdIds));

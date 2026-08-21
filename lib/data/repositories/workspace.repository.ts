@@ -40,20 +40,20 @@ function toWorkspace(row: WorkspaceRow): Workspace {
 function toBookmark(row: BookmarkRow): Bookmark {
   return {
     id: row.id,
-    user_id: row.userId,
-    workspace_id: row.workspaceId,
+    user_id: row.user_id,
+    workspace_id: row.workspace_id,
     url: row.url,
     title: row.title ?? "",
-    favicon_url: row.faviconUrl,
-    og_image_url: row.ogImageUrl,
-    is_public: row.isPublic ?? false,
-    is_broken: row.isBroken ?? false,
-    broken_status: row.brokenStatus ?? "alive",
-    http_status: row.httpStatus,
-    last_checked_at: row.lastCheckedAt?.toISOString() ?? null,
-    created_at: row.createdAt.toISOString(),
-    updated_at: row.updatedAt?.toISOString() ?? null,
-    deleted_at: row.deletedAt?.toISOString() ?? null,
+    favicon_url: row.favicon_url,
+    og_image_url: row.og_image_url,
+    is_public: row.is_public ?? false,
+    is_broken: row.is_broken ?? false,
+    broken_status: row.broken_status ?? "alive",
+    http_status: row.http_status,
+    last_checked_at: row.last_checked_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    deleted_at: row.deleted_at,
     note: row.note,
   };
 }
@@ -82,13 +82,13 @@ export async function getWorkspaces(
         .where(and(eq(workspaces.userId, userId), isNull(workspaces.deletedAt)))
         .orderBy(asc(workspaces.createdAt)),
       db
-        .select({ workspaceId: bookmarks.workspaceId })
+        .select({ workspaceId: bookmarks.workspace_id })
         .from(bookmarks)
         .where(
           and(
-            eq(bookmarks.userId, userId),
-            isNull(bookmarks.deletedAt),
-            isNotNull(bookmarks.workspaceId),
+            eq(bookmarks.user_id, userId),
+            isNull(bookmarks.deleted_at),
+            isNotNull(bookmarks.workspace_id),
           ),
         ),
     ]);
@@ -174,9 +174,9 @@ export async function getTrashedWorkspaces(
         .select()
         .from(bookmarks)
         .where(
-          and(eq(bookmarks.userId, userId), isNotNull(bookmarks.deletedAt)),
+          and(eq(bookmarks.user_id, userId), isNotNull(bookmarks.deleted_at)),
         )
-        .orderBy(desc(bookmarks.deletedAt)),
+        .orderBy(desc(bookmarks.deleted_at)),
     ]);
 
     const trashedWorkspaceIds = new Set(wsRows.map((ws) => ws.id));
@@ -219,7 +219,9 @@ export async function permanentDeleteWorkspace(
     // Hard-delete bookmarks first (avoids CASCADE issues with tracking)
     await db
       .delete(bookmarks)
-      .where(and(eq(bookmarks.workspaceId, id), eq(bookmarks.userId, userId)));
+      .where(
+        and(eq(bookmarks.workspace_id, id), eq(bookmarks.user_id, userId)),
+      );
 
     await db
       .delete(workspaces)

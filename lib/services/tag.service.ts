@@ -26,7 +26,7 @@ export async function resolveAndReplaceBookmarkTags(
     const [bookmark] = await db
       .select({ id: bookmarks.id })
       .from(bookmarks)
-      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.userId, userId)));
+      .where(and(eq(bookmarks.id, bookmarkId), eq(bookmarks.user_id, userId)));
     if (!bookmark) return { success: false, error: "Bookmark not found" };
 
     const resolvedTags: Tag[] = [];
@@ -55,13 +55,13 @@ export async function resolveAndReplaceBookmarkTags(
 
     await db
       .delete(bookmarkTags)
-      .where(eq(bookmarkTags.bookmarkId, bookmarkId));
+      .where(eq(bookmarkTags.bookmark_id, bookmarkId));
 
     if (resolvedTags.length > 0) {
       await db.insert(bookmarkTags).values(
         resolvedTags.map((tag) => ({
-          bookmarkId,
-          tagId: tag.id,
+          bookmark_id: bookmarkId,
+          tag_id: tag.id,
         })),
       );
     }

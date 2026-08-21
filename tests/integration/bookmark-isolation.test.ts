@@ -70,11 +70,14 @@ describe.skipIf(!HAS_DB)(
         .select({
           id: bookmarks.id,
           title: bookmarks.title,
-          workspaceId: bookmarks.workspaceId,
+          workspaceId: bookmarks.workspace_id,
         })
         .from(bookmarks)
         .where(
-          and(eq(bookmarks.userId, FOREIGN_USER), isNull(bookmarks.deletedAt)),
+          and(
+            eq(bookmarks.user_id, FOREIGN_USER),
+            isNull(bookmarks.deleted_at),
+          ),
         )
         .limit(1);
       if (!foreignBookmark)
@@ -108,7 +111,7 @@ describe.skipIf(!HAS_DB)(
         .delete(bookmarks)
         .where(
           and(
-            eq(bookmarks.userId, AGENT_USER),
+            eq(bookmarks.user_id, AGENT_USER),
             like(bookmarks.url, `${PREFIX}%`),
           ),
         );
@@ -163,7 +166,7 @@ describe.skipIf(!HAS_DB)(
         expect(result.success).toBe(true);
 
         const [row] = await getDb()
-          .select({ deletedAt: bookmarks.deletedAt })
+          .select({ deletedAt: bookmarks.deleted_at })
           .from(bookmarks)
           .where(eq(bookmarks.id, foreignBookmarkId));
         expect(row?.deletedAt ?? null).toBeNull();
@@ -192,7 +195,7 @@ describe.skipIf(!HAS_DB)(
         expect(result.error).toBe("No bookmarks found to move");
 
         const [row] = await getDb()
-          .select({ workspaceId: bookmarks.workspaceId })
+          .select({ workspaceId: bookmarks.workspace_id })
           .from(bookmarks)
           .where(eq(bookmarks.id, foreignBookmarkId));
         expect(row?.workspaceId).toBe(foreignWorkspaceId);
@@ -231,7 +234,7 @@ describe.skipIf(!HAS_DB)(
         const beforeLinks = await getDb()
           .select()
           .from(bookmarkTags)
-          .where(eq(bookmarkTags.bookmarkId, foreignBookmarkId));
+          .where(eq(bookmarkTags.bookmark_id, foreignBookmarkId));
 
         const result = await updateBookmarkFields(getDb(), AGENT_USER, {
           id: foreignBookmarkId,
@@ -252,7 +255,7 @@ describe.skipIf(!HAS_DB)(
         const afterLinks = await getDb()
           .select()
           .from(bookmarkTags)
-          .where(eq(bookmarkTags.bookmarkId, foreignBookmarkId));
+          .where(eq(bookmarkTags.bookmark_id, foreignBookmarkId));
         expect(afterLinks).toEqual(beforeLinks);
       });
 
@@ -375,7 +378,7 @@ describe.skipIf(!HAS_DB)(
           .select({
             title: bookmarks.title,
             note: bookmarks.note,
-            workspaceId: bookmarks.workspaceId,
+            workspaceId: bookmarks.workspace_id,
           })
           .from(bookmarks)
           .where(eq(bookmarks.id, id));
@@ -391,7 +394,7 @@ describe.skipIf(!HAS_DB)(
           data: { movedCount: 1, skippedCount: 0 },
         });
         const [afterMove] = await db
-          .select({ workspaceId: bookmarks.workspaceId })
+          .select({ workspaceId: bookmarks.workspace_id })
           .from(bookmarks)
           .where(eq(bookmarks.id, id));
         expect(afterMove?.workspaceId).toBe(agentOtherWsId);

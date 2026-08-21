@@ -53,7 +53,7 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
     const [foreignBookmark] = await db
       .select({ id: bookmarks.id })
       .from(bookmarks)
-      .where(eq(bookmarks.userId, FOREIGN_USER))
+      .where(eq(bookmarks.user_id, FOREIGN_USER))
       .limit(1);
     if (!foreignBookmark)
       throw new Error("Seed data missing: foreign user has no bookmarks");
@@ -62,7 +62,7 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
     const [agentBookmark] = await db
       .select({ id: bookmarks.id })
       .from(bookmarks)
-      .where(eq(bookmarks.userId, AGENT_USER))
+      .where(eq(bookmarks.user_id, AGENT_USER))
       .limit(1);
     if (!agentBookmark)
       throw new Error("Seed data missing: agent user has no bookmarks");
@@ -177,7 +177,7 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
 
       await db
         .insert(bookmarkTags)
-        .values({ bookmarkId: agentBookmarkId, tagId });
+        .values({ bookmark_id: agentBookmarkId, tag_id: tagId });
 
       const read = await getBookmarkTags(db, AGENT_USER, {
         bookmarkId: agentBookmarkId,
@@ -199,8 +199,8 @@ describe.skipIf(!HAS_DB)("tag repository — Drizzle isolation suite", () => {
         .delete(bookmarkTags)
         .where(
           and(
-            eq(bookmarkTags.bookmarkId, agentBookmarkId),
-            eq(bookmarkTags.tagId, tagId),
+            eq(bookmarkTags.bookmark_id, agentBookmarkId),
+            eq(bookmarkTags.tag_id, tagId),
           ),
         );
 

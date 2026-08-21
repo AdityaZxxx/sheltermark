@@ -67,9 +67,9 @@ export async function getWorkspaceTagsWithCount(
       .from(bookmarks)
       .where(
         and(
-          eq(bookmarks.workspaceId, workspaceId),
-          eq(bookmarks.userId, userId),
-          isNull(bookmarks.deletedAt),
+          eq(bookmarks.workspace_id, workspaceId),
+          eq(bookmarks.user_id, userId),
+          isNull(bookmarks.deleted_at),
         ),
       );
     const bookmarkIds = rows.map((b) => b.id);
@@ -79,14 +79,14 @@ export async function getWorkspaceTagsWithCount(
 
     const links = await db
       .select({
-        tagId: bookmarkTags.tagId,
+        tagId: bookmarkTags.tag_id,
         tag: tags,
       })
       .from(bookmarkTags)
-      .innerJoin(tags, eq(tags.id, bookmarkTags.tagId))
+      .innerJoin(tags, eq(tags.id, bookmarkTags.tag_id))
       .where(
         and(
-          inArray(bookmarkTags.bookmarkId, bookmarkIds),
+          inArray(bookmarkTags.bookmark_id, bookmarkIds),
           eq(tags.userId, userId),
         ),
       );
@@ -121,10 +121,10 @@ export async function getTagsWithCount(
         id: tags.id,
         name: tags.name,
         createdAt: tags.createdAt,
-        count: count(bookmarkTags.tagId),
+        count: count(bookmarkTags.tag_id),
       })
       .from(tags)
-      .leftJoin(bookmarkTags, eq(bookmarkTags.tagId, tags.id))
+      .leftJoin(bookmarkTags, eq(bookmarkTags.tag_id, tags.id))
       .where(eq(tags.userId, userId))
       .groupBy(tags.id)
       .orderBy(tags.name);
@@ -156,10 +156,10 @@ export async function getBookmarkTags(
     const rows = await db
       .select({ tag: tags })
       .from(bookmarkTags)
-      .innerJoin(tags, eq(tags.id, bookmarkTags.tagId))
+      .innerJoin(tags, eq(tags.id, bookmarkTags.tag_id))
       .where(
         and(
-          eq(bookmarkTags.bookmarkId, validated.data.bookmarkId),
+          eq(bookmarkTags.bookmark_id, validated.data.bookmarkId),
           // Tag ownership is enforced here (RLS "view bookmark_tags" allowed
           // any link row whose bookmark belonged to the user; tags join
           // filtered by the same policy).

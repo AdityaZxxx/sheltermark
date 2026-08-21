@@ -33,9 +33,9 @@ export async function restoreBookmarks(
 
   if (resolvedWorkspaceId === undefined) {
     const rows = await db
-      .select({ id: bookmarks.id, workspaceId: bookmarks.workspaceId })
+      .select({ id: bookmarks.id, workspaceId: bookmarks.workspace_id })
       .from(bookmarks)
-      .where(and(inArray(bookmarks.id, ids), eq(bookmarks.userId, userId)));
+      .where(and(inArray(bookmarks.id, ids), eq(bookmarks.user_id, userId)));
 
     const wsIds = [
       ...new Set(
@@ -67,10 +67,10 @@ export async function restoreBookmarks(
     .select({
       id: bookmarks.id,
       url: bookmarks.url,
-      workspaceId: bookmarks.workspaceId,
+      workspaceId: bookmarks.workspace_id,
     })
     .from(bookmarks)
-    .where(and(inArray(bookmarks.id, ids), eq(bookmarks.userId, userId)));
+    .where(and(inArray(bookmarks.id, ids), eq(bookmarks.user_id, userId)));
 
   if (toRestore.length === 0) {
     return { success: false, error: "No bookmarks found to restore" };
@@ -97,9 +97,9 @@ export async function restoreBookmarks(
         .from(bookmarks)
         .where(
           and(
-            eq(bookmarks.userId, userId),
-            isNull(bookmarks.deletedAt),
-            eq(bookmarks.workspaceId, wsKey),
+            eq(bookmarks.user_id, userId),
+            isNull(bookmarks.deleted_at),
+            eq(bookmarks.workspace_id, wsKey),
             inArray(bookmarks.url, urls),
           ),
         );
@@ -115,9 +115,9 @@ export async function restoreBookmarks(
         .from(bookmarks)
         .where(
           and(
-            eq(bookmarks.userId, userId),
-            isNull(bookmarks.deletedAt),
-            isNull(bookmarks.workspaceId),
+            eq(bookmarks.user_id, userId),
+            isNull(bookmarks.deleted_at),
+            isNull(bookmarks.workspace_id),
             inArray(bookmarks.url, urls),
           ),
         );
@@ -136,11 +136,11 @@ export async function restoreBookmarks(
 
   if (toRestoreIds.length > 0) {
     const patch: Partial<typeof bookmarks.$inferInsert> = {
-      deletedAt: null,
-      updatedAt: now,
+      deleted_at: null,
+      updated_at: now.toISOString(),
     };
     if (resolvedWorkspaceId !== undefined) {
-      patch.workspaceId = resolvedWorkspaceId;
+      patch.workspace_id = resolvedWorkspaceId;
     }
 
     try {
@@ -150,7 +150,7 @@ export async function restoreBookmarks(
         .where(
           and(
             inArray(bookmarks.id, toRestoreIds),
-            eq(bookmarks.userId, userId),
+            eq(bookmarks.user_id, userId),
           ),
         );
     } catch (cause) {
@@ -194,9 +194,9 @@ export async function restoreWorkspace(
     .from(bookmarks)
     .where(
       and(
-        eq(bookmarks.workspaceId, id),
-        eq(bookmarks.userId, userId),
-        isNotNull(bookmarks.deletedAt),
+        eq(bookmarks.workspace_id, id),
+        eq(bookmarks.user_id, userId),
+        isNotNull(bookmarks.deleted_at),
       ),
     );
 
@@ -211,9 +211,9 @@ export async function restoreWorkspace(
     .from(bookmarks)
     .where(
       and(
-        eq(bookmarks.userId, userId),
-        eq(bookmarks.workspaceId, id),
-        isNull(bookmarks.deletedAt),
+        eq(bookmarks.user_id, userId),
+        eq(bookmarks.workspace_id, id),
+        isNull(bookmarks.deleted_at),
         inArray(bookmarks.url, urls),
       ),
     );
@@ -235,11 +235,11 @@ export async function restoreWorkspace(
     try {
       await db
         .update(bookmarks)
-        .set({ deletedAt: null, updatedAt: now })
+        .set({ deleted_at: null, updated_at: now.toISOString() })
         .where(
           and(
             inArray(bookmarks.id, toRestoreIds),
-            eq(bookmarks.userId, userId),
+            eq(bookmarks.user_id, userId),
           ),
         );
     } catch (cause) {

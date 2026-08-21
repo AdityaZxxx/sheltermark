@@ -270,23 +270,23 @@ export async function getPublicProfile(
       bookmarkRows = await db
         .select()
         .from(bookmarks)
-        .where(inArray(bookmarks.workspaceId, workspaceIds));
+        .where(inArray(bookmarks.workspace_id, workspaceIds));
     }
 
     const bookmarksByWorkspace = new Map<string, BookmarkPreview[]>();
     for (const bm of bookmarkRows) {
-      if (!bm.workspaceId) continue;
-      const list = bookmarksByWorkspace.get(bm.workspaceId) ?? [];
+      if (!bm.workspace_id) continue;
+      const list = bookmarksByWorkspace.get(bm.workspace_id) ?? [];
       list.push({
         id: bm.id,
         url: bm.url,
         title: bm.title,
-        favicon_url: bm.faviconUrl,
-        og_image_url: bm.ogImageUrl,
-        created_at: bm.createdAt.toISOString(),
-        updated_at: bm.updatedAt?.toISOString() ?? null,
+        favicon_url: bm.favicon_url,
+        og_image_url: bm.og_image_url,
+        created_at: bm.created_at,
+        updated_at: bm.updated_at,
       });
-      bookmarksByWorkspace.set(bm.workspaceId, list);
+      bookmarksByWorkspace.set(bm.workspace_id, list);
     }
 
     const workspacesWithBookmarks: WorkspaceWithBookmarks[] = workspaceRows.map(
