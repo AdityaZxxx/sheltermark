@@ -103,6 +103,7 @@ export const workspaces = pgTable(
       .default(sql`timezone('utc'::text, now())`),
     updated_at: isoTimestamptz(),
     auto_check_broken: boolean().default(true),
+    last_used_at: isoTimestamptz(),
     deleted_at: isoTimestamptz(),
   },
   (table) => [
@@ -112,6 +113,10 @@ export const workspaces = pgTable(
       .where(sql`(is_default = true)`),
     index("idx_workspaces_user_default").on(table.user_id, table.is_default),
     index("idx_workspaces_user_public").on(table.user_id, table.is_public),
+    index("idx_workspaces_user_last_used").on(
+      table.user_id,
+      table.last_used_at.desc(),
+    ),
     index("idx_workspaces_deleted_at")
       .on(table.deleted_at)
       .where(sql`(deleted_at IS NOT NULL)`),

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
@@ -33,6 +33,7 @@ function toWorkspace(row: WorkspaceRow): Workspace {
     auto_check_broken: row.auto_check_broken ?? true,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    last_used_at: row.last_used_at,
     deleted_at: row.deleted_at,
   };
 }
@@ -82,7 +83,11 @@ export async function getWorkspaces(
         .where(
           and(eq(workspaces.user_id, userId), isNull(workspaces.deleted_at)),
         )
-        .orderBy(asc(workspaces.created_at)),
+        .orderBy(
+          desc(workspaces.is_default),
+          sql`${workspaces.last_used_at} desc nulls last`,
+          asc(workspaces.created_at),
+        ),
       db
         .select({ workspaceId: bookmarks.workspace_id })
         .from(bookmarks)
@@ -354,6 +359,22 @@ export async function renameWorkspace(
           eq(workspaces.user_id, userId),
         ),
       );
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError(cause);
+  }
+}
+
+export async function touchWorkspaceLastUsed(
+  db: DrizzleDb,
+  userId: string,
+  id: string,
+): Promise<ActionResult<null>> {
+  try {
+    await db
+      .update(workspaces)
+      .set({ last_used_at: sql`now()` })
+      .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
     return dbError(cause);

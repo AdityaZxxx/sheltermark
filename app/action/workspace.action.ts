@@ -13,6 +13,7 @@ import {
   setDefaultWorkspace as setDefaultWorkspaceRepo,
   toggleAutoCheckBroken as toggleAutoCheckBrokenRepo,
   togglePublicStatus as togglePublicStatusRepo,
+  touchWorkspaceLastUsed as touchWorkspaceLastUsedRepo,
 } from "~/lib/data/repositories/workspace.repository";
 
 async function auth() {
@@ -68,4 +69,11 @@ export async function renameWorkspace(
 ): Promise<ActionResult<null>> {
   const { user, db } = await auth();
   return renameWorkspaceRepo(db, user.id, id, name);
+}
+
+export async function touchWorkspaceLastUsed(
+  id: string,
+): Promise<ActionResult<null>> {
+  const { user, db } = await auth();
+  return touchWorkspaceLastUsedRepo(db, user.id, id);
 }

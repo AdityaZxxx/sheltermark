@@ -13,6 +13,7 @@ import {
   useSetDefaultWorkspace,
   useToggleAutoCheckWorkspace,
   useTogglePublicWorkspace,
+  useTouchWorkspaceLastUsed,
 } from "~/lib/mutations/workspace.mutations";
 import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
 
@@ -42,11 +43,14 @@ export function useWorkspaces() {
     );
   }, [workspaces, routeWorkspaceId]);
 
+  const touch = useTouchWorkspaceLastUsed(userId);
+
   const setActiveWorkspace = useCallback(
     (id: string) => {
+      touch.mutate(id);
       router.push(`/workspace/${id}`);
     },
-    [router],
+    [router, touch],
   );
 
   const clearActiveWorkspace = useCallback(() => {
