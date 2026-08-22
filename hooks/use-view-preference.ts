@@ -2,7 +2,7 @@
 
 import type { z } from "zod";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { bookmarkViewVariantSchema } from "~/lib/schemas/common";
 
@@ -30,10 +30,11 @@ export function useViewPreference() {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- hydration-safe localStorage read: initializing state from storage during render would mismatch the SSR default
     setViewRaw(getStored());
   }, []);
 
-  const setView = useCallback((newView: BookmarkViewVariant) => {
+  const setView = (newView: BookmarkViewVariant) => {
     startTransition(() => {
       setViewRaw(newView);
     });
@@ -42,7 +43,7 @@ export function useViewPreference() {
     } catch {
       /* localStorage may be blocked */
     }
-  }, []);
+  };
 
   return { view, setView };
 }

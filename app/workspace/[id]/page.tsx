@@ -15,18 +15,20 @@ interface WorkspacePageProps {
 
 export default async function WorkspacePage({ params }: WorkspacePageProps) {
   const { id } = await params;
-  const { user } = await requireAuth();
 
   const queryClient = makeQueryClient();
 
-  await queryClient.prefetchQuery({
-    queryKey: tagKeys.byWorkspace(id),
-    queryFn: async () => {
-      const result = await getWorkspaceTagsWithCount(id);
-      if (!result.success) throw new Error(result.error);
-      return result.data;
-    },
-  });
+  const [{ user }] = await Promise.all([
+    requireAuth(),
+    queryClient.prefetchQuery({
+      queryKey: tagKeys.byWorkspace(id),
+      queryFn: async () => {
+        const result = await getWorkspaceTagsWithCount(id);
+        if (!result.success) throw new Error(result.error);
+        return result.data;
+      },
+    }),
+  ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

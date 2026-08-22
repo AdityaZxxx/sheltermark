@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { ImportFileType, ParsedBookmark } from "~/lib/import/parsers";
@@ -32,17 +32,6 @@ export interface ImportResult {
   workspaceId?: string | null;
 }
 
-interface ImportOptions {
-  targetWorkspaceId: string | null;
-  createWorkspace: boolean;
-  newWorkspaceName?: string;
-  duplicateStrategy?: "skip" | "replace";
-}
-
-/**
- * Collect every distinct folder path that appears in the bookmarks,
- * including the empty path for top-level bookmarks.
- */
 function collectAllFolderPaths(bookmarks: ParsedBookmark[]): Set<string> {
   const paths = new Set<string>();
   for (const bm of bookmarks) {
@@ -54,16 +43,11 @@ function collectAllFolderPaths(bookmarks: ParsedBookmark[]): Set<string> {
   return paths;
 }
 
-/**
- * Derive a folder tree from a list of bookmarks that carry `folderPath`.
- * Returns folders in DFS order so the UI can render a stable list.
- */
 function buildFolderTree(bookmarks: ParsedBookmark[]): FolderNode[] {
   const folderMap = new Map<string, FolderNode>();
 
   for (const bm of bookmarks) {
     const path = bm.folderPath ?? [];
-    // Walk every ancestor folder so each gets a totalCount increment.
     for (let depth = 0; depth <= path.length; depth++) {
       const ancestor = path.slice(0, depth);
       const key = pathKey(ancestor);
@@ -83,11 +67,71 @@ function buildFolderTree(bookmarks: ParsedBookmark[]): FolderNode[] {
     }
   }
 
-  // Sort by path length then alphabetically for stable UI ordering.
   return Array.from(folderMap.values()).toSorted((a, b) => {
     if (a.path.length !== b.path.length) return a.path.length - b.path.length;
     return a.path.join("/").localeCompare(b.path.join("/"));
   });
+}
+
+function getImportOptions(_workspaceId: string | "new", workspaceName: string) {
+  return {
+    targetWorkspaceId: _workspaceId !== "new" ? _workspaceId : null,
+    createWorkspace: _workspaceId === "new",
+    newWorkspaceName: _workspaceId === "new" ? workspaceName : undefined,
+  };
+}
+
+type ParsedFileResult =
+  | {
+      ok: true;
+      format: ImportFileType;
+      bookmarks: ParsedBookmark[];
+      preview: PreviewData;
+    }
+  | { ok: false };
+
+async function selectAndParseFile(
+  selectedFile: File,
+  targetWorkspaceId: string | "new",
+  newWorkspaceName: string,
+): Promise<ParsedFileResult> {
+  try {
+    const content = await selectedFile.text();
+
+    const format = detectFormat(content);
+    if (format === "unknown") {
+      toast.error(
+        "Unsupported file format. Sheltermark supports browser bookmarks (HTML), Sheltermark JSON, and Sheltermark CSV.",
+      );
+      return { ok: false };
+    }
+
+    const previewResult = await previewImport(
+      content,
+      format,
+      getImportOptions(targetWorkspaceId, newWorkspaceName),
+    );
+    if (!previewResult.success) {
+      toast.error(previewResult.error);
+      return { ok: false };
+    }
+
+    const localParse = parseImportFile(content, format);
+    if (!localParse.success) {
+      toast.error(localParse.error);
+      return { ok: false };
+    }
+
+    return {
+      ok: true,
+      format,
+      bookmarks: localParse.bookmarks,
+      preview: previewResult.data,
+    };
+  } catch {
+    toast.error("Failed to parse file");
+    return { ok: false };
+  }
 }
 
 interface UseImportDialogReturn {
@@ -108,7 +152,7 @@ interface UseImportDialogReturn {
   parsedBookmarks: ParsedBookmark[];
   /** Folder tree for browser imports; empty for JSON/CSV. */
   folderTree: FolderNode[];
-  /** Set of currently-selected folder path keys. */
+  /** Set of currently-selection folder path keys. */
   selectedFolders: Set<string>;
   /** Number of bookmarks remaining after folder selection. */
   selectedCount: number;
@@ -126,7 +170,6 @@ interface UseImportDialogReturn {
 export function useImportDialog(): UseImportDialogReturn {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [step, setStep] = useState<ImportStep>("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -148,42 +191,23 @@ export function useImportDialog(): UseImportDialogReturn {
   const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [parsedBookmarks, setParsedBookmarks] = useState<ParsedBookmark[]>([]);
-  // Selected folder path keys. Initialized on parse-success to all folder
-  // paths so the default UX is "everything selected" (ADR-0005).
   const [selectedFolders, setSelectedFolders] = useState<Set<string>>(
     new Set(),
   );
 
   const isNewWorkspace = targetWorkspaceId === "new";
 
-  const folderTree = useMemo(() => {
-    if (fileType !== "netscape") return [];
-    return buildFolderTree(parsedBookmarks);
-  }, [parsedBookmarks, fileType]);
+  const folderTree =
+    fileType !== "netscape" ? [] : buildFolderTree(parsedBookmarks);
 
-  /**
-   * Bookmarks remaining after folder filtering. For Netscape imports,
-   * a bookmark survives iff every ancestor folder (and its own folder)
-   * is in `selectedFolders`. Top-level bookmarks survive iff the empty
-   * path key is selected.
-   */
-  const selectedCount = useMemo(() => {
-    if (fileType !== "netscape") return parsedBookmarks.length;
-    return parsedBookmarks.filter((bm) =>
-      bookmarkSurvivesFilter(bm.folderPath, selectedFolders),
-    ).length;
-  }, [parsedBookmarks, selectedFolders, fileType]);
+  const selectedCount =
+    fileType !== "netscape"
+      ? parsedBookmarks.length
+      : parsedBookmarks.filter((bm) =>
+          bookmarkSurvivesFilter(bm.folderPath, selectedFolders),
+        ).length;
 
-  const getImportOptions = useCallback(
-    (_workspaceId: string | "new", workspaceName: string): ImportOptions => ({
-      targetWorkspaceId: _workspaceId !== "new" ? _workspaceId : null,
-      createWorkspace: _workspaceId === "new",
-      newWorkspaceName: _workspaceId === "new" ? workspaceName : undefined,
-    }),
-    [],
-  );
-
-  const resetState = useCallback(() => {
+  const resetState = () => {
     setStep("upload");
     setFile(null);
     setFileType(null);
@@ -198,26 +222,27 @@ export function useImportDialog(): UseImportDialogReturn {
     setIsParsing(false);
     setParsedBookmarks([]);
     setSelectedFolders(new Set());
-  }, []);
+  };
 
-  const refreshPreview = useCallback(async () => {
+  // Debounced preview refresh: re-runs when any input to the preview changes.
+  useEffect(() => {
     if (!file || step !== "preview" || !fileType) return;
 
-    setIsCheckingDuplicates(true);
-    const content = await file.text();
-    const previewResult = await previewImport(content, fileType, {
-      ...getImportOptions(targetWorkspaceId, newWorkspaceName),
-      // For Netscape, always send folder paths so the preview reflects
-      // the user's current selection (even when the entire file is deselected,
-      // we send an explicit empty-ish selection so the server returns 0).
-      folderPaths:
-        fileType === "netscape" ? Array.from(selectedFolders) : undefined,
-    });
+    const timer = setTimeout(async () => {
+      setIsCheckingDuplicates(true);
+      const content = await file.text();
+      const previewResult = await previewImport(content, fileType, {
+        ...getImportOptions(targetWorkspaceId, newWorkspaceName),
+        folderPaths:
+          fileType === "netscape" ? Array.from(selectedFolders) : undefined,
+      });
 
-    if (previewResult.success) {
-      setPreview(previewResult.data);
-    }
-    setIsCheckingDuplicates(false);
+      if (previewResult.success) {
+        setPreview(previewResult.data);
+      }
+      setIsCheckingDuplicates(false);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [
     file,
     step,
@@ -225,66 +250,31 @@ export function useImportDialog(): UseImportDialogReturn {
     targetWorkspaceId,
     newWorkspaceName,
     selectedFolders,
-    getImportOptions,
   ]);
 
-  const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedFile = e.target.files?.[0];
-      if (!selectedFile) return;
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
 
-      setIsParsing(true);
-      try {
-        const content = await selectedFile.text();
+    setIsParsing(true);
+    const parsed = await selectAndParseFile(
+      selectedFile,
+      targetWorkspaceId,
+      newWorkspaceName,
+    );
+    if (parsed.ok) {
+      setFile(selectedFile);
+      setFileType(parsed.format);
+      setDetectedFormat(parsed.format);
+      setPreview(parsed.preview);
+      setParsedBookmarks(parsed.bookmarks);
+      setSelectedFolders(collectAllFolderPaths(parsed.bookmarks));
+      setStep("preview");
+    }
+    setIsParsing(false);
+  };
 
-        const format = detectFormat(content);
-        if (format === "unknown") {
-          toast.error(
-            "Unsupported file format. Sheltermark supports browser bookmarks (HTML), Sheltermark JSON, and Sheltermark CSV.",
-          );
-          setIsParsing(false);
-          return;
-        }
-
-        const previewResult = await previewImport(
-          content,
-          format,
-          getImportOptions(targetWorkspaceId, newWorkspaceName),
-        );
-
-        if (!previewResult.success) {
-          toast.error(previewResult.error);
-          setIsParsing(false);
-          return;
-        }
-
-        const localParse = parseImportFile(content, format);
-        if (!localParse.success) {
-          toast.error(localParse.error);
-          setIsParsing(false);
-          return;
-        }
-
-        setFile(selectedFile);
-        setFileType(format);
-        setDetectedFormat(format);
-        setPreview(previewResult.data);
-        setParsedBookmarks(localParse.bookmarks);
-
-        // Default: select every folder (ADR-0005).
-        setSelectedFolders(collectAllFolderPaths(localParse.bookmarks));
-
-        setStep("preview");
-      } catch {
-        toast.error("Failed to parse file");
-      } finally {
-        setIsParsing(false);
-      }
-    },
-    [targetWorkspaceId, newWorkspaceName, getImportOptions],
-  );
-
-  const handleImport = useCallback(async () => {
+  const handleImport = async () => {
     if (!file || !fileType) return;
 
     if (fileType === "netscape" && selectedCount === 0) {
@@ -334,104 +324,68 @@ export function useImportDialog(): UseImportDialogReturn {
     } catch {
       toast.error("Import failed");
     }
-  }, [
-    file,
-    fileType,
-    targetWorkspaceId,
-    duplicateStrategy,
-    newWorkspaceName,
-    selectedCount,
-    selectedFolders,
-    queryClient,
-  ]);
+  };
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     resetState();
-  }, [resetState]);
+  };
 
-  const goBack = useCallback(() => {
+  const goBack = () => {
     setStep("upload");
     setFile(null);
     setPreview(null);
     setParsedBookmarks([]);
     setSelectedFolders(new Set());
-  }, []);
+  };
 
-  /**
-   * Toggle selection of a folder and all its descendants. If every
-   * bookmark in the subtree currently survives the filter, the toggle
-   * deselects; otherwise it selects.
-   *
-   * For the top-level "select all" toggle (path = []), if everything is
-   * currently selected we clear all; otherwise we select all.
-   */
-  const toggleFolder = useCallback(
-    (path: string[]) => {
-      if (path.length === 0) {
-        const allSelected = selectedCount === parsedBookmarks.length;
-        if (allSelected) {
-          setSelectedFolders(new Set());
-        } else {
-          setSelectedFolders(collectAllFolderPaths(parsedBookmarks));
+  const toggleFolder = (path: string[]) => {
+    if (path.length === 0) {
+      const allSelected = selectedCount === parsedBookmarks.length;
+      if (allSelected) {
+        setSelectedFolders(new Set());
+      } else {
+        setSelectedFolders(collectAllFolderPaths(parsedBookmarks));
+      }
+      return;
+    }
+
+    const subtree = parsedBookmarks.filter((bm) => {
+      const bp = bm.folderPath ?? [];
+      if (bp.length < path.length) return false;
+      for (let i = 0; i < path.length; i++) {
+        if (bp[i] !== path[i]) return false;
+      }
+      return true;
+    });
+
+    const subtreeFullySelected = subtree.every((bm) =>
+      bookmarkSurvivesFilter(bm.folderPath, selectedFolders),
+    );
+
+    setSelectedFolders((prev) => {
+      const next = new Set(prev);
+
+      if (subtreeFullySelected) {
+        for (const bm of subtree) {
+          const bp = bm.folderPath ?? [];
+          for (let depth = path.length - 1; depth < bp.length; depth++) {
+            next.delete(pathKey(bp.slice(0, depth + 1)));
+          }
         }
-        return;
+        next.delete(pathKey(path));
+      } else {
+        next.add(pathKey(path));
+        for (const bm of subtree) {
+          const bp = bm.folderPath ?? [];
+          for (let depth = path.length - 1; depth < bp.length; depth++) {
+            next.add(pathKey(bp.slice(0, depth + 1)));
+          }
+        }
       }
 
-      // Determine whether every bookmark in this subtree survives the
-      // current filter (i.e. is fully selected).
-      const subtree = parsedBookmarks.filter((bm) => {
-        const bp = bm.folderPath ?? [];
-        if (bp.length < path.length) return false;
-        for (let i = 0; i < path.length; i++) {
-          if (bp[i] !== path[i]) return false;
-        }
-        return true;
-      });
-
-      const subtreeFullySelected = subtree.every((bm) =>
-        bookmarkSurvivesFilter(bm.folderPath, selectedFolders),
-      );
-
-      setSelectedFolders((prev) => {
-        const next = new Set(prev);
-
-        if (subtreeFullySelected) {
-          // Deselect this folder and all descendants.
-          for (const bm of subtree) {
-            const bp = bm.folderPath ?? [];
-            for (let depth = path.length - 1; depth < bp.length; depth++) {
-              next.delete(pathKey(bp.slice(0, depth + 1)));
-            }
-          }
-          next.delete(pathKey(path));
-        } else {
-          // Select this folder and all descendants.
-          next.add(pathKey(path));
-          for (const bm of subtree) {
-            const bp = bm.folderPath ?? [];
-            for (let depth = path.length - 1; depth < bp.length; depth++) {
-              next.add(pathKey(bp.slice(0, depth + 1)));
-            }
-          }
-        }
-
-        return next;
-      });
-    },
-    [parsedBookmarks, selectedFolders, selectedCount],
-  );
-
-  const debouncedRefreshPreview = useCallback(() => {
-    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
-    previewTimerRef.current = setTimeout(() => refreshPreview(), 300);
-  }, [refreshPreview]);
-
-  useEffect(() => {
-    debouncedRefreshPreview();
-    return () => {
-      if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
-    };
-  }, [debouncedRefreshPreview]);
+      return next;
+    });
+  };
 
   return {
     step,

@@ -2,7 +2,6 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
 
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
@@ -30,41 +29,33 @@ export function useWorkspaces() {
     workspacesQueryOptions(userId),
   );
 
-  const routeWorkspaceId = useMemo(() => {
-    const match = pathname.match(/^\/workspace\/([^/]+)$/);
-    return match ? match[1] : null;
-  }, [pathname]);
+  const routeWorkspaceId =
+    pathname.match(/^\/workspace\/([^/]+)$/)?.[1] ?? null;
 
-  const currentWorkspace = useMemo(() => {
-    if (workspaces.length === 0) return null;
-    if (!routeWorkspaceId) return null;
-    return (
-      workspaces.find((ws) => ws.id === routeWorkspaceId) ||
-      workspaces.find((ws) => ws.is_default) ||
-      workspaces[0]
-    );
-  }, [workspaces, routeWorkspaceId]);
+  const currentWorkspace =
+    workspaces.length === 0 || !routeWorkspaceId
+      ? null
+      : workspaces.find((ws) => ws.id === routeWorkspaceId) ||
+        workspaces.find((ws) => ws.is_default) ||
+        workspaces[0];
 
   const touch = useTouchWorkspaceLastUsed(userId);
 
-  const refetchWorkspaces = useCallback(() => {
+  const refetchWorkspaces = () => {
     void queryClient.refetchQueries({
       queryKey: workspaceKeys.byUser(userId),
       type: "active",
     });
-  }, [queryClient, userId]);
+  };
 
-  const setActiveWorkspace = useCallback(
-    (id: string) => {
-      touch.mutate(id);
-      router.push(`/workspace/${id}`);
-    },
-    [router, touch],
-  );
+  const setActiveWorkspace = (id: string) => {
+    touch.mutate(id);
+    router.push(`/workspace/${id}`);
+  };
 
-  const clearActiveWorkspace = useCallback(() => {
+  const clearActiveWorkspace = () => {
     router.push("/dashboard");
-  }, [router]);
+  };
 
   const create = useCreateWorkspace(userId);
   const del = useDeleteWorkspace(userId);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
@@ -13,6 +13,11 @@ import { useBookmarks } from "~/hooks/use-bookmarks";
 import { useViewPreference } from "~/hooks/use-view-preference";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
+
+function copyUrlToClipboard(url: string) {
+  navigator.clipboard.writeText(url);
+  toast.success("URL copied to clipboard");
+}
 
 interface ActiveBookmark {
   id: string;
@@ -81,7 +86,6 @@ interface BookmarkListManager {
 export function useBookmarkListManager(
   scope: { type: "workspace"; id: string } | { type: "global" },
 ): BookmarkListManager {
-  // ── Infrastructure ───────────────────────────────────────────
   const { view, setView } = useViewPreference();
   const { workspaces, currentWorkspace } = useWorkspaces();
   const {
@@ -107,27 +111,27 @@ export function useBookmarkListManager(
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
-  const toggleSelectionMode = useCallback(() => {
-    setIsSelectionMode((prev) => {
-      if (prev) setSelectedIds([]);
-      return !prev;
-    });
-  }, []);
+  const toggleSelectionMode = () => {
+    if (isSelectionMode) {
+      setSelectedIds([]);
+    }
+    setIsSelectionMode(!isSelectionMode);
+  };
 
-  const toggleSelect = useCallback((id: string) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
-  }, []);
+  };
 
-  const selectAll = useCallback((ids: string[]) => setSelectedIds(ids), []);
+  const selectAll = (ids: string[]) => setSelectedIds(ids);
 
-  const clearSelection = useCallback(() => {
+  const clearSelection = () => {
     setSelectedIds([]);
     setIsSelectionMode(false);
-  }, []);
+  };
 
-  const clearSelectionOnly = useCallback(() => setSelectedIds([]), []);
+  const clearSelectionOnly = () => setSelectedIds([]);
 
   // ── Dialog state ─────────────────────────────────────────────
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -138,169 +142,144 @@ export function useBookmarkListManager(
   const [bookmarksToMove, setBookmarksToMove] = useState<string[]>([]);
   const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
 
-  // ── Inline delete (replaces BookmarkTrash) ───────────────────
-  const executeDelete = useCallback(
-    (ids: string[]) => {
-      mutations.deleteBookmarks({ ids });
-      if (ids.length > 0) clearSelection();
-      const toastId = toast("Moved to trash", {
-        action: {
-          label: "Undo",
-          onClick: () => {
-            toast.dismiss(toastId);
-            restoreBookmarks({ ids });
-          },
+  // ── Inline delete ────────────────────────────────────────────
+  const executeDelete = (ids: string[]) => {
+    mutations.deleteBookmarks({ ids });
+    if (ids.length > 0) clearSelection();
+    const toastId = toast("Moved to trash", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          toast.dismiss(toastId);
+          restoreBookmarks({ ids });
         },
-      });
-    },
-    [mutations, restoreBookmarks, clearSelection],
-  );
+      },
+    });
+  };
 
-  const handleDeleteTrigger = useCallback(
-    (id: string) => executeDelete([id]),
-    [executeDelete],
-  );
+  const handleDeleteTrigger = (id: string) => executeDelete([id]);
 
-  const handleBulkDeleteTrigger = useCallback(
-    () => executeDelete(selectedIds),
-    [executeDelete, selectedIds],
-  );
+  const handleBulkDeleteTrigger = () => executeDelete(selectedIds);
 
   // ── Edit dialog ──────────────────────────────────────────────
-  const resetEdit = useCallback(() => {
+  const resetEdit = () => {
     setActiveBookmark(null);
     setEditDialogOpen(false);
-  }, []);
+  };
 
-  const handleEditTrigger = useCallback(
-    (id: string) => {
-      const bookmark = bookmarks.find((b) => b.id === id);
-      if (!bookmark) return;
-      const tagIds = tagsByBookmarkId.get(id) ?? [];
-      const tags = tagIds
-        .map((tagId) => allTags.find((t) => t.id === tagId))
-        .filter((t): t is Tag => t !== undefined);
-      setActiveBookmark({
-        id: bookmark.id,
-        title: bookmark.title || "",
-        note: bookmark.note ?? null,
-        tags,
-      });
-      setEditDialogOpen(true);
-    },
-    [bookmarks, tagsByBookmarkId, allTags],
-  );
+  const handleEditTrigger = (id: string) => {
+    const bookmark = bookmarks.find((b) => b.id === id);
+    if (!bookmark) return;
+    const tagIds = tagsByBookmarkId.get(id) ?? [];
+    const tags = tagIds
+      .map((tagId) => allTags.find((t) => t.id === tagId))
+      .filter((t): t is Tag => t !== undefined);
+    setActiveBookmark({
+      id: bookmark.id,
+      title: bookmark.title || "",
+      note: bookmark.note ?? null,
+      tags,
+    });
+    setEditDialogOpen(true);
+  };
 
   // ── Move dialog ──────────────────────────────────────────────
-  const handleMoveTrigger = useCallback((id: string) => {
+  const handleMoveTrigger = (id: string) => {
     setBookmarksToMove([id]);
     setMoveDialogOpen(true);
-  }, []);
+  };
 
-  const handleBulkMoveTrigger = useCallback(() => {
+  const handleBulkMoveTrigger = () => {
     setBookmarksToMove(selectedIds);
     setMoveDialogOpen(true);
-  }, [selectedIds]);
+  };
 
-  const resetMove = useCallback(() => {
+  const resetMove = () => {
     setBookmarksToMove([]);
     setMoveDialogOpen(false);
-  }, []);
+  };
 
   // ── Keyboard navigation ─────────────────────────────────────
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const getItem = useCallback(
-    (index: number) => {
-      const bookmark = bookmarks[index];
-      if (bookmark) {
-        return { id: bookmark.id, url: bookmark.url };
-      }
-      return undefined;
-    },
-    [bookmarks],
-  );
+  const getItem = (index: number) => {
+    const bookmark = bookmarks[index];
+    if (bookmark) {
+      return { id: bookmark.id, url: bookmark.url };
+    }
+    return undefined;
+  };
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (
-        document.activeElement === inputRef.current ||
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (
+      document.activeElement === inputRef.current ||
+      document.activeElement?.tagName === "INPUT" ||
+      document.activeElement?.tagName === "TEXTAREA"
+    ) {
+      return;
+    }
 
-      if (bookmarks.length === 0) return;
+    if (bookmarks.length === 0) return;
 
-      if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((prev) =>
+        prev < bookmarks.length - 1 ? prev + 1 : prev,
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+    } else if (view === "card") {
+      if (e.key === "ArrowRight") {
         e.preventDefault();
         setFocusedIndex((prev) =>
           prev < bookmarks.length - 1 ? prev + 1 : prev,
         );
-      } else if (e.key === "ArrowUp") {
+      } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      } else if (view === "card") {
-        if (e.key === "ArrowRight") {
-          e.preventDefault();
-          setFocusedIndex((prev) =>
-            prev < bookmarks.length - 1 ? prev + 1 : prev,
-          );
-        } else if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+      }
+    }
+
+    if (e.key === "Enter" && focusedIndex >= 0) {
+      const item = getItem(focusedIndex);
+      if (item) {
+        if (isSelectionMode) {
+          toggleSelect(item.id);
+        } else {
+          window.open(item.url, "_blank", "noopener,noreferrer");
         }
       }
-
-      if (e.key === "Enter" && focusedIndex >= 0) {
-        const item = getItem(focusedIndex);
-        if (item) {
-          if (isSelectionMode) {
-            toggleSelect(item.id);
-          } else {
-            window.open(item.url, "_blank");
-          }
-        }
-      }
-    },
-    [bookmarks, view, focusedIndex, isSelectionMode, toggleSelect, getItem],
-  );
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      handleKeyDown(e);
-    },
-    [handleKeyDown],
-  );
+    }
+  };
 
   // ── Global shortcuts (window-level) ──────────────────────────
   const editDialogOpenRef = useRef(editDialogOpen);
   const moveDialogOpenRef = useRef(moveDialogOpen);
   const isSelectionModeRef = useRef(isSelectionMode);
   const focusedIndexRef = useRef(focusedIndex);
-  const selectedIdsRef = useRef(selectedIds);
-
-  editDialogOpenRef.current = editDialogOpen;
-  moveDialogOpenRef.current = moveDialogOpen;
-  isSelectionModeRef.current = isSelectionMode;
-  focusedIndexRef.current = focusedIndex;
-  selectedIdsRef.current = selectedIds;
-
-  // Read changing values through refs; effect runs once on mount.
   const bookmarksRef = useRef(bookmarks);
-  bookmarksRef.current = bookmarks;
   const selectAllRef = useRef(selectAll);
-  selectAllRef.current = selectAll;
   const toggleSelectRef = useRef(toggleSelect);
-  toggleSelectRef.current = toggleSelect;
   const clearSelectionRef = useRef(clearSelection);
-  clearSelectionRef.current = clearSelection;
   const handleEditTriggerRef = useRef(handleEditTrigger);
-  handleEditTriggerRef.current = handleEditTrigger;
   const handleDeleteTriggerRef = useRef(handleDeleteTrigger);
-  handleDeleteTriggerRef.current = handleDeleteTrigger;
+
+  // Latest-ref pattern: the keydown effect below mounts once and reads
+  // changing values through these refs at event time.
+  useEffect(() => {
+    editDialogOpenRef.current = editDialogOpen;
+    moveDialogOpenRef.current = moveDialogOpen;
+    isSelectionModeRef.current = isSelectionMode;
+    focusedIndexRef.current = focusedIndex;
+    bookmarksRef.current = bookmarks;
+    selectAllRef.current = selectAll;
+    toggleSelectRef.current = toggleSelect;
+    clearSelectionRef.current = clearSelection;
+    handleEditTriggerRef.current = handleEditTrigger;
+    handleDeleteTriggerRef.current = handleDeleteTrigger;
+  });
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -391,84 +370,70 @@ export function useBookmarkListManager(
   }, []);
 
   // ── Actions ──────────────────────────────────────────────────
-  const handleCopyUrl = useCallback((url: string) => {
-    navigator.clipboard.writeText(url);
-    toast.success("URL copied to clipboard");
-  }, []);
-
-  const handleBulkCopyUrls = useCallback(() => {
+  const handleBulkCopyUrls = () => {
     const urls = bookmarks
       .filter((b) => selectedIds.includes(b.id))
       .map((b) => b.url)
       .join("\n");
     navigator.clipboard.writeText(urls);
     toast.success(`${selectedIds.length} URLs copied`);
-  }, [bookmarks, selectedIds]);
+  };
 
-  const handleRefetchTrigger = useCallback(
-    (id: string) => {
-      mutations.refetchBookmarkMetadata({ id });
-    },
-    [mutations],
-  );
+  const handleRefetchTrigger = (id: string) => {
+    mutations.refetchBookmarkMetadata({ id });
+  };
 
-  const handleMoveToWorkspace = useCallback(
-    (id: string, targetWorkspaceId: string) => {
-      mutations.moveBookmarks(
-        { ids: [id], targetWorkspaceId },
-        {
-          onSuccess: (res) => {
-            if (res.success && res.data) {
-              const workspace = workspaces.find(
-                (ws) => ws.id === targetWorkspaceId,
+  const handleMoveToWorkspace = (id: string, targetWorkspaceId: string) => {
+    mutations.moveBookmarks(
+      { ids: [id], targetWorkspaceId },
+      {
+        onSuccess: (res) => {
+          if (res.success && res.data) {
+            const workspace = workspaces.find(
+              (ws) => ws.id === targetWorkspaceId,
+            );
+            const workspaceName = workspace?.name || "Target Workspace";
+            const { movedCount, skippedCount } = res.data;
+            if (movedCount > 0 && skippedCount > 0) {
+              toast.success(
+                `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
               );
-              const workspaceName = workspace?.name || "Target Workspace";
-              const { movedCount, skippedCount } = res.data;
-              if (movedCount > 0 && skippedCount > 0) {
-                toast.success(
-                  `${movedCount} moved, ${skippedCount} already in ${workspaceName}`,
-                );
-              } else if (movedCount > 0) {
-                toast.success(`Bookmark moved to ${workspaceName}`);
-              } else if (skippedCount > 0) {
-                toast.info(`Bookmark already exists in ${workspaceName}`);
-              }
+            } else if (movedCount > 0) {
+              toast.success(`Bookmark moved to ${workspaceName}`);
+            } else if (skippedCount > 0) {
+              toast.info(`Bookmark already exists in ${workspaceName}`);
             }
-          },
+          }
+        },
+      },
+    );
+  };
+
+  const handleSubmit = (val: string) => {
+    const trimmed = val.trim();
+    const targetWorkspace =
+      currentWorkspace ??
+      workspaces.find((ws) => ws.is_default) ??
+      workspaces[0];
+    if (!targetWorkspace) {
+      toast.error("Please create a workspace first");
+      return;
+    }
+    if (trimmed.includes(".") || trimmed.startsWith("http")) {
+      const normalizedUrl = trimmed.startsWith("http")
+        ? trimmed
+        : `https://${trimmed}`;
+      setSearchQuery("");
+      mutations.addBookmark(
+        { url: normalizedUrl, workspaceId: targetWorkspace.id },
+        {
+          onSuccess: () => invalidate(),
+          onError: (err) =>
+            toast.error(err.message || "Failed to add bookmark"),
         },
       );
-    },
-    [mutations, workspaces],
-  );
-
-  const handleSubmit = useCallback(
-    (val: string) => {
-      const trimmed = val.trim();
-      const targetWorkspace =
-        currentWorkspace ??
-        workspaces.find((ws) => ws.is_default) ??
-        workspaces[0];
-      if (!targetWorkspace) {
-        toast.error("Please create a workspace first");
-        return;
-      }
-      if (trimmed.includes(".") || trimmed.startsWith("http")) {
-        const normalizedUrl = trimmed.startsWith("http")
-          ? trimmed
-          : `https://${trimmed}`;
-        setSearchQuery("");
-        mutations.addBookmark(
-          { url: normalizedUrl, workspaceId: targetWorkspace.id },
-          {
-            onSuccess: () => invalidate(),
-            onError: (err) =>
-              toast.error(err.message || "Failed to add bookmark"),
-          },
-        );
-      }
-    },
-    [currentWorkspace, workspaces, mutations, invalidate, setSearchQuery],
-  );
+    }
+  };
 
   // ── Composed values ──────────────────────────────────────────
   const isAllSelected =
@@ -528,7 +493,7 @@ export function useBookmarkListManager(
     manageTagsDialogOpen,
     setManageTagsDialogOpen,
     handleSubmit,
-    handleCopyUrl,
+    handleCopyUrl: copyUrlToClipboard,
     handleBulkCopyUrls,
     handleRefetchTrigger,
     handleMoveToWorkspace,

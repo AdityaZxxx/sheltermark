@@ -1,7 +1,7 @@
 "use client";
 
 import { TagIcon, XIcon } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 import type { TagEntry } from "~/lib/utils";
@@ -18,20 +18,18 @@ interface TagInputProps {
 export function TagInput({ value, onChange, allUserTags }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
 
-  const suggestions = useMemo(() => {
-    const q = inputValue.trim().toLowerCase();
-    const usedIds = new Set(value.map((e) => e.id).filter(Boolean));
-    const usedNames = new Set(value.map((e) => e.name.toLowerCase()));
+  const q = inputValue.trim().toLowerCase();
+  const usedIds = new Set(value.map((e) => e.id).filter(Boolean));
+  const usedNames = new Set(value.map((e) => e.name.toLowerCase()));
 
-    return allUserTags
-      .filter((t) => {
-        if (usedIds.has(t.id)) return false;
-        if (usedNames.has(t.name.toLowerCase())) return false;
-        if (!q) return true;
-        return t.name.toLowerCase().includes(q);
-      })
-      .slice(0, 8);
-  }, [allUserTags, value, inputValue]);
+  const suggestions = allUserTags
+    .filter((t) => {
+      if (usedIds.has(t.id)) return false;
+      if (usedNames.has(t.name.toLowerCase())) return false;
+      if (!q) return true;
+      return t.name.toLowerCase().includes(q);
+    })
+    .slice(0, 8);
 
   const trimmedInput = inputValue.trim();
   const canCreateNew =

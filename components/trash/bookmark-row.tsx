@@ -64,7 +64,7 @@ export function BookmarkRow({
         if (showCheckbox) {
           onSelect(bookmark.id);
         } else {
-          window.open(bookmark.url, "_blank");
+          window.open(bookmark.url, "_blank", "noopener,noreferrer");
         }
       }}
       onKeyDown={(e) => {
@@ -174,7 +174,7 @@ export function BookmarkRow({
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                window.open(bookmark.url, "_blank");
+                window.open(bookmark.url, "_blank", "noopener,noreferrer");
               }}
             >
               <ArrowSquareOutIcon />

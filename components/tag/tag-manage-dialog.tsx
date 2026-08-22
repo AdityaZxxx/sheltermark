@@ -7,7 +7,7 @@ import {
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
@@ -51,16 +51,12 @@ export function TagManageDialog({
   const [deletingTag, setDeletingTag] = useState<TagWithCount | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  const totalUsages = useMemo(
-    () => tags.reduce((sum, t) => sum + t.count, 0),
-    [tags],
-  );
+  const totalUsages = tags.reduce((sum, t) => sum + t.count, 0);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return tags;
-    return tags.filter((t) => t.name.toLowerCase().includes(q));
-  }, [tags, search]);
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? tags.filter((t) => t.name.toLowerCase().includes(q))
+    : tags;
 
   // Focus the rename input when a row enters edit mode.
   useEffect(() => {

@@ -32,12 +32,16 @@ export function BookmarkTrash({
   const deleteBookmarksRef = useRef(deleteBookmarks);
   const restoreBookmarksRef = useRef(restoreBookmarks);
 
-  idsRef.current = ids;
-  onSuccessRef.current = onSuccess;
-  onOpenChangeRef.current = onOpenChange;
-  onConfirmRef.current = onConfirm;
-  deleteBookmarksRef.current = deleteBookmarks;
-  restoreBookmarksRef.current = restoreBookmarks;
+  // Latest-ref pattern: the [open] effect below and the Undo toast closure
+  // read these refs, so they must be synced before that effect runs.
+  useEffect(() => {
+    idsRef.current = ids;
+    onSuccessRef.current = onSuccess;
+    onOpenChangeRef.current = onOpenChange;
+    onConfirmRef.current = onConfirm;
+    deleteBookmarksRef.current = deleteBookmarks;
+    restoreBookmarksRef.current = restoreBookmarks;
+  });
 
   useEffect(() => {
     if (!open) {

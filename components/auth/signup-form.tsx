@@ -71,14 +71,16 @@ export function SignupForm({
       return;
     }
 
-    const result = await signupWithEmail(formData);
-
-    if (!result.success) {
-      setError(result.error);
-    } else {
-      setSuccess(true);
+    try {
+      const result = await signupWithEmail(formData);
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        setSuccess(true);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
-
     setIsLoadingEmail(false);
   };
 

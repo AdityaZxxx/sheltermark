@@ -5,7 +5,7 @@ import {
   SlidersHorizontalIcon,
   TagIcon,
 } from "@phosphor-icons/react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
@@ -41,14 +41,14 @@ export function BookmarkMobileControls({
 }: BookmarkMobileControlsProps) {
   const [open, setOpen] = useState(false);
 
-  const handleManageTags = useCallback(() => {
+  const handleManageTags = () => {
     if (!onManageTags) return;
     // Close the drawer first so the tag dialog doesn't layer on top of a
     // second backdrop. The dialog opens on the next tick after the drawer
     // begins its exit transition — feels snappy, no visible double-backdrop.
     setOpen(false);
     requestAnimationFrame(() => onManageTags());
-  }, [onManageTags]);
+  };
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>

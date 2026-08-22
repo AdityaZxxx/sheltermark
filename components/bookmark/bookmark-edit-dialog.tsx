@@ -2,7 +2,7 @@
 
 import { Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
@@ -93,14 +93,11 @@ function EditFormInner({
   const [generating, setGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
-  const initialValues = useMemo(
-    () => ({
-      title: bookmark.title,
-      note: bookmark.note,
-      tags: tagsToEntries(bookmark.tags),
-    }),
-    [bookmark.title, bookmark.note, bookmark.tags],
-  );
+  const initialValues = {
+    title: bookmark.title,
+    note: bookmark.note,
+    tags: tagsToEntries(bookmark.tags),
+  };
 
   async function handleGenerateTitle() {
     setGenerating(true);
@@ -123,9 +120,8 @@ function EditFormInner({
       toast.error(
         "Failed to generate title. Check your connection and try again.",
       );
-    } finally {
-      setGenerating(false);
     }
+    setGenerating(false);
   }
 
   const form = useForm({

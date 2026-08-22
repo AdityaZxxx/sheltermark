@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -56,31 +56,22 @@ export function RestoreDialog({
 }: RestoreDialogProps) {
   const { workspaces } = useWorkspaces();
 
-  const originalWs = useMemo(
-    () =>
-      originalWorkspaceName
-        ? (workspaces.find((ws) => ws.name === originalWorkspaceName) ?? null)
-        : null,
-    [originalWorkspaceName, workspaces],
-  );
+  const originalWs = originalWorkspaceName
+    ? (workspaces.find((ws) => ws.name === originalWorkspaceName) ?? null)
+    : null;
 
-  const workspaceItems = useMemo(
-    () => workspaces.map((ws) => ({ value: ws.id, label: ws.name })),
-    [workspaces],
-  );
+  const workspaceItems = workspaces.map((ws) => ({
+    value: ws.id,
+    label: ws.name,
+  }));
 
-  const [destination, setDestination] = useState<Destination>("other");
-  const [selectedWsId, setSelectedWsId] = useState("");
+  const [destination, setDestination] = useState<Destination>(() =>
+    hasTrashedOrigin ? "other" : originalWs ? "original" : "other",
+  );
+  const [selectedWsId, setSelectedWsId] = useState(
+    () => workspaces[0]?.id ?? "",
+  );
   const [newWsName, setNewWsName] = useState("Restored");
-
-  useEffect(() => {
-    if (!open) return;
-    setDestination(
-      hasTrashedOrigin ? "other" : originalWs ? "original" : "other",
-    );
-    setSelectedWsId(workspaces[0]?.id ?? "");
-    setNewWsName("Restored");
-  }, [open, hasTrashedOrigin, originalWs, workspaces]);
 
   const handleConfirm = () => {
     if (destination === "new") {

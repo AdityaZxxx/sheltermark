@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import type { Tag } from "~/lib/schemas/tag.schema";
 
@@ -21,70 +21,67 @@ export function useBookmarkDialogs() {
   const [bookmarksToDelete, setBookmarksToDelete] = useState<string[]>([]);
   const [bookmarksToMove, setBookmarksToMove] = useState<string[]>([]);
 
-  const handleDeleteTrigger = useCallback((id: string) => {
+  const handleDeleteTrigger = (id: string) => {
     setBookmarksToDelete([id]);
     setDeleteDialogOpen(true);
-  }, []);
+  };
 
-  const handleBulkDeleteTrigger = useCallback((selectedIds: string[]) => {
+  const handleBulkDeleteTrigger = (selectedIds: string[]) => {
     setBookmarksToDelete(selectedIds);
     setDeleteDialogOpen(true);
-  }, []);
+  };
 
-  const handleEditTrigger = useCallback(
-    (
-      id: string,
-      bookmarks: {
-        id: string;
-        title: string | null;
-        note: string | null;
-        tagsByBookmarkId: Map<string, string[]>;
-        allTags: Tag[];
-      }[],
-    ) => {
-      const bookmark = bookmarks.find((b) => b.id === id);
-      if (!bookmark) return;
+  const handleEditTrigger = (
+    id: string,
+    bookmarks: {
+      id: string;
+      title: string | null;
+      note: string | null;
+      tagsByBookmarkId: Map<string, string[]>;
+      allTags: Tag[];
+    }[],
+  ) => {
+    const bookmark = bookmarks.find((b) => b.id === id);
+    if (!bookmark) return;
 
-      const tagIds = bookmark.tagsByBookmarkId.get(id) ?? [];
-      const tags = tagIds
-        .map((tagId) => bookmark.allTags.find((t) => t.id === tagId))
-        .filter((t): t is Tag => t !== undefined);
+    const tagIds = bookmark.tagsByBookmarkId.get(id) ?? [];
+    const tags = tagIds
+      .map((tagId) => bookmark.allTags.find((t) => t.id === tagId))
+      .filter((t): t is Tag => t !== undefined);
 
-      setActiveBookmark({
-        id: bookmark.id,
-        title: bookmark.title || "",
-        note: bookmark.note ?? null,
-        tags,
-      });
-      setEditDialogOpen(true);
-    },
-    [],
-  );
+    setActiveBookmark({
+      id: bookmark.id,
+      title: bookmark.title || "",
+      note: bookmark.note ?? null,
+      tags,
+    });
+    setEditDialogOpen(true);
+  };
 
-  const handleMoveTrigger = useCallback((id: string) => {
+  const handleMoveTrigger = (id: string) => {
     setBookmarksToMove([id]);
     setMoveDialogOpen(true);
-  }, []);
+  };
 
-  const handleBulkMoveTrigger = useCallback((selectedIds: string[]) => {
+  const handleBulkMoveTrigger = (selectedIds: string[]) => {
     setBookmarksToMove(selectedIds);
     setMoveDialogOpen(true);
-  }, []);
+  };
 
-  const resetDelete = useCallback(() => {
+  const resetDelete = () => {
     setBookmarksToDelete([]);
     setDeleteDialogOpen(false);
-  }, []);
+  };
 
-  const resetEdit = useCallback(() => {
+  const resetEdit = () => {
     setActiveBookmark(null);
     setEditDialogOpen(false);
-  }, []);
+  };
 
-  const resetMove = useCallback(() => {
+  const resetMove = () => {
     setBookmarksToMove([]);
     setMoveDialogOpen(false);
-  }, []);
+  };
 
   return {
     editDialogOpen,

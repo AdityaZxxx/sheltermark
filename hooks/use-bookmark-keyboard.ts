@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
@@ -22,55 +22,52 @@ export function useBookmarkKeyboardNavigation({
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const focusInput = useCallback(() => {
+  const focusInput = () => {
     inputRef.current?.focus();
     setFocusedIndex(-1);
-  }, []);
+  };
 
-  const handleKeyDown = useCallback(
-    (
-      e: React.KeyboardEvent,
-      getItem?: (index: number) => { id: string; url: string } | undefined,
-    ) => {
-      if (
-        document.activeElement === inputRef.current ||
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
+  const handleKeyDown = (
+    e: React.KeyboardEvent,
+    getItem?: (index: number) => { id: string; url: string } | undefined,
+  ) => {
+    if (
+      document.activeElement === inputRef.current ||
+      document.activeElement?.tagName === "INPUT" ||
+      document.activeElement?.tagName === "TEXTAREA"
+    ) {
+      return;
+    }
 
-      if (itemCount === 0) return;
+    if (itemCount === 0) return;
 
-      if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((prev) => (prev < itemCount - 1 ? prev + 1 : prev));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+    } else if (view === "card") {
+      if (e.key === "ArrowRight") {
         e.preventDefault();
         setFocusedIndex((prev) => (prev < itemCount - 1 ? prev + 1 : prev));
-      } else if (e.key === "ArrowUp") {
+      } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      } else if (view === "card") {
-        if (e.key === "ArrowRight") {
-          e.preventDefault();
-          setFocusedIndex((prev) => (prev < itemCount - 1 ? prev + 1 : prev));
-        } else if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        }
       }
+    }
 
-      if (e.key === "Enter" && focusedIndex >= 0 && getItem) {
-        const item = getItem(focusedIndex);
-        if (item) {
-          if (isSelectionMode && onSelect) {
-            onSelect(item.id);
-          } else if (onOpen) {
-            onOpen(item.url);
-          }
+    if (e.key === "Enter" && focusedIndex >= 0 && getItem) {
+      const item = getItem(focusedIndex);
+      if (item) {
+        if (isSelectionMode && onSelect) {
+          onSelect(item.id);
+        } else if (onOpen) {
+          onOpen(item.url);
         }
       }
-    },
-    [itemCount, view, focusedIndex, isSelectionMode, onSelect, onOpen],
-  );
+    }
+  };
 
   return {
     focusedIndex,

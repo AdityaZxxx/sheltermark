@@ -49,7 +49,7 @@ interface BookmarkCardItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export const BookmarkCardItem = React.memo(function BookmarkCardItem({
+export function BookmarkCardItem({
   id,
   title,
   url,
@@ -84,7 +84,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      window.open(url, "_blank");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -101,7 +101,7 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
         if (isSelectionMode) {
           onSelect?.(id);
         } else {
-          window.open(url, "_blank");
+          window.open(url, "_blank", "noopener,noreferrer");
         }
       }}
     >
@@ -212,4 +212,4 @@ export const BookmarkCardItem = React.memo(function BookmarkCardItem({
       )}
     </BookmarkContextMenu>
   );
-});
+}

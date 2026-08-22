@@ -6,7 +6,7 @@ import {
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { BulkActionBar } from "~/components/trash/bulk-action-bar";
@@ -71,6 +71,8 @@ export function TrashView() {
     name: string;
     bookmarkCount: number;
   } | null>(null);
+  // Bumped on every open so RestoreDialog remounts with fresh default state.
+  const [restoreSession, setRestoreSession] = useState(0);
 
   const openRestoreDialog = (ids: string[]) => {
     setRestoreTarget(
@@ -81,6 +83,7 @@ export function TrashView() {
         activeWorkspaces,
       ),
     );
+    setRestoreSession((s) => s + 1);
   };
 
   const handleRestoreConfirm = (options: {
@@ -140,40 +143,35 @@ export function TrashView() {
     (bm) => !bm.workspace_id || !trashedWorkspaceIds.has(bm.workspace_id),
   );
 
-  const filteredStandaloneBookmarks = useMemo(() => {
-    if (!searchQuery.trim()) return standaloneBookmarks;
-    const q = searchQuery.toLowerCase();
-    return standaloneBookmarks.filter(
-      (bm) =>
-        (bm.title || "").toLowerCase().includes(q) ||
-        bm.url.toLowerCase().includes(q),
-    );
-  }, [standaloneBookmarks, searchQuery]);
+  const q = searchQuery.toLowerCase();
 
-  const filteredWorkspaces = useMemo(() => {
-    if (!searchQuery.trim()) return trashedWorkspaces;
-    const q = searchQuery.toLowerCase();
-    return trashedWorkspaces
-      .map((ws) => ({
-        ...ws,
-        bookmarks: ws.bookmarks.filter(
-          (bm) =>
-            (bm.title || "").toLowerCase().includes(q) ||
-            bm.url.toLowerCase().includes(q),
-        ),
-      }))
-      .filter(
-        (ws) => ws.bookmarks.length > 0 || ws.name.toLowerCase().includes(q),
+  const filteredStandaloneBookmarks = !searchQuery.trim()
+    ? standaloneBookmarks
+    : standaloneBookmarks.filter(
+        (bm) =>
+          (bm.title || "").toLowerCase().includes(q) ||
+          bm.url.toLowerCase().includes(q),
       );
-  }, [trashedWorkspaces, searchQuery]);
 
-  const allVisibleIds = useMemo(() => {
-    const ids = [
-      ...filteredStandaloneBookmarks.map((bm) => bm.id),
-      ...filteredWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
-    ];
-    return new Set(ids);
-  }, [filteredStandaloneBookmarks, filteredWorkspaces]);
+  const filteredWorkspaces = !searchQuery.trim()
+    ? trashedWorkspaces
+    : trashedWorkspaces
+        .map((ws) => ({
+          ...ws,
+          bookmarks: ws.bookmarks.filter(
+            (bm) =>
+              (bm.title || "").toLowerCase().includes(q) ||
+              bm.url.toLowerCase().includes(q),
+          ),
+        }))
+        .filter(
+          (ws) => ws.bookmarks.length > 0 || ws.name.toLowerCase().includes(q),
+        );
+
+  const allVisibleIds = new Set([
+    ...filteredStandaloneBookmarks.map((bm) => bm.id),
+    ...filteredWorkspaces.flatMap((ws) => ws.bookmarks.map((bm) => bm.id)),
+  ]);
 
   const isAllSelected =
     allVisibleIds.size > 0 && allVisibleIds.size === selectedBmIds.size;
@@ -371,6 +369,7 @@ export function TrashView() {
       )}
 
       <RestoreDialog
+        key={restoreSession}
         open={restoreTarget !== null}
         onOpenChange={(open) => {
           if (!open) setRestoreTarget(null);

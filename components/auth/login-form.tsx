@@ -30,7 +30,12 @@ export function LoginForm({
 
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
-    await loginWithGoogle(next);
+    try {
+      await loginWithGoogle(next);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    }
+    setIsLoadingGoogle(false);
   };
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,12 +47,15 @@ export function LoginForm({
     if (next) {
       formData.append("next", next);
     }
-    const result = await loginWithEmail(formData);
-
-    if (!result.success) {
-      setError(result.error);
-      setIsLoadingEmail(false);
+    try {
+      const result = await loginWithEmail(formData);
+      if (!result.success) {
+        setError(result.error);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
+    setIsLoadingEmail(false);
   };
 
   // Persist accessibility improvements: connect errors to inputs via aria-describedby

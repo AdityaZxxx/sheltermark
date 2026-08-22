@@ -2,7 +2,7 @@
 
 import { CheckIcon, SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer } from "react";
 
 import { checkUsernameAvailability } from "~/app/action/setting.action";
 import {
@@ -188,17 +188,14 @@ export function SettingsProfileTab({
   const footerDisabled =
     usernameStatus === "taken" || usernameStatus === "checking";
 
-  const formRef = useRef(form);
-  formRef.current = form;
-
   useEffect(() => {
     onRegisterFooter({
       isSubmitting,
       isDirty,
       isDisabled: footerDisabled,
-      onSubmit: () => formRef.current.handleSubmit(),
+      onSubmit: () => form.handleSubmit(),
     });
-  }, [isSubmitting, isDirty, footerDisabled, onRegisterFooter]);
+  }, [isSubmitting, isDirty, footerDisabled, onRegisterFooter, form]);
 
   return (
     <form

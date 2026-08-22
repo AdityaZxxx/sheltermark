@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 import { Skeleton } from "~/components/ui/skeleton";
@@ -63,9 +61,9 @@ export function BookmarkSkeleton({
         ? BookmarkComfortItemSkeleton
         : BookmarkListItemSkeleton;
 
-  const keys = useMemo(
-    () => Array.from({ length: count }, (_, i) => `bookmark-skeleton-${i}`),
-    [count],
+  const keys = Array.from(
+    { length: count },
+    (_, i) => `bookmark-skeleton-${i}`,
   );
 
   return (
