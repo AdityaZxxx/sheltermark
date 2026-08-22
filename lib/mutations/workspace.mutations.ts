@@ -136,8 +136,9 @@ export function useTouchWorkspaceLastUsed(userId: string | undefined) {
   return useMutation({
     mutationFn: touchWorkspaceLastUsed,
     onSuccess: () => {
-      void queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: workspaceKeys.byUser(userId),
+        refetchType: "none",
       });
     },
   });
