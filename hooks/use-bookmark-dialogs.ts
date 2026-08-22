@@ -68,11 +68,6 @@ export function useBookmarkDialogs() {
     setMoveDialogOpen(true);
   };
 
-  const resetDelete = () => {
-    setBookmarksToDelete([]);
-    setDeleteDialogOpen(false);
-  };
-
   const resetEdit = () => {
     setActiveBookmark(null);
     setEditDialogOpen(false);
@@ -98,7 +93,6 @@ export function useBookmarkDialogs() {
     handleEditTrigger,
     handleMoveTrigger,
     handleBulkMoveTrigger,
-    resetDelete,
     resetEdit,
     resetMove,
   };

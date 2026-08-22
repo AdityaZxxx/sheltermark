@@ -108,7 +108,6 @@ export function useBookmarks(workspaceId?: string) {
 
   return {
     bookmarks,
-    allBookmarks,
     allTags,
     tagsByBookmarkId,
     selectedTagIds,

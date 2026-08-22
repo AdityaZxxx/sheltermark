@@ -73,9 +73,12 @@ export function SettingsGeneralTab({
   const profileNameFieldSchema = updateProfileSchema["shape"].name;
 
   const [isUploading, setIsUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    profile?.avatar_url || null,
-  );
+  // undefined = "no local change yet", so the value derives from the
+  // profile query once it loads instead of freezing at mount-time state.
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<
+    string | null | undefined
+  >(undefined);
+  const avatarUrl = localAvatarUrl ?? (profile?.avatar_url || null);
 
   const handleAvatarUpload = async (file: File) => {
     setIsUploading(true);
@@ -89,7 +92,7 @@ export function SettingsGeneralTab({
       } else {
         const nextAvatarUrl = result.data?.avatarUrl ?? null;
         if (nextAvatarUrl) {
-          setAvatarUrl(nextAvatarUrl);
+          setLocalAvatarUrl(nextAvatarUrl);
           toast.success("Avatar uploaded successfully");
         }
       }
@@ -106,7 +109,7 @@ export function SettingsGeneralTab({
       if (!result.success) {
         toast.error(result.error);
       } else {
-        setAvatarUrl(null);
+        setLocalAvatarUrl(null);
         toast.success("Avatar removed successfully");
       }
     } catch {

@@ -295,9 +295,7 @@ export function useBookmarkListManager(
         if ((e.metaKey || e.ctrlKey) && e.key === "k") {
           e.preventDefault();
           inputRef.current?.focus();
-          return;
         }
-        if (e.metaKey || e.ctrlKey) return;
         return;
       }
 

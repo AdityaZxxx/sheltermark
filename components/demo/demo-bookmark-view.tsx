@@ -369,7 +369,6 @@ export function DemoBookmarkView() {
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           ids={bookmarksToDelete}
-          onSuccess={() => setDeleteDialogOpen(false)}
           onConfirm={handleConfirmDelete}
         />
 

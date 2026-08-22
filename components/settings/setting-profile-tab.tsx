@@ -140,10 +140,9 @@ export function SettingsProfileTab({
     useStore(form.store, (state) => state.values.username) || "";
   const debouncedUsername = useDebounce(usernameValue.trim(), 500);
 
-  // Use a reducer so the effect can dispatch state transitions
-  // (idle → checking → available|taken) without calling setState
-  // synchronously in the effect body. React Compiler can track
-  // dispatch because the reducer is a pure function.
+  // Reducer dispatch, not setState: the availability-check effect must
+  // transition status synchronously in its body, and the repo's
+  // react/set-state-in-effect rule only permits that via dispatch.
   const [usernameStatus, dispatch] = useReducer(usernameStatusReducer, "idle");
 
   useEffect(() => {

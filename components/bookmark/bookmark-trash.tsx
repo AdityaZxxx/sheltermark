@@ -3,43 +3,37 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { useBookmarkMutations } from "~/hooks/use-bookmark-mutations";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
 
 interface BookmarkTrashProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ids: string[];
-  onSuccess: () => void;
-  onConfirm?: (ids: string[]) => void | Promise<void>;
+  onConfirm: (ids: string[]) => void | Promise<void>;
 }
 
+// Headless trigger: fires the confirmed deletion once per dialog opening,
+// then shows the Undo toast and closes.
 export function BookmarkTrash({
   open,
   onOpenChange,
   ids,
-  onSuccess,
   onConfirm,
 }: BookmarkTrashProps) {
-  const { deleteBookmarks } = useBookmarkMutations();
   const { mutate: restoreBookmarks } = useRestoreBookmarks();
   const handled = useRef(false);
 
   const idsRef = useRef(ids);
-  const onSuccessRef = useRef(onSuccess);
   const onOpenChangeRef = useRef(onOpenChange);
   const onConfirmRef = useRef(onConfirm);
-  const deleteBookmarksRef = useRef(deleteBookmarks);
   const restoreBookmarksRef = useRef(restoreBookmarks);
 
   // Latest-ref pattern: the [open] effect below and the Undo toast closure
   // read these refs, so they must be synced before that effect runs.
   useEffect(() => {
     idsRef.current = ids;
-    onSuccessRef.current = onSuccess;
     onOpenChangeRef.current = onOpenChange;
     onConfirmRef.current = onConfirm;
-    deleteBookmarksRef.current = deleteBookmarks;
     restoreBookmarksRef.current = restoreBookmarks;
   });
 
@@ -51,7 +45,7 @@ export function BookmarkTrash({
     if (handled.current || idsRef.current.length === 0) return;
     handled.current = true;
 
-    const fireToastAndClose = () => {
+    const closeWithToast = () => {
       const toastId = toast("Moved to trash", {
         action: {
           label: "Undo",
@@ -61,24 +55,12 @@ export function BookmarkTrash({
           },
         },
       });
-      onSuccessRef.current();
       onOpenChangeRef.current(false);
     };
 
-    if (onConfirmRef.current) {
-      Promise.resolve(onConfirmRef.current(idsRef.current)).then(
-        fireToastAndClose,
-      );
-    } else {
-      // Fire toast + close dialog immediately — the underlying
-      // useDeleteBookmarks mutation is optimistic (item vanishes from list
-      // onMutate), so the user sees instant feedback. The Undo action
-      // remains valid during the roundtrip because rollback hasn't happened
-      // yet. If the server later fails, the hook rolls back the cache and
-      // fires toast.error separately.
-      deleteBookmarksRef.current({ ids: idsRef.current });
-      fireToastAndClose();
-    }
+    void Promise.resolve(onConfirmRef.current(idsRef.current)).then(
+      closeWithToast,
+    );
   }, [open]);
 
   return null;
