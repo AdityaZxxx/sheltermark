@@ -210,7 +210,9 @@ export function SettingsGeneralTab({
         </Field>
 
         <Field>
-          <FieldLabel>Default Workspace</FieldLabel>
+          <FieldLabel htmlFor="default-workspace-select">
+            Default Workspace
+          </FieldLabel>
           <Select
             value={
               workspaces.find((ws) => ws.is_default)?.id ||
@@ -220,7 +222,7 @@ export function SettingsGeneralTab({
             onValueChange={(value) => value && setDefaultWorkspace(value)}
             disabled={isSettingDefault}
           >
-            <SelectTrigger>
+            <SelectTrigger id="default-workspace-select" className="w-full">
               <SelectValue>
                 <div className="flex items-center gap-2">
                   <div
@@ -241,15 +243,27 @@ export function SettingsGeneralTab({
                 </div>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              alignItemWithTrigger={false}
+              className="w-(--anchor-width) max-h-72"
+            >
               {workspaces.map((ws) => (
-                <SelectItem key={ws.id} value={ws.id}>
-                  <div className="flex items-center gap-2">
+                <SelectItem
+                  key={ws.id}
+                  value={ws.id}
+                  aria-current={ws.is_default ? "true" : undefined}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div
-                      className="w-2 h-2 rounded-full"
+                      className="w-2 h-2 rounded-full shrink-0"
                       style={{ backgroundColor: getPastelColor(ws.id) }}
                     />
                     <span className="truncate">{ws.name}</span>
+                    {!ws.is_default && ws.bookmarks_count > 0 && (
+                      <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                        {ws.bookmarks_count}
+                      </span>
+                    )}
                   </div>
                 </SelectItem>
               ))}
