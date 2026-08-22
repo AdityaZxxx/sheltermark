@@ -136,7 +136,11 @@ export function WorkspaceMenu() {
                 onValueChange={handleSelectWorkspace}
               >
                 {workspaces.map((ws) => (
-                  <DropdownMenuRadioItem value={ws.id} key={ws.id}>
+                  <DropdownMenuRadioItem
+                    value={ws.id}
+                    key={ws.id}
+                    className="data-checked:bg-accent data-checked:text-accent-foreground **:data-checked:text-accent-foreground"
+                  >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-2.5 h-2.5 rounded-full"
