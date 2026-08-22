@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
@@ -13,12 +13,15 @@ import {
   useSetDefaultWorkspace,
   useToggleAutoCheckWorkspace,
   useTogglePublicWorkspace,
+  useTouchWorkspaceLastUsed,
 } from "~/lib/mutations/workspace.mutations";
 import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
+import { workspaceKeys } from "~/lib/query-keys";
 
 export function useWorkspaces() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
   const serverUser = useUser();
   const userId = serverUser?.id ?? supabaseUser?.id;
@@ -42,11 +45,21 @@ export function useWorkspaces() {
     );
   }, [workspaces, routeWorkspaceId]);
 
+  const touch = useTouchWorkspaceLastUsed(userId);
+
+  const refetchWorkspaces = useCallback(() => {
+    void queryClient.refetchQueries({
+      queryKey: workspaceKeys.byUser(userId),
+      type: "active",
+    });
+  }, [queryClient, userId]);
+
   const setActiveWorkspace = useCallback(
     (id: string) => {
+      touch.mutate(id);
       router.push(`/workspace/${id}`);
     },
-    [router],
+    [router, touch],
   );
 
   const clearActiveWorkspace = useCallback(() => {
@@ -66,6 +79,7 @@ export function useWorkspaces() {
     isLoading: isAuthLoading || isWsLoading,
     setActiveWorkspace,
     clearActiveWorkspace,
+    refetchWorkspaces,
     createWorkspace: create.mutate,
     isCreating: create.isPending,
     deleteWorkspace: del.mutate,

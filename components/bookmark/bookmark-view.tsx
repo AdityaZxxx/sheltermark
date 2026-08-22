@@ -94,7 +94,6 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         workspaces={vm.workspaces}
         currentWorkspaceId={vm.currentWorkspace?.id}
         onSuccess={() => {
-          vm.invalidate();
           if (vm.dialogs.bookmarksToMove.length > 0)
             vm.selection.clearSelection();
         }}

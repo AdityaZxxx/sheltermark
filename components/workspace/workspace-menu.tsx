@@ -39,6 +39,7 @@ export function WorkspaceMenu() {
     currentWorkspace,
     setActiveWorkspace,
     clearActiveWorkspace,
+    refetchWorkspaces,
     createWorkspace,
     deleteWorkspace,
     isDeleting,
@@ -48,6 +49,7 @@ export function WorkspaceMenu() {
     isRenaming,
   } = useWorkspaces();
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isVisibilityDialogOpen, setIsVisibilityDialogOpen] = useState(false);
@@ -67,9 +69,20 @@ export function WorkspaceMenu() {
     setIsAddDialogOpen(false);
   };
 
+  const handleSelectWorkspace = (id: string) => {
+    setActiveWorkspace(id);
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu
+        open={isMenuOpen}
+        onOpenChange={(open) => setIsMenuOpen(open)}
+        onOpenChangeComplete={(open) => {
+          if (!open) refetchWorkspaces();
+        }}
+      >
         <DropdownMenuTrigger
           render={
             <Button
@@ -120,10 +133,14 @@ export function WorkspaceMenu() {
               </DropdownMenuLabel>
               <DropdownMenuRadioGroup
                 value={currentWorkspace?.id ?? ""}
-                onValueChange={setActiveWorkspace}
+                onValueChange={handleSelectWorkspace}
               >
                 {workspaces.map((ws) => (
-                  <DropdownMenuRadioItem value={ws.id} key={ws.id}>
+                  <DropdownMenuRadioItem
+                    value={ws.id}
+                    key={ws.id}
+                    className="data-checked:bg-accent data-checked:text-accent-foreground **:data-checked:text-accent-foreground"
+                  >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-2.5 h-2.5 rounded-full"

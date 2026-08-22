@@ -1,3 +1,5 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 import {
@@ -7,6 +9,7 @@ import {
   setDefaultWorkspace,
   toggleAutoCheckBroken,
   togglePublicStatus,
+  touchWorkspaceLastUsed,
 } from "~/app/action/workspace.action";
 import {
   optimisticAppend,
@@ -38,6 +41,7 @@ export function useCreateWorkspace(userId: string | undefined) {
         user_id: userId ?? "",
         created_at: new Date().toISOString(),
         updated_at: null,
+        last_used_at: null,
         deleted_at: null,
       });
     },
@@ -123,6 +127,19 @@ export function useToggleAutoCheckWorkspace(userId: string | undefined) {
         ...ws,
         auto_check_broken: enabled,
       }));
+    },
+  });
+}
+
+export function useTouchWorkspaceLastUsed(userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: touchWorkspaceLastUsed,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: workspaceKeys.byUser(userId),
+        refetchType: "none",
+      });
     },
   });
 }
