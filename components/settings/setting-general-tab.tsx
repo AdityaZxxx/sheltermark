@@ -314,15 +314,15 @@ export function SettingsGeneralTab({
                 });
               }}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="min-w-24">
+                <SelectValue>
+                  {profile?.trash_cleanup_interval ?? 30} days
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="min-w-24">
                 {TRASH_CLEANUP_INTERVALS.map((days) => (
                   <SelectItem key={days} value={String(days)}>
-                    <div className="flex items-center gap-2">
-                      <span>{days} days</span>
-                    </div>
+                    {days} days
                   </SelectItem>
                 ))}
               </SelectContent>
