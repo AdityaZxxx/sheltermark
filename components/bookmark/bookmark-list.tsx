@@ -154,7 +154,10 @@ export function BookmarkList({
             )}
           </div>
         )}
+        {/* key forces a fresh virtualizer per view — stale measurements from
+            the previous view's row heights paint one misaligned frame */}
         <VirtualList
+          key={view}
           items={filteredBookmarks}
           estimateSize={IsList ? 38 : 100}
           gap={4}
