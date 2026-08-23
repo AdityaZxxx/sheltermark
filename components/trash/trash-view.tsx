@@ -209,7 +209,7 @@ export function TrashView() {
   return (
     <>
       {/* pb-24 clears the floating bulk-action bar (fixed bottom-4) */}
-      <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
+      <div className="max-w-3xl mx-auto px-4 py-8 pb-24">
         <div className="flex flex-col justify-between gap-3 mb-8">
           <div className="flex items-center justify-start gap-3">
             <h1 className="text-lg font-semibold flex items-center-safe gap-2">
@@ -250,7 +250,7 @@ export function TrashView() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex h-9 w-full rounded-lg bg-input/50 pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground transition-colors duration-150 focus-visible:bg-input/75"
+              className="flex h-9 w-full rounded-lg border border-border/70 bg-card pl-9 pr-8 text-sm shadow-xs outline-none placeholder:text-muted-foreground transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/10"
             />
             {searchQuery && (
               <button

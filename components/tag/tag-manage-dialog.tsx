@@ -250,7 +250,7 @@ export function TagManageDialog({
                               commitRename();
                             }
                           }}
-                          className="min-w-0 h-6 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus-visible:ring-0"
+                          className="min-w-0 h-6 bg-transparent p-0 text-sm font-medium"
                           maxLength={50}
                           autoComplete="off"
                           aria-invalid={inlineError ? true : undefined}

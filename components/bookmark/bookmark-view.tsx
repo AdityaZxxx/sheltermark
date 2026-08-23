@@ -18,7 +18,7 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed
     <section
       aria-label="Bookmarks"
-      className="max-w-2xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
+      className="max-w-3xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
       onKeyDown={vm.onKeyDown}
     >
       <BookmarkHeader

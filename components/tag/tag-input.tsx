@@ -57,7 +57,7 @@ export function TagInput({ value, onChange, allUserTags }: TagInputProps) {
         Tags
       </Label>
 
-      <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-input/20 px-2 py-1.5 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
+      <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-border/70 bg-card px-2 py-1.5 shadow-xs transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/10">
         {value.map((entry, index) => (
           <Badge
             key={entry.id ?? `new-${index}-${entry.name}`}
