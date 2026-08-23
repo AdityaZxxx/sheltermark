@@ -10,6 +10,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
+  buildBookmarkSearchIndex,
   filterBookmarksBySearch,
   filterBookmarksByTags,
   filterBookmarksByWorkspace,
@@ -17,6 +18,7 @@ import {
 } from "~/lib/queries/bookmark-filters";
 import { bookmarksQueryOptions } from "~/lib/queries/bookmark.queries";
 import { userTagsQueryOptions } from "~/lib/queries/tag.queries";
+import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
 import { bookmarkKeys, tagKeys, workspaceKeys } from "~/lib/query-keys";
 import { uuidSchema } from "~/lib/schemas/common";
 
@@ -62,6 +64,12 @@ export function useBookmarks(workspaceId?: string) {
     enabled: !!userId,
   });
 
+  // Workspace names only feed the dashboard-scope search index.
+  const { data: allWorkspaces = [] } = useQuery({
+    ...workspacesQueryOptions(userId),
+    enabled: !workspaceId,
+  });
+
   const tagsByBookmarkId = new Map<string, string[]>();
   for (const link of bookmarkTagLinks) {
     const existing = tagsByBookmarkId.get(link.bookmark_id);
@@ -72,10 +80,19 @@ export function useBookmarks(workspaceId?: string) {
     }
   }
 
-  const tagsById = new Map<string, Tag>();
-  for (const tag of allTags) {
-    tagsById.set(tag.id, tag);
+  // On the dashboard (no workspace scope), the workspace name becomes a
+  // searchable field so users can find bookmarks via where they filed them.
+  let wsNameById: Map<string, string> | undefined;
+  if (!workspaceId) {
+    wsNameById = new Map(allWorkspaces.map((ws) => [ws.id, ws.name] as const));
   }
+
+  const searchIndex = buildBookmarkSearchIndex(
+    allBookmarks,
+    tagsByBookmarkId,
+    new Map(allTags.map((t) => [t.id, t] as const)),
+    wsNameById,
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<BookmarkSort>(DEFAULT_SORT);
@@ -89,8 +106,7 @@ export function useBookmarks(workspaceId?: string) {
         tagsByBookmarkId,
       ),
       searchQuery,
-      tagsByBookmarkId,
-      tagsById,
+      searchIndex,
     ),
     sort,
   );
