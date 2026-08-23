@@ -37,6 +37,7 @@ interface BookmarkListManager {
   setSort: ReturnType<typeof useBookmarks>["setSort"];
   selectedTagIds: string[];
   setSelectedTagIds: (ids: string[]) => void;
+  filterKey: string;
   allTags: Tag[];
   tagsByBookmarkId: Map<string, string[]>;
   inputRef: React.RefObject<HTMLInputElement | null>;
@@ -100,6 +101,7 @@ export function useBookmarkListManager(
     tagsByBookmarkId,
     selectedTagIds,
     setSelectedTagIds,
+    filterKey,
   } = useBookmarks(scope.type === "workspace" ? scope.id : undefined);
   const mutations = useBookmarkMutations();
   const { mutate: restoreBookmarks } = useRestoreBookmarks();
@@ -456,6 +458,7 @@ export function useBookmarkListManager(
     setSort,
     selectedTagIds,
     setSelectedTagIds,
+    filterKey,
     allTags,
     tagsByBookmarkId,
     inputRef,

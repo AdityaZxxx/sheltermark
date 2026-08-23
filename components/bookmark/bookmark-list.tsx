@@ -39,6 +39,7 @@ interface BookmarkListProps {
   tagsByBookmarkId: Map<string, string[]>;
   allTags: Tag[];
   refetchingId?: string | null;
+  filterKey?: string;
 }
 
 export function BookmarkList({
@@ -64,8 +65,9 @@ export function BookmarkList({
   tagsByBookmarkId,
   allTags,
   refetchingId,
+  filterKey,
 }: BookmarkListProps) {
-  const { exiting } = useExitAnimation(filteredBookmarks);
+  const { exiting } = useExitAnimation(filteredBookmarks, 150, filterKey);
   const isEmpty = filteredBookmarks.length === 0 && exiting.length === 0;
 
   if (isLoading) {

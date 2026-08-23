@@ -61,6 +61,7 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         tagsByBookmarkId={vm.tagsByBookmarkId}
         allTags={vm.allTags}
         refetchingId={vm.refetchingId}
+        filterKey={vm.filterKey}
       />
 
       <BookmarkToolbar

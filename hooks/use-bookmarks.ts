@@ -118,5 +118,8 @@ export function useBookmarks(workspaceId?: string) {
     sort,
     setSort,
     invalidate,
+    // Identity of the current filter context; used to suppress exit
+    // animations when items vanish from filtering rather than deletion.
+    filterKey: `${workspaceId ?? "all"}|${selectedTagIds.join(",")}|${searchQuery}`,
   };
 }
