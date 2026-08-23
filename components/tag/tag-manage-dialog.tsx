@@ -1,23 +1,25 @@
 "use client";
 
 import {
-  HashIcon,
+  BookmarkIcon,
+  CheckIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
 import { useSupabase } from "~/components/providers/supabase-provider";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
@@ -50,6 +52,12 @@ export function TagManageDialog({
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [deletingTag, setDeletingTag] = useState<TagWithCount | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Stable identity: fires on mount only (the input unmounts with the
+  // dialog), so re-renders while open don't steal focus back from editing.
+  const focusSearchOnMount = useCallback((el: HTMLInputElement | null) => {
+    el?.focus();
+  }, []);
 
   const totalUsages = tags.reduce((sum, t) => sum + t.count, 0);
 
@@ -130,53 +138,35 @@ export function TagManageDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="sm:max-w-sm gap-0 p-0"
-          showCloseButton={false}
-        >
-          <div className="flex items-center justify-between px-3 pt-3 pb-1">
-            <div>
-              <DialogTitle className="text-sm">Tags</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                {formatCount(tags.length, "tag")} in workspace
-                {totalUsages > 0 && ` · ${formatCount(totalUsages, "use")}`}
-              </DialogDescription>
-            </div>
-            <DialogClose
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-muted-foreground active:scale-[0.97] transition-[colors,transform] duration-100 ease-out"
-                />
-              }
-            >
-              <XIcon className="size-3.5" aria-hidden="true" />
-              <span className="sr-only">Close</span>
-            </DialogClose>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tags</DialogTitle>
+            <DialogDescription>
+              {formatCount(tags.length, "tag")} in workspace
+              {totalUsages > 0 && ` · ${formatCount(totalUsages, "use")}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="relative">
+            <MagnifyingGlassIcon
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60 pointer-events-none"
+              aria-hidden="true"
+            />
+            <Label htmlFor="tag-search" className="sr-only">
+              Search tags
+            </Label>
+            <Input
+              id="tag-search"
+              ref={focusSearchOnMount}
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="h-9 pl-7 pr-2.5 text-sm"
+            />
           </div>
 
-          <div className="px-3 pt-1 pb-2">
-            <div className="relative">
-              <MagnifyingGlassIcon
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60 pointer-events-none"
-                aria-hidden="true"
-              />
-              <Label htmlFor="tag-search" className="sr-only">
-                Search tags
-              </Label>
-              <Input
-                id="tag-search"
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search…"
-                className="h-9 pl-7 pr-2.5 text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="overflow-y-auto max-h-[min(50vh,20rem)] px-3 pb-3">
+          <div className="overflow-y-auto max-h-[min(50vh,20rem)]">
             {isLoading && (
               <p
                 aria-live="polite"
@@ -218,12 +208,8 @@ export function TagManageDialog({
                     <form
                       key={tag.id}
                       onSubmit={commitRename}
-                      className="flex items-center gap-2 rounded-md px-2 py-2 bg-muted/60 shadow-sm ring-1 ring-border"
+                      className="flex items-center gap-1.5 rounded-md border border-border/70 bg-card px-2 py-1.5 shadow-xs transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/10"
                     >
-                      <HashIcon
-                        className="size-3 shrink-0 text-muted-foreground/40"
-                        aria-hidden="true"
-                      />
                       <div className="flex-1 min-w-0">
                         <Label htmlFor="tag-rename" className="sr-only">
                           Tag name
@@ -236,6 +222,7 @@ export function TagManageDialog({
                           onKeyDown={(e) => {
                             if (e.key === "Escape") {
                               e.preventDefault();
+                              e.stopPropagation();
                               cancelRename();
                             }
                           }}
@@ -250,7 +237,7 @@ export function TagManageDialog({
                               commitRename();
                             }
                           }}
-                          className="min-w-0 h-6 bg-transparent p-0 text-sm font-medium"
+                          className="min-w-0 h-7 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus-visible:ring-0"
                           maxLength={50}
                           autoComplete="off"
                           aria-invalid={inlineError ? true : undefined}
@@ -269,14 +256,23 @@ export function TagManageDialog({
                         )}
                       </div>
                       <Button
+                        type="submit"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Save rename"
+                        className="hover:bg-muted/50"
+                      >
+                        <CheckIcon aria-hidden="true" />
+                      </Button>
+                      <Button
                         type="button"
                         variant="ghost"
-                        size="icon-lg"
+                        size="icon"
                         onClick={cancelRename}
                         aria-label="Cancel rename"
                         className="hover:bg-muted/50"
                       >
-                        <XIcon className="size-3" aria-hidden="true" />
+                        <XIcon aria-hidden="true" />
                       </Button>
                     </form>
                   );
@@ -285,37 +281,39 @@ export function TagManageDialog({
                 return (
                   <div
                     key={tag.id}
-                    className="group flex items-center gap-2 rounded-md px-2 py-2 transition-[background-color,box-shadow] duration-150 ease-out hover-only:hover:bg-muted/50"
+                    className="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-[background-color] duration-150 ease-out hover-only:hover:bg-muted/50 focus-within:bg-muted/50"
                   >
-                    <HashIcon
-                      className="size-3 shrink-0 text-muted-foreground/40"
-                      aria-hidden="true"
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                      {tag.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground/60 shrink-0 tabular-nums">
-                      {formatCount(tag.count, "use")}
-                    </span>
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {tag.name}
+                      </span>
+                      <Badge
+                        variant="secondary"
+                        className="bg-muted/60 text-muted-foreground tabular-nums"
+                      >
+                        <BookmarkIcon aria-hidden="true" />
+                        {tag.count}
+                      </Badge>
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-lg"
+                      size="icon"
                       onClick={() => startRename(tag)}
                       aria-label={`Rename ${tag.name}`}
-                      className="hover:bg-muted/50"
+                      className="text-muted-foreground/50 hover:bg-muted/50 hover:text-foreground"
                     >
-                      <PencilSimpleIcon className="size-3" aria-hidden="true" />
+                      <PencilSimpleIcon aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-lg"
+                      size="icon"
                       onClick={() => setDeletingTag(tag)}
                       aria-label={`Delete ${tag.name}`}
-                      className="hover:bg-destructive/10 hover:text-destructive"
+                      className="text-destructive/60 hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <TrashIcon className="size-3" aria-hidden="true" />
+                      <TrashIcon aria-hidden="true" />
                     </Button>
                   </div>
                 );
