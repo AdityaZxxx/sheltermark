@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/utils";
 
@@ -19,8 +19,16 @@ export function ProgressiveImage({
   containerClassName,
   skeletonClassName,
 }: ProgressiveImageProps) {
+  const imgRef = useRef<HTMLImageElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  // Cached images are already complete at mount; skip the skeleton/blur
+  // phase so remounts (e.g. view switches) don't replay the load animation.
+  useLayoutEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) setIsLoading(false);
+  }, []);
 
   if (hasError) return null;
 
@@ -36,6 +44,7 @@ export function ProgressiveImage({
       )}
       {/* oxlint-disable-next-line next/no-img-element -- dynamic-size external images, next/image is not beneficial */}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         className={cn(

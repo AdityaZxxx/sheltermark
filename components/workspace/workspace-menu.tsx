@@ -11,6 +11,7 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -59,13 +60,19 @@ export function WorkspaceMenu() {
   const activeWorkspaceName = currentWorkspace?.name || "Dashboard";
 
   const handleTogglePublic = () => {
+    setIsMenuOpen(false);
     setIsVisibilityDialogOpen(true);
   };
 
   const handleAddWorkspace = (name: string) => {
     const formData = new FormData();
     formData.append("name", name);
-    createWorkspace(formData);
+    createWorkspace(formData, {
+      onSuccess: (result) => {
+        if (result.success) setActiveWorkspace(result.data.id);
+        else toast.error(result.error ?? "Failed to create workspace");
+      },
+    });
     setIsAddDialogOpen(false);
   };
 
@@ -170,7 +177,10 @@ export function WorkspaceMenu() {
               <button
                 {...props}
                 type="button"
-                onClick={() => setIsAddDialogOpen(true)}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsAddDialogOpen(true);
+                }}
               >
                 <PlusIcon className="h-4 w-4" />
                 Add Workspace
@@ -205,7 +215,10 @@ export function WorkspaceMenu() {
               <button
                 {...props}
                 type="button"
-                onClick={() => setIsRenameDialogOpen(true)}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsRenameDialogOpen(true);
+                }}
               >
                 <PencilSimpleIcon className="h-4 w-4" />
                 Rename
