@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Workspace } from "~/lib/schemas/workspace.schema";
@@ -32,6 +32,10 @@ type WorkspaceDemo = Pick<
   Workspace,
   "id" | "name" | "is_public" | "is_default"
 >;
+
+function copyUrlToClipboard(url: string) {
+  navigator.clipboard.writeText(url);
+}
 
 export function DemoBookmarkView() {
   const [bookmarks, setBookmarks] = useState<DemoBookmark[]>(
@@ -84,76 +88,63 @@ export function DemoBookmarkView() {
       itemCount: filteredBookmarks.length,
       view,
       onSelect: toggleSelect,
-      onOpen: (url) => window.open(url, "_blank"),
+      onOpen: (url) => window.open(url, "_blank", "noopener,noreferrer"),
       isSelectionMode,
     });
 
-  const handleCopyUrl = useCallback((url: string) => {
-    navigator.clipboard.writeText(url);
-  }, []);
-
-  const handleBulkCopyUrls = useCallback(() => {
+  const handleBulkCopyUrls = () => {
     const urls = filteredBookmarks
       .filter((b) => selectedIds.includes(b.id))
       .map((b) => b.url)
       .join("\n");
     navigator.clipboard.writeText(urls);
-  }, [selectedIds, filteredBookmarks]);
+  };
 
-  const handleRefetchTrigger = useCallback(
-    async (id: string) => {
-      const bookmark = bookmarks.find((b) => b.id === id);
-      if (!bookmark) return;
+  const handleRefetchTrigger = async (id: string) => {
+    const bookmark = bookmarks.find((b) => b.id === id);
+    if (!bookmark) return;
 
-      try {
-        const res = await fetch("/api/demo/metadata", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: bookmark.url }),
-        });
-        const metadata = await res.json();
+    try {
+      const res = await fetch("/api/demo/metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: bookmark.url }),
+      });
+      const metadata = await res.json();
 
-        setBookmarks((prev) =>
-          prev.map((b) =>
-            b.id === id
-              ? {
-                  ...b,
-                  favicon_url: metadata.favicon_url || null,
-                  og_image_url: metadata.og_image_url || null,
-                }
-              : b,
-          ),
-        );
-      } catch {
-        // silently fail in demo
-      }
-    },
-    [bookmarks],
-  );
-
-  const handleConfirmDelete = useCallback(
-    (ids: string[]) => {
-      setBookmarks((prev) => prev.filter((b) => !ids.includes(b.id)));
-      if (ids.length > 1) {
-        clearSelection();
-      }
-    },
-    [clearSelection],
-  );
-
-  const handleConfirmMove = useCallback(
-    (ids: string[], targetWorkspaceId: string) => {
       setBookmarks((prev) =>
         prev.map((b) =>
-          ids.includes(b.id) ? { ...b, workspace_id: targetWorkspaceId } : b,
+          b.id === id
+            ? {
+                ...b,
+                favicon_url: metadata.favicon_url || null,
+                og_image_url: metadata.og_image_url || null,
+              }
+            : b,
         ),
       );
-      if (ids.length > 1) {
-        clearSelection();
-      }
-    },
-    [clearSelection],
-  );
+    } catch {
+      // silently fail in demo
+    }
+  };
+
+  const handleConfirmDelete = (ids: string[]) => {
+    setBookmarks((prev) => prev.filter((b) => !ids.includes(b.id)));
+    if (ids.length > 1) {
+      clearSelection();
+    }
+  };
+
+  const handleConfirmMove = (ids: string[], targetWorkspaceId: string) => {
+    setBookmarks((prev) =>
+      prev.map((b) =>
+        ids.includes(b.id) ? { ...b, workspace_id: targetWorkspaceId } : b,
+      ),
+    );
+    if (ids.length > 1) {
+      clearSelection();
+    }
+  };
 
   const handleSubmit = async (val: string) => {
     const trimmed = val.trim();
@@ -208,46 +199,37 @@ export function DemoBookmarkView() {
     }
   };
 
-  const onEditTrigger = useCallback(
-    (id: string) => {
-      const bookmark = filteredBookmarks.find((b) => b.id === id);
-      if (bookmark) {
-        handleEditTrigger(id, [
-          {
-            id: bookmark.id,
-            title: bookmark.title,
-            note: bookmark.note,
-            tagsByBookmarkId: new Map(
-              filteredBookmarks.map((b) => [
-                b.id,
-                getBookmarkTags(b.id).map((t) => t.id),
-              ]),
-            ),
-            allTags: DEMO_TAGS,
-          },
-        ]);
-      }
-    },
-    [filteredBookmarks, handleEditTrigger],
-  );
+  const onEditTrigger = (id: string) => {
+    const bookmark = filteredBookmarks.find((b) => b.id === id);
+    if (bookmark) {
+      handleEditTrigger(id, [
+        {
+          id: bookmark.id,
+          title: bookmark.title,
+          note: bookmark.note,
+          tagsByBookmarkId: new Map(
+            filteredBookmarks.map((b) => [
+              b.id,
+              getBookmarkTags(b.id).map((t) => t.id),
+            ]),
+          ),
+          allTags: DEMO_TAGS,
+        },
+      ]);
+    }
+  };
 
-  const getItem = useCallback(
-    (index: number) => {
-      const bookmark = filteredBookmarks[index];
-      if (bookmark) {
-        return { id: bookmark.id, url: bookmark.url };
-      }
-      return undefined;
-    },
-    [filteredBookmarks],
-  );
+  const getItem = (index: number) => {
+    const bookmark = filteredBookmarks[index];
+    if (bookmark) {
+      return { id: bookmark.id, url: bookmark.url };
+    }
+    return undefined;
+  };
 
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      handleKeyDown(e, getItem);
-    },
-    [handleKeyDown, getItem],
-  );
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    handleKeyDown(e, getItem);
+  };
 
   return (
     <div className="h-full bg-background max-w-4xl mx-auto rounded-lg border">
@@ -313,7 +295,7 @@ export function DemoBookmarkView() {
               onMove: handleMoveTrigger,
               onMoveToWorkspace: (id: string, wsId: string) =>
                 handleConfirmMove([id], wsId),
-              onCopyUrl: handleCopyUrl,
+              onCopyUrl: copyUrlToClipboard,
               onRefetch: handleRefetchTrigger,
               onSelectionModeToggle: toggleSelectionMode,
               tabIndex:
@@ -387,7 +369,6 @@ export function DemoBookmarkView() {
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           ids={bookmarksToDelete}
-          onSuccess={() => setDeleteDialogOpen(false)}
           onConfirm={handleConfirmDelete}
         />
 

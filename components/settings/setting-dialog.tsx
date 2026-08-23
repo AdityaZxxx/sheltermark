@@ -69,13 +69,16 @@ export function SettingsDialog({
     }
 
     setIsDeleting(true);
-    const result = await deleteAccount();
-
-    if (!result.success) {
-      toast.error(result.error);
-    } else {
-      toast.success("Account deleted successfully");
-      window.location.href = "/";
+    try {
+      const result = await deleteAccount();
+      if (!result.success) {
+        toast.error(result.error);
+      } else {
+        toast.success("Account deleted successfully");
+        window.location.href = "/";
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
     setIsDeleting(false);
     setDeleteAlertOpen(false);
@@ -84,7 +87,7 @@ export function SettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex flex-col h-[90vh] gap-0 overflow-hidden p-0 transition-all duration-200"
+        className="flex flex-col h-[90vh] gap-0 overflow-hidden p-0"
         style={{
           filter: isChildDialogOpen ? "blur(8px)" : undefined,
           opacity: isChildDialogOpen ? 0.5 : undefined,

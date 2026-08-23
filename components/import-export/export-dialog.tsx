@@ -45,30 +45,28 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         workspaceId: workspaceId === "all" ? undefined : workspaceId,
       });
 
-      if (!result.success) {
+      if (result.success) {
+        const blob = new Blob([result.data.content], {
+          type: result.data.contentType,
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = result.data.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast.success(`Exported ${result.data.filename}`);
+        onOpenChange(false);
+      } else {
         toast.error(result.error);
-        return;
       }
-
-      const blob = new Blob([result.data.content], {
-        type: result.data.contentType,
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = result.data.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast.success(`Exported ${result.data.filename}`);
-      onOpenChange(false);
     } catch {
       toast.error("Export failed");
-    } finally {
-      setIsExporting(false);
     }
+    setIsExporting(false);
   };
 
   return (

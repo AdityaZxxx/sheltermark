@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 import { Skeleton } from "~/components/ui/skeleton";
@@ -19,7 +17,7 @@ function BookmarkListItemSkeleton() {
 
 function BookmarkCardItemSkeleton() {
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div className="rounded-lg bg-card shadow-xs overflow-hidden">
       <Skeleton className="w-full h-32" />
       <div className="p-3 space-y-2">
         <div className="flex items-center gap-2">
@@ -33,7 +31,7 @@ function BookmarkCardItemSkeleton() {
 
 function BookmarkComfortItemSkeleton() {
   return (
-    <div className="flex gap-4 rounded-lg border p-3">
+    <div className="flex gap-4 rounded-lg bg-muted/40 p-3">
       <div className="flex-1 space-y-2">
         <Skeleton className="h-5 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
@@ -63,9 +61,9 @@ export function BookmarkSkeleton({
         ? BookmarkComfortItemSkeleton
         : BookmarkListItemSkeleton;
 
-  const keys = useMemo(
-    () => Array.from({ length: count }, (_, i) => `bookmark-skeleton-${i}`),
-    [count],
+  const keys = Array.from(
+    { length: count },
+    (_, i) => `bookmark-skeleton-${i}`,
   );
 
   return (

@@ -50,7 +50,7 @@ interface BookmarkComfortItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
+export function BookmarkComfortItem({
   id,
   title,
   url,
@@ -89,7 +89,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      window.open(url, "_blank");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -106,7 +106,7 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
         if (isSelectionMode) {
           onSelect?.(id);
         } else {
-          window.open(url, "_blank");
+          window.open(url, "_blank", "noopener,noreferrer");
         }
       }}
     >
@@ -282,4 +282,4 @@ export const BookmarkComfortItem = React.memo(function BookmarkComfortItem({
       )}
     </BookmarkContextMenu>
   );
-});
+}

@@ -45,7 +45,7 @@ export function WorkspaceRestoreDialog({
             bookmark{bookmarkCount !== 1 ? "s" : ""} inside it.
           </AlertDialogDescription>
           {hasDuplicateName && (
-            <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-amber-600 dark:text-amber-400">
+            <div className="mt-3 flex items-start gap-2 rounded-md bg-amber-500/10 px-3 py-2 text-amber-600 dark:text-amber-400">
               <WarningIcon className="size-4 mt-0.5 shrink-0" />
               <span className="text-sm">
                 An active workspace with the same name already exists. Consider

@@ -124,8 +124,8 @@ export default async function PublicProfilePage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex-1">
-        <PublicHeader user={user} />
+      <PublicHeader user={user} />
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-10">
           <div className="lg:col-span-1">
             <div className="lg:sticky lg:top-18">

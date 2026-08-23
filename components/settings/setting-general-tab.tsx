@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting.action";
@@ -73,38 +73,47 @@ export function SettingsGeneralTab({
   const profileNameFieldSchema = updateProfileSchema["shape"].name;
 
   const [isUploading, setIsUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    profile?.avatar_url || null,
-  );
+  // undefined = "no local change yet", so the value derives from the
+  // profile query once it loads instead of freezing at mount-time state.
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<
+    string | null | undefined
+  >(undefined);
+  const avatarUrl = localAvatarUrl ?? (profile?.avatar_url || null);
 
   const handleAvatarUpload = async (file: File) => {
     setIsUploading(true);
     const formData = new FormData();
     formData.append("file", file);
 
-    const result = await uploadAvatar(formData);
-
-    if (!result.success) {
-      toast.error(result.error);
-    } else {
-      const nextAvatarUrl = result.data?.avatarUrl ?? null;
-      if (nextAvatarUrl) {
-        setAvatarUrl(nextAvatarUrl);
-        toast.success("Avatar uploaded successfully");
+    try {
+      const result = await uploadAvatar(formData);
+      if (!result.success) {
+        toast.error(result.error);
+      } else {
+        const nextAvatarUrl = result.data?.avatarUrl ?? null;
+        if (nextAvatarUrl) {
+          setLocalAvatarUrl(nextAvatarUrl);
+          toast.success("Avatar uploaded successfully");
+        }
       }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
     setIsUploading(false);
   };
 
   const handleAvatarRemove = async () => {
     setIsUploading(true);
-    const result = await deleteAvatar();
-
-    if (!result.success) {
-      toast.error(result.error);
-    } else {
-      setAvatarUrl(null);
-      toast.success("Avatar removed successfully");
+    try {
+      const result = await deleteAvatar();
+      if (!result.success) {
+        toast.error(result.error);
+      } else {
+        setLocalAvatarUrl(null);
+        toast.success("Avatar removed successfully");
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     }
     setIsUploading(false);
   };
@@ -125,16 +134,13 @@ export function SettingsGeneralTab({
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
   const isDirty = useStore(form.store, (state) => state.isDirty);
 
-  const formRef = useRef(form);
-  formRef.current = form;
-
   useEffect(() => {
     onRegisterFooter({
       isSubmitting,
       isDirty,
-      onSubmit: () => formRef.current.handleSubmit(),
+      onSubmit: () => form.handleSubmit(),
     });
-  }, [isSubmitting, isDirty, onRegisterFooter]);
+  }, [isSubmitting, isDirty, onRegisterFooter, form]);
 
   return (
     <form

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 
 import type { Bookmark, BookmarkSort } from "~/lib/schemas/bookmark.schema";
@@ -62,54 +62,38 @@ export function useBookmarks(workspaceId?: string) {
     enabled: !!userId,
   });
 
-  const tagsByBookmarkId = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const link of bookmarkTagLinks) {
-      const existing = map.get(link.bookmark_id);
-      if (existing) {
-        existing.push(link.tag_id);
-      } else {
-        map.set(link.bookmark_id, [link.tag_id]);
-      }
+  const tagsByBookmarkId = new Map<string, string[]>();
+  for (const link of bookmarkTagLinks) {
+    const existing = tagsByBookmarkId.get(link.bookmark_id);
+    if (existing) {
+      existing.push(link.tag_id);
+    } else {
+      tagsByBookmarkId.set(link.bookmark_id, [link.tag_id]);
     }
-    return map;
-  }, [bookmarkTagLinks]);
+  }
 
-  const tagsById = useMemo(() => {
-    const map = new Map<string, Tag>();
-    for (const tag of allTags) {
-      map.set(tag.id, tag);
-    }
-    return map;
-  }, [allTags]);
+  const tagsById = new Map<string, Tag>();
+  for (const tag of allTags) {
+    tagsById.set(tag.id, tag);
+  }
 
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<BookmarkSort>(DEFAULT_SORT);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
-  const bookmarks = useMemo(() => {
-    const filtered = filterBookmarksByWorkspace(allBookmarks, workspaceId);
-    const tagged = filterBookmarksByTags(
-      filtered,
-      selectedTagIds,
-      tagsByBookmarkId,
-    );
-    const searched = filterBookmarksBySearch(
-      tagged,
+  const bookmarks = sortBookmarksFn(
+    filterBookmarksBySearch(
+      filterBookmarksByTags(
+        filterBookmarksByWorkspace(allBookmarks, workspaceId),
+        selectedTagIds,
+        tagsByBookmarkId,
+      ),
       searchQuery,
       tagsByBookmarkId,
       tagsById,
-    );
-    return sortBookmarksFn(searched, sort);
-  }, [
-    allBookmarks,
-    workspaceId,
-    selectedTagIds,
-    tagsByBookmarkId,
-    searchQuery,
-    tagsById,
+    ),
     sort,
-  ]);
+  );
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
@@ -124,7 +108,6 @@ export function useBookmarks(workspaceId?: string) {
 
   return {
     bookmarks,
-    allBookmarks,
     allTags,
     tagsByBookmarkId,
     selectedTagIds,

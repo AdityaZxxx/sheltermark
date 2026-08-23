@@ -85,7 +85,7 @@ Reads go through `lib/queries/*.ts` hooks.
 
 ## Design Principles
 
-1. **Keyboard-first.** All actions accessible via keyboard (see `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-global-shortcuts.ts`).
+1. **Keyboard-first.** All actions accessible via keyboard (see `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-list-manager.ts` (global shortcuts)).
 2. **Minimal clicks.** Quick actions, smart defaults, optimistic UI.
 3. **Fast metadata.** Auto-fetch title, favicon, og:image via a multi-strategy pipeline; never block the UI on it.
 4. **Clean UI.** Minimalist, no clutter, focus on content. Function over form.
@@ -95,7 +95,7 @@ Reads go through `lib/queries/*.ts` hooks.
 - **Strict TypeScript, no `any`.** `tsc --noEmit` must pass.
 - **Zod validates at action boundary.** Schemas in `lib/schemas/`.
 - **Server components by default.** Use `"use client"` only where interactivity is required.
-- **Keyboard-first.** All actions accessible via keyboard. See `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-global-shortcuts.ts`.
+- **Keyboard-first.** All actions accessible via keyboard. See `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-list-manager.ts` (global shortcuts).
 - **Follow shadcn/ui patterns.** Components in `components/ui/` are vendored — don't hand-edit; regenerate via `shadcn` CLI.
 - **Do not add comments proactively** Only add comments for non-obvious intent, business rules, constraints, workarounds, security considerations, or important trade-offs.
 - **Do not add tests solely to increase coverage**

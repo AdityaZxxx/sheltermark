@@ -40,7 +40,7 @@ export function WorkspaceCard({
   onSelectionModeToggle?: () => void;
 }) {
   return (
-    <Collapsible className="border border-border rounded-lg overflow-hidden bg-card transition-shadow hover:shadow-sm">
+    <Collapsible className="rounded-lg overflow-hidden bg-card shadow-xs transition-shadow hover:shadow-sm">
       <div className="flex items-center justify-between gap-2 px-4 py-3">
         <CollapsibleTrigger className="group/trigger flex items-center gap-3 min-w-0 text-left transition-colors hover:opacity-70">
           <CaretDownIcon className="size-4 text-muted-foreground shrink-0 transition-transform duration-200 -rotate-90 group-data-[panel-open]/trigger:rotate-0" />
@@ -108,7 +108,7 @@ export function WorkspaceCard({
       </div>
       <CollapsibleContent className="overflow-hidden">
         {workspace.bookmarks.length > 0 ? (
-          <div className="border-t border-border divide-y divide-border">
+          <div className="border-t border-border/60 px-1.5 pt-1.5 space-y-0.5">
             {workspace.bookmarks.map((bm) => (
               <BookmarkRow
                 key={bm.id}
@@ -123,7 +123,7 @@ export function WorkspaceCard({
             ))}
           </div>
         ) : (
-          <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+          <div className="border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
             No bookmarks in this workspace
           </div>
         )}

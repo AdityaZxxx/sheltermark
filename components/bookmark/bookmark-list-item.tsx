@@ -48,7 +48,7 @@ interface BookmarkListItemProps extends BookmarkItemProps {
   autoCheckBroken?: boolean;
 }
 
-export const BookmarkListItem = React.memo(function BookmarkListItem({
+export function BookmarkListItem({
   id,
   title,
   url,
@@ -82,7 +82,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      window.open(url, "_blank");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -100,7 +100,7 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
           e.preventDefault();
           onSelect?.(id);
         } else {
-          window.open(url, "_blank");
+          window.open(url, "_blank", "noopener,noreferrer");
         }
       }}
     >
@@ -205,4 +205,4 @@ export const BookmarkListItem = React.memo(function BookmarkListItem({
       {(triggerProps) => <div {...triggerProps}>{buttonContent}</div>}
     </BookmarkContextMenu>
   );
-});
+}

@@ -1,48 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function useBookmarkSelection() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
-  const toggleSelectionMode = useCallback(() => {
-    setIsSelectionMode((prev) => {
-      if (prev) {
-        setSelectedIds([]);
-      }
-      return !prev;
-    });
-  }, []);
+  const toggleSelectionMode = () => {
+    if (isSelectionMode) {
+      setSelectedIds([]);
+    }
+    setIsSelectionMode(!isSelectionMode);
+  };
 
-  const toggleSelect = useCallback((id: string) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
-  }, []);
+  };
 
-  const selectAll = useCallback((ids: string[]) => {
+  const selectAll = (ids: string[]) => {
     setSelectedIds(ids);
-  }, []);
+  };
 
-  const clearSelection = useCallback(() => {
+  const clearSelection = () => {
     setSelectedIds([]);
     setIsSelectionMode(false);
-  }, []);
+  };
 
-  const clearSelectionOnly = useCallback(() => {
+  const clearSelectionOnly = () => {
     setSelectedIds([]);
-  }, []);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isSelectionMode) {
-        clearSelection();
+        setSelectedIds([]);
+        setIsSelectionMode(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSelectionMode, clearSelection]);
+  }, [isSelectionMode]);
 
   return {
     selectedIds,

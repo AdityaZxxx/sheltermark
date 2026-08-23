@@ -117,7 +117,11 @@ export function UserMenu({ user }: UserMenuProps) {
           <DropdownMenuItem
             className="w-full"
             onClick={() => {
-              window.open("mailto:adityaofficial7142gmail.com", "_blank");
+              window.open(
+                "mailto:adityaofficial7142gmail.com",
+                "_blank",
+                "noopener,noreferrer",
+              );
             }}
           >
             <span className="w-full flex items-center gap-2">

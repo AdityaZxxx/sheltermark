@@ -3,8 +3,6 @@ import type {
   BookmarkDeleteInput,
   BookmarkEditInput,
   BookmarkMoveInput,
-  BookmarkRenameInput,
-  BookmarkUpdateNoteInput,
 } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
@@ -13,9 +11,7 @@ import {
   deleteBookmarks,
   moveBookmarks,
   refetchBookmarkMetadata,
-  renameBookmark,
   updateBookmarkFields,
-  updateBookmarkNote,
 } from "~/app/action/bookmark.action";
 import {
   optimisticPrepend,
@@ -84,19 +80,6 @@ export function useDeleteBookmarks(userId: string | undefined) {
   });
 }
 
-export function useRenameBookmark(_userId: string | undefined) {
-  return useOptimisticMutation<BookmarkRenameInput, null, Bookmark[]>({
-    mutationFn: renameBookmark,
-    mutationKey: ["renameBookmark"],
-    queryKey: bookmarkKeys.all,
-    successMessage: "Bookmark renamed",
-    errorMessage: "Failed to rename bookmark",
-    prepareOptimisticData: (oldData, { id, title }) => {
-      return optimisticUpdate(oldData, id, (b) => ({ ...b, title }));
-    },
-  });
-}
-
 export function useMoveBookmarks(userId: string | undefined) {
   return useOptimisticMutation<
     BookmarkMoveInput,
@@ -131,18 +114,6 @@ export function useRefetchBookmarkMetadata(_userId: string | undefined) {
         ...b,
         last_checked_at: new Date().toISOString(),
       }));
-    },
-  });
-}
-
-export function useUpdateBookmarkNote(_userId: string | undefined) {
-  return useOptimisticMutation<BookmarkUpdateNoteInput, null, Bookmark[]>({
-    mutationFn: updateBookmarkNote,
-    queryKey: bookmarkKeys.all,
-    successMessage: "Note saved",
-    errorMessage: "Failed to save note",
-    prepareOptimisticData: (oldData, { id, note }) => {
-      return optimisticUpdate(oldData, id, (b) => ({ ...b, note }));
     },
   });
 }

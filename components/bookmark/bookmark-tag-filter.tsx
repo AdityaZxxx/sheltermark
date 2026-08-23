@@ -54,7 +54,7 @@ export function BookmarkTagFilter({
               "inline-flex h-7 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-medium transition-colors active:scale-[0.97]",
               isActive
                 ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             #{tag.name}

@@ -1,7 +1,7 @@
 "use client";
 
 import { TagIcon, XIcon } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 import type { TagEntry } from "~/lib/utils";
@@ -18,20 +18,18 @@ interface TagInputProps {
 export function TagInput({ value, onChange, allUserTags }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
 
-  const suggestions = useMemo(() => {
-    const q = inputValue.trim().toLowerCase();
-    const usedIds = new Set(value.map((e) => e.id).filter(Boolean));
-    const usedNames = new Set(value.map((e) => e.name.toLowerCase()));
+  const q = inputValue.trim().toLowerCase();
+  const usedIds = new Set(value.map((e) => e.id).filter(Boolean));
+  const usedNames = new Set(value.map((e) => e.name.toLowerCase()));
 
-    return allUserTags
-      .filter((t) => {
-        if (usedIds.has(t.id)) return false;
-        if (usedNames.has(t.name.toLowerCase())) return false;
-        if (!q) return true;
-        return t.name.toLowerCase().includes(q);
-      })
-      .slice(0, 8);
-  }, [allUserTags, value, inputValue]);
+  const suggestions = allUserTags
+    .filter((t) => {
+      if (usedIds.has(t.id)) return false;
+      if (usedNames.has(t.name.toLowerCase())) return false;
+      if (!q) return true;
+      return t.name.toLowerCase().includes(q);
+    })
+    .slice(0, 8);
 
   const trimmedInput = inputValue.trim();
   const canCreateNew =
@@ -59,7 +57,7 @@ export function TagInput({ value, onChange, allUserTags }: TagInputProps) {
         Tags
       </Label>
 
-      <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-input/20 px-2 py-1.5 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
+      <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-border/70 bg-card px-2 py-1.5 shadow-xs transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-4 focus-within:ring-ring/10">
         {value.map((entry, index) => (
           <Badge
             key={entry.id ?? `new-${index}-${entry.name}`}
@@ -72,7 +70,7 @@ export function TagInput({ value, onChange, allUserTags }: TagInputProps) {
               type="button"
               onClick={() => removeEntry(index)}
               aria-label={`Remove tag ${entry.name}`}
-              className="-mr-1 ml-0.5 inline-flex size-4 items-center justify-center rounded-sm opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="-mr-1 ml-0.5 inline-flex size-4 items-center justify-center rounded-sm opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:opacity-100 focus-visible:bg-muted"
             >
               <XIcon className="size-3" />
             </button>

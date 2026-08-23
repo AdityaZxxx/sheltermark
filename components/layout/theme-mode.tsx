@@ -38,6 +38,7 @@ export function ThemeMode({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- canonical next-themes mounted guard: mount state is unknowable during render, and rendering null until mounted prevents hydration mismatch
     setMounted(true);
   }, []);
 

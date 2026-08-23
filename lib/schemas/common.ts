@@ -7,8 +7,6 @@ import { z } from "zod";
 
 export const uuidSchema = z.uuid();
 
-export const timestampSchema = z.iso.datetime();
-
 export const urlSchema = z.url();
 
 /**

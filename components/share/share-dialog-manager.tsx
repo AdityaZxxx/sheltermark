@@ -1,11 +1,18 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { useWorkspaces } from "~/hooks/use-workspaces";
 
 import { ShareDialog } from "./share-dialog";
+
+function cleanShareParams() {
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.delete("share_url");
+  newUrl.searchParams.delete("share_title");
+  window.history.replaceState({}, "", newUrl.pathname);
+}
 
 export function ShareDialogManager() {
   const searchParams = useSearchParams();
@@ -19,27 +26,20 @@ export function ShareDialogManager() {
   // because the user can dismiss the dialog independently of the URL.
   const [open, setOpen] = useState(!!shareUrl);
 
-  const handleSuccess = useCallback(() => {
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.delete("share_url");
-    newUrl.searchParams.delete("share_title");
-    window.history.replaceState({}, "", newUrl.pathname);
-  }, []);
-
   return (
     <ShareDialog
       open={open}
       onOpenChange={(isOpen) => {
         setOpen(isOpen);
         if (!isOpen) {
-          handleSuccess();
+          cleanShareParams();
         }
       }}
       url={shareUrl || ""}
       title={shareTitle || ""}
       workspaces={workspaces}
       currentWorkspaceId={currentWorkspace?.id}
-      onSuccess={handleSuccess}
+      onSuccess={cleanShareParams}
     />
   );
 }

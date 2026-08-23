@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -56,31 +56,22 @@ export function RestoreDialog({
 }: RestoreDialogProps) {
   const { workspaces } = useWorkspaces();
 
-  const originalWs = useMemo(
-    () =>
-      originalWorkspaceName
-        ? (workspaces.find((ws) => ws.name === originalWorkspaceName) ?? null)
-        : null,
-    [originalWorkspaceName, workspaces],
-  );
+  const originalWs = originalWorkspaceName
+    ? (workspaces.find((ws) => ws.name === originalWorkspaceName) ?? null)
+    : null;
 
-  const workspaceItems = useMemo(
-    () => workspaces.map((ws) => ({ value: ws.id, label: ws.name })),
-    [workspaces],
-  );
+  const workspaceItems = workspaces.map((ws) => ({
+    value: ws.id,
+    label: ws.name,
+  }));
 
-  const [destination, setDestination] = useState<Destination>("other");
-  const [selectedWsId, setSelectedWsId] = useState("");
+  const [destination, setDestination] = useState<Destination>(() =>
+    hasTrashedOrigin ? "other" : originalWs ? "original" : "other",
+  );
+  const [selectedWsId, setSelectedWsId] = useState(
+    () => workspaces[0]?.id ?? "",
+  );
   const [newWsName, setNewWsName] = useState("Restored");
-
-  useEffect(() => {
-    if (!open) return;
-    setDestination(
-      hasTrashedOrigin ? "other" : originalWs ? "original" : "other",
-    );
-    setSelectedWsId(workspaces[0]?.id ?? "");
-    setNewWsName("Restored");
-  }, [open, hasTrashedOrigin, originalWs, workspaces]);
 
   const handleConfirm = () => {
     if (destination === "new") {
@@ -109,7 +100,7 @@ export function RestoreDialog({
         </DialogHeader>
 
         {hasTrashedOrigin && trashedWorkspaceName && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
+          <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-950">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
               Original workspace is in Trash
             </p>
@@ -272,8 +263,8 @@ function Row({
     // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row toggles radio for convenience; keyboard handled by RadioGroupItem natively
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer",
-        selected && "border-primary bg-accent",
+        "flex items-start gap-3 rounded-lg p-3 transition-colors cursor-pointer hover:bg-muted/40",
+        selected && "ring-1 ring-primary bg-accent",
       )}
       onClick={onClick}
     >

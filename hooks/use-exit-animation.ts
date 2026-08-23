@@ -8,6 +8,9 @@ export function useExitAnimation<T extends { id: string }>(
 ) {
   const [exiting, setExiting] = useState<T[]>([]);
   const prevItemsRef = useRef<T[]>(items);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const currIds = new Set(items.map((i) => i.id));
@@ -16,7 +19,8 @@ export function useExitAnimation<T extends { id: string }>(
     if (removed.length > 0) {
       setExiting((prev) => [...prev, ...removed]);
       const removedIds = new Set(removed.map((r) => r.id));
-      setTimeout(() => {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
         setExiting((prev) => prev.filter((e) => !removedIds.has(e.id)));
       }, duration);
     }
@@ -24,5 +28,11 @@ export function useExitAnimation<T extends { id: string }>(
     prevItemsRef.current = items;
   }, [items, duration]);
 
-  return { exiting, setExiting };
+  // Clear only on unmount — clearing per effect run would cancel pending
+  // removals when items change again before the timeout fires.
+  useEffect(() => {
+    return () => clearTimeout(timeoutRef.current);
+  }, []);
+
+  return { exiting };
 }

@@ -2,7 +2,7 @@
 
 import { Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
@@ -93,14 +93,11 @@ function EditFormInner({
   const [generating, setGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
-  const initialValues = useMemo(
-    () => ({
-      title: bookmark.title,
-      note: bookmark.note,
-      tags: tagsToEntries(bookmark.tags),
-    }),
-    [bookmark.title, bookmark.note, bookmark.tags],
-  );
+  const initialValues = {
+    title: bookmark.title,
+    note: bookmark.note,
+    tags: tagsToEntries(bookmark.tags),
+  };
 
   async function handleGenerateTitle() {
     setGenerating(true);
@@ -123,9 +120,8 @@ function EditFormInner({
       toast.error(
         "Failed to generate title. Check your connection and try again.",
       );
-    } finally {
-      setGenerating(false);
     }
+    setGenerating(false);
   }
 
   const form = useForm({
@@ -189,7 +185,7 @@ function EditFormInner({
                     onClick={handleGenerateTitle}
                     disabled={generating}
                     aria-label="Generate title with AI"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:bg-muted"
                   >
                     {generating ? (
                       <span aria-hidden="true" className="inline-flex">
@@ -201,7 +197,7 @@ function EditFormInner({
                   </button>
                 </div>
                 {aiSuggestion && (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                  <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
                     <Sparkle
                       className="size-3.5 shrink-0 text-amber-500"
                       weight="fill"
@@ -258,7 +254,7 @@ function EditFormInner({
                   <Popover>
                     <PopoverTrigger
                       aria-label="Markdown formatting supported"
-                      className="absolute right-2 bottom-0.5 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="absolute right-2 bottom-0.5 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:bg-muted"
                     >
                       <MarkdownIcon className="h-4 w-auto" aria-hidden="true" />
                     </PopoverTrigger>
@@ -296,7 +292,7 @@ function EditFormInner({
           </form.Field>
         </div>
 
-        <DialogFooter className="flex-row justify-end sticky bottom-0 border-t bg-background px-6 py-3">
+        <DialogFooter className="flex-row justify-end sticky bottom-0 border-t border-border/60 bg-background px-6 py-3">
           <Button
             type="button"
             variant="outline"
@@ -316,7 +312,7 @@ function EditFormInner({
 
 function MarkdownExample({ label, source }: { label: string; source: string }) {
   return (
-    <div className="grid grid-cols-[5rem_1fr] items-baseline gap-x-3 rounded-md border border-border/60 bg-muted/30 px-3 py-1.5">
+    <div className="grid grid-cols-[5rem_1fr] items-baseline gap-x-3 rounded-md bg-muted/60 px-3 py-1.5">
       <span className="row-span-2 self-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>

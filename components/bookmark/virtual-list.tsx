@@ -18,6 +18,9 @@ export function VirtualList<T extends { id: string }>({
   overscan = 5,
   gap = 0,
 }: VirtualListProps<T>) {
+  // @tanstack/react-virtual mutates options during render internally, which
+  // the React Compiler cannot memoize — opt this component out explicitly.
+  "use no memo";
   const parentRef = useRef<HTMLDivElement>(null);
   const [listHeight, setListHeight] = useState(600);
 
@@ -41,6 +44,7 @@ export function VirtualList<T extends { id: string }>({
     };
   }, []);
 
+  // oxlint-disable-next-line react/incompatible-library -- @tanstack/react-virtual mutates options during render; component is opted out of the compiler via "use no memo"
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,

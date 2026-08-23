@@ -30,7 +30,9 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn(
-        "aspect-square size-full rounded-full object-cover",
+        // absolute: keep the <img> out of the flex flow — while still
+        // downloading it would otherwise squeeze the fallback sideways
+        "absolute inset-0 aspect-square size-full rounded-full object-cover",
         className
       )}
       {...props}
