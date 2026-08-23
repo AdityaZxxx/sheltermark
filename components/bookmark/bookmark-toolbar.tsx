@@ -50,7 +50,7 @@ export function BookmarkToolbar({
 
       <div
         className={cn(
-          "bg-popover border border-border shadow-xl rounded-xl p-1.5 mb-2",
+          "bg-popover/95 shadow-xl rounded-xl p-1.5 mb-2",
           "flex flex-col items-center gap-2 w-full",
           "backdrop-blur-sm bg-popover/95",
         )}

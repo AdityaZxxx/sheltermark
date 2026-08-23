@@ -100,7 +100,7 @@ export function RestoreDialog({
         </DialogHeader>
 
         {hasTrashedOrigin && trashedWorkspaceName && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
+          <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-950">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
               Original workspace is in Trash
             </p>
@@ -263,8 +263,8 @@ function Row({
     // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row toggles radio for convenience; keyboard handled by RadioGroupItem natively
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-3 transition-colors cursor-pointer",
-        selected && "border-primary bg-accent",
+        "flex items-start gap-3 rounded-lg p-3 transition-colors cursor-pointer hover:bg-muted/40",
+        selected && "ring-1 ring-primary bg-accent",
       )}
       onClick={onClick}
     >

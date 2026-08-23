@@ -56,8 +56,8 @@ export function BookmarkRow({
       role="button"
       tabIndex={showCheckbox ? 0 : -1}
       className={cn(
-        "flex w-full items-center gap-2.5 border-b border-border px-3 py-2.5 text-left transition-colors last:border-0 sm:gap-3 sm:px-4 sm:py-3",
-        isSelected && "bg-muted/30",
+        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/40 sm:gap-3 sm:px-4 sm:py-3",
+        isSelected && "bg-muted/50",
         showCheckbox && "cursor-pointer",
       )}
       onClick={() => {

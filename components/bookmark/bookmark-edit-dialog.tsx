@@ -197,7 +197,7 @@ function EditFormInner({
                   </button>
                 </div>
                 {aiSuggestion && (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                  <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
                     <Sparkle
                       className="size-3.5 shrink-0 text-amber-500"
                       weight="fill"
@@ -292,7 +292,7 @@ function EditFormInner({
           </form.Field>
         </div>
 
-        <DialogFooter className="flex-row justify-end sticky bottom-0 border-t bg-background px-6 py-3">
+        <DialogFooter className="flex-row justify-end sticky bottom-0 border-t border-border/60 bg-background px-6 py-3">
           <Button
             type="button"
             variant="outline"
@@ -312,7 +312,7 @@ function EditFormInner({
 
 function MarkdownExample({ label, source }: { label: string; source: string }) {
   return (
-    <div className="grid grid-cols-[5rem_1fr] items-baseline gap-x-3 rounded-md border border-border/60 bg-muted/30 px-3 py-1.5">
+    <div className="grid grid-cols-[5rem_1fr] items-baseline gap-x-3 rounded-md bg-muted/60 px-3 py-1.5">
       <span className="row-span-2 self-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>

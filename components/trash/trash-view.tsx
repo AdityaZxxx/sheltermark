@@ -250,7 +250,7 @@ export function TrashView() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex h-9 w-full rounded-lg border border-border bg-transparent pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/30"
+              className="flex h-9 w-full rounded-lg bg-input/50 pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/30"
             />
             {searchQuery && (
               <button
@@ -314,7 +314,7 @@ export function TrashView() {
                   title="Bookmarks"
                   count={filteredStandaloneBookmarks.length}
                 />
-                <div className="border border-border rounded-lg overflow-hidden">
+                <div className="space-y-0.5">
                   {filteredStandaloneBookmarks.map((bm) => (
                     <BookmarkRow
                       key={bm.id}

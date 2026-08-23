@@ -135,7 +135,7 @@ export function BookmarkCardItem({
           </h3>
         </div>
       </div>
-      <div className="flex items-center px-4 py-3 justify-between w-full border-t border-border">
+      <div className="flex items-center px-4 py-3 justify-between w-full border-t border-border/60">
         <div className="flex gap-2 min-w-0 flex-1 mr-2">
           <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center relative">
             {favicon_url ? (

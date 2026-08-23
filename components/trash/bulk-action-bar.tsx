@@ -51,7 +51,7 @@ export function BulkActionBar({
 
       <div
         className={cn(
-          "bg-popover border border-border shadow-xl rounded-xl px-4 py-2",
+          "bg-popover/95 shadow-xl rounded-xl px-4 py-2",
           "flex flex-col items-center gap-2 w-full",
           "backdrop-blur-sm bg-popover/95",
         )}
