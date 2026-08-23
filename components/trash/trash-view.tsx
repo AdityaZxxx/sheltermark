@@ -250,7 +250,7 @@ export function TrashView() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex h-9 w-full rounded-lg bg-input/50 pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/30"
+              className="flex h-9 w-full rounded-lg bg-input/50 pl-9 pr-8 text-sm outline-none placeholder:text-muted-foreground transition-colors duration-150 focus-visible:bg-input/75"
             />
             {searchQuery && (
               <button

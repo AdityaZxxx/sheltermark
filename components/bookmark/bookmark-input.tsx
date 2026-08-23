@@ -83,7 +83,7 @@ export function BookmarkInput({
       <Input
         ref={ref}
         placeholder="Search or paste URL to add..."
-        className="pl-10 h-11 bg-muted/40 border-none focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl"
+        className="pl-10 h-11 bg-muted/40 border-none rounded-xl transition-colors duration-150 focus-visible:bg-muted/60 focus-visible:ring-0"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}

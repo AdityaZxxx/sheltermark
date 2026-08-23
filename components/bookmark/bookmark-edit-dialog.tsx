@@ -185,7 +185,7 @@ function EditFormInner({
                     onClick={handleGenerateTitle}
                     disabled={generating}
                     aria-label="Generate title with AI"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:bg-muted"
                   >
                     {generating ? (
                       <span aria-hidden="true" className="inline-flex">
@@ -254,7 +254,7 @@ function EditFormInner({
                   <Popover>
                     <PopoverTrigger
                       aria-label="Markdown formatting supported"
-                      className="absolute right-2 bottom-0.5 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="absolute right-2 bottom-0.5 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:bg-muted"
                     >
                       <MarkdownIcon className="h-4 w-auto" aria-hidden="true" />
                     </PopoverTrigger>

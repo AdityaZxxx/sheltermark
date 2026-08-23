@@ -70,7 +70,7 @@ export function TagInput({ value, onChange, allUserTags }: TagInputProps) {
               type="button"
               onClick={() => removeEntry(index)}
               aria-label={`Remove tag ${entry.name}`}
-              className="-mr-1 ml-0.5 inline-flex size-4 items-center justify-center rounded-sm opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="-mr-1 ml-0.5 inline-flex size-4 items-center justify-center rounded-sm opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:opacity-100 focus-visible:bg-muted"
             >
               <XIcon className="size-3" />
             </button>
