@@ -30,54 +30,57 @@ export function WorkspaceRenameDialog({
   isRenaming,
 }: WorkspaceRenameDialogProps) {
   const [name, setName] = useState(currentName);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) setName("");
-    onOpenChange(open);
-  };
+  if (isOpen !== prevOpen) {
+    setPrevOpen(isOpen);
+    if (isOpen) setName(currentName);
+  }
 
-  const handleSubmit = () => {
-    if (name.trim() && name.trim() !== currentName) {
-      onRename(name.trim());
-      onOpenChange(false);
-    }
+  const trimmedName = name.trim();
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!trimmedName || trimmedName === currentName) return;
+
+    onRename(trimmedName);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Rename Workspace</DialogTitle>
           <DialogDescription>Give your workspace a new name.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
             <Label htmlFor="workspace-name">Name</Label>
             <Input
               id="workspace-name"
               placeholder="e.g. Research, Design, Inbox"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSubmit();
-              }}
+              onChange={(event) => setName(event.target.value)}
               maxLength={35}
             />
           </div>
-        </div>
 
-        <DialogFooter className="flex flex-row justify-end ">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!name.trim() || name.trim() === currentName || isRenaming}
-          >
-            Rename
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="flex flex-row justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                !trimmedName || trimmedName === currentName || isRenaming
+              }
+            >
+              Rename
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
