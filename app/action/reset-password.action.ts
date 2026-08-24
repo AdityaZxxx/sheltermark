@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
 
+import { friendlyAuthError } from "~/lib/supabase/auth-error";
 import { createClient } from "~/lib/supabase/server";
 import { getBaseUrl } from "~/lib/utils";
 
@@ -38,7 +39,7 @@ export async function resetPasswordForEmail(
   );
 
   if (resetError) {
-    return { success: false, error: resetError.message };
+    return { success: false, error: friendlyAuthError(resetError) };
   }
 
   return { success: true, data: null };
@@ -75,7 +76,7 @@ export async function updatePassword(
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: friendlyAuthError(error) };
   }
 
   redirect("/dashboard");

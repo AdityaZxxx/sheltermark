@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
 
+import { friendlyAuthError } from "~/lib/supabase/auth-error";
 import { createClient } from "~/lib/supabase/server";
 import { getBaseUrl } from "~/lib/utils";
 
@@ -51,7 +52,7 @@ export async function signupWithEmail(
   });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: friendlyAuthError(error) };
   }
 
   return { success: true, data: { user, session } };

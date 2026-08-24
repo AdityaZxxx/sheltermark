@@ -36,6 +36,7 @@ import {
 } from "~/components/ui/select";
 import { useProfile } from "~/hooks/use-profile";
 import { useWorkspaces } from "~/hooks/use-workspaces";
+import { GENERIC_ERROR } from "~/lib/action-result";
 import {
   TRASH_CLEANUP_INTERVALS,
   updateProfileSchema,
@@ -97,7 +98,7 @@ export function SettingsGeneralTab({
         }
       }
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(GENERIC_ERROR);
     }
     setIsUploading(false);
   };
@@ -113,7 +114,7 @@ export function SettingsGeneralTab({
         toast.success("Avatar removed successfully");
       }
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(GENERIC_ERROR);
     }
     setIsUploading(false);
   };

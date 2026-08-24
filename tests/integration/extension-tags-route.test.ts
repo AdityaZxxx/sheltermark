@@ -56,7 +56,7 @@ const { GET } = await import("~/app/api/extension/tags/route");
 describe("GET /api/extension/tags", () => {
   it("returns authenticated=false with empty tags when no user", async () => {
     createClientMock.mockResolvedValue(makeSupabase({ user: null }));
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/"));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toEqual({ authenticated: false, tags: [] });
@@ -78,7 +78,7 @@ describe("GET /api/extension/tags", () => {
         },
       ],
     });
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/"));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.authenticated).toBe(true);
@@ -93,15 +93,15 @@ describe("GET /api/extension/tags", () => {
     expect(getTagsWithCountMock).toHaveBeenCalledWith(expect.anything(), "u1");
   });
 
-  it("returns 500 on repository failure", async () => {
+  it("degrades gracefully on repository failure (popup never sees an error surface)", async () => {
     createClientMock.mockResolvedValue(makeSupabase({ user: { id: "u1" } }));
     getTagsWithCountMock.mockResolvedValue({
       success: false,
       error: "boom",
     });
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/"));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe("boom");
+    expect(json).toEqual({ authenticated: false, tags: [] });
   });
 });

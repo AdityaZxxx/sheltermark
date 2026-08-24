@@ -52,20 +52,16 @@ export function useRestoreBookmarks() {
       },
       additionalOptimisticUpdates: ({ ids }) =>
         trashedWorkspaceFilterUpdates(ids),
-      onSuccess: (result) => {
-        if (result.success) {
-          const { restoredCount, skippedCount } = result.data;
-          if (restoredCount > 0 && skippedCount > 0) {
-            toast.success(
-              `${restoredCount} restored, ${skippedCount} already exists`,
-            );
-          } else if (restoredCount > 0) {
-            toast.success("Bookmarks restored");
-          } else if (skippedCount > 0) {
-            toast.info("Bookmarks already exist in target workspace");
-          }
-        } else {
-          toast.error(result.error ?? "Failed to restore bookmarks");
+      onSuccessData: (data) => {
+        const { restoredCount, skippedCount } = data;
+        if (restoredCount > 0 && skippedCount > 0) {
+          toast.success(
+            `${restoredCount} restored, ${skippedCount} already exists`,
+          );
+        } else if (restoredCount > 0) {
+          toast.success("Bookmarks restored");
+        } else if (skippedCount > 0) {
+          toast.info("Bookmarks already exist in target workspace");
         }
       },
     },
@@ -84,20 +80,16 @@ export function useRestoreWorkspace() {
       const prev = oldData ?? [];
       return prev.filter((ws) => ws.id !== id);
     },
-    onSuccess: (result) => {
-      if (result.success) {
-        const { restoredCount, skippedCount } = result.data;
-        if (restoredCount > 0 && skippedCount > 0) {
-          toast.success(
-            `Workspace restored, ${skippedCount} bookmark${skippedCount !== 1 ? "s" : ""} already exist`,
-          );
-        } else if (restoredCount > 0 || skippedCount === 0) {
-          toast.success("Workspace restored");
-        } else {
-          toast.info("All bookmarks already exist in workspace");
-        }
+    onSuccessData: (data) => {
+      const { restoredCount, skippedCount } = data;
+      if (restoredCount > 0 && skippedCount > 0) {
+        toast.success(
+          `Workspace restored, ${skippedCount} bookmark${skippedCount !== 1 ? "s" : ""} already exist`,
+        );
+      } else if (restoredCount > 0 || skippedCount === 0) {
+        toast.success("Workspace restored");
       } else {
-        toast.error(result.error ?? "Failed to restore workspace");
+        toast.info("All bookmarks already exist in workspace");
       }
     },
   });

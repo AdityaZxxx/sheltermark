@@ -428,8 +428,7 @@ export function useBookmarkListManager(
         { url: normalizedUrl, workspaceId: targetWorkspace.id },
         {
           onSuccess: () => invalidate(),
-          onError: (err) =>
-            toast.error(err.message || "Failed to add bookmark"),
+          onError: () => toast.error("Failed to add bookmark"),
         },
       );
     }

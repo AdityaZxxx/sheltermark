@@ -28,6 +28,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { GENERIC_ERROR } from "~/lib/action-result";
 
 import { SettingsDialogFooter } from "./setting-dialog-footer";
 import { SettingsGeneralTab } from "./setting-general-tab";
@@ -78,7 +79,7 @@ export function SettingsDialog({
         window.location.href = "/";
       }
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(GENERIC_ERROR);
     }
     setIsDeleting(false);
     setDeleteAlertOpen(false);

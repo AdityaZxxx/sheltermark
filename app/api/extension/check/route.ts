@@ -1,12 +1,20 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
+import { withExtension } from "~/app/api/extension/_lib/with-extension";
 import { createClient } from "~/lib/supabase/server";
 import { normalizeUrl } from "~/lib/utils";
-import { logger } from "~/lib/utils/logger";
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
+export const GET = withExtension(
+  {
+    scope: "bookmark check",
+    failureMessage: "Failed to check bookmark",
+    // A failed check must never block saving — degrade to "not saved".
+    unauthorized: () => NextResponse.json({ saved: false }, { status: 200 }),
+    onUnexpected: () => NextResponse.json({ saved: false }, { status: 200 }),
+  },
+  async ({ req, user }) => {
+    const supabase = await createClient();
+    const { searchParams } = new URL(req.url);
     const url = searchParams.get("url");
     const workspaceId = searchParams.get("workspace_id");
 
@@ -32,17 +40,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ saved: false }, { status: 200 });
     }
 
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ saved: false }, { status: 200 });
-    }
-
     // Match the insert path: stored URLs are normalized, so the raw tab URL
     // must be normalized before comparing or dupes pre-save are missed.
     const lookupUrl = normalizeUrl(url);
@@ -58,17 +55,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await query.maybeSingle();
-
-    if (error) {
-      return NextResponse.json({ saved: false }, { status: 200 });
-    }
+    if (error) throw error;
 
     return NextResponse.json({
       saved: !!data,
       bookmark_id: data?.id ?? null,
     });
-  } catch (error) {
-    logger.error("Extension check error", { error });
-    return NextResponse.json({ saved: false }, { status: 200 });
-  }
-}
+  },
+);

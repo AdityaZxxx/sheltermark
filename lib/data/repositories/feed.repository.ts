@@ -1,9 +1,9 @@
 import { and, desc, eq } from "drizzle-orm";
 
-import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
 import type { Feed } from "~/lib/schemas/feed.schema";
 
+import { dbError, type ActionResult } from "~/lib/action-result";
 import { bookmarks, feedEntries, feeds, workspaces } from "~/lib/data/schema";
 import { type ParsedFeed, parseFeed } from "~/lib/feeds/rss-parser";
 import { fetchMetadata } from "~/lib/metadata/pipeline";
@@ -32,13 +32,6 @@ function toFeed(row: FeedRow): Feed {
   };
 }
 
-function dbError(cause: unknown): ActionResult<never> {
-  return {
-    success: false,
-    error: cause instanceof Error ? cause.message : "Database error",
-  };
-}
-
 /**
  * SECURITY: Drizzle connects with the service-role credential and BYPASSES
  * ROW LEVEL SECURITY. Own-feed queries key on `user_id` explicitly; the
@@ -58,7 +51,7 @@ export async function getFeeds(
       .orderBy(desc(feeds.created_at));
     return { success: true, data: rows.map(toFeed) };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
 }
 
@@ -85,7 +78,7 @@ export async function subscribeToFeed(
       .where(and(eq(feeds.url, parsedUrl), eq(feeds.user_id, userId)))
       .limit(1);
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
 
   if (existing.length > 0) {
@@ -96,9 +89,10 @@ export async function subscribeToFeed(
   try {
     feedData = await parseFeed(parsedUrl);
   } catch (err) {
+    logger.error("Feed parse failed", { error: err });
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to parse feed",
+      error: "Failed to read this feed. Check the URL and try again.",
     };
   }
 
@@ -131,7 +125,7 @@ export async function subscribeToFeed(
     if (!first) return { success: false, error: "Insert returned no row" };
     feedRow = first;
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
 
   const [defaultWorkspace] = targetWorkspaceId
@@ -196,13 +190,14 @@ async function syncSingleFeed(
   try {
     feedData = await parseFeed(feed.url);
   } catch (err) {
+    logger.error("Feed sync parse failed", { error: err, url: feed.url });
     await db
       .update(feeds)
       .set({ last_synced_at: new Date().toISOString() })
       .where(eq(feeds.id, feed.id));
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to parse feed",
+      error: "Failed to sync this feed. Please try again.",
     };
   }
 
@@ -306,7 +301,7 @@ export async function refreshFeed(
       .limit(1);
     feedRow = rows[0];
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
 
   if (!feedRow) {
@@ -341,7 +336,7 @@ export async function deleteFeed(
       .delete(feeds)
       .where(and(eq(feeds.id, validated.data.id), eq(feeds.user_id, userId)));
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
   return { success: true, data: null };
 }
@@ -354,7 +349,7 @@ export async function syncAllFeeds(
   try {
     feedRows = await db.select().from(feeds).where(eq(feeds.user_id, userId));
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
 
   if (feedRows.length === 0) {
@@ -395,7 +390,7 @@ export async function syncAllFeedsGlobal(
   try {
     userRows = await db.selectDistinct({ userId: feeds.user_id }).from(feeds);
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Feed", cause);
   }
 
   let totalSynced = 0;

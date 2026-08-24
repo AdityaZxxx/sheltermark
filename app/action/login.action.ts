@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
 
+import { friendlyAuthError } from "~/lib/supabase/auth-error";
 import { createClient } from "~/lib/supabase/server";
 import { getBaseUrl } from "~/lib/utils";
 
@@ -65,7 +66,7 @@ export async function loginWithEmail(
   });
 
   if (loginError) {
-    return { success: false, error: loginError.message };
+    return { success: false, error: friendlyAuthError(loginError) };
   }
 
   const redirectUrl = next || "/dashboard";

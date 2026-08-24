@@ -64,6 +64,19 @@ export function useWorkspaces() {
   const togglePublic = useTogglePublicWorkspace(userId);
   const toggleAutoCheck = useToggleAutoCheckWorkspace(userId);
 
+  const deleteWorkspace = (id: string) => {
+    const wasActive = id === routeWorkspaceId;
+    del.mutate(id, {
+      onSuccess: () => {
+        if (!wasActive) return;
+        const fallback =
+          workspaces.find((w) => w.is_default && w.id !== id) ??
+          workspaces.find((w) => w.id !== id);
+        router.push(fallback ? `/workspace/${fallback.id}` : "/dashboard");
+      },
+    });
+  };
+
   return {
     workspaces,
     currentWorkspace,
@@ -73,7 +86,7 @@ export function useWorkspaces() {
     refetchWorkspaces,
     createWorkspace: create.mutate,
     isCreating: create.isPending,
-    deleteWorkspace: del.mutate,
+    deleteWorkspace,
     isDeleting: del.isPending,
     togglePublicStatus: togglePublic.mutate,
     isTogglingPublic: togglePublic.isPending,

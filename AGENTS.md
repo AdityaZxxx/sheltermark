@@ -93,6 +93,7 @@ Reads go through `lib/queries/*.ts` hooks.
 ## Code Standards
 
 - **Strict TypeScript, no `any`.** `tsc --noEmit` must pass.
+- **Error handling:** Actions and repositories return `ActionResult`. Never send raw exception, driver, or Zod messages to the client. To return a failure, call `dbError`, `supabaseError`, or `invalidData` from `~/lib/action-result`. Each logs the cause server-side and returns a generic message. For an expected domain failure, return an explicit message instead (for example, "Bookmark not found"). Pass auth errors through `friendlyAuthError` in `~/lib/supabase/auth-error`. Extension API routes use the `withExtension` pipeline in `app/api/extension/_lib/` for body parsing, authentication, and error responses.
 - **Zod validates at action boundary.** Schemas in `lib/schemas/`.
 - **Server components by default.** Use `"use client"` only where interactivity is required.
 - **Keyboard-first.** All actions accessible via keyboard. See `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-list-manager.ts` (global shortcuts).
