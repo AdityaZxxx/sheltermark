@@ -10,10 +10,11 @@ export function authCallbackUrl(
   return `${baseUrl}/auth/callback?next=${encodeURIComponent(safeRedirectPath(next))}`;
 }
 
-// OAuth/email-verification redirects must return to the host the user is
-// actually on (session cookies are per-host). NEXT_PUBLIC_SITE_URL is a
-// single fixed origin, so logging in from any other host sends the callback
-// — and therefore the session cookies — to the wrong cookie jar.
+// Source of truth for URLs that must return the user to the host they are
+// actually on (OAuth redirectTo, email-verification links): session cookies
+// are per-host, so a fixed env origin sends the callback — and therefore
+// the cookies — to the wrong jar. Crawler-facing metadata uses getBaseUrl()
+// instead; that one is a deployment constant by design.
 export async function getRequestBaseUrl(): Promise<string> {
   const headerList = await headers();
   const host = headerList.get("x-forwarded-host") ?? headerList.get("host");

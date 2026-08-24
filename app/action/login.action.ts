@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { GENERIC_ERROR, type ActionResult } from "~/lib/action-result";
@@ -20,7 +19,6 @@ export async function loginWithGoogle(
   next?: string,
 ): Promise<ActionResult<string>> {
   const supabase = await createClient();
-
   const redirectUrl = authCallbackUrl(await getRequestBaseUrl(), next);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -38,9 +36,8 @@ export async function loginWithGoogle(
     return { success: false, error: GENERIC_ERROR };
   }
 
-  // The client navigates to this URL; the action must not redirect() itself.
-  // A redirect thrown from a server action rejects the awaited call on the
-  // client, which form-level catch blocks mistake for a login failure.
+  // Return the OAuth URL for client navigation. redirect() would reject the
+  // server-action promise and be interpreted as a login failure by the client.
   return { success: true, data: data.url };
 }
 
@@ -49,30 +46,20 @@ export async function loginWithEmail(
 ): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
-  const rawData = Object.fromEntries(formData.entries());
-  const validated = loginSchema.safeParse(rawData);
+  const result = loginSchema.safeParse(Object.fromEntries(formData));
 
-  if (!validated.success) {
-    const msg = validated.error?.issues?.[0]?.message ?? "Invalid login data";
-    return { success: false, error: msg };
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error.issues[0]?.message ?? "Invalid login data",
+    };
   }
 
-  const { email, password } = validated.data;
+  const { error } = await supabase.auth.signInWithPassword(result.data);
 
-  const { error: loginError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (loginError) {
-    return { success: false, error: friendlyAuthError(loginError) };
+  if (error) {
+    return { success: false, error: friendlyAuthError(error) };
   }
 
   return { success: true, data: null };
-}
-
-export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
 }

@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
-import { logout } from "~/app/action/login.action";
+import { logout } from "~/app/action/logout.action";
 import { FeedManager } from "~/components/feed/feed-manager";
 import { ThemeMode } from "~/components/layout/theme-mode";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";

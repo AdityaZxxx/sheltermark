@@ -62,6 +62,12 @@ describe("friendlyAuthError whitelist", () => {
         message: "Password should be at least 6 characters",
       }),
     ).toContain("Password should be at least");
+    expect(
+      friendlyAuthError({ message: 'Email address "a@b.test" is invalid' }),
+    ).toBe('Email address "a@b.test" is invalid');
+    expect(friendlyAuthError({ message: "email rate limit exceeded" })).toBe(
+      "email rate limit exceeded",
+    );
   });
 
   it("replaces infrastructure messages with the generic text", () => {
