@@ -102,9 +102,10 @@ export function useBookmarkListManager(
     selectedTagIds,
     setSelectedTagIds,
     filterKey,
+    userId,
   } = useBookmarks(scope.type === "workspace" ? scope.id : undefined);
   const mutations = useBookmarkMutations();
-  const { mutate: restoreBookmarks } = useRestoreBookmarks();
+  const { mutate: restoreBookmarks } = useRestoreBookmarks(userId);
 
   const { updateBookmarkFields, isUpdatingBookmarkFields, refetchingId } =
     mutations;

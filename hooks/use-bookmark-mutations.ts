@@ -1,6 +1,6 @@
 "use client";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
+import { useUser } from "~/components/providers/user-context";
 import {
   useAddBookmark,
   useDeleteBookmarks,
@@ -10,13 +10,13 @@ import {
 } from "~/lib/mutations/bookmark.mutations";
 
 export function useBookmarkMutations() {
-  const { user } = useSupabase();
+  const userId = useUser().id;
 
-  const add = useAddBookmark(user?.id);
-  const del = useDeleteBookmarks(user?.id);
-  const move = useMoveBookmarks(user?.id);
-  const refetch = useRefetchBookmarkMetadata(user?.id);
-  const fields = useUpdateBookmarkFields(user?.id);
+  const add = useAddBookmark(userId);
+  const del = useDeleteBookmarks(userId);
+  const move = useMoveBookmarks(userId);
+  const refetch = useRefetchBookmarkMetadata(userId);
+  const fields = useUpdateBookmarkFields(userId);
 
   return {
     addBookmark: add.mutate,

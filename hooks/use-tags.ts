@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
   tagsWithCountQueryOptions,
@@ -12,9 +11,8 @@ import {
 } from "~/lib/queries/tag.queries";
 
 export function useUserTagsWithCount() {
-  const { user: supabaseUser } = useSupabase();
   const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+  const userId = serverUser.id;
 
   const { data: tags = [], isLoading } = useQuery<TagWithCount[]>(
     tagsWithCountQueryOptions(userId),
@@ -23,10 +21,8 @@ export function useUserTagsWithCount() {
   return { tags, isLoading };
 }
 
-export function useWorkspaceTagsWithCount(workspaceId: string | undefined) {
-  const { user: supabaseUser } = useSupabase();
-  const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+export function useWorkspaceTagsWithCount(workspaceId?: string) {
+  const userId = useUser().id;
 
   const { data: tags = [], isLoading } = useQuery<TagWithCount[]>(
     workspaceTagsWithCountQueryOptions(userId, workspaceId),

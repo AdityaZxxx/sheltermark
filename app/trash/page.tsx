@@ -18,7 +18,7 @@ export default async function TrashPage() {
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: trashKeys.bookmarks,
+      queryKey: trashKeys.bookmarks(user.id),
       queryFn: async () => {
         const result = await getTrashedBookmarks();
         if (!result.success) throw new Error(result.error);
@@ -26,7 +26,7 @@ export default async function TrashPage() {
       },
     }),
     queryClient.prefetchQuery({
-      queryKey: trashKeys.workspaces,
+      queryKey: trashKeys.workspaces(user.id),
       queryFn: async () => {
         const result = await getTrashedWorkspaces();
         if (!result.success) throw new Error(result.error);

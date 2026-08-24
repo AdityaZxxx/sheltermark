@@ -7,26 +7,24 @@ import {
 } from "~/app/action/trash.action";
 import { trashKeys } from "~/lib/query-keys";
 
-export const trashedBookmarksQueryOptions = (userId: string | undefined) => ({
-  queryKey: trashKeys.bookmarks,
+export const trashedBookmarksQueryOptions = (userId: string) => ({
+  queryKey: trashKeys.bookmarks(userId),
   queryFn: async () => {
     const result = await getTrashedBookmarks();
     if (!result.success) throw new Error(result.error);
     return result.data;
   },
-  enabled: !!userId,
   refetchOnMount: false,
   placeholderData: (previousData: Bookmark[] | undefined) => previousData,
 });
 
-export const trashedWorkspacesQueryOptions = (userId: string | undefined) => ({
-  queryKey: trashKeys.workspaces,
+export const trashedWorkspacesQueryOptions = (userId: string) => ({
+  queryKey: trashKeys.workspaces(userId),
   queryFn: async () => {
     const result = await getTrashedWorkspaces();
     if (!result.success) throw new Error(result.error);
     return result.data;
   },
-  enabled: !!userId,
   refetchOnMount: false,
   placeholderData: (previousData: TrashedWorkspace[] | undefined) =>
     previousData,

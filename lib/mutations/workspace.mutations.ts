@@ -22,10 +22,10 @@ import { trashKeys, workspaceKeys } from "~/lib/query-keys";
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-export function useCreateWorkspace(userId: string | undefined) {
+export function useCreateWorkspace(userId: string) {
   return useOptimisticMutation<FormData, { id: string }, WorkspaceWithCount[]>({
     mutationFn: createWorkspace,
-    queryKey: workspaceKeys.byUser(userId),
+    queryKey: workspaceKeys.all(userId),
     successMessage: "Workspace created",
     errorMessage: "Failed to create workspace",
     prepareOptimisticData: (oldData, formData) => {
@@ -38,7 +38,7 @@ export function useCreateWorkspace(userId: string | undefined) {
         is_default: prev.length === 0,
         auto_check_broken: false,
         bookmarks_count: 0,
-        user_id: userId ?? "",
+        user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: null,
         last_used_at: null,
@@ -48,11 +48,11 @@ export function useCreateWorkspace(userId: string | undefined) {
   });
 }
 
-export function useDeleteWorkspace(userId: string | undefined) {
+export function useDeleteWorkspace(userId: string) {
   return useOptimisticMutation<string, null, WorkspaceWithCount[]>({
     mutationFn: deleteWorkspace,
-    queryKey: workspaceKeys.byUser(userId),
-    dependentQueryKeys: [trashKeys.all],
+    queryKey: workspaceKeys.all(userId),
+    dependentQueryKeys: [trashKeys.all(userId)],
     successMessage: "Workspace moved to trash",
     errorMessage: "Failed to delete workspace",
     prepareOptimisticData: (oldData, id) => {
@@ -61,14 +61,14 @@ export function useDeleteWorkspace(userId: string | undefined) {
   });
 }
 
-export function useRenameWorkspace(userId: string | undefined) {
+export function useRenameWorkspace(userId: string) {
   return useOptimisticMutation<
     { id: string; name: string },
     null,
     WorkspaceWithCount[]
   >({
     mutationFn: ({ id, name }) => renameWorkspace(id, name),
-    queryKey: workspaceKeys.byUser(userId),
+    queryKey: workspaceKeys.all(userId),
     successMessage: "Workspace renamed",
     errorMessage: "Failed to rename workspace",
     prepareOptimisticData: (oldData, { id, name }) => {
@@ -80,10 +80,10 @@ export function useRenameWorkspace(userId: string | undefined) {
   });
 }
 
-export function useSetDefaultWorkspace(userId: string | undefined) {
+export function useSetDefaultWorkspace(userId: string) {
   return useOptimisticMutation<string, null, WorkspaceWithCount[]>({
     mutationFn: setDefaultWorkspace,
-    queryKey: workspaceKeys.byUser(userId),
+    queryKey: workspaceKeys.all(userId),
     successMessage: "Default workspace updated",
     errorMessage: "Failed to set default workspace",
     prepareOptimisticData: (oldData, id) => {
@@ -93,14 +93,14 @@ export function useSetDefaultWorkspace(userId: string | undefined) {
   });
 }
 
-export function useTogglePublicWorkspace(userId: string | undefined) {
+export function useTogglePublicWorkspace(userId: string) {
   return useOptimisticMutation<
     { id: string; isPublic: boolean },
     null,
     WorkspaceWithCount[]
   >({
     mutationFn: ({ id, isPublic }) => togglePublicStatus(id, isPublic),
-    queryKey: workspaceKeys.byUser(userId),
+    queryKey: workspaceKeys.all(userId),
     successMessage: "Workspace visibility toggled",
     errorMessage: "Failed to toggle visibility",
     prepareOptimisticData: (oldData, { id, isPublic }) => {
@@ -112,14 +112,14 @@ export function useTogglePublicWorkspace(userId: string | undefined) {
   });
 }
 
-export function useToggleAutoCheckWorkspace(userId: string | undefined) {
+export function useToggleAutoCheckWorkspace(userId: string) {
   return useOptimisticMutation<
     { id: string; enabled: boolean },
     null,
     WorkspaceWithCount[]
   >({
     mutationFn: ({ id, enabled }) => toggleAutoCheckBroken(id, enabled),
-    queryKey: workspaceKeys.byUser(userId),
+    queryKey: workspaceKeys.all(userId),
     successMessage: "Auto-check updated",
     errorMessage: "Failed to toggle auto check",
     prepareOptimisticData: (oldData, { id, enabled }) => {
@@ -131,13 +131,13 @@ export function useToggleAutoCheckWorkspace(userId: string | undefined) {
   });
 }
 
-export function useTouchWorkspaceLastUsed(userId: string | undefined) {
+export function useTouchWorkspaceLastUsed(userId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: touchWorkspaceLastUsed,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: workspaceKeys.byUser(userId),
+        queryKey: workspaceKeys.all(userId),
         refetchType: "none",
       });
     },

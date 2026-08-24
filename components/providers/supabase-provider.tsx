@@ -3,7 +3,8 @@
 import type { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
 
-import { createContext, use, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createContext, use, useEffect, useRef, useState } from "react";
 
 import { createClient } from "~/lib/supabase/client";
 
@@ -27,6 +28,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: supabaseUser } }) => {
@@ -37,12 +40,19 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      if (nextUserId !== lastUserIdRef.current) {
+        // Identity changed (login, logout, expiry): drop every cached query
+        // so the previous account's rows are never rendered for this one.
+        queryClient.clear();
+        lastUserIdRef.current = nextUserId;
+      }
       setUser(session?.user ?? null);
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, [supabase, queryClient]);
 
   return (
     <SupabaseContext.Provider value={{ supabase, user, isLoading }}>

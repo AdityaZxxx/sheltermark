@@ -7,8 +7,8 @@ import {
 } from "~/app/action/tag.action";
 import { tagKeys } from "~/lib/query-keys";
 
-export const userTagsQueryOptions = {
-  queryKey: tagKeys.all,
+export const userTagsQueryOptions = (userId: string) => ({
+  queryKey: tagKeys.all(userId),
   queryFn: async () => {
     const result = await getUserTags();
     if (!result.success) throw new Error(result.error);
@@ -16,32 +16,31 @@ export const userTagsQueryOptions = {
   },
   refetchOnMount: false,
   placeholderData: (previousData: Tag[] | undefined) => previousData,
-};
+});
 
-export const tagsWithCountQueryOptions = (userId: string | undefined) => ({
-  queryKey: tagKeys.withCount,
+export const tagsWithCountQueryOptions = (userId: string) => ({
+  queryKey: tagKeys.withCount(userId),
   queryFn: async () => {
     const result = await getTagsWithCount();
     if (!result.success) throw new Error(result.error);
     return result.data;
   },
-  enabled: !!userId,
   refetchOnMount: false,
   placeholderData: (previousData: TagWithCount[] | undefined) => previousData,
 });
 
 export const workspaceTagsWithCountQueryOptions = (
-  userId: string | undefined,
-  workspaceId: string | undefined,
+  userId: string,
+  workspaceId?: string,
 ) => ({
-  queryKey: tagKeys.byWorkspace(workspaceId ?? ""),
+  queryKey: tagKeys.byWorkspace(userId, workspaceId ?? ""),
   queryFn: async () => {
     if (!workspaceId) throw new Error("workspaceId is required");
     const result = await getWorkspaceTagsWithCount(workspaceId);
     if (!result.success) throw new Error(result.error);
     return result.data;
   },
-  enabled: !!userId && !!workspaceId,
+  enabled: !!workspaceId,
   refetchOnMount: false,
   placeholderData: (previousData: TagWithCount[] | undefined) => previousData,
 });

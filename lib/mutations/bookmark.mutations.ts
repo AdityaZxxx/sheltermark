@@ -28,7 +28,7 @@ import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-export function useAddBookmark(userId: string | undefined) {
+export function useAddBookmark(userId: string) {
   return useOptimisticMutation<
     { url: string; workspaceId: string },
     Bookmark,
@@ -36,8 +36,8 @@ export function useAddBookmark(userId: string | undefined) {
   >({
     mutationFn: ({ url, workspaceId }) => addBookmark({ url, workspaceId }),
     mutationKey: ["addBookmark"],
-    queryKey: bookmarkKeys.all,
-    dependentQueryKeys: userId ? [workspaceKeys.byUser(userId)] : [],
+    queryKey: bookmarkKeys.all(userId),
+    dependentQueryKeys: userId ? [workspaceKeys.all(userId)] : [],
     successMessage: "Bookmark added",
     errorMessage: "Failed to add bookmark",
     prepareOptimisticData: (oldData, { url, workspaceId }) => {
@@ -64,14 +64,14 @@ export function useAddBookmark(userId: string | undefined) {
   });
 }
 
-export function useDeleteBookmarks(userId: string | undefined) {
+export function useDeleteBookmarks(userId: string) {
   return useOptimisticMutation<BookmarkDeleteInput, null, Bookmark[]>({
     mutationFn: deleteBookmarks,
     mutationKey: ["deleteBookmarks"],
-    queryKey: bookmarkKeys.all,
+    queryKey: bookmarkKeys.all(userId),
     dependentQueryKeys: userId
-      ? [trashKeys.all, workspaceKeys.byUser(userId)]
-      : [trashKeys.all],
+      ? [trashKeys.all(userId), workspaceKeys.all(userId)]
+      : [trashKeys.all(userId)],
     successMessage: null,
     errorMessage: "Failed to delete bookmarks",
     prepareOptimisticData: (oldData, { ids }) => {
@@ -80,7 +80,7 @@ export function useDeleteBookmarks(userId: string | undefined) {
   });
 }
 
-export function useMoveBookmarks(userId: string | undefined) {
+export function useMoveBookmarks(userId: string) {
   return useOptimisticMutation<
     BookmarkMoveInput,
     { movedCount: number; skippedCount: number },
@@ -88,8 +88,8 @@ export function useMoveBookmarks(userId: string | undefined) {
   >({
     mutationFn: moveBookmarks,
     mutationKey: ["moveBookmarks"],
-    queryKey: bookmarkKeys.all,
-    dependentQueryKeys: userId ? [workspaceKeys.byUser(userId)] : [],
+    queryKey: bookmarkKeys.all(userId),
+    dependentQueryKeys: userId ? [workspaceKeys.all(userId)] : [],
     successMessage: null,
     errorMessage: "Failed to move bookmarks",
     prepareOptimisticData: (oldData, { ids, targetWorkspaceId }) => {
@@ -102,11 +102,11 @@ export function useMoveBookmarks(userId: string | undefined) {
   });
 }
 
-export function useRefetchBookmarkMetadata(_userId: string | undefined) {
+export function useRefetchBookmarkMetadata(userId: string) {
   return useOptimisticMutation<{ id: string }, null, Bookmark[]>({
     mutationFn: refetchBookmarkMetadata,
     mutationKey: ["refetchBookmarkMetadata"],
-    queryKey: bookmarkKeys.all,
+    queryKey: bookmarkKeys.all(userId),
     successMessage: "Metadata refreshed",
     errorMessage: "Failed to refresh metadata",
     prepareOptimisticData: (oldData, { id }) => {
@@ -118,12 +118,12 @@ export function useRefetchBookmarkMetadata(_userId: string | undefined) {
   });
 }
 
-export function useUpdateBookmarkFields(_userId: string | undefined) {
+export function useUpdateBookmarkFields(userId: string) {
   return useOptimisticMutation<BookmarkEditInput, Tag[], Bookmark[]>({
     mutationFn: updateBookmarkFields,
     mutationKey: ["updateBookmarkFields"],
-    queryKey: bookmarkKeys.all,
-    dependentQueryKeys: updateBookmarkFieldsDependentKeys(),
+    queryKey: bookmarkKeys.all(userId),
+    dependentQueryKeys: updateBookmarkFieldsDependentKeys(userId),
     successMessage: "Bookmark updated",
     successMessageOnMutate: true,
     errorMessage: "Failed to save changes",
@@ -140,7 +140,7 @@ export function useUpdateBookmarkFields(_userId: string | undefined) {
       for (const tag of tags) {
         if (tag.id) links.push({ bookmark_id: id, tag_id: tag.id });
       }
-      return updateBookmarkFieldsUpdates(id, links);
+      return updateBookmarkFieldsUpdates(userId, id, links);
     },
   });
 }

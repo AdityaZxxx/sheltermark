@@ -2,7 +2,6 @@
 
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { loginWithEmail, loginWithGoogle } from "~/app/action/login.action";
@@ -26,7 +25,6 @@ export function LoginForm({
   next,
   ...props
 }: React.ComponentProps<"div"> & { next?: string }) {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
@@ -58,7 +56,10 @@ export function LoginForm({
       if (!result.success) {
         setError(result.error);
       } else {
-        router.push(safeRedirectPath(next || "/dashboard"));
+        // Full page load, not router.push: the SPA router cache still holds
+        // the previous account's /dashboard payload, which would flash for
+        // the new user before fresh data arrives.
+        window.location.assign(safeRedirectPath(next || "/dashboard"));
       }
     } catch {
       setError(GENERIC_ERROR);

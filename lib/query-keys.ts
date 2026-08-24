@@ -1,40 +1,38 @@
+// Query keys follow the TanStack hierarchy [domain, userId, ...scope]: data
+// is per-user, so the owner's id must be part of every key — a shared key
+// would let one account's cached rows render for another (see
+// SupabaseProvider, which clears the cache whenever the identity changes).
+// Consumers always run inside requireAuth-gated trees, hence the required
+// non-optional userId.
 export const bookmarkKeys = {
-  all: ["bookmarks"] as const,
-  byWorkspace: (workspaceId?: string, userId?: string) =>
-    ["bookmarks", workspaceId, userId] as const,
-  detail: (id: string) => ["bookmarks", "detail", id] as const,
+  all: (userId: string) => ["bookmarks", userId] as const,
 };
 
 export const workspaceKeys = {
-  all: ["workspaces"] as const,
-  byUser: (userId?: string) => ["workspaces", userId] as const,
-  detail: (id: string) => ["workspaces", "detail", id] as const,
+  all: (userId: string) => ["workspaces", userId] as const,
 };
 
 export const profileKeys = {
-  all: ["profile"] as const,
-  byUser: (userId?: string) => ["profile", userId] as const,
-  detail: (id: string) => ["profile", "detail", id] as const,
+  all: (userId: string) => ["profile", userId] as const,
 };
 
 export const feedKeys = {
-  all: ["feeds"] as const,
-  byUser: (userId?: string) => ["feeds", userId] as const,
-  detail: (id: string) => ["feeds", "detail", id] as const,
-  entries: (feedId: string) => ["feeds", "entries", feedId] as const,
+  all: (userId: string) => ["feeds", userId] as const,
 };
 
 export const trashKeys = {
-  all: ["trash"] as const,
-  bookmarks: ["trash", "bookmarks"] as const,
-  workspaces: ["trash", "workspaces"] as const,
+  all: (userId: string) => ["trash", userId] as const,
+  bookmarks: (userId: string) => ["trash", userId, "bookmarks"] as const,
+  workspaces: (userId: string) => ["trash", userId, "workspaces"] as const,
 };
 
 export const tagKeys = {
-  all: ["tags"] as const,
-  links: ["tags", "links"] as const,
-  withCount: ["tags", "withCount"] as const,
-  byBookmark: (bookmarkId: string) => ["tags", "bookmark", bookmarkId] as const,
-  byWorkspace: (workspaceId: string) =>
-    ["tags", "byWorkspace", workspaceId] as const,
+  all: (userId: string) => ["tags", userId] as const,
+  links: (userId: string) => ["tags", userId, "links"] as const,
+  withCount: (userId: string) => ["tags", userId, "withCount"] as const,
+  // Partial key: matches every per-bookmark link cache of this user.
+  bookmarkLinksPrefix: (userId: string) =>
+    ["tags", userId, "bookmark"] as const,
+  byWorkspace: (userId: string, workspaceId: string) =>
+    ["tags", userId, "byWorkspace", workspaceId] as const,
 };
