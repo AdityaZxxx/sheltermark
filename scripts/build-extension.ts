@@ -21,6 +21,7 @@ const entryPoints = [
   resolve(EXT_DIR, "storage.ts"),
   resolve(EXT_DIR, "constants.ts"),
   resolve(EXT_DIR, "x-capture.ts"),
+  resolve(EXT_DIR, "auth-bridge.ts"),
 ];
 
 if (existsSync(OUT_DIR)) {

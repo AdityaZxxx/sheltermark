@@ -190,5 +190,8 @@ export const extensionMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal(MESSAGE_TYPES.GET_TAGS),
   }),
+  z.object({
+    type: z.literal(MESSAGE_TYPES.AUTH_MAYBE_RESTORED),
+  }),
 ]);
 export type ExtensionMessage = z.infer<typeof extensionMessageSchema>;

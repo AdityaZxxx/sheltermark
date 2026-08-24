@@ -319,6 +319,24 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+    if (message.type === MESSAGE_TYPES.AUTH_MAYBE_RESTORED) {
+      // Fired by the auth-bridge content script on app-origin page loads
+      // (including the post-login redirect). A cheap session probe gates the
+      // resume: draining a still-logged-out queue would just re-pause it and
+      // re-notify.
+      void isAuthenticated()
+        .then(async (authenticated) => {
+          if (!authenticated) return;
+          console.info(
+            `[Sheltermark] Session detected — syncing queued bookmarks`,
+          );
+          await resumeQueue();
+          await drain(queueHooks);
+        })
+        .catch(() => {});
+      return false;
+    }
+
     if (message.type === MESSAGE_TYPES.GET_POPUP) {
       getPopupInfo(message.data)
         .then(async (result) => {
@@ -686,6 +704,23 @@ async function fetchTagsRaw(): Promise<TagWithCount[]> {
   });
   if (!response.ok) return [];
   return tagsResultSchema.parse(await response.json()).tags ?? [];
+}
+
+/** Cheap session probe reusing the tags route's graceful-shape response. */
+async function isAuthenticated(): Promise<boolean> {
+  const baseUrl = await getBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/api/extension/tags`, {
+      credentials: "include",
+    });
+    if (!response.ok) return false;
+    return (
+      tagsResultSchema.safeParse(await response.json()).data?.authenticated ??
+      false
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

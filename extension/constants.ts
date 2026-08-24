@@ -8,6 +8,7 @@ export const MESSAGE_TYPES = {
   CHECK_BOOKMARK: "CHECK_BOOKMARK",
   GET_POPUP: "GET_POPUP",
   GET_TAGS: "GET_TAGS",
+  AUTH_MAYBE_RESTORED: "AUTH_MAYBE_RESTORED",
 } as const;
 
 // Backoff: exponential with jitter, capped. Human-scale base (a flap is usually
