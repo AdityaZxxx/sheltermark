@@ -1,28 +1,30 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
+import { withExtension } from "~/app/api/extension/_lib/with-extension";
 import { createClient } from "~/lib/supabase/server";
 import { normalizeUrl } from "~/lib/utils";
-import { logger } from "~/lib/utils/logger";
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const url = searchParams.get("url");
-    const workspaceId = searchParams.get("workspace_id");
-
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
+export const GET = withExtension(
+  {
+    scope: "popup init",
+    failureMessage: "Failed to load popup",
+    // The popup renders a logged-out state instead of an error surface.
+    unauthorized: () =>
+      NextResponse.json(
         { authenticated: false, workspaces: [], lastWorkspace: null },
         { status: 200 },
-      );
-    }
+      ),
+    onUnexpected: () =>
+      NextResponse.json(
+        { authenticated: false, workspaces: [], lastWorkspace: null },
+        { status: 500 },
+      ),
+  },
+  async ({ req, user }) => {
+    const supabase = await createClient();
+    const { searchParams } = new URL(req.url);
+    const url = searchParams.get("url");
+    const workspaceId = searchParams.get("workspace_id");
 
     const [{ data: workspaces }, bookmarkResult] = await Promise.all([
       supabase
@@ -46,14 +48,8 @@ export async function GET(request: NextRequest) {
       alreadySaved: bookmarkResult.saved,
       bookmarkId: bookmarkResult.bookmarkId,
     });
-  } catch (error) {
-    logger.error("Extension popup error", { error });
-    return NextResponse.json(
-      { authenticated: false, workspaces: [], lastWorkspace: null },
-      { status: 500 },
-    );
-  }
-}
+  },
+);
 
 async function checkBookmark(
   supabase: Awaited<ReturnType<typeof createClient>>,
