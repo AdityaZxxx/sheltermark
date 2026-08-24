@@ -276,7 +276,11 @@ export function DemoBookmarkView() {
             <h2 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
               {searchQuery ? "Search Results" : "All Bookmarks"}
             </h2>
-            <BookmarkViewToggle view={view} onViewChange={setView} />
+            <BookmarkViewToggle
+              view={view}
+              onViewChange={setView}
+              showLabels={false}
+            />
           </div>
         </div>
 
