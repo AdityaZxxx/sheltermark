@@ -2,6 +2,7 @@
 
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { loginWithEmail, loginWithGoogle } from "~/app/action/login.action";
@@ -16,6 +17,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { GENERIC_ERROR } from "~/lib/action-result";
 import { cn } from "~/lib/utils";
+import { safeRedirectPath } from "~/lib/utils/safe-redirect";
 
 import { AuthError } from "./auth-error";
 
@@ -24,6 +26,7 @@ export function LoginForm({
   next,
   ...props
 }: React.ComponentProps<"div"> & { next?: string }) {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
@@ -32,7 +35,12 @@ export function LoginForm({
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
     try {
-      await loginWithGoogle(next);
+      const result = await loginWithGoogle(next);
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        window.location.assign(result.data);
+      }
     } catch {
       setError(GENERIC_ERROR);
     }
@@ -45,13 +53,12 @@ export function LoginForm({
     setIsLoadingEmail(true);
 
     const formData = new FormData(e.currentTarget);
-    if (next) {
-      formData.append("next", next);
-    }
     try {
       const result = await loginWithEmail(formData);
       if (!result.success) {
         setError(result.error);
+      } else {
+        router.push(safeRedirectPath(next || "/dashboard"));
       }
     } catch {
       setError(GENERIC_ERROR);

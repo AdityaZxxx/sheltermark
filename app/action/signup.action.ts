@@ -5,8 +5,11 @@ import { z } from "zod";
 import type { ActionResult } from "~/lib/action-result";
 
 import { friendlyAuthError } from "~/lib/supabase/auth-error";
+import {
+  authCallbackUrl,
+  getRequestBaseUrl,
+} from "~/lib/supabase/request-base-url";
 import { createClient } from "~/lib/supabase/server";
-import { getBaseUrl } from "~/lib/utils";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -32,10 +35,7 @@ export async function signupWithEmail(
 
   const { name, email, password } = validated.data;
 
-  const baseUrl = getBaseUrl();
-  const redirectUrl = next
-    ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
-    : `${baseUrl}/auth/callback?next=/dashboard`;
+  const redirectUrl = authCallbackUrl(await getRequestBaseUrl(), next);
 
   const {
     data: { user, session },
