@@ -41,6 +41,7 @@ import {
   setCachedTags,
   setCachedWorkspaces,
   setLastWorkspace,
+  STORAGE_KEYS,
 } from "./storage.js";
 
 type NotificationType = "success" | "error" | "info";
@@ -123,6 +124,17 @@ const queueHooks: QueueHookContext = {
 chrome.runtime.onInstalled.addListener(() => {
   createContextMenus();
   installHeartbeat();
+});
+
+// baseUrl can change at runtime (options page). The in-memory workspace cache
+// is not keyed per baseUrl, so a stale entry from the previous server would
+// otherwise leak into the next popup. Drop it whenever baseUrl is written;
+// the per-baseUrl chrome.storage.session caches self-invalidate on read.
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "sync") return;
+  if (STORAGE_KEYS.BASE_URL in changes) {
+    sessionCache.workspaces = null;
+  }
 });
 
 // Worker (re)start: recover any in_flight items (worker killed mid-POST) back
@@ -305,6 +317,24 @@ chrome.runtime.onMessage.addListener(
         .then((tags) => sendResponse({ authenticated: true, tags }))
         .catch(() => sendResponse({ authenticated: false, tags: [] }));
       return true;
+    }
+
+    if (message.type === MESSAGE_TYPES.AUTH_MAYBE_RESTORED) {
+      // Fired by the auth-bridge content script on app-origin page loads
+      // (including the post-login redirect). A cheap session probe gates the
+      // resume: draining a still-logged-out queue would just re-pause it and
+      // re-notify.
+      void isAuthenticated()
+        .then(async (authenticated) => {
+          if (!authenticated) return;
+          console.info(
+            `[Sheltermark] Session detected — syncing queued bookmarks`,
+          );
+          await resumeQueue();
+          await drain(queueHooks);
+        })
+        .catch(() => {});
+      return false;
     }
 
     if (message.type === MESSAGE_TYPES.GET_POPUP) {
@@ -654,7 +684,7 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
     return { workspaces: sessionCache.workspaces };
   }
   const cached = await getCachedWorkspaces();
-  if (cached) {
+  if (cached && !(await isCacheStale(cached))) {
     sessionCache.workspaces = cached.value;
     return { workspaces: cached.value };
   }
@@ -674,6 +704,23 @@ async function fetchTagsRaw(): Promise<TagWithCount[]> {
   });
   if (!response.ok) return [];
   return tagsResultSchema.parse(await response.json()).tags ?? [];
+}
+
+/** Cheap session probe reusing the tags route's graceful-shape response. */
+async function isAuthenticated(): Promise<boolean> {
+  const baseUrl = await getBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/api/extension/tags`, {
+      credentials: "include",
+    });
+    if (!response.ok) return false;
+    return (
+      tagsResultSchema.safeParse(await response.json()).data?.authenticated ??
+      false
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

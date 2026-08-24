@@ -13,6 +13,7 @@
   ],
   "host_permissions": [
     "https://sheltermark.vercel.app/*",
+    "http://localhost/*",
     "https://x.com/*",
     "https://twitter.com/*"
   ],
@@ -41,6 +42,15 @@
       ],
       "js": ["dist/x-capture.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://sheltermark.vercel.app/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["dist/auth-bridge.js"],
+      "run_at": "document_idle"
     }
   ],
   "commands": {
