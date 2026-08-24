@@ -17,6 +17,7 @@ import {
   updatePublicProfile as updatePublicProfileRepo,
   uploadAvatar as uploadAvatarRepo,
 } from "~/lib/data/repositories/profile.repository";
+import { logger } from "~/lib/utils/logger";
 
 export async function updateProfile(
   data: UpdateProfileInput,
@@ -65,7 +66,11 @@ export async function checkUsernameAvailability(data: {
     .maybeSingle();
 
   if (error && error.code !== "PGRST116") {
-    return { success: false, error: error.message };
+    logger.error("Username availability check failed", { error });
+    return {
+      success: false,
+      error: "Unable to check username. Please try again.",
+    };
   }
 
   if (existingProfile) {

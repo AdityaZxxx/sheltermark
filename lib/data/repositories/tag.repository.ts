@@ -1,7 +1,6 @@
 import "server-only";
 import { and, count, eq, inArray, isNull } from "drizzle-orm";
 
-import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
 import type {
   DeleteTagInput,
@@ -11,6 +10,7 @@ import type {
   TagWithCount,
 } from "~/lib/schemas/tag.schema";
 
+import { dbError, invalidData, type ActionResult } from "~/lib/action-result";
 import { bookmarkTags, bookmarks, tags } from "~/lib/data/schema";
 import {
   deleteTagSchema,
@@ -24,13 +24,6 @@ function toTag(row: typeof tags.$inferSelect): Tag {
     user_id: row.user_id,
     name: row.name,
     created_at: row.created_at,
-  };
-}
-
-function dbError(cause: unknown): ActionResult<never> {
-  return {
-    success: false,
-    error: cause instanceof Error ? cause.message : "Database error",
   };
 }
 
@@ -52,7 +45,7 @@ export async function getUserTags(
       .orderBy(tags.name);
     return { success: true, data: rows.map(toTag) };
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
 }
 
@@ -107,7 +100,7 @@ export async function getWorkspaceTagsWithCount(
 
     return { success: true, data: result };
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
 }
 
@@ -138,7 +131,7 @@ export async function getTagsWithCount(
     }));
     return { success: true, data };
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
 }
 
@@ -149,7 +142,7 @@ export async function getBookmarkTags(
 ): Promise<ActionResult<Tag[]>> {
   const validated = getBookmarkTagsSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Tag", validated.error) };
   }
 
   try {
@@ -168,7 +161,7 @@ export async function getBookmarkTags(
       );
     return { success: true, data: rows.map((r) => toTag(r.tag)) };
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
 }
 
@@ -196,7 +189,7 @@ export async function upsertTag(
     }
     return { success: true, data: toTag(row) };
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
 }
 
@@ -207,7 +200,7 @@ export async function renameTag(
 ): Promise<ActionResult<Tag>> {
   const validated = renameTagSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Tag", validated.error) };
   }
 
   const { tagId, name } = validated.data;
@@ -223,7 +216,7 @@ export async function renameTag(
     }
     return { success: true, data: toTag(row) };
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
 }
 
@@ -234,7 +227,7 @@ export async function deleteTag(
 ): Promise<ActionResult<null>> {
   const validated = deleteTagSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Tag", validated.error) };
   }
 
   try {
@@ -242,7 +235,7 @@ export async function deleteTag(
       .delete(tags)
       .where(and(eq(tags.id, validated.data.tagId), eq(tags.user_id, userId)));
   } catch (err) {
-    return dbError(err);
+    return dbError("Tag", err);
   }
   return { success: true, data: null };
 }

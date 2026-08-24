@@ -3,13 +3,13 @@ import type { z } from "zod";
 
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
-import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
 import type { Metadata } from "~/lib/metadata/types";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
+import { dbError, invalidData, type ActionResult } from "~/lib/action-result";
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
 import { upsertTag } from "~/lib/data/repositories/tag.repository";
@@ -33,6 +33,7 @@ import {
 } from "~/lib/schemas/bookmark.schema";
 import { resolveAndReplaceBookmarkTags } from "~/lib/services/tag.service";
 import { normalizeUrl } from "~/lib/utils";
+import { logger } from "~/lib/utils/logger";
 
 type BookmarkRow = typeof bookmarks.$inferSelect;
 
@@ -74,13 +75,6 @@ function toBookmark(row: BookmarkRow): Bookmark {
     updated_at: row.updated_at,
     deleted_at: row.deleted_at,
     note: row.note,
-  };
-}
-
-function dbError(cause: unknown): ActionResult<never> {
-  return {
-    success: false,
-    error: cause instanceof Error ? cause.message : "Database error",
   };
 }
 
@@ -147,10 +141,7 @@ export async function insertBookmark(
     if (!first) return { success: false, error: "Insert returned no row" };
     row = first;
   } catch (cause) {
-    return {
-      success: false,
-      error: cause instanceof Error ? cause.message : "Database error",
-    };
+    return dbError("Bookmark", cause);
   }
 
   const bookmark = toBookmark(row);
@@ -175,10 +166,7 @@ export async function insertBookmark(
           })),
         );
       } catch (cause) {
-        return {
-          success: false,
-          error: cause instanceof Error ? cause.message : "Database error",
-        };
+        return dbError("Bookmark", cause);
       }
     }
     return { success: true, data: bookmark, tags: resolved };
@@ -220,7 +208,7 @@ export async function getBookmarks(
       .orderBy(desc(bookmarks.created_at));
     return { success: true, data: rows.map(toBookmark) };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 }
 
@@ -231,7 +219,7 @@ export async function deleteBookmarks(
 ): Promise<ActionResult<null>> {
   const validated = bookmarkDeleteSchema.safeParse({ ids });
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   const now = new Date().toISOString();
@@ -246,7 +234,7 @@ export async function deleteBookmarks(
         ),
       );
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
   return { success: true, data: null };
 }
@@ -265,7 +253,7 @@ export async function getTrashedBookmarks(
       .orderBy(desc(bookmarks.deleted_at));
     return { success: true, data: rows.map(toBookmark) };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 }
 
@@ -347,8 +335,8 @@ export async function batchInsertBookmarks(
           ),
         );
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Delete failed";
-      errors.push(`Replace deletions: ${message}`);
+      logger.error("Import replace deletions failed", { error: cause });
+      errors.push("Failed to replace existing bookmarks");
     }
   }
 
@@ -414,7 +402,7 @@ export async function permanentDeleteBookmarks(
 ): Promise<ActionResult<null>> {
   const validated = bookmarkDeleteSchema.safeParse({ ids });
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   try {
@@ -427,7 +415,7 @@ export async function permanentDeleteBookmarks(
         ),
       );
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
   return { success: true, data: null };
 }
@@ -439,7 +427,7 @@ export async function moveBookmarks(
 ): Promise<ActionResult<{ movedCount: number; skippedCount: number }>> {
   const validated = bookmarkMoveSchema.safeParse({ ids, targetWorkspaceId });
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   const sourceIds = validated.data.ids;
@@ -506,7 +494,7 @@ export async function moveBookmarks(
       },
     };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 }
 
@@ -517,7 +505,7 @@ export async function renameBookmark(
 ): Promise<ActionResult<null>> {
   const validated = bookmarkRenameSchema.safeParse({ id, title });
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   try {
@@ -531,7 +519,7 @@ export async function renameBookmark(
         and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       );
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
   return { success: true, data: null };
 }
@@ -543,7 +531,7 @@ export async function updateBookmarkNote(
 ): Promise<ActionResult<null>> {
   const validated = bookmarkUpdateNoteSchema.safeParse({ id, note });
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   try {
@@ -554,7 +542,7 @@ export async function updateBookmarkNote(
         and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       );
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
   return { success: true, data: null };
 }
@@ -566,7 +554,7 @@ export async function updateBookmarkFields(
 ): Promise<ActionResult<Tag[]>> {
   const validated = bookmarkEditSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   const { id, title, note, tags } = validated.data;
@@ -577,7 +565,7 @@ export async function updateBookmarkFields(
       .set({ title, note, updated_at: new Date().toISOString() })
       .where(and(eq(bookmarks.id, id), eq(bookmarks.user_id, userId)));
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 
   const tagResult = await resolveAndReplaceBookmarkTags(db, userId, id, tags);
@@ -593,7 +581,7 @@ export async function refetchMetadata(
 ): Promise<ActionResult<null>> {
   const validated = bookmarkRefetchMetadataSchema.safeParse(id);
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   let bookmarkUrl: string;
@@ -610,7 +598,7 @@ export async function refetchMetadata(
     }
     bookmarkUrl = row.url;
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 
   const metadata = await fetchMetadata(bookmarkUrl);
@@ -627,7 +615,7 @@ export async function refetchMetadata(
         and(eq(bookmarks.id, validated.data.id), eq(bookmarks.user_id, userId)),
       );
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
   return { success: true, data: null };
 }
@@ -639,7 +627,7 @@ export async function generateAiTitleRepo(
 ): Promise<ActionResult<{ suggestion: string }>> {
   const validated = generateAiTitleSchema.safeParse(input);
   if (!validated.success) {
-    return { success: false, error: validated.error.message };
+    return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
   const rateLimit = checkRateLimit(userId);
@@ -669,7 +657,7 @@ export async function generateAiTitleRepo(
     }
     row = first;
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 
   const metadata = await fetchMetadata(row.url);
@@ -683,11 +671,8 @@ export async function generateAiTitleRepo(
 
     return { success: true, data: { suggestion } };
   } catch (error) {
-    return {
-      success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to generate title",
-    };
+    logger.error("Title suggestion generation failed", { error });
+    return { success: false, error: "Failed to generate title" };
   }
 }
 
@@ -748,6 +733,6 @@ export async function exportBookmarks(
     });
     return { success: true, data };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Bookmark", cause);
   }
 }
