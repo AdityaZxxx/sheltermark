@@ -21,6 +21,7 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { GENERIC_ERROR } from "~/lib/action-result";
 import { cn } from "~/lib/utils";
 
 import { AuthError } from "./auth-error";
@@ -79,7 +80,7 @@ export function SignupForm({
         setSuccess(true);
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(GENERIC_ERROR);
     }
     setIsLoadingEmail(false);
   };
