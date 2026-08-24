@@ -138,7 +138,7 @@ export const baseUrlStorageSchema = z.object({
 });
 
 export const lastWorkspaceStorageSchema = z.object({
-  lastWorkspace: z.string(),
+  lastWorkspace: z.object({ id: z.string(), baseUrl: z.string() }),
 });
 
 const cachedEntrySchema = <T extends z.ZodType>(value: T) =>

@@ -10,7 +10,7 @@ import {
   lastWorkspaceStorageSchema,
 } from "./schema.js";
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   BASE_URL: "baseUrl",
   LAST_WORKSPACE: "lastWorkspace",
 } as const;
@@ -30,12 +30,20 @@ export async function getLastWorkspace(): Promise<string | null> {
   const parsed = lastWorkspaceStorageSchema.safeParse(
     await chrome.storage.local.get(STORAGE_KEYS.LAST_WORKSPACE),
   );
-  return parsed.success ? parsed.data.lastWorkspace : null;
+  if (!parsed.success) return null;
+  // Workspace ids are server-scoped: an id remembered from one baseUrl is
+  // meaningless on another (e.g. switching between production and localhost),
+  // and sending it would 400. Treat a mismatch as "no last workspace".
+  const baseUrl = await getBaseUrl();
+  return parsed.data.lastWorkspace.baseUrl === baseUrl
+    ? parsed.data.lastWorkspace.id
+    : null;
 }
 
 export async function setLastWorkspace(workspaceId: string): Promise<void> {
+  const baseUrl = await getBaseUrl();
   await chrome.storage.local.set({
-    [STORAGE_KEYS.LAST_WORKSPACE]: workspaceId,
+    [STORAGE_KEYS.LAST_WORKSPACE]: { id: workspaceId, baseUrl },
   });
 }
 

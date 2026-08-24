@@ -41,6 +41,7 @@ import {
   setCachedTags,
   setCachedWorkspaces,
   setLastWorkspace,
+  STORAGE_KEYS,
 } from "./storage.js";
 
 type NotificationType = "success" | "error" | "info";
@@ -123,6 +124,17 @@ const queueHooks: QueueHookContext = {
 chrome.runtime.onInstalled.addListener(() => {
   createContextMenus();
   installHeartbeat();
+});
+
+// baseUrl can change at runtime (options page). The in-memory workspace cache
+// is not keyed per baseUrl, so a stale entry from the previous server would
+// otherwise leak into the next popup. Drop it whenever baseUrl is written;
+// the per-baseUrl chrome.storage.session caches self-invalidate on read.
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "sync") return;
+  if (STORAGE_KEYS.BASE_URL in changes) {
+    sessionCache.workspaces = null;
+  }
 });
 
 // Worker (re)start: recover any in_flight items (worker killed mid-POST) back
@@ -654,7 +666,7 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
     return { workspaces: sessionCache.workspaces };
   }
   const cached = await getCachedWorkspaces();
-  if (cached) {
+  if (cached && !(await isCacheStale(cached))) {
     sessionCache.workspaces = cached.value;
     return { workspaces: cached.value };
   }

@@ -13,6 +13,7 @@
   ],
   "host_permissions": [
     "https://sheltermark.vercel.app/*",
+    "http://localhost/*",
     "https://x.com/*",
     "https://twitter.com/*"
   ],
