@@ -20,28 +20,45 @@ export function filterBookmarksByTags(
   });
 }
 
+export type BookmarkSearchIndex = Map<string, string>;
+
+export function buildBookmarkSearchIndex(
+  bookmarks: Bookmark[],
+  tagsByBookmarkId: Map<string, string[]>,
+  tagsById: Map<string, { name: string }>,
+  // Only provided when searching across all workspaces (dashboard) —
+  // inside a single workspace the name is constant and adds noise.
+  workspaceNameById?: Map<string, string>,
+): BookmarkSearchIndex {
+  const index = new Map<string, string>();
+  for (const b of bookmarks) {
+    const tagNames = (tagsByBookmarkId.get(b.id) ?? [])
+      .map((id) => tagsById.get(id)?.name ?? "")
+      .join("\n");
+    const wsName = b.workspace_id
+      ? (workspaceNameById?.get(b.workspace_id) ?? "")
+      : "";
+    index.set(
+      b.id,
+      `${b.title || ""}\n${b.url}\n${b.note || ""}\n${tagNames}\n${wsName}`.toLowerCase(),
+    );
+  }
+  return index;
+}
+
 export function filterBookmarksBySearch(
   bookmarks: Bookmark[],
   query: string,
-  tagsByBookmarkId: Map<string, string[]>,
-  tagsById: Map<string, { name: string }>,
+  index: BookmarkSearchIndex,
 ): Bookmark[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return bookmarks;
+  // Every whitespace-separated keyword must match somewhere across
+  // title/URL/note/tag names; keywords may hit different fields.
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return bookmarks;
   return bookmarks.filter((b) => {
-    if (
-      (b.title || "").toLowerCase().includes(q) ||
-      b.url.toLowerCase().includes(q) ||
-      (b.note || "").toLowerCase().includes(q)
-    ) {
-      return true;
-    }
-    const bookmarkTagIds = tagsByBookmarkId.get(b.id) ?? [];
-    for (const tagId of bookmarkTagIds) {
-      const tag = tagsById.get(tagId);
-      if (tag?.name?.toLowerCase().includes(q)) return true;
-    }
-    return false;
+    const haystack = index.get(b.id);
+    if (!haystack) return false;
+    return tokens.every((token) => haystack.includes(token));
   });
 }
 
