@@ -48,20 +48,18 @@ async function fetchAllBookmarkTags(
 
 export function useBookmarks(workspaceId?: string) {
   const queryClient = useQueryClient();
-  const { supabase, user: supabaseUser } = useSupabase();
-  const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+  const { supabase } = useSupabase();
+  const userId = useUser().id;
 
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>(
     bookmarksQueryOptions(userId),
   );
 
-  const { data: allTags = [] } = useQuery<Tag[]>(userTagsQueryOptions);
+  const { data: allTags = [] } = useQuery<Tag[]>(userTagsQueryOptions(userId));
 
   const { data: bookmarkTagLinks = [] } = useQuery<BookmarkTagLink[]>({
-    queryKey: tagKeys.links,
-    queryFn: () => fetchAllBookmarkTags(supabase, userId ?? ""),
-    enabled: !!userId,
+    queryKey: tagKeys.links(userId),
+    queryFn: () => fetchAllBookmarkTags(supabase, userId),
   });
 
   // Workspace names only feed the dashboard-scope search index.
@@ -112,17 +110,16 @@ export function useBookmarks(workspaceId?: string) {
   );
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-    queryClient.invalidateQueries({ queryKey: tagKeys.all });
-    queryClient.invalidateQueries({ queryKey: tagKeys.links });
-    if (userId) {
-      queryClient.invalidateQueries({
-        queryKey: workspaceKeys.byUser(userId),
-      });
-    }
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.all(userId) });
+    queryClient.invalidateQueries({ queryKey: tagKeys.all(userId) });
+    queryClient.invalidateQueries({ queryKey: tagKeys.links(userId) });
+    queryClient.invalidateQueries({
+      queryKey: workspaceKeys.all(userId),
+    });
   };
 
   return {
+    userId,
     bookmarks,
     allTags,
     tagsByBookmarkId,

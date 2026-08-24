@@ -1,13 +1,14 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import type { ActionResult } from "~/lib/action-result";
-
+import { GENERIC_ERROR, type ActionResult } from "~/lib/action-result";
 import { friendlyAuthError } from "~/lib/supabase/auth-error";
+import {
+  authCallbackUrl,
+  getRequestBaseUrl,
+} from "~/lib/supabase/request-base-url";
 import { createClient } from "~/lib/supabase/server";
-import { getBaseUrl } from "~/lib/utils";
 
 const loginSchema = z.object({
   email: z.email("Invalid email address"),
@@ -16,13 +17,9 @@ const loginSchema = z.object({
 
 export async function loginWithGoogle(
   next?: string,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<string>> {
   const supabase = await createClient();
-
-  const baseUrl = getBaseUrl();
-  const redirectUrl = next
-    ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
-    : `${baseUrl}/auth/callback?next=/dashboard`;
+  const redirectUrl = authCallbackUrl(await getRequestBaseUrl(), next);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -32,14 +29,16 @@ export async function loginWithGoogle(
   });
 
   if (error) {
-    redirect("/auth-code-error");
+    return { success: false, error: friendlyAuthError(error) };
   }
 
-  if (data.url) {
-    redirect(data.url);
+  if (!data.url) {
+    return { success: false, error: GENERIC_ERROR };
   }
 
-  return { success: true, data: null };
+  // Return the OAuth URL for client navigation. redirect() would reject the
+  // server-action promise and be interpreted as a login failure by the client.
+  return { success: true, data: data.url };
 }
 
 export async function loginWithEmail(
@@ -47,36 +46,20 @@ export async function loginWithEmail(
 ): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
-  const next = formData.get("next")?.toString();
-  formData.delete("next");
+  const result = loginSchema.safeParse(Object.fromEntries(formData));
 
-  const rawData = Object.fromEntries(formData.entries());
-  const validated = loginSchema.safeParse(rawData);
-
-  if (!validated.success) {
-    const msg = validated.error?.issues?.[0]?.message ?? "Invalid login data";
-    return { success: false, error: msg };
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error.issues[0]?.message ?? "Invalid login data",
+    };
   }
 
-  const { email, password } = validated.data;
+  const { error } = await supabase.auth.signInWithPassword(result.data);
 
-  const { error: loginError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (loginError) {
-    return { success: false, error: friendlyAuthError(loginError) };
+  if (error) {
+    return { success: false, error: friendlyAuthError(error) };
   }
-
-  const redirectUrl = next || "/dashboard";
-  redirect(redirectUrl);
 
   return { success: true, data: null };
-}
-
-export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
 }

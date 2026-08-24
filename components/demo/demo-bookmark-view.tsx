@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Workspace } from "~/lib/schemas/workspace.schema";
@@ -128,11 +128,30 @@ export function DemoBookmarkView() {
     }
   };
 
+  const lastDeletedRef = useRef<{ ids: string[]; items: typeof bookmarks }>({
+    ids: [],
+    items: [],
+  });
+
   const handleConfirmDelete = (ids: string[]) => {
-    setBookmarks((prev) => prev.filter((b) => !ids.includes(b.id)));
+    setBookmarks((prev) => {
+      lastDeletedRef.current = {
+        ids,
+        items: prev.filter((b) => ids.includes(b.id)),
+      };
+      return prev.filter((b) => !ids.includes(b.id));
+    });
     if (ids.length > 1) {
       clearSelection();
     }
+  };
+
+  const handleUndoDelete = (ids: string[]) => {
+    const items = lastDeletedRef.current.items;
+    setBookmarks((prev) => [
+      ...items.filter((b) => ids.includes(b.id)),
+      ...prev,
+    ]);
   };
 
   const handleConfirmMove = (ids: string[], targetWorkspaceId: string) => {
@@ -370,6 +389,7 @@ export function DemoBookmarkView() {
           onOpenChange={setDeleteDialogOpen}
           ids={bookmarksToDelete}
           onConfirm={handleConfirmDelete}
+          onUndo={handleUndoDelete}
         />
 
         <BookmarkMoveDialog

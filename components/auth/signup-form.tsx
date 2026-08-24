@@ -45,7 +45,17 @@ export function SignupForm({
 
   const handleGoogleSignup = async () => {
     setIsLoadingGoogle(true);
-    await loginWithGoogle(next);
+    try {
+      const result = await loginWithGoogle(next);
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        window.location.assign(result.data);
+      }
+    } catch {
+      setError(GENERIC_ERROR);
+    }
+    setIsLoadingGoogle(false);
   };
 
   const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {

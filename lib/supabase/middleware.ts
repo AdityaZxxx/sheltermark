@@ -35,6 +35,11 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, {
             ...options,
+            // Required by the browser extension: its content scripts fetch
+            // this app cross-site (they run on x.com, not on this origin),
+            // and browsers only attach cookies to cross-site requests when
+            // they are SameSite=None. Removing this silently breaks every
+            // extension save/sync path.
             sameSite: "none",
             secure: process.env.NODE_ENV === "production",
           });

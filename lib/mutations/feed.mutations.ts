@@ -22,7 +22,7 @@ import { logger } from "~/lib/utils/logger";
 const generateTempId = () =>
   `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-export function useSubscribeToFeed(userId: string | undefined) {
+export function useSubscribeToFeed(userId: string) {
   return useOptimisticMutation<
     { url: string; workspaceId?: string },
     Feed,
@@ -30,7 +30,7 @@ export function useSubscribeToFeed(userId: string | undefined) {
   >({
     mutationFn: ({ url, workspaceId }) => subscribeToFeed(url, workspaceId),
     mutationKey: ["subscribeToFeed"],
-    queryKey: feedKeys.byUser(userId),
+    queryKey: feedKeys.all(userId),
     successMessage: "Subscribed to feed",
     errorMessage: "Failed to subscribe to feed",
     prepareOptimisticData: (oldData, { url }) => {
@@ -51,10 +51,10 @@ export function useSubscribeToFeed(userId: string | undefined) {
   });
 }
 
-export function useRefreshFeed(userId: string | undefined) {
+export function useRefreshFeed(userId: string) {
   return useOptimisticMutation<string, Feed, Feed[]>({
     mutationFn: refreshFeed,
-    queryKey: feedKeys.byUser(userId),
+    queryKey: feedKeys.all(userId),
     errorMessage: "Failed to refresh feed",
     prepareOptimisticData: (oldData, id) => {
       return optimisticUpdate(oldData, id, (feed) => ({
@@ -65,10 +65,10 @@ export function useRefreshFeed(userId: string | undefined) {
   });
 }
 
-export function useDeleteFeed(userId: string | undefined) {
+export function useDeleteFeed(userId: string) {
   return useOptimisticMutation<string, null, Feed[]>({
     mutationFn: deleteFeed,
-    queryKey: feedKeys.byUser(userId),
+    queryKey: feedKeys.all(userId),
     successMessage: "Feed deleted",
     errorMessage: "Failed to delete feed",
     prepareOptimisticData: (oldData, id) => {
@@ -77,9 +77,9 @@ export function useDeleteFeed(userId: string | undefined) {
   });
 }
 
-export function useSyncAllFeeds(userId: string | undefined) {
+export function useSyncAllFeeds(userId: string) {
   const queryClient = useQueryClient();
-  const queryKey = feedKeys.byUser(userId);
+  const queryKey = feedKeys.all(userId);
 
   return useMutation({
     mutationFn: syncAllFeeds,

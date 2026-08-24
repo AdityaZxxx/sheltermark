@@ -11,11 +11,10 @@ import {
 } from "~/lib/mutations/tag.invalidation";
 import { bookmarkKeys, tagKeys } from "~/lib/query-keys";
 
+const UID = "user-0000-0000-0000-000000000001";
 const TAG_ID_A = "tag-a-0000-0000-0000-000000000001";
 const TAG_ID_B = "tag-a-0000-0000-0000-000000000002";
 const BM_ID = "bm-0000-0000-0000-000000000001";
-
-const MONOSPACE_PREFIX = ["tags", "bookmark"];
 
 function clientWith(
   entries: Array<[readonly unknown[], unknown]>,
@@ -33,19 +32,19 @@ function clientWith(
 
 describe("renameTagDependentKeys", () => {
   it("includes bookmark.all and byBookmark prefix (not tagKeys.links)", () => {
-    const keys = renameTagDependentKeys();
-    expect(keys).toContainEqual(bookmarkKeys.all);
-    expect(keys).toContainEqual(MONOSPACE_PREFIX);
+    const keys = renameTagDependentKeys(UID);
+    expect(keys).toContainEqual(bookmarkKeys.all(UID));
+    expect(keys).toContainEqual(tagKeys.bookmarkLinksPrefix(UID));
     expect(keys).not.toContainEqual(tagKeys.links);
   });
 });
 
 describe("renameTagUpdates", () => {
   it("updates the tag name in withCount list", () => {
-    const updates = renameTagUpdates(TAG_ID_A, "new-name");
+    const updates = renameTagUpdates(UID, TAG_ID_A, "new-name");
     const client = clientWith([
       [
-        tagKeys.withCount,
+        tagKeys.withCount(UID),
         [
           { id: TAG_ID_A, name: "old-name" },
           { id: TAG_ID_B, name: "other" },
@@ -53,7 +52,7 @@ describe("renameTagUpdates", () => {
       ],
     ]);
     updates[0]!.apply(client);
-    expect<unknown>(client.getQueryData(tagKeys.withCount)).toEqual([
+    expect<unknown>(client.getQueryData(tagKeys.withCount(UID))).toEqual([
       { id: TAG_ID_A, name: "new-name" },
       { id: TAG_ID_B, name: "other" },
     ]);
@@ -64,18 +63,18 @@ describe("renameTagUpdates", () => {
 
 describe("deleteTagDependentKeys", () => {
   it("includes bookmark.all and byBookmark prefix", () => {
-    const keys = deleteTagDependentKeys();
-    expect(keys).toContainEqual(bookmarkKeys.all);
-    expect(keys).toContainEqual(MONOSPACE_PREFIX);
+    const keys = deleteTagDependentKeys(UID);
+    expect(keys).toContainEqual(bookmarkKeys.all(UID));
+    expect(keys).toContainEqual(tagKeys.bookmarkLinksPrefix(UID));
   });
 });
 
 describe("deleteTagUpdates", () => {
   it("removes tag from withCount list", () => {
-    const updates = deleteTagUpdates(TAG_ID_A);
+    const updates = deleteTagUpdates(UID, TAG_ID_A);
     const client = clientWith([
       [
-        tagKeys.withCount,
+        tagKeys.withCount(UID),
         [
           { id: TAG_ID_A, name: "gone" },
           { id: TAG_ID_B, name: "kept" },
@@ -83,16 +82,16 @@ describe("deleteTagUpdates", () => {
       ],
     ]);
     updates[0]!.apply(client);
-    expect<unknown>(client.getQueryData(tagKeys.withCount)).toEqual([
+    expect<unknown>(client.getQueryData(tagKeys.withCount(UID))).toEqual([
       { id: TAG_ID_B, name: "kept" },
     ]);
   });
 
   it("removes all links for the deleted tag", () => {
-    const updates = deleteTagUpdates(TAG_ID_A);
+    const updates = deleteTagUpdates(UID, TAG_ID_A);
     const client = clientWith([
       [
-        tagKeys.links,
+        tagKeys.links(UID),
         [
           { bookmark_id: BM_ID, tag_id: TAG_ID_A },
           { bookmark_id: "other", tag_id: TAG_ID_A },
@@ -101,7 +100,7 @@ describe("deleteTagUpdates", () => {
       ],
     ]);
     updates[1]!.apply(client);
-    expect<unknown>(client.getQueryData(tagKeys.links)).toEqual([
+    expect<unknown>(client.getQueryData(tagKeys.links(UID))).toEqual([
       { bookmark_id: BM_ID, tag_id: TAG_ID_B },
     ]);
   });
@@ -111,10 +110,10 @@ describe("deleteTagUpdates", () => {
 
 describe("updateBookmarkFieldsDependentKeys", () => {
   it("returns tag.all, tag links, and tag withCount", () => {
-    expect(updateBookmarkFieldsDependentKeys()).toEqual([
-      tagKeys.all,
-      tagKeys.links,
-      tagKeys.withCount,
+    expect(updateBookmarkFieldsDependentKeys(UID)).toEqual([
+      tagKeys.all(UID),
+      tagKeys.links(UID),
+      tagKeys.withCount(UID),
     ]);
   });
 });
@@ -122,10 +121,10 @@ describe("updateBookmarkFieldsDependentKeys", () => {
 describe("updateBookmarkFieldsUpdates", () => {
   it("replaces links for the bookmark in tagKeys.links", () => {
     const newLinks = [{ bookmark_id: BM_ID, tag_id: TAG_ID_A }];
-    const updates = updateBookmarkFieldsUpdates(BM_ID, newLinks);
+    const updates = updateBookmarkFieldsUpdates(UID, BM_ID, newLinks);
     const client = clientWith([
       [
-        tagKeys.links,
+        tagKeys.links(UID),
         [
           { bookmark_id: BM_ID, tag_id: "old-tag" },
           { bookmark_id: "other", tag_id: "other-tag" },
@@ -133,7 +132,7 @@ describe("updateBookmarkFieldsUpdates", () => {
       ],
     ]);
     updates[0]!.apply(client);
-    expect<unknown>(client.getQueryData(tagKeys.links)).toEqual([
+    expect<unknown>(client.getQueryData(tagKeys.links(UID))).toEqual([
       { bookmark_id: "other", tag_id: "other-tag" },
       { bookmark_id: BM_ID, tag_id: TAG_ID_A },
     ]);
@@ -146,13 +145,13 @@ describe("tag-cache edge cases", () => {
   it("all updaters handle empty cache entries", () => {
     const empty = new QueryClient();
 
-    renameTagUpdates(TAG_ID_A, "x")[0]!.apply(empty);
-    expect<unknown>(empty.getQueryData(tagKeys.withCount)).toEqual([]);
+    renameTagUpdates(UID, TAG_ID_A, "x")[0]!.apply(empty);
+    expect<unknown>(empty.getQueryData(tagKeys.withCount(UID))).toEqual([]);
 
-    deleteTagUpdates(TAG_ID_A)[0]!.apply(empty);
-    expect<unknown>(empty.getQueryData(tagKeys.withCount)).toEqual([]);
+    deleteTagUpdates(UID, TAG_ID_A)[0]!.apply(empty);
+    expect<unknown>(empty.getQueryData(tagKeys.withCount(UID))).toEqual([]);
 
-    updateBookmarkFieldsUpdates(BM_ID, [])[0]!.apply(empty);
-    expect<unknown>(empty.getQueryData(tagKeys.links)).toEqual([]);
+    updateBookmarkFieldsUpdates(UID, BM_ID, [])[0]!.apply(empty);
+    expect<unknown>(empty.getQueryData(tagKeys.links(UID))).toEqual([]);
   });
 });

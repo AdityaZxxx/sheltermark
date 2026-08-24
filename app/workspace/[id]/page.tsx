@@ -18,17 +18,16 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
   const queryClient = makeQueryClient();
 
-  const [{ user }] = await Promise.all([
-    requireAuth(),
-    queryClient.prefetchQuery({
-      queryKey: tagKeys.byWorkspace(id),
-      queryFn: async () => {
-        const result = await getWorkspaceTagsWithCount(id);
-        if (!result.success) throw new Error(result.error);
-        return result.data;
-      },
-    }),
-  ]);
+  const { user } = await requireAuth();
+
+  await queryClient.prefetchQuery({
+    queryKey: tagKeys.byWorkspace(user.id, id),
+    queryFn: async () => {
+      const result = await getWorkspaceTagsWithCount(id);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

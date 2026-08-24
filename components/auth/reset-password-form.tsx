@@ -2,16 +2,19 @@
 
 import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { updatePassword } from "~/app/action/reset-password.action";
 import { Button } from "~/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { GENERIC_ERROR } from "~/lib/action-result";
 
 import { AuthError } from "./auth-error";
 
 export function ResetPasswordForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -28,9 +31,11 @@ export function ResetPasswordForm() {
 
         if (!result.success) {
           setError(result.error);
+        } else {
+          router.push("/dashboard");
         }
       } catch {
-        setError("An unexpected error occurred. Please try again.");
+        setError(GENERIC_ERROR);
       }
     });
   };

@@ -19,7 +19,7 @@ export default async function DashboardPage() {
 
   await Promise.all([
     queryClient.prefetchQuery({
-      queryKey: workspaceKeys.byUser(user?.id),
+      queryKey: workspaceKeys.all(user.id),
       queryFn: async () => {
         const result = await getWorkspaces();
         if (!result.success) throw new Error(result.error);
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       },
     }),
     queryClient.prefetchQuery({
-      queryKey: bookmarkKeys.all,
+      queryKey: bookmarkKeys.all(user.id),
       queryFn: async () => {
         const result = await getBookmarks();
         if (!result.success) throw new Error(result.error);
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       },
     }),
     queryClient.prefetchQuery({
-      queryKey: profileKeys.byUser(user?.id),
+      queryKey: profileKeys.all(user.id),
       queryFn: async () => {
         const result = await getProfile();
         if (!result.success) throw new Error(result.error);

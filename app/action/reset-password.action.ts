@@ -1,13 +1,12 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
 
 import { friendlyAuthError } from "~/lib/supabase/auth-error";
+import { getRequestBaseUrl } from "~/lib/supabase/request-base-url";
 import { createClient } from "~/lib/supabase/server";
-import { getBaseUrl } from "~/lib/utils";
 
 const resetPasswordSchema = z.object({
   email: z.email("Invalid email address"),
@@ -31,10 +30,11 @@ export async function resetPasswordForEmail(
     return { success: false, error: "Email is required" };
   }
 
+  const baseUrl = await getRequestBaseUrl();
   const { error: resetError } = await supabase.auth.resetPasswordForEmail(
     email,
     {
-      redirectTo: `${getBaseUrl()}/auth/callback?next=/reset-password`,
+      redirectTo: `${baseUrl}/auth/callback?next=/reset-password`,
     },
   );
 
@@ -79,6 +79,5 @@ export async function updatePassword(
     return { success: false, error: friendlyAuthError(error) };
   }
 
-  redirect("/dashboard");
   return { success: true, data: null };
 }

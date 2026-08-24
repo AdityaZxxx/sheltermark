@@ -16,6 +16,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { GENERIC_ERROR } from "~/lib/action-result";
 import { cn } from "~/lib/utils";
+import { safeRedirectPath } from "~/lib/utils/safe-redirect";
 
 import { AuthError } from "./auth-error";
 
@@ -32,7 +33,12 @@ export function LoginForm({
   const handleGoogleLogin = async () => {
     setIsLoadingGoogle(true);
     try {
-      await loginWithGoogle(next);
+      const result = await loginWithGoogle(next);
+      if (!result.success) {
+        setError(result.error);
+      } else {
+        window.location.assign(result.data);
+      }
     } catch {
       setError(GENERIC_ERROR);
     }
@@ -45,13 +51,15 @@ export function LoginForm({
     setIsLoadingEmail(true);
 
     const formData = new FormData(e.currentTarget);
-    if (next) {
-      formData.append("next", next);
-    }
     try {
       const result = await loginWithEmail(formData);
       if (!result.success) {
         setError(result.error);
+      } else {
+        // Full page load, not router.push: the SPA router cache still holds
+        // the previous account's /dashboard payload, which would flash for
+        // the new user before fresh data arrives.
+        window.location.assign(safeRedirectPath(next || "/dashboard"));
       }
     } catch {
       setError(GENERIC_ERROR);

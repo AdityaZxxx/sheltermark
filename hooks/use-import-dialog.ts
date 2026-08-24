@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { ImportFileType, ParsedBookmark } from "~/lib/import/parsers";
 
 import { importBookmarks, previewImport } from "~/app/action/import.action";
+import { useUser } from "~/components/providers/user-context";
 import { type DetectedFormat, detectFormat } from "~/lib/import/detect";
 import {
   bookmarkSurvivesFilter,
@@ -169,6 +170,7 @@ interface UseImportDialogReturn {
 
 export function useImportDialog(): UseImportDialogReturn {
   const queryClient = useQueryClient();
+  const userId = useUser().id;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<ImportStep>("upload");
@@ -308,9 +310,13 @@ export function useImportDialog(): UseImportDialogReturn {
         return;
       }
 
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: bookmarkKeys.all(userId),
+      });
       if (targetWorkspaceId === "new") {
-        queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.all(userId),
+        });
       }
 
       const importedData = importResult.data;

@@ -3,7 +3,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
   useCreateWorkspace,
@@ -21,9 +20,8 @@ export function useWorkspaces() {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
   const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+  const userId = serverUser.id;
 
   const { data: workspaces = [], isLoading: isWsLoading } = useQuery(
     workspacesQueryOptions(userId),
@@ -43,7 +41,7 @@ export function useWorkspaces() {
 
   const refetchWorkspaces = () => {
     void queryClient.refetchQueries({
-      queryKey: workspaceKeys.byUser(userId),
+      queryKey: workspaceKeys.all(userId),
       type: "active",
     });
   };
@@ -80,7 +78,7 @@ export function useWorkspaces() {
   return {
     workspaces,
     currentWorkspace,
-    isLoading: isAuthLoading || isWsLoading,
+    isLoading: isWsLoading,
     setActiveWorkspace,
     clearActiveWorkspace,
     refetchWorkspaces,
