@@ -117,6 +117,9 @@ export function useBookmarks(workspaceId?: string) {
       ),
       effectiveQuery,
       searchIndex,
+      // AI terms OR-match: a bookmark about "react" alone is still
+      // relevant to "react performance".
+      { matchAll: !aiTerms },
     ),
     sort,
   );
