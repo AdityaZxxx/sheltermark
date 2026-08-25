@@ -2,7 +2,6 @@ import "server-only";
 import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type {
@@ -11,12 +10,14 @@ import type {
   WorkspaceWithCount,
 } from "~/lib/schemas/workspace.schema";
 
+import { dbError, type ActionResult } from "~/lib/action-result";
 import { bookmarks, workspaces } from "~/lib/data/schema";
 import { deleteWorkspaceWithBookmarks } from "~/lib/data/transaction";
 import {
   workspaceCreateSchema,
   workspaceRenameSchema,
 } from "~/lib/schemas/workspace.schema";
+import { logger } from "~/lib/utils/logger";
 
 type WorkspaceRow = typeof workspaces.$inferSelect;
 type BookmarkRow = typeof bookmarks.$inferSelect;
@@ -56,13 +57,6 @@ function toBookmark(row: BookmarkRow): Bookmark {
     updated_at: row.updated_at,
     deleted_at: row.deleted_at,
     note: row.note,
-  };
-}
-
-function dbError(cause: unknown): ActionResult<never> {
-  return {
-    success: false,
-    error: cause instanceof Error ? cause.message : "Database error",
   };
 }
 
@@ -118,7 +112,7 @@ export async function getWorkspaces(
       }),
     };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -152,7 +146,7 @@ export async function createWorkspace(
     }
     return { success: true, data: { id: parsed.data.id } };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -213,7 +207,7 @@ export async function getTrashedWorkspaces(
       }),
     };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -235,7 +229,7 @@ export async function permanentDeleteWorkspace(
       .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -252,7 +246,7 @@ export async function togglePublicStatus(
       .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -273,7 +267,7 @@ export async function setDefaultWorkspace(
       .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -290,7 +284,7 @@ export async function toggleAutoCheckBroken(
       .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -313,8 +307,11 @@ export async function createWorkspaceRaw(
     }
     return { success: true, data: { id: row.id } };
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : "Database error";
-    return { success: false, error: `Failed to create workspace: ${message}` };
+    logger.error("Workspace creation failed", { error: cause });
+    return {
+      success: false,
+      error: "Failed to create workspace. Please try again.",
+    };
   }
 }
 
@@ -332,7 +329,7 @@ export async function getDefaultWorkspace(
       .limit(1);
     return { success: true, data: row ? { id: row.id } : null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -361,7 +358,7 @@ export async function renameWorkspace(
       );
     return { success: true, data: null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }
 
@@ -377,6 +374,6 @@ export async function touchWorkspaceLastUsed(
       .where(and(eq(workspaces.id, id), eq(workspaces.user_id, userId)));
     return { success: true, data: null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Workspace", cause);
   }
 }

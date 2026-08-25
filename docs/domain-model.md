@@ -21,7 +21,7 @@ graph TD
     AI["Account & Identity<br/>Auth, user profile, public persona"]
     TL["Trash & Lifecycle<br/>Soft-delete, recovery, auto-cleanup"]
     IE["Import/Export<br/>Moving bookmarks in/out of the system"]
-    AA["AI Augmentation<br/>AI-powered title suggestions"]
+    AA["AI Augmentation<br/>AI title suggestions, tag suggestions,<br/>search query interpretation"]
     EX["Extension<br/>Browser integration"]
 
     BM -->|"has health status"| LH
@@ -444,7 +444,7 @@ AI-powered enhancement of user content, currently limited to title generation.
 
 - **AI Title Suggestion** — a concise title (≤200 chars) generated from a URL + current title + page description. Served to the user as a suggestion; they can accept or reject.
 - **Rate Limit** — 10 title generations per user per day. Enforced by an in-memory counter (not persistent — resets on server restart).
-- **AI Provider** — Ollama via `ollama-ai-provider-v2`, using the `minimax-m3:cloud` model. Configured via `AI_BASE_URL` and optional `OLLAMA_API_KEY` environment variables.
+- **AI Provider** — Ollama via `ollama-ai-provider-v2`, using the model configured via `AI_MODEL`. Configured via `AI_BASE_URL`, `AI_MODEL`, and optional `OLLAMA_API_KEY` environment variables; `AI_MODEL` has no fallback and must be set.
 
 ### Entity Model
 

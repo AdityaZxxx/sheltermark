@@ -41,6 +41,7 @@ import {
   setCachedTags,
   setCachedWorkspaces,
   setLastWorkspace,
+  STORAGE_KEYS,
 } from "./storage.js";
 
 type NotificationType = "success" | "error" | "info";
@@ -125,6 +126,17 @@ chrome.runtime.onInstalled.addListener(() => {
   installHeartbeat();
 });
 
+// baseUrl can change at runtime (options page). The in-memory workspace cache
+// is not keyed per baseUrl, so a stale entry from the previous server would
+// otherwise leak into the next popup. Drop it whenever baseUrl is written;
+// the per-baseUrl chrome.storage.session caches self-invalidate on read.
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "sync") return;
+  if (STORAGE_KEYS.BASE_URL in changes) {
+    sessionCache.workspaces = null;
+  }
+});
+
 // Worker (re)start: recover any in_flight items (worker killed mid-POST) back
 // to pending, sweep expired dead items, then drain. Must run before any drain.
 chrome.runtime.onStartup.addListener(async () => {
@@ -155,20 +167,21 @@ chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
  * and after mutations. Never throws — cache warmup is best-effort.
  */
 async function revalidateCaches(): Promise<void> {
-  await Promise.allSettled([
-    (async () => {
-      const cached = await getCachedWorkspaces();
-      if (cached && !(await isCacheStale(cached))) return;
-      const { workspaces } = await fetchWorkspacesRaw();
-      if (workspaces) await setCachedWorkspaces(workspaces);
-    })(),
-    (async () => {
-      const cached = await getCachedTags();
-      if (cached && !(await isCacheStale(cached))) return;
-      const tags = await fetchTagsRaw();
-      await setCachedTags(tags);
-    })(),
-  ]);
+  // Tags first: its graceful response doubles as a session probe. While
+  // logged out, workspaces would 401 on every heartbeat — skip it, and do
+  // not cache the logged-out shape or an empty tag list would outlive the
+  // next login until TTL.
+  const cachedTags = await getCachedTags();
+  if (!cachedTags || (await isCacheStale(cachedTags))) {
+    const tagsResult = await fetchTagsRaw();
+    if (!tagsResult.authenticated) return;
+    await setCachedTags(tagsResult.tags ?? []);
+  }
+
+  const cachedWorkspaces = await getCachedWorkspaces();
+  if (cachedWorkspaces && !(await isCacheStale(cachedWorkspaces))) return;
+  const { workspaces } = await fetchWorkspacesRaw();
+  if (workspaces) await setCachedWorkspaces(workspaces);
 }
 
 chrome.commands.onCommand.addListener(async (command: string) => {
@@ -305,6 +318,24 @@ chrome.runtime.onMessage.addListener(
         .then((tags) => sendResponse({ authenticated: true, tags }))
         .catch(() => sendResponse({ authenticated: false, tags: [] }));
       return true;
+    }
+
+    if (message.type === MESSAGE_TYPES.AUTH_MAYBE_RESTORED) {
+      // Fired by the auth-bridge content script on app-origin page loads
+      // (including the post-login redirect). A cheap session probe gates the
+      // resume: draining a still-logged-out queue would just re-pause it and
+      // re-notify.
+      void isAuthenticated()
+        .then(async (authenticated) => {
+          if (!authenticated) return;
+          console.info(
+            `[Sheltermark] Session detected — syncing queued bookmarks`,
+          );
+          await resumeQueue();
+          await drain(queueHooks);
+        })
+        .catch(() => {});
+      return false;
     }
 
     if (message.type === MESSAGE_TYPES.GET_POPUP) {
@@ -654,7 +685,7 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
     return { workspaces: sessionCache.workspaces };
   }
   const cached = await getCachedWorkspaces();
-  if (cached) {
+  if (cached && !(await isCacheStale(cached))) {
     sessionCache.workspaces = cached.value;
     return { workspaces: cached.value };
   }
@@ -667,13 +698,30 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
 }
 
 /** Raw network fetch for tags. Never caches; callers write the cache. */
-async function fetchTagsRaw(): Promise<TagWithCount[]> {
+async function fetchTagsRaw(): Promise<TagsResult> {
   const baseUrl = await getBaseUrl();
   const response = await fetch(`${baseUrl}/api/extension/tags`, {
     credentials: "include",
   });
-  if (!response.ok) return [];
-  return tagsResultSchema.parse(await response.json()).tags ?? [];
+  if (!response.ok) return { authenticated: false, tags: [] };
+  return tagsResultSchema.parse(await response.json());
+}
+
+/** Cheap session probe reusing the tags route's graceful-shape response. */
+async function isAuthenticated(): Promise<boolean> {
+  const baseUrl = await getBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/api/extension/tags`, {
+      credentials: "include",
+    });
+    if (!response.ok) return false;
+    return (
+      tagsResultSchema.safeParse(await response.json()).data?.authenticated ??
+      false
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -686,9 +734,10 @@ async function getTags(): Promise<TagWithCount[]> {
   if (cached && !(await isCacheStale(cached))) {
     return cached.value;
   }
-  const tags = await fetchTagsRaw();
-  void setCachedTags(tags);
-  return tags;
+  const result = await fetchTagsRaw();
+  if (!result.authenticated) return [];
+  void setCachedTags(result.tags ?? []);
+  return result.tags ?? [];
 }
 
 async function getPopupInfo({

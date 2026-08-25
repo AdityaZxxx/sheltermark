@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
   useUpdateProfile,
@@ -11,9 +10,8 @@ import {
 import { profileQueryOptions } from "~/lib/queries/profile.queries";
 
 export function useProfile() {
-  const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
   const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+  const userId = serverUser.id;
 
   const { data, isLoading } = useQuery(profileQueryOptions(userId));
 
@@ -22,7 +20,7 @@ export function useProfile() {
 
   return {
     profile: data,
-    isLoading: isAuthLoading || isLoading,
+    isLoading: isLoading,
     updateProfile: updateMutation.mutate,
     isUpdating: updateMutation.isPending,
     updatePublicProfile: updatePublicMutation.mutate,

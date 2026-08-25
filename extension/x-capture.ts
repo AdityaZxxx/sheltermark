@@ -35,92 +35,97 @@
     return `https://${domain}/${username}/status/${tweetId}`;
   }
 
-  function findBookmarkButtons(root: Document | Element): NodeListOf<Element> {
-    return root.querySelectorAll(
-      '[data-testid="bookmark"], [data-testid="removeBookmark"]',
-    );
+  function sendBookmarkMessage(tweetUrl: string): void {
+    // After an extension reload/disable, stale scripts in already-open tabs
+    // throw synchronously here ("Extension context invalidated") — the
+    // promise .catch below cannot see it, so the whole call is guarded.
+    try {
+      chrome.runtime
+        .sendMessage({
+          type: "X_BOOKMARK_CAPTURED",
+          url: tweetUrl,
+        })
+        .catch((error: Error) => {
+          console.error(`[Sheltermark] Failed to send X bookmark message`, {
+            tweetUrl,
+            error,
+          });
+        });
+    } catch {
+      // Runtime binding is dead; the page needs a reload to re-capture.
+    }
   }
 
-  function findClosestTweetArticle(el: Element): Element | null {
-    return el.closest('article[data-testid="tweet"]');
+  // X serves two frontend variants in parallel (staged rollout): the legacy
+  // UI keyed by data-testid, and the 2026 rebuild keyed by svg[data-icon] +
+  // aria-pressed with no data-testid anywhere. Both must be handled.
+
+  function isBookmarkButton(button: Element): boolean {
+    const testId = button.getAttribute("data-testid");
+    if (testId) return testId === "bookmark" || testId === "removeBookmark";
+    return button.querySelector('svg[data-icon^="icon-bookmark"]') !== null;
   }
 
-  function extractTweetUrlFromArticle(article: Element | null): string | null {
+  function isBookmarkAction(button: Element): boolean {
+    const testId = button.getAttribute("data-testid");
+    // Legacy UI: the testid itself flips to "removeBookmark" once bookmarked.
+    // Rebuild: aria-pressed is still "false" at this point because capture
+    // phase runs before X flips it.
+    if (testId) return testId === "bookmark";
+    return button.getAttribute("aria-pressed") === "false";
+  }
+
+  function findTweetUrl(article: Element | null): string | null {
     if (!article) return null;
 
-    const timeLink = article.querySelector("a time");
-    if (timeLink) {
-      const anchor = timeLink.closest("a");
-      if (anchor && isCanonicalTweetUrl(anchor.href)) {
-        return extractTweetUrl(anchor.href);
-      }
+    // Rebuild only: itemid microdata carries the tweet's own status id, which
+    // disambiguates it from quoted-tweet links inside the article.
+    const ownId = article.getAttribute("itemid")?.match(/status\/(\d+)/)?.[1];
+    const matchesOwnId = (normalized: string): boolean =>
+      !ownId || normalized.endsWith(`/status/${ownId}`);
+
+    // Legacy UI: the timestamp anchor links to the tweet's own status; quoted-
+    // tweet cards have no <time> element, so this is QT-safe.
+    const timeAnchor = article.querySelector("a time")?.closest("a");
+    if (
+      timeAnchor &&
+      timeAnchor.closest("article") === article &&
+      isCanonicalTweetUrl(timeAnchor.href)
+    ) {
+      const normalized = extractTweetUrl(timeAnchor.href);
+      if (normalized && matchesOwnId(normalized)) return normalized;
     }
 
+    // Rebuild: quoted-tweet cards render as nested <article>s, excluded by the
+    // closest-article check.
     const links = article.querySelectorAll<HTMLAnchorElement>(
       'a[href*="/status/"]',
     );
     for (let i = 0; i < links.length; i++) {
       const link = links[i];
-      if (link && isCanonicalTweetUrl(link.href)) {
-        return extractTweetUrl(link.href);
-      }
+      if (!link || link.closest("article") !== article) continue;
+      if (!isCanonicalTweetUrl(link.href)) continue;
+      const normalized = extractTweetUrl(link.href);
+      if (!normalized || !matchesOwnId(normalized)) continue;
+      return normalized;
     }
 
     return null;
   }
 
-  function sendBookmarkMessage(tweetUrl: string): void {
-    chrome.runtime
-      .sendMessage({
-        type: "X_BOOKMARK_CAPTURED",
-        url: tweetUrl,
-      })
-      .catch((error: Error) => {
-        console.error(`[Sheltermark] Failed to send X bookmark message`, {
-          tweetUrl,
-          error,
-        });
-      });
-  }
+  document.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
 
-  const processedClicks = new WeakSet<Element>();
+      const button = target.closest("button");
+      if (!button || !isBookmarkButton(button)) return;
+      if (!isBookmarkAction(button)) return;
 
-  function attachBookmarkListeners(root: Document | Element): void {
-    const buttons = findBookmarkButtons(root);
-    for (let i = 0; i < buttons.length; i++) {
-      const btn = buttons[i];
-      if (!btn || processedClicks.has(btn)) continue;
-      processedClicks.add(btn);
-
-      btn.addEventListener(
-        "click",
-        () => {
-          // The listener is registered on this button alone, so `btn` is the
-          // event target — no need to read it off the event.
-          const isBookmarkAction =
-            btn.getAttribute("data-testid") === "bookmark";
-          if (!isBookmarkAction) return;
-
-          const article = findClosestTweetArticle(btn);
-          const tweetUrl = extractTweetUrlFromArticle(article);
-          if (!tweetUrl) return;
-
-          sendBookmarkMessage(tweetUrl);
-        },
-        { capture: true },
-      );
-    }
-  }
-
-  attachBookmarkListeners(document);
-
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  const observer = new MutationObserver(() => {
-    if (debounceTimer !== null) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      attachBookmarkListeners(document);
-    }, 400);
-  });
-
-  observer.observe(document.body, { childList: true, subtree: true });
+      const tweetUrl = findTweetUrl(button.closest("article"));
+      if (tweetUrl) sendBookmarkMessage(tweetUrl);
+    },
+    { capture: true },
+  );
 })();

@@ -10,6 +10,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
+  buildBookmarkSearchIndex,
   filterBookmarksBySearch,
   filterBookmarksByTags,
   filterBookmarksByWorkspace,
@@ -17,6 +18,7 @@ import {
 } from "~/lib/queries/bookmark-filters";
 import { bookmarksQueryOptions } from "~/lib/queries/bookmark.queries";
 import { userTagsQueryOptions } from "~/lib/queries/tag.queries";
+import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
 import { bookmarkKeys, tagKeys, workspaceKeys } from "~/lib/query-keys";
 import { uuidSchema } from "~/lib/schemas/common";
 
@@ -46,20 +48,24 @@ async function fetchAllBookmarkTags(
 
 export function useBookmarks(workspaceId?: string) {
   const queryClient = useQueryClient();
-  const { supabase, user: supabaseUser } = useSupabase();
-  const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+  const { supabase } = useSupabase();
+  const userId = useUser().id;
 
   const { data: allBookmarks = [], isLoading } = useQuery<Bookmark[]>(
     bookmarksQueryOptions(userId),
   );
 
-  const { data: allTags = [] } = useQuery<Tag[]>(userTagsQueryOptions);
+  const { data: allTags = [] } = useQuery<Tag[]>(userTagsQueryOptions(userId));
 
   const { data: bookmarkTagLinks = [] } = useQuery<BookmarkTagLink[]>({
-    queryKey: tagKeys.links,
-    queryFn: () => fetchAllBookmarkTags(supabase, userId ?? ""),
-    enabled: !!userId,
+    queryKey: tagKeys.links(userId),
+    queryFn: () => fetchAllBookmarkTags(supabase, userId),
+  });
+
+  // Workspace names only feed the dashboard-scope search index.
+  const { data: allWorkspaces = [] } = useQuery({
+    ...workspacesQueryOptions(userId),
+    enabled: !workspaceId,
   });
 
   const tagsByBookmarkId = new Map<string, string[]>();
@@ -72,14 +78,35 @@ export function useBookmarks(workspaceId?: string) {
     }
   }
 
-  const tagsById = new Map<string, Tag>();
-  for (const tag of allTags) {
-    tagsById.set(tag.id, tag);
+  // On the dashboard (no workspace scope), the workspace name becomes a
+  // searchable field so users can find bookmarks via where they filed them.
+  let wsNameById: Map<string, string> | undefined;
+  if (!workspaceId) {
+    wsNameById = new Map(allWorkspaces.map((ws) => [ws.id, ws.name] as const));
   }
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchIndex = buildBookmarkSearchIndex(
+    allBookmarks,
+    tagsByBookmarkId,
+    new Map(allTags.map((t) => [t.id, t] as const)),
+    wsNameById,
+  );
+
+  const [searchQuery, setSearchQueryRaw] = useState("");
   const [sort, setSort] = useState<BookmarkSort>(DEFAULT_SORT);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
+  // AI-assisted search is a thin layer over FTS: aiTerms holds the
+  // interpreted terms for the current query; any edit to the raw input
+  // discards them so stale AI terms never apply to a new query.
+  const [aiTerms, setAiTerms] = useState<string[] | null>(null);
+
+  const setSearchQuery = (q: string) => {
+    setAiTerms(null);
+    setSearchQueryRaw(q);
+  };
+
+  const effectiveQuery = aiTerms ? aiTerms.join(" ") : searchQuery;
 
   const bookmarks = sortBookmarksFn(
     filterBookmarksBySearch(
@@ -88,25 +115,26 @@ export function useBookmarks(workspaceId?: string) {
         selectedTagIds,
         tagsByBookmarkId,
       ),
-      searchQuery,
-      tagsByBookmarkId,
-      tagsById,
+      effectiveQuery,
+      searchIndex,
+      // AI terms OR-match: a bookmark about "react" alone is still
+      // relevant to "react performance".
+      { matchAll: !aiTerms },
     ),
     sort,
   );
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: bookmarkKeys.all });
-    queryClient.invalidateQueries({ queryKey: tagKeys.all });
-    queryClient.invalidateQueries({ queryKey: tagKeys.links });
-    if (userId) {
-      queryClient.invalidateQueries({
-        queryKey: workspaceKeys.byUser(userId),
-      });
-    }
+    queryClient.invalidateQueries({ queryKey: bookmarkKeys.all(userId) });
+    queryClient.invalidateQueries({ queryKey: tagKeys.all(userId) });
+    queryClient.invalidateQueries({ queryKey: tagKeys.links(userId) });
+    queryClient.invalidateQueries({
+      queryKey: workspaceKeys.all(userId),
+    });
   };
 
   return {
+    userId,
     bookmarks,
     allTags,
     tagsByBookmarkId,
@@ -120,6 +148,8 @@ export function useBookmarks(workspaceId?: string) {
     invalidate,
     // Identity of the current filter context; used to suppress exit
     // animations when items vanish from filtering rather than deletion.
-    filterKey: `${workspaceId ?? "all"}|${selectedTagIds.join(",")}|${searchQuery}`,
+    filterKey: `${workspaceId ?? "all"}|${selectedTagIds.join(",")}|${effectiveQuery}|${aiTerms ? "ai" : ""}`,
+    aiSearchTerms: aiTerms,
+    setAiSearchTerms: setAiTerms,
   };
 }

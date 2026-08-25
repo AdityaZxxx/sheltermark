@@ -75,8 +75,8 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <NuqsAdapter>
-          <SupabaseProvider>
-            <QueryProvider>
+          <QueryProvider>
+            <SupabaseProvider>
               <ThemeProvider
                 attribute="class"
                 defaultTheme="system"
@@ -87,8 +87,8 @@ export default function RootLayout({
                 <Analytics />
                 <Toaster />
               </ThemeProvider>
-            </QueryProvider>
-          </SupabaseProvider>
+            </SupabaseProvider>
+          </QueryProvider>
         </NuqsAdapter>
       </body>
     </html>

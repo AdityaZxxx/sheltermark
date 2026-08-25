@@ -21,6 +21,9 @@ interface BookmarkHeaderProps {
   count?: number;
   title?: string;
   workspaceId?: string;
+  aiSearchTerms?: string[] | null;
+  onAskAi?: () => void;
+  isAskingAi?: boolean;
   onSearchChange: (value: string) => void;
   onSubmit: (value: string) => void;
   onViewChange: (view: BookmarkViewVariant) => void;
@@ -38,6 +41,9 @@ export function BookmarkHeader({
   count,
   title = "All Bookmarks",
   workspaceId,
+  aiSearchTerms,
+  onAskAi,
+  isAskingAi,
   onSearchChange,
   onSubmit,
   onViewChange,
@@ -46,13 +52,24 @@ export function BookmarkHeader({
   onManageTags,
 }: BookmarkHeaderProps) {
   return (
-    <div className="space-y-2 mx-auto sm:space-y-3">
+    <div className="space-y-3 mx-auto sm:space-y-4">
       <BookmarkInput
         ref={inputRef}
         value={searchQuery}
         onChange={onSearchChange}
         onSubmit={onSubmit}
+        onAskAi={onAskAi}
+        isAskingAi={isAskingAi}
       />
+
+      {aiSearchTerms && aiSearchTerms.length > 0 && (
+        <output className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          AI search for:
+          <span className="font-medium text-foreground">
+            {aiSearchTerms.join(" ")}
+          </span>
+        </output>
+      )}
 
       <BookmarkTagFilter
         selectedTagIds={selectedTagIds}

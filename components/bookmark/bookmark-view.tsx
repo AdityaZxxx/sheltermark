@@ -4,6 +4,7 @@ import type { BookmarkScope } from "~/lib/schemas/common";
 
 import { TagManageDialog } from "~/components/tag/tag-manage-dialog";
 import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
+import { useUserTagsWithCount } from "~/hooks/use-tags";
 
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
@@ -13,6 +14,7 @@ import { BookmarkToolbar } from "./bookmark-toolbar";
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
   const vm = useBookmarkListManager(scope);
+  const { tags: allTags } = useUserTagsWithCount();
 
   return (
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed
@@ -30,6 +32,9 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         title={vm.currentWorkspace?.name ?? "All Bookmarks"}
         selectedTagIds={vm.selectedTagIds}
         workspaceId={vm.currentWorkspace?.id}
+        aiSearchTerms={vm.aiSearchTerms}
+        onAskAi={vm.handleAskAi}
+        isAskingAi={vm.isAiSearching}
         onSearchChange={vm.setSearchQuery}
         onSubmit={vm.handleSubmit}
         onViewChange={vm.setView}
@@ -84,6 +89,7 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         open={vm.dialogs.editDialogOpen}
         onOpenChange={vm.dialogs.setEditDialogOpen}
         bookmark={vm.dialogs.activeBookmark}
+        allTags={allTags}
         updateBookmarkFields={vm.updateBookmarkFields}
         isPending={vm.isUpdatingBookmarkFields}
       />

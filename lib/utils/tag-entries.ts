@@ -49,3 +49,37 @@ export function tagKeyAction(
       return "none";
   }
 }
+
+export const MAX_AI_SUGGESTIONS = 5;
+
+/**
+ * Merges AI-suggested tag names into the current draft entries. Case-
+ * insensitive dedupe against existing entries; a candidate matching one of
+ * the user's tags by name reuses that tag identity (id + canonical casing),
+ * otherwise it becomes a name-only draft entry. Existing order is preserved,
+ * new candidates append. Used for both single-apply (one candidate) and
+ * apply-all.
+ */
+export function mergeSuggestedTags(
+  current: TagEntry[],
+  candidates: string[],
+  userTags: Tag[],
+): TagEntry[] {
+  const normalized = candidates
+    .map((c) => c.trim().replace(/\s+/g, " "))
+    .filter(Boolean)
+    .slice(0, MAX_AI_SUGGESTIONS);
+
+  const result = [...current];
+  const seen = new Set(result.map((e) => e.name.toLowerCase()));
+  for (const candidate of normalized) {
+    const key = candidate.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const existing = userTags.find((t) => t.name.toLowerCase() === key);
+    result.push(
+      existing ? { id: existing.id, name: existing.name } : { name: candidate },
+    );
+  }
+  return result;
+}

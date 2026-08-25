@@ -25,10 +25,13 @@ interface RestoreResult {
   skippedCount: number;
 }
 
-function trashedWorkspaceFilterUpdates(restoredIds: readonly string[]) {
+function trashedWorkspaceFilterUpdates(
+  userId: string,
+  restoredIds: readonly string[],
+) {
   const idSet = new Set(restoredIds);
   return [
-    typedUpdate<TrashedWorkspace[]>(trashKeys.workspaces, (oldData) => {
+    typedUpdate<TrashedWorkspace[]>(trashKeys.workspaces(userId), (oldData) => {
       const prev = oldData ?? [];
       return prev.map((ws) => ({
         ...ws,
@@ -38,90 +41,83 @@ function trashedWorkspaceFilterUpdates(restoredIds: readonly string[]) {
   ];
 }
 
-export function useRestoreBookmarks() {
+export function useRestoreBookmarks(userId: string) {
   return useOptimisticMutation<BookmarkRestoreInput, RestoreResult, Bookmark[]>(
     {
       mutationFn: restoreBookmarks,
       mutationKey: ["restoreBookmarks"],
-      queryKey: trashKeys.bookmarks,
-      dependentQueryKeys: [bookmarkKeys.all],
+      queryKey: trashKeys.bookmarks(userId),
+      dependentQueryKeys: [bookmarkKeys.all(userId)],
       successMessage: null,
       errorMessage: "Failed to restore bookmarks",
       prepareOptimisticData: (oldData, { ids }) => {
         return optimisticRemove(oldData, ids);
       },
       additionalOptimisticUpdates: ({ ids }) =>
-        trashedWorkspaceFilterUpdates(ids),
-      onSuccess: (result) => {
-        if (result.success) {
-          const { restoredCount, skippedCount } = result.data;
-          if (restoredCount > 0 && skippedCount > 0) {
-            toast.success(
-              `${restoredCount} restored, ${skippedCount} already exists`,
-            );
-          } else if (restoredCount > 0) {
-            toast.success("Bookmarks restored");
-          } else if (skippedCount > 0) {
-            toast.info("Bookmarks already exist in target workspace");
-          }
-        } else {
-          toast.error(result.error ?? "Failed to restore bookmarks");
+        trashedWorkspaceFilterUpdates(userId, ids),
+      onSuccessData: (data) => {
+        const { restoredCount, skippedCount } = data;
+        if (restoredCount > 0 && skippedCount > 0) {
+          toast.success(
+            `${restoredCount} restored, ${skippedCount} already exists`,
+          );
+        } else if (restoredCount > 0) {
+          toast.success("Bookmarks restored");
+        } else if (skippedCount > 0) {
+          toast.info("Bookmarks already exist in target workspace");
         }
       },
     },
   );
 }
 
-export function useRestoreWorkspace() {
+export function useRestoreWorkspace(userId: string) {
   return useOptimisticMutation<string, RestoreResult, TrashedWorkspace[]>({
     mutationFn: restoreWorkspace,
     mutationKey: ["restoreWorkspace"],
-    queryKey: trashKeys.workspaces,
-    dependentQueryKeys: [workspaceKeys.all, bookmarkKeys.all],
+    queryKey: trashKeys.workspaces(userId),
+    dependentQueryKeys: [workspaceKeys.all(userId), bookmarkKeys.all(userId)],
     successMessage: null,
     errorMessage: "Failed to restore workspace",
     prepareOptimisticData: (oldData, id) => {
       const prev = oldData ?? [];
       return prev.filter((ws) => ws.id !== id);
     },
-    onSuccess: (result) => {
-      if (result.success) {
-        const { restoredCount, skippedCount } = result.data;
-        if (restoredCount > 0 && skippedCount > 0) {
-          toast.success(
-            `Workspace restored, ${skippedCount} bookmark${skippedCount !== 1 ? "s" : ""} already exist`,
-          );
-        } else if (restoredCount > 0 || skippedCount === 0) {
-          toast.success("Workspace restored");
-        } else {
-          toast.info("All bookmarks already exist in workspace");
-        }
+    onSuccessData: (data) => {
+      const { restoredCount, skippedCount } = data;
+      if (restoredCount > 0 && skippedCount > 0) {
+        toast.success(
+          `Workspace restored, ${skippedCount} bookmark${skippedCount !== 1 ? "s" : ""} already exist`,
+        );
+      } else if (restoredCount > 0 || skippedCount === 0) {
+        toast.success("Workspace restored");
       } else {
-        toast.error(result.error ?? "Failed to restore workspace");
+        toast.info("All bookmarks already exist in workspace");
       }
     },
   });
 }
 
-export function usePermanentDeleteBookmarks() {
+export function usePermanentDeleteBookmarks(userId: string) {
   return useOptimisticMutation<string[], null, Bookmark[]>({
     mutationFn: permanentDeleteBookmarks,
     mutationKey: ["permanentDeleteBookmarks"],
-    queryKey: trashKeys.bookmarks,
+    queryKey: trashKeys.bookmarks(userId),
     successMessage: "Bookmarks permanently deleted",
     errorMessage: "Failed to permanently delete bookmarks",
     prepareOptimisticData: (oldData, ids) => {
       return optimisticRemove(oldData, ids);
     },
-    additionalOptimisticUpdates: (ids) => trashedWorkspaceFilterUpdates(ids),
+    additionalOptimisticUpdates: (ids) =>
+      trashedWorkspaceFilterUpdates(userId, ids),
   });
 }
 
-export function usePermanentDeleteWorkspace() {
+export function usePermanentDeleteWorkspace(userId: string) {
   return useOptimisticMutation<string, null, TrashedWorkspace[]>({
     mutationFn: permanentDeleteWorkspace,
     mutationKey: ["permanentDeleteWorkspace"],
-    queryKey: trashKeys.workspaces,
+    queryKey: trashKeys.workspaces(userId),
     successMessage: "Workspace permanently deleted",
     errorMessage: "Failed to permanently delete workspace",
     prepareOptimisticData: (oldData, id) => {
@@ -130,19 +126,19 @@ export function usePermanentDeleteWorkspace() {
   });
 }
 
-export function useEmptyTrash() {
+export function useEmptyTrash(userId: string) {
   return useOptimisticMutation<void, null, Bookmark[]>({
     mutationFn: () => emptyTrash(),
     mutationKey: ["emptyTrash"],
-    queryKey: trashKeys.bookmarks,
-    dependentQueryKeys: [bookmarkKeys.all, workspaceKeys.all],
+    queryKey: trashKeys.bookmarks(userId),
+    dependentQueryKeys: [bookmarkKeys.all(userId), workspaceKeys.all(userId)],
     successMessage: "Trash emptied",
     errorMessage: "Failed to empty trash",
     prepareOptimisticData: () => {
       return [];
     },
     additionalOptimisticUpdates: () => [
-      typedUpdate<TrashedWorkspace[]>(trashKeys.workspaces, () => []),
+      typedUpdate<TrashedWorkspace[]>(trashKeys.workspaces(userId), () => []),
     ],
   });
 }

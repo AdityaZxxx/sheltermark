@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import type { ActionResult } from "~/lib/action-result";
 
+import { GENERIC_ERROR } from "~/lib/action-result";
 import { logger } from "~/lib/utils/logger";
 
 export function optimisticRemove<T extends { id: string }>(
@@ -37,6 +38,27 @@ export function optimisticAppend<T>(oldData: T[] | undefined, item: T): T[] {
 
 export function optimisticPrepend<T>(oldData: T[] | undefined, item: T): T[] {
   return [item, ...(oldData ?? [])];
+}
+
+/**
+ * Pure decision for what a mutation result should surface to the user.
+ * Failure handling lives here so every mutation surfaces failures the same
+ * way; success messaging stays configurable per mutation.
+ */
+export function resolveResultToast<TData>(
+  result: ActionResult<TData>,
+  options: { errorMessage: string; successMessage: string | null },
+):
+  | { type: "success"; message: string | null; data: TData }
+  | { type: "error"; message: string } {
+  if (!result.success) {
+    return { type: "error", message: result.error ?? options.errorMessage };
+  }
+  return {
+    type: "success",
+    message: options.successMessage,
+    data: result.data,
+  };
 }
 
 /**
@@ -83,7 +105,8 @@ interface OptimisticMutationOptions<TVariables, TData, TQueryData> {
     oldData: TQueryData | undefined,
     variables: TVariables,
   ) => TQueryData;
-  onSuccess?: (result: ActionResult<TData>) => void;
+  /** Success-only hook. Failure toasts are always owned by this module. */
+  onSuccessData?: (data: TData) => void;
 }
 
 interface MutationContext {
@@ -104,9 +127,9 @@ export function useOptimisticMutation<TVariables, TData, TQueryData>(
     additionalOptimisticUpdates,
     successMessage = "Success",
     successMessageOnMutate = false,
-    errorMessage = "Operation failed",
+    errorMessage = GENERIC_ERROR,
     prepareOptimisticData,
-    onSuccess: onSuccessOverride,
+    onSuccessData,
   } = options;
 
   return useMutation<ActionResult<TData>, Error, TVariables, MutationContext>({
@@ -177,17 +200,16 @@ export function useOptimisticMutation<TVariables, TData, TQueryData>(
       toast.error(errorMessage);
     },
     onSuccess: (result: ActionResult<TData>) => {
-      if (onSuccessOverride) {
-        onSuccessOverride(result);
+      const spec = resolveResultToast(result, {
+        errorMessage,
+        successMessage: successMessageOnMutate ? null : successMessage,
+      });
+      if (spec.type === "error") {
+        toast.error(spec.message);
         return;
       }
-      if (result?.success) {
-        if (successMessage !== null && !successMessageOnMutate) {
-          toast.success(successMessage);
-        }
-      } else {
-        toast.error(result?.error ?? errorMessage);
-      }
+      if (spec.message !== null) toast.success(spec.message);
+      onSuccessData?.(spec.data);
     },
     onSettled: (
       _data: ActionResult<TData> | undefined,

@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
+import { useUser } from "~/components/providers/user-context";
 import { BookmarkRow } from "~/components/trash/bookmark-row";
 import { BulkActionBar } from "~/components/trash/bulk-action-bar";
 import {
@@ -48,11 +49,12 @@ export function TrashView() {
     useTrash();
   const { profile } = useProfile();
   const { workspaces: activeWorkspaces } = useWorkspaces();
-  const restoreBm = useRestoreBookmarks();
-  const restoreWs = useRestoreWorkspace();
-  const permanentDeleteBm = usePermanentDeleteBookmarks();
-  const permanentDeleteWs = usePermanentDeleteWorkspace();
-  const emptyTrashMut = useEmptyTrash();
+  const userId = useUser().id;
+  const restoreBm = useRestoreBookmarks(userId);
+  const restoreWs = useRestoreWorkspace(userId);
+  const permanentDeleteBm = usePermanentDeleteBookmarks(userId);
+  const permanentDeleteWs = usePermanentDeleteWorkspace(userId);
+  const emptyTrashMut = useEmptyTrash(userId);
 
   const [selectedBmIds, setSelectedBmIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);

@@ -11,14 +11,14 @@ import {
 import { useOptimisticMutation } from "~/lib/mutations/base";
 import { profileKeys } from "~/lib/query-keys";
 
-export function useUpdateProfile(userId: string | undefined) {
+export function useUpdateProfile(userId: string) {
   return useOptimisticMutation<
     UpdateProfileInput,
     { message: string },
     Profile | null
   >({
     mutationFn: updateProfile,
-    queryKey: profileKeys.byUser(userId),
+    queryKey: profileKeys.all(userId),
     successMessage: "Profile updated",
     errorMessage: "Failed to update profile",
     prepareOptimisticData: (oldData, variables) => {
@@ -27,14 +27,14 @@ export function useUpdateProfile(userId: string | undefined) {
   });
 }
 
-export function useUpdatePublicProfile(userId: string | undefined) {
+export function useUpdatePublicProfile(userId: string) {
   return useOptimisticMutation<
     UpdatePublicProfileInput,
     { message: string },
     Profile | null
   >({
     mutationFn: updatePublicProfile,
-    queryKey: profileKeys.byUser(userId),
+    queryKey: profileKeys.all(userId),
     successMessage: "Public profile updated",
     errorMessage: "Failed to update public profile",
     prepareOptimisticData: (oldData, variables) => {

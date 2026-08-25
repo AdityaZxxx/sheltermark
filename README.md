@@ -34,7 +34,7 @@ A cross-device bookmark manager. Save URLs that are auto-enriched with metadata,
 - **Validation:** Zod
 - **Extension:** Manifest V3, TypeScript, esbuild
 - **Package Manager:** Bun
-- **Tests:** Vitest
+- **Tests:** Native Bun
 - **Lint/Format:** Biome
 
 ## Quickstart
@@ -70,5 +70,6 @@ For local dev, set the web app URL via the extension's options page (chrome://ex
 - [x] Bookmark notes and tagging
 - [x] Trash with auto-cleanup
 - [x] Link health checks with manual override
-- [ ] Full-text search
+- [x] Full-text search
 - [x] Import from browser bookmarks
+- [x] AI integration for bookmark search, title, and tags

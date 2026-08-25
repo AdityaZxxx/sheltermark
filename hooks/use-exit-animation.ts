@@ -30,12 +30,14 @@ export function useExitAnimation<T extends { id: string }>(
 
     const removed = prevItemsRef.current.filter((i) => !currIds.has(i.id));
     if (removed.length > 0) {
-      setExiting((prev) => [...prev, ...removed]);
-      const removedIds = new Set(removed.map((r) => r.id));
+      setExiting((prev) => {
+        // An item can be removed twice within the animation window (fast
+        // filter toggles); appending it again would duplicate React keys.
+        const seen = new Set(prev.map((e) => e.id));
+        return [...prev, ...removed.filter((r) => !seen.has(r.id))];
+      });
       clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setExiting((prev) => prev.filter((e) => !removedIds.has(e.id)));
-      }, duration);
+      timeoutRef.current = setTimeout(() => setExiting([]), duration);
     }
 
     prevItemsRef.current = items;
@@ -47,5 +49,10 @@ export function useExitAnimation<T extends { id: string }>(
     return () => clearTimeout(timeoutRef.current);
   }, []);
 
-  return { exiting };
+  // An item can re-enter `items` before the timer fires (fast filter
+  // toggles); exclude those so it isn't rendered twice with the live list.
+  const itemIds = new Set(items.map((i) => i.id));
+  const pending = exiting.filter((e) => !itemIds.has(e.id));
+
+  return { exiting: pending };
 }

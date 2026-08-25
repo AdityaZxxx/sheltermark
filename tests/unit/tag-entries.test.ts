@@ -1,10 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
 import type { Tag, TagWithCount } from "~/lib/schemas/tag.schema";
+import type { TagEntry } from "~/lib/utils/tag-entries";
 
 import {
   entriesEqual,
   filterTagSuggestions,
+  MAX_AI_SUGGESTIONS,
+  mergeSuggestedTags,
   tagKeyAction,
   tagsToEntries,
 } from "~/lib/utils/tag-entries";
@@ -128,6 +131,76 @@ describe("filterTagSuggestions", () => {
   it("excludes used tags before matching the query", () => {
     const entries = [{ id: "a", name: "Design" }];
     expect(filterTagSuggestions([design, react], entries, "desi")).toEqual([]);
+  });
+});
+
+describe("mergeSuggestedTags", () => {
+  const userTags = [makeTag("a", "Design"), makeTag("b", "React")];
+
+  it("applies a single candidate as a name-only entry", () => {
+    expect(mergeSuggestedTags([], ["frontend"], [])).toEqual([
+      { name: "frontend" },
+    ]);
+  });
+
+  it("apply-all preserves existing order and appends only new candidates", () => {
+    const current: TagEntry[] = [{ name: "notes" }];
+    const result = mergeSuggestedTags(
+      current,
+      ["css", "react", "design"],
+      userTags,
+    );
+    expect(result).toEqual([
+      { name: "notes" },
+      { name: "css" },
+      { id: "b", name: "React" },
+      { id: "a", name: "Design" },
+    ]);
+    // Original array untouched.
+    expect(current).toEqual([{ name: "notes" }]);
+  });
+
+  it("skips candidates already present, case-insensitively", () => {
+    const current: TagEntry[] = [{ name: "Design" }];
+    expect(mergeSuggestedTags(current, ["DESIGN", "css"], userTags)).toEqual([
+      { name: "Design" },
+      { name: "css" },
+    ]);
+  });
+
+  it("matches an existing tag by name, reusing its id and canonical casing", () => {
+    expect(mergeSuggestedTags([], ["REACT"], userTags)).toEqual([
+      { id: "b", name: "React" },
+    ]);
+  });
+
+  it("preserves manually typed tags", () => {
+    const current: TagEntry[] = [
+      { name: "my draft" },
+      { id: "z", name: "kept" },
+    ];
+    const result = mergeSuggestedTags(current, ["css"], []);
+    expect(result.slice(0, 2)).toEqual(current);
+    expect(result).toHaveLength(3);
+  });
+
+  it("ignores empty and whitespace-only candidates", () => {
+    expect(mergeSuggestedTags([], ["", "   ", "css"], [])).toEqual([
+      { name: "css" },
+    ]);
+  });
+
+  it("ignores duplicate candidates within the batch", () => {
+    expect(mergeSuggestedTags([], ["css", "CSS", " css "], [])).toEqual([
+      { name: "css" },
+    ]);
+  });
+
+  it(`caps candidates at ${MAX_AI_SUGGESTIONS}`, () => {
+    const candidates = ["a", "b", "c", "d", "e", "f", "g"];
+    expect(mergeSuggestedTags([], candidates, [])).toHaveLength(
+      MAX_AI_SUGGESTIONS,
+    );
   });
 });
 

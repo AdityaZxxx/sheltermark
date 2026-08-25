@@ -1,31 +1,23 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+import { withExtension } from "~/app/api/extension/_lib/with-extension";
 import { getDb } from "~/lib/data/db";
 import { insertBookmark } from "~/lib/data/repositories/bookmark.repository";
 import { workspaces } from "~/lib/data/schema";
 import { extensionBookmarkSaveSchema } from "~/lib/schemas/extension.schema";
-import { createClient } from "~/lib/supabase/server";
-import { logger } from "~/lib/utils/logger";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const validated = extensionBookmarkSaveSchema.safeParse(body);
+export const POST = withExtension(
+  {
+    scope: "bookmark save",
+    bodySchema: extensionBookmarkSaveSchema,
+    failureMessage: "Failed to save bookmark",
+  },
+  async ({ user, body }) => {
+    const { url, workspace_id, title: clientTitle, tags } = body;
 
-    if (!validated.success) {
-      const message =
-        validated.error?.issues?.[0]?.message ?? "Invalid request";
-      return NextResponse.json({ error: message }, { status: 400 });
-    }
-
-    const { url, workspace_id, title: clientTitle, tags } = validated.data;
-
-    if (!url) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 });
-    }
-
-    // Validate protocol before persisting — prevents stored XSS via javascript:/data: URLs
+    // Protocol whitelist before persisting — prevents stored XSS via
+    // javascript:/data: URLs, which z.url() accepts.
     const parsed = (() => {
       try {
         return new URL(url);
@@ -38,17 +30,6 @@ export async function POST(req: Request) {
       (parsed.protocol !== "http:" && parsed.protocol !== "https:")
     ) {
       return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-    }
-
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     let workspaceId: string | null = workspace_id ?? null;
@@ -95,11 +76,5 @@ export async function POST(req: Request) {
       success: true,
       data: { ...result.data, tags: result.tags },
     });
-  } catch (error) {
-    logger.error("Extension bookmark error", { error });
-    return NextResponse.json(
-      { error: "Failed to save bookmark" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

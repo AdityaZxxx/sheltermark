@@ -3,7 +3,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
 import {
   useCreateWorkspace,
@@ -21,9 +20,8 @@ export function useWorkspaces() {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user: supabaseUser, isLoading: isAuthLoading } = useSupabase();
   const serverUser = useUser();
-  const userId = serverUser?.id ?? supabaseUser?.id;
+  const userId = serverUser.id;
 
   const { data: workspaces = [], isLoading: isWsLoading } = useQuery(
     workspacesQueryOptions(userId),
@@ -43,7 +41,7 @@ export function useWorkspaces() {
 
   const refetchWorkspaces = () => {
     void queryClient.refetchQueries({
-      queryKey: workspaceKeys.byUser(userId),
+      queryKey: workspaceKeys.all(userId),
       type: "active",
     });
   };
@@ -64,16 +62,29 @@ export function useWorkspaces() {
   const togglePublic = useTogglePublicWorkspace(userId);
   const toggleAutoCheck = useToggleAutoCheckWorkspace(userId);
 
+  const deleteWorkspace = (id: string) => {
+    const wasActive = id === routeWorkspaceId;
+    del.mutate(id, {
+      onSuccess: () => {
+        if (!wasActive) return;
+        const fallback =
+          workspaces.find((w) => w.is_default && w.id !== id) ??
+          workspaces.find((w) => w.id !== id);
+        router.push(fallback ? `/workspace/${fallback.id}` : "/dashboard");
+      },
+    });
+  };
+
   return {
     workspaces,
     currentWorkspace,
-    isLoading: isAuthLoading || isWsLoading,
+    isLoading: isWsLoading,
     setActiveWorkspace,
     clearActiveWorkspace,
     refetchWorkspaces,
     createWorkspace: create.mutate,
     isCreating: create.isPending,
-    deleteWorkspace: del.mutate,
+    deleteWorkspace,
     isDeleting: del.isPending,
     togglePublicStatus: togglePublic.mutate,
     isTogglingPublic: togglePublic.isPending,

@@ -2,8 +2,9 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
-import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
+
+import { dbError, type ActionResult } from "~/lib/action-result";
 
 const rpcResultSchema = z.object({
   success: z.boolean(),
@@ -40,10 +41,7 @@ export async function deleteWorkspaceWithBookmarks(
     );
     return parseRpcResult(rows, "delete_workspace_with_bookmarks");
   } catch (cause) {
-    return {
-      success: false,
-      error: cause instanceof Error ? cause.message : "Database error",
-    };
+    return dbError("Workspace deletion transaction", cause);
   }
 }
 
@@ -59,9 +57,6 @@ export async function emptyUserTrash(
     );
     return parseRpcResult(rows, "empty_user_trash");
   } catch (cause) {
-    return {
-      success: false,
-      error: cause instanceof Error ? cause.message : "Database error",
-    };
+    return dbError("Empty trash transaction", cause);
   }
 }

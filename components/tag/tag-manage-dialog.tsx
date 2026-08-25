@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
+import { useUser } from "~/components/providers/user-context";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -41,10 +41,10 @@ export function TagManageDialog({
   onOpenChange,
   workspaceId,
 }: TagManageDialogProps) {
-  const { user } = useSupabase();
+  const user = useUser();
   const { tags, isLoading } = useWorkspaceTagsWithCount(workspaceId);
-  const deleteTag = useDeleteTag(user?.id);
-  const renameTag = useRenameTag(user?.id);
+  const deleteTag = useDeleteTag(user.id);
+  const renameTag = useRenameTag(user.id);
 
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);

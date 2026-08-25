@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { useSupabase } from "~/components/providers/supabase-provider";
+import { useUser } from "~/components/providers/user-context";
 import {
   useDeleteFeed,
   useRefreshFeed,
@@ -12,20 +12,20 @@ import {
 import { feedsQueryOptions } from "~/lib/queries/feed.queries";
 
 export function useFeeds() {
-  const { user, isLoading: isAuthLoading } = useSupabase();
+  const userId = useUser().id;
 
   const { data: feeds = [], isLoading: isFeedsLoading } = useQuery(
-    feedsQueryOptions(user?.id),
+    feedsQueryOptions(userId),
   );
 
-  const subscribeMutation = useSubscribeToFeed(user?.id);
-  const refreshMutation = useRefreshFeed(user?.id);
-  const deleteMutation = useDeleteFeed(user?.id);
-  const syncAllMutation = useSyncAllFeeds(user?.id);
+  const subscribeMutation = useSubscribeToFeed(userId);
+  const refreshMutation = useRefreshFeed(userId);
+  const deleteMutation = useDeleteFeed(userId);
+  const syncAllMutation = useSyncAllFeeds(userId);
 
   return {
     feeds,
-    isLoading: isAuthLoading || isFeedsLoading,
+    isLoading: isFeedsLoading,
     subscribeToFeed: subscribeMutation.mutate,
     isSubscribing: subscribeMutation.isPending,
     refreshFeed: refreshMutation.mutate,

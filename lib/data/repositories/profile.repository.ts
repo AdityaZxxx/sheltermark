@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { and, asc, eq, inArray, ne } from "drizzle-orm";
 
-import type { ActionResult } from "~/lib/action-result";
 import type { DrizzleDb } from "~/lib/data/db";
 import type {
   BookmarkPreview,
@@ -11,6 +10,7 @@ import type {
 } from "~/lib/schemas/bookmark.schema";
 import type { Profile } from "~/lib/schemas/profile.schema";
 
+import { dbError, supabaseError, type ActionResult } from "~/lib/action-result";
 import { bookmarks, profiles, workspaces } from "~/lib/data/schema";
 import {
   getProfileByUsernameSchema,
@@ -49,13 +49,6 @@ function toProfile(row: ProfileRow): Profile {
   };
 }
 
-function dbError(cause: unknown): ActionResult<never> {
-  return {
-    success: false,
-    error: cause instanceof Error ? cause.message : "Database error",
-  };
-}
-
 /** Ensure a URL value has a scheme; prefix bare handles/values. */
 function normalizeProfileUrl(
   value: string | null | undefined,
@@ -68,8 +61,8 @@ function normalizeProfileUrl(
 async function deleteAvatarFromStorage(
   supabase: SupabaseClient,
   avatarUrl: string | null,
-): Promise<{ error?: string }> {
-  if (!avatarUrl) return {};
+): Promise<void> {
+  if (!avatarUrl) return;
   try {
     const url = new URL(avatarUrl);
     const pathParts = url.pathname.split("/");
@@ -80,11 +73,12 @@ async function deleteAvatarFromStorage(
       .from("avatars")
       .remove([fileName]);
     if (deleteError) {
-      return { error: deleteError.message };
+      logger.warn("Failed to delete old avatar from storage", {
+        error: deleteError,
+      });
     }
-    return {};
-  } catch {
-    return { error: "Failed to parse avatar URL" };
+  } catch (cause) {
+    logger.warn("Failed to parse avatar URL", { error: cause });
   }
 }
 
@@ -113,7 +107,7 @@ export async function updateProfile(
   });
 
   if (authError) {
-    return { success: false, error: authError.message };
+    return supabaseError("Profile auth update", authError);
   }
 
   const profileUpdate: ProfileEditPatch = { name };
@@ -124,7 +118,7 @@ export async function updateProfile(
   try {
     await db.update(profiles).set(profileUpdate).where(eq(profiles.id, userId));
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Profile", cause);
   }
   return { success: true, data: { message: "Profile updated successfully" } };
 }
@@ -169,7 +163,7 @@ export async function updatePublicProfile(
       })
       .where(eq(profiles.id, userId));
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Profile", cause);
   }
 
   return {
@@ -195,7 +189,7 @@ export async function getProfile(
 
     return { success: true, data: { profile: toProfile(row) } };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Profile", cause);
   }
 }
 
@@ -224,7 +218,7 @@ export async function getProfileDisplayName(
     // A missing/private profile is not a failure here; callers get null.
     return { success: true, data: rows[0]?.name ?? null };
   } catch (cause) {
-    return dbError(cause);
+    return dbError("Profile", cause);
   }
 }
 
@@ -305,12 +299,10 @@ export async function getPublicProfile(
       },
     };
   } catch (cause) {
+    logger.error("Workspace bookmark fetch failed", { error: cause });
     return {
       success: false,
-      error:
-        cause instanceof Error
-          ? `Failed to fetch workspaces: ${cause.message}`
-          : "Failed to fetch workspaces: Database error",
+      error: "Failed to fetch workspaces. Please try again.",
     };
   }
 }
@@ -365,7 +357,7 @@ export async function uploadAvatar(
         cacheControl: "3600",
       });
     if (uploadError) {
-      return { success: false, error: uploadError.message };
+      return supabaseError("Profile avatar upload", uploadError);
     }
 
     const existingAvatarUrl = currentProfile?.avatarUrl ?? null;
@@ -382,7 +374,7 @@ export async function uploadAvatar(
       data: { avatar_url: avatarUrl },
     });
     if (authError) {
-      return { success: false, error: authError.message };
+      return supabaseError("Profile avatar auth update", authError);
     }
 
     await db
@@ -414,7 +406,9 @@ export async function deleteAvatar(
     const { error: authError } = await supabase.auth.updateUser({
       data: { avatar_url: null },
     });
-    if (authError) return { success: false, error: authError.message };
+    if (authError) {
+      return supabaseError("Profile avatar removal", authError);
+    }
     await db
       .update(profiles)
       .set({ avatar_url: null, updated_at: new Date().toISOString() })
@@ -445,11 +439,10 @@ export async function deleteAccount(
     try {
       await db.delete(profiles).where(eq(profiles.id, userId));
     } catch (cause) {
+      logger.error("Profile deletion failed", { error: cause });
       return {
         success: false,
-        error: `Failed to delete profile: ${
-          cause instanceof Error ? cause.message : "Database error"
-        }`,
+        error: "Failed to delete profile. Please try again.",
       };
     }
 
@@ -460,10 +453,7 @@ export async function deleteAccount(
     const { error: deleteUserError } =
       await adminClient.auth.admin.deleteUser(userId);
     if (deleteUserError) {
-      return {
-        success: false,
-        error: `Failed to delete auth user: ${deleteUserError.message}`,
-      };
+      return supabaseError("Profile account deletion", deleteUserError);
     }
     return { success: true, data: null };
   } catch (error) {

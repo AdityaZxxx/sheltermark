@@ -3,13 +3,13 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
-
 interface BookmarkTrashProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   ids: string[];
   onConfirm: (ids: string[]) => void | Promise<void>;
+  /** Called when the user picks Undo; wire to the owner's restore flow. */
+  onUndo?: (ids: string[]) => void;
 }
 
 // Headless trigger: fires the confirmed deletion once per dialog opening,
@@ -19,14 +19,14 @@ export function BookmarkTrash({
   onOpenChange,
   ids,
   onConfirm,
+  onUndo,
 }: BookmarkTrashProps) {
-  const { mutate: restoreBookmarks } = useRestoreBookmarks();
   const handled = useRef(false);
 
   const idsRef = useRef(ids);
   const onOpenChangeRef = useRef(onOpenChange);
   const onConfirmRef = useRef(onConfirm);
-  const restoreBookmarksRef = useRef(restoreBookmarks);
+  const onUndoRef = useRef(onUndo);
 
   // Latest-ref pattern: the [open] effect below and the Undo toast closure
   // read these refs, so they must be synced before that effect runs.
@@ -34,7 +34,7 @@ export function BookmarkTrash({
     idsRef.current = ids;
     onOpenChangeRef.current = onOpenChange;
     onConfirmRef.current = onConfirm;
-    restoreBookmarksRef.current = restoreBookmarks;
+    onUndoRef.current = onUndo;
   });
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export function BookmarkTrash({
           label: "Undo",
           onClick: () => {
             toast.dismiss(toastId);
-            restoreBookmarksRef.current({ ids: idsRef.current });
+            onUndoRef.current?.(idsRef.current);
           },
         },
       });

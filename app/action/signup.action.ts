@@ -4,8 +4,12 @@ import { z } from "zod";
 
 import type { ActionResult } from "~/lib/action-result";
 
+import { friendlyAuthError } from "~/lib/supabase/auth-error";
+import {
+  authCallbackUrl,
+  getRequestBaseUrl,
+} from "~/lib/supabase/request-base-url";
 import { createClient } from "~/lib/supabase/server";
-import { getBaseUrl } from "~/lib/utils";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -15,44 +19,36 @@ const signupSchema = z.object({
 
 export async function signupWithEmail(
   formData: FormData,
-): Promise<ActionResult<unknown>> {
+): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
   const next = formData.get("next")?.toString();
   formData.delete("next");
 
-  const rawData = Object.fromEntries(formData.entries());
-  const validated = signupSchema.safeParse(rawData);
+  const result = signupSchema.safeParse(Object.fromEntries(formData));
 
-  if (!validated.success) {
-    const msg = validated.error?.issues?.[0]?.message ?? "Invalid signup data";
-    return { success: false, error: msg };
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error.issues[0]?.message ?? "Invalid signup data",
+    };
   }
 
-  const { name, email, password } = validated.data;
+  const { name, email, password } = result.data;
+  const redirectUrl = authCallbackUrl(await getRequestBaseUrl(), next);
 
-  const baseUrl = getBaseUrl();
-  const redirectUrl = next
-    ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
-    : `${baseUrl}/auth/callback?next=/dashboard`;
-
-  const {
-    data: { user, session },
-    error,
-  } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: {
-        name: name,
-      },
+      data: { name },
       emailRedirectTo: redirectUrl,
     },
   });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: friendlyAuthError(error) };
   }
 
-  return { success: true, data: { user, session } };
+  return { success: true, data: null };
 }

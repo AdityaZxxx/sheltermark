@@ -6,7 +6,8 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["chrome"]
+    "types": ["chrome"],
+    "jsx": "react-jsx"
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "*.tsx"]
 }
