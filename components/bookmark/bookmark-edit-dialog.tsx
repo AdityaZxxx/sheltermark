@@ -349,7 +349,16 @@ function EditFormInner({
                     </button>
                   ) : tagSuggestions.length === 0 ? (
                     <span className="text-xs text-muted-foreground">
-                      No tag suggestions.
+                      No tag suggestions.{" "}
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        onClick={handleSuggestTags}
+                        className="h-auto p-0 text-xs"
+                      >
+                        Try again
+                      </Button>
                     </span>
                   ) : (
                     <div className="flex flex-wrap items-center gap-1.5">
