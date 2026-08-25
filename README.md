@@ -34,7 +34,7 @@ A cross-device bookmark manager. Save URLs that are auto-enriched with metadata,
 - **Validation:** Zod
 - **Extension:** Manifest V3, TypeScript, esbuild
 - **Package Manager:** Bun
-- **Tests:** Vitest
+- **Tests:** Native Bun
 - **Lint/Format:** Biome
 
 ## Quickstart
