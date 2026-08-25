@@ -634,15 +634,6 @@ export async function generateAiTitleRepo(
     return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
-  const rateLimit = checkRateLimit(userId);
-  if (!rateLimit.allowed) {
-    return {
-      success: false,
-      error:
-        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
-    };
-  }
-
   let row: { url: string; title: string | null };
   try {
     const results = await db
@@ -662,6 +653,17 @@ export async function generateAiTitleRepo(
     row = first;
   } catch (cause) {
     return dbError("Bookmark", cause);
+  }
+
+  // Rate limit only after ownership is proven — probing foreign or
+  // nonexistent bookmark IDs must not burn the caller's quota.
+  const rateLimit = checkRateLimit(userId);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error:
+        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
+    };
   }
 
   const metadata = await fetchMetadata(row.url);
@@ -691,15 +693,6 @@ export async function suggestBookmarkTagsRepo(
     return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
-  const rateLimit = checkRateLimit(userId);
-  if (!rateLimit.allowed) {
-    return {
-      success: false,
-      error:
-        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
-    };
-  }
-
   let row: { url: string; title: string | null; note: string | null };
   try {
     const results = await db
@@ -723,6 +716,17 @@ export async function suggestBookmarkTagsRepo(
     row = first;
   } catch (cause) {
     return dbError("Bookmark", cause);
+  }
+
+  // Rate limit only after ownership is proven — probing foreign or
+  // nonexistent bookmark IDs must not burn the caller's quota.
+  const rateLimit = checkRateLimit(userId);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error:
+        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
+    };
   }
 
   let existingTagNames: string[] = [];
