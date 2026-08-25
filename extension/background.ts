@@ -167,20 +167,21 @@ chrome.alarms.onAlarm.addListener((alarm: chrome.alarms.Alarm) => {
  * and after mutations. Never throws — cache warmup is best-effort.
  */
 async function revalidateCaches(): Promise<void> {
-  await Promise.allSettled([
-    (async () => {
-      const cached = await getCachedWorkspaces();
-      if (cached && !(await isCacheStale(cached))) return;
-      const { workspaces } = await fetchWorkspacesRaw();
-      if (workspaces) await setCachedWorkspaces(workspaces);
-    })(),
-    (async () => {
-      const cached = await getCachedTags();
-      if (cached && !(await isCacheStale(cached))) return;
-      const tags = await fetchTagsRaw();
-      await setCachedTags(tags);
-    })(),
-  ]);
+  // Tags first: its graceful response doubles as a session probe. While
+  // logged out, workspaces would 401 on every heartbeat — skip it, and do
+  // not cache the logged-out shape or an empty tag list would outlive the
+  // next login until TTL.
+  const cachedTags = await getCachedTags();
+  if (!cachedTags || (await isCacheStale(cachedTags))) {
+    const tagsResult = await fetchTagsRaw();
+    if (!tagsResult.authenticated) return;
+    await setCachedTags(tagsResult.tags ?? []);
+  }
+
+  const cachedWorkspaces = await getCachedWorkspaces();
+  if (cachedWorkspaces && !(await isCacheStale(cachedWorkspaces))) return;
+  const { workspaces } = await fetchWorkspacesRaw();
+  if (workspaces) await setCachedWorkspaces(workspaces);
 }
 
 chrome.commands.onCommand.addListener(async (command: string) => {
@@ -697,13 +698,13 @@ async function getWorkspaces(): Promise<GetWorkspacesResult> {
 }
 
 /** Raw network fetch for tags. Never caches; callers write the cache. */
-async function fetchTagsRaw(): Promise<TagWithCount[]> {
+async function fetchTagsRaw(): Promise<TagsResult> {
   const baseUrl = await getBaseUrl();
   const response = await fetch(`${baseUrl}/api/extension/tags`, {
     credentials: "include",
   });
-  if (!response.ok) return [];
-  return tagsResultSchema.parse(await response.json()).tags ?? [];
+  if (!response.ok) return { authenticated: false, tags: [] };
+  return tagsResultSchema.parse(await response.json());
 }
 
 /** Cheap session probe reusing the tags route's graceful-shape response. */
@@ -733,9 +734,10 @@ async function getTags(): Promise<TagWithCount[]> {
   if (cached && !(await isCacheStale(cached))) {
     return cached.value;
   }
-  const tags = await fetchTagsRaw();
-  void setCachedTags(tags);
-  return tags;
+  const result = await fetchTagsRaw();
+  if (!result.authenticated) return [];
+  void setCachedTags(result.tags ?? []);
+  return result.tags ?? [];
 }
 
 async function getPopupInfo({
