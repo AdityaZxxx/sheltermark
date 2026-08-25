@@ -2,8 +2,6 @@
 
 import type { RefObject } from "react";
 
-import { Sparkle } from "@phosphor-icons/react";
-
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
@@ -54,7 +52,7 @@ export function BookmarkHeader({
   onManageTags,
 }: BookmarkHeaderProps) {
   return (
-    <div className="space-y-2 mx-auto sm:space-y-3">
+    <div className="space-y-3 mx-auto sm:space-y-4">
       <BookmarkInput
         ref={inputRef}
         value={searchQuery}
@@ -66,7 +64,6 @@ export function BookmarkHeader({
 
       {aiSearchTerms && aiSearchTerms.length > 0 && (
         <output className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Sparkle className="size-3 shrink-0" aria-hidden="true" />
           AI search for:
           <span className="font-medium text-foreground">
             {aiSearchTerms.join(" ")}

@@ -32,7 +32,7 @@ export function BookmarkTagFilter({
   };
 
   return (
-    <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+    <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden max-sm:scroll-fade-x">
       {onManageTags && (
         <button
           type="button"
