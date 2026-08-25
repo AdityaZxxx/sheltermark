@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
+import type { Tag, TagWithCount } from "~/lib/schemas/tag.schema";
 
 import {
   generateAiTitle,
@@ -36,7 +36,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { useUserTagsWithCount } from "~/hooks/use-tags";
 import {
   entriesEqual,
   mergeSuggestedTags,
@@ -57,6 +56,7 @@ interface BookmarkEditDialogProps {
     note: string | null;
     tags: Tag[];
   } | null;
+  allTags: TagWithCount[];
   updateBookmarkFields: (input: BookmarkEditInput) => void;
   isPending: boolean;
 }
@@ -76,6 +76,7 @@ export function BookmarkEditDialog({
   open,
   onOpenChange,
   bookmark,
+  allTags,
   updateBookmarkFields,
   isPending,
 }: BookmarkEditDialogProps) {
@@ -85,6 +86,7 @@ export function BookmarkEditDialog({
         <EditFormInner
           key={bookmark.id}
           bookmark={bookmark}
+          allTags={allTags}
           onOpenChange={onOpenChange}
           updateBookmarkFields={updateBookmarkFields}
           isPending={isPending}
@@ -96,13 +98,13 @@ export function BookmarkEditDialog({
 
 function EditFormInner({
   bookmark,
+  allTags,
   onOpenChange,
   updateBookmarkFields,
   isPending,
 }: Omit<BookmarkEditDialogProps, "open"> & {
   bookmark: NonNullable<BookmarkEditDialogProps["bookmark"]>;
 }) {
-  const { tags: allUserTags } = useUserTagsWithCount();
   const [generating, setGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [suggesting, setSuggesting] = useState(false);
@@ -327,7 +329,7 @@ function EditFormInner({
                 <TagInput
                   value={field.state.value}
                   onChange={(next) => field.handleChange(next)}
-                  allUserTags={allUserTags}
+                  allUserTags={allTags}
                 />
                 <div>
                   <output className="sr-only">
@@ -371,7 +373,7 @@ function EditFormInner({
                               mergeSuggestedTags(
                                 field.state.value,
                                 [name],
-                                allUserTags,
+                                allTags,
                               ),
                             );
                             setTagSuggestions(
@@ -396,7 +398,7 @@ function EditFormInner({
                               mergeSuggestedTags(
                                 field.state.value,
                                 tagSuggestions,
-                                allUserTags,
+                                allTags,
                               ),
                             );
                             setTagSuggestions(null);

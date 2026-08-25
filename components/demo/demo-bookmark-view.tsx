@@ -381,6 +381,7 @@ export function DemoBookmarkView() {
                 }
               : null
           }
+          allTags={DEMO_TAGS.map((t) => ({ ...t, count: 0 }))}
           updateBookmarkFields={() => {
             // Demo: no-op mock
             setEditDialogOpen(false);
