@@ -8,11 +8,13 @@ import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
+import { interpretSearchQuery } from "~/app/action/bookmark.action";
 import { useBookmarkMutations } from "~/hooks/use-bookmark-mutations";
 import { useBookmarks } from "~/hooks/use-bookmarks";
 import { useViewPreference } from "~/hooks/use-view-preference";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
+import { isUrlLike } from "~/lib/utils";
 
 function copyUrlToClipboard(url: string) {
   navigator.clipboard.writeText(url);
@@ -73,6 +75,9 @@ interface BookmarkListManager {
   manageTagsDialogOpen: boolean;
   setManageTagsDialogOpen: (open: boolean) => void;
   handleSubmit: (val: string) => void;
+  handleAskAi: () => Promise<void>;
+  isAiSearching: boolean;
+  aiSearchTerms: string[] | null;
   handleCopyUrl: (url: string) => void;
   handleBulkCopyUrls: () => void;
   handleRefetchTrigger: (id: string) => void;
@@ -102,6 +107,8 @@ export function useBookmarkListManager(
     selectedTagIds,
     setSelectedTagIds,
     filterKey,
+    aiSearchTerms,
+    setAiSearchTerms,
     userId,
   } = useBookmarks(scope.type === "workspace" ? scope.id : undefined);
   const mutations = useBookmarkMutations();
@@ -370,6 +377,27 @@ export function useBookmarkListManager(
     };
   }, []);
 
+  // ── AI-assisted search ──────────────────────────────────────
+  const [isAiSearching, setIsAiSearching] = useState(false);
+
+  const handleAskAi = async () => {
+    const query = searchQuery.trim();
+    if (!query || isUrlLike(query) || isAiSearching) return;
+    setIsAiSearching(true);
+    const result = await interpretSearchQuery({ query });
+    setIsAiSearching(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.data.terms.length === 0) {
+      toast.info("AI found no search terms — showing regular results");
+      return;
+    }
+    setAiSearchTerms(result.data.terms);
+  };
+
   // ── Actions ──────────────────────────────────────────────────
   const handleBulkCopyUrls = () => {
     const urls = bookmarks
@@ -494,6 +522,9 @@ export function useBookmarkListManager(
     manageTagsDialogOpen,
     setManageTagsDialogOpen,
     handleSubmit,
+    handleAskAi,
+    isAiSearching,
+    aiSearchTerms,
     handleCopyUrl: copyUrlToClipboard,
     handleBulkCopyUrls,
     handleRefetchTrigger,

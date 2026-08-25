@@ -21,7 +21,7 @@ graph TD
     AI["Account & Identity<br/>Auth, user profile, public persona"]
     TL["Trash & Lifecycle<br/>Soft-delete, recovery, auto-cleanup"]
     IE["Import/Export<br/>Moving bookmarks in/out of the system"]
-    AA["AI Augmentation<br/>AI-powered title suggestions"]
+    AA["AI Augmentation<br/>AI title suggestions, tag suggestions,<br/>search query interpretation"]
     EX["Extension<br/>Browser integration"]
 
     BM -->|"has health status"| LH

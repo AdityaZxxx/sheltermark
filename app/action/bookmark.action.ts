@@ -11,6 +11,7 @@ import type {
   BookmarkRenameInput,
   BookmarkUpdateNoteInput,
   GenerateAiTitleInput,
+  InterpretSearchQueryInput,
 } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
@@ -21,6 +22,7 @@ import {
   generateAiTitleRepo,
   getBookmarks as getBookmarksRepo,
   insertBookmark as insertBookmarkRepo,
+  interpretSearchQueryRepo,
   moveBookmarks as moveBookmarksRepo,
   refetchMetadata as refetchMetadataRepo,
   renameBookmark as renameBookmarkRepo,
@@ -62,6 +64,13 @@ export async function suggestBookmarkTags(
 ): Promise<ActionResult<{ suggestions: string[] }>> {
   const { user, db } = await auth();
   return suggestBookmarkTagsRepo(db, user.id, input);
+}
+
+export async function interpretSearchQuery(
+  input: InterpretSearchQueryInput,
+): Promise<ActionResult<{ terms: string[] }>> {
+  const { user } = await requireAuth();
+  return interpretSearchQueryRepo(user.id, input);
 }
 
 export async function deleteBookmarks({

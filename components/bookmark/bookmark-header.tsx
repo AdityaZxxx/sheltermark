@@ -2,6 +2,8 @@
 
 import type { RefObject } from "react";
 
+import { Sparkle } from "@phosphor-icons/react";
+
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
@@ -21,6 +23,9 @@ interface BookmarkHeaderProps {
   count?: number;
   title?: string;
   workspaceId?: string;
+  aiSearchTerms?: string[] | null;
+  onAskAi?: () => void;
+  isAskingAi?: boolean;
   onSearchChange: (value: string) => void;
   onSubmit: (value: string) => void;
   onViewChange: (view: BookmarkViewVariant) => void;
@@ -38,6 +43,9 @@ export function BookmarkHeader({
   count,
   title = "All Bookmarks",
   workspaceId,
+  aiSearchTerms,
+  onAskAi,
+  isAskingAi,
   onSearchChange,
   onSubmit,
   onViewChange,
@@ -52,7 +60,19 @@ export function BookmarkHeader({
         value={searchQuery}
         onChange={onSearchChange}
         onSubmit={onSubmit}
+        onAskAi={onAskAi}
+        isAskingAi={isAskingAi}
       />
+
+      {aiSearchTerms && aiSearchTerms.length > 0 && (
+        <output className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Sparkle className="size-3 shrink-0" aria-hidden="true" />
+          AI search for:
+          <span className="font-medium text-foreground">
+            {aiSearchTerms.join(" ")}
+          </span>
+        </output>
+      )}
 
       <BookmarkTagFilter
         selectedTagIds={selectedTagIds}

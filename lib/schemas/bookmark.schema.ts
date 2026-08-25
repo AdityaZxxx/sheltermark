@@ -36,6 +36,14 @@ export const generateAiTitleSchema = z.object({
   bookmarkId: uuidSchema,
 });
 
+export const interpretSearchQuerySchema = z.object({
+  query: z
+    .string()
+    .trim()
+    .min(1, "Query is required")
+    .max(200, "Query too long"),
+});
+
 export const bookmarkEditSchema = z.object({
   id: uuidSchema,
   title: z.string().min(1, "Title is required").max(200, "Title too long"),
@@ -91,6 +99,9 @@ export type BookmarkRefetchMetadataInput = z.infer<
 >;
 export type BookmarkEditInput = z.infer<typeof bookmarkEditSchema>;
 export type GenerateAiTitleInput = z.infer<typeof generateAiTitleSchema>;
+export type InterpretSearchQueryInput = z.infer<
+  typeof interpretSearchQuerySchema
+>;
 export type WorkspaceWithBookmarks = z.infer<
   typeof workspaceWithBookmarksSchema
 >;

@@ -4,4 +4,4 @@ export { cn } from "./cn";
 export { getPastelColor } from "./color";
 export { formatCount } from "./format-count";
 export { entriesEqual, type TagEntry, tagsToEntries } from "./tag-entries";
-export { normalizeUrl, safeDomain, slugify } from "./url";
+export { isUrlLike, normalizeUrl, safeDomain, slugify } from "./url";

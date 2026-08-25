@@ -12,6 +12,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 import { dbError, invalidData, type ActionResult } from "~/lib/action-result";
 import { generateTagSuggestions } from "~/lib/ai/generate-tag-suggestions";
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
+import { generateSearchTerms } from "~/lib/ai/interpret-search-query";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
 import { getUserTags, upsertTag } from "~/lib/data/repositories/tag.repository";
 import { bookmarkTags, bookmarks, workspaces } from "~/lib/data/schema";
@@ -31,6 +32,8 @@ import {
   bookmarkUpdateNoteSchema,
   type GenerateAiTitleInput,
   generateAiTitleSchema,
+  type InterpretSearchQueryInput,
+  interpretSearchQuerySchema,
 } from "~/lib/schemas/bookmark.schema";
 import { resolveAndReplaceBookmarkTags } from "~/lib/services/tag.service";
 import { normalizeUrl } from "~/lib/utils";
@@ -743,6 +746,42 @@ export async function suggestBookmarkTagsRepo(
   } catch (error) {
     logger.error("Tag suggestion generation failed", { error });
     return { success: false, error: "Failed to suggest tags" };
+  }
+}
+
+/**
+ * Rewrites a natural-language search query into plain FTS terms. Touches no
+ * database rows — auth and the shared AI rate limit are enforced here, and
+ * the generator is injected so tests never hit the network.
+ */
+export async function interpretSearchQueryRepo(
+  userId: string,
+  input: InterpretSearchQueryInput,
+  generateFn: typeof generateSearchTerms = generateSearchTerms,
+): Promise<ActionResult<{ terms: string[] }>> {
+  const validated = interpretSearchQuerySchema.safeParse(input);
+  if (!validated.success) {
+    return {
+      success: false,
+      error: invalidData("Search query", validated.error),
+    };
+  }
+
+  const rateLimit = checkRateLimit(userId);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error:
+        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
+    };
+  }
+
+  try {
+    const terms = await generateFn({ query: validated.data.query });
+    return { success: true, data: { terms } };
+  } catch (error) {
+    logger.error("AI search interpretation failed", { error });
+    return { success: false, error: "Failed to interpret search query" };
   }
 }
 

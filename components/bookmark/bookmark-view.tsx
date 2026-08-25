@@ -30,6 +30,9 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         title={vm.currentWorkspace?.name ?? "All Bookmarks"}
         selectedTagIds={vm.selectedTagIds}
         workspaceId={vm.currentWorkspace?.id}
+        aiSearchTerms={vm.aiSearchTerms}
+        onAskAi={vm.handleAskAi}
+        isAskingAi={vm.isAiSearching}
         onSearchChange={vm.setSearchQuery}
         onSubmit={vm.handleSubmit}
         onViewChange={vm.setView}
