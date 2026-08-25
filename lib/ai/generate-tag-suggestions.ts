@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { z } from "zod";
 
-import { aiProvider } from "./client";
+import { aiModel, aiProvider } from "./client";
 
 export const MAX_TAG_SUGGESTIONS = 5;
 
@@ -67,7 +67,7 @@ export async function generateTagSuggestions({
   existingTags,
 }: GenerateTagSuggestionsInput): Promise<string[]> {
   const { text } = await generateText({
-    model: aiProvider("minimax-m3:cloud"),
+    model: aiProvider(aiModel()),
     system:
       'You are an AI that suggests bookmark tags. Given a URL, title, note, and the user\'s existing tags, suggest 2-5 short lowercase tags. Prefer reusing the user\'s existing tags when they fit; otherwise propose concise new ones. Respond ONLY with JSON: {"tags": ["tag1", "tag2"]}',
     prompt: [
