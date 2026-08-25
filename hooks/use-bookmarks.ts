@@ -92,9 +92,21 @@ export function useBookmarks(workspaceId?: string) {
     wsNameById,
   );
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQueryRaw] = useState("");
   const [sort, setSort] = useState<BookmarkSort>(DEFAULT_SORT);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
+  // AI-assisted search is a thin layer over FTS: aiTerms holds the
+  // interpreted terms for the current query; any edit to the raw input
+  // discards them so stale AI terms never apply to a new query.
+  const [aiTerms, setAiTerms] = useState<string[] | null>(null);
+
+  const setSearchQuery = (q: string) => {
+    setAiTerms(null);
+    setSearchQueryRaw(q);
+  };
+
+  const effectiveQuery = aiTerms ? aiTerms.join(" ") : searchQuery;
 
   const bookmarks = sortBookmarksFn(
     filterBookmarksBySearch(
@@ -103,8 +115,11 @@ export function useBookmarks(workspaceId?: string) {
         selectedTagIds,
         tagsByBookmarkId,
       ),
-      searchQuery,
+      effectiveQuery,
       searchIndex,
+      // AI terms OR-match: a bookmark about "react" alone is still
+      // relevant to "react performance".
+      { matchAll: !aiTerms },
     ),
     sort,
   );
@@ -133,6 +148,8 @@ export function useBookmarks(workspaceId?: string) {
     invalidate,
     // Identity of the current filter context; used to suppress exit
     // animations when items vanish from filtering rather than deletion.
-    filterKey: `${workspaceId ?? "all"}|${selectedTagIds.join(",")}|${searchQuery}`,
+    filterKey: `${workspaceId ?? "all"}|${selectedTagIds.join(",")}|${effectiveQuery}|${aiTerms ? "ai" : ""}`,
+    aiSearchTerms: aiTerms,
+    setAiSearchTerms: setAiTerms,
   };
 }

@@ -22,7 +22,8 @@ Required Vercel environment variables (Project Settings → Environment Variable
 | `SUPABASE_SERVICE_ROLE_KEY`                 | Secret — never prefix with `NEXT_PUBLIC_`.                                                                                  |
 | `DATABASE_URL`                              | Postgres connection string (session pooler) for Drizzle. Used by the web app repositories and `sync-feeds`.                 |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | For Google OAuth. Configure the redirect URL in Google Cloud Console as `https://<vercel-domain>/auth/callback`.            |
-| `OLLAMA_API_KEY`                            | For AI title generation. Optional — feature degrades gracefully if unset.                                                   |
+| `OLLAMA_API_KEY`                            | For AI features. Optional — feature degrades gracefully if unset.                                                           |
+| `AI_MODEL`                                  | Ollama model for AI features, e.g. `minimax-m3:cloud`. Required for AI features — no fallback.                              |
 | `NEXT_PUBLIC_LOG_LEVEL`                     | Optional, defaults to `info`.                                                                                               |
 
 Build command: `next build` (`bun run build`). Output: `.next/`.

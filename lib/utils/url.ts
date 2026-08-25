@@ -6,6 +6,12 @@ export function safeDomain(url: string): string {
   }
 }
 
+/** Same heuristic the search input uses to switch into "add bookmark" mode. */
+export function isUrlLike(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed.includes(".") || trimmed.startsWith("http");
+}
+
 export function slugify(str: string): string {
   return str
     .toLowerCase()

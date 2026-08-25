@@ -1,6 +1,6 @@
 import { generateText } from "ai";
 
-import { aiProvider } from "./client";
+import { aiModel, aiProvider } from "./client";
 
 interface GenerateTitleInput {
   url: string;
@@ -18,7 +18,7 @@ export async function generateBookmarkTitle({
   description,
 }: GenerateTitleInput): Promise<string> {
   const { text } = await generateText({
-    model: aiProvider("minimax-m3:cloud"),
+    model: aiProvider(aiModel()),
     system:
       "You are an AI that generates concise, descriptive bookmark titles. Given a URL, current title, and description, produce a short (under 100 chars) title that accurately represents the page content.",
     prompt: [

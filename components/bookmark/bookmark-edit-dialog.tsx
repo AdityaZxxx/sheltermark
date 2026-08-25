@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkle } from "@phosphor-icons/react";
+import { Hash, MagicWand, Sparkle } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,7 +8,10 @@ import { toast } from "sonner";
 import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
-import { generateAiTitle } from "~/app/action/bookmark.action";
+import {
+  generateAiTitle,
+  suggestBookmarkTags,
+} from "~/app/action/bookmark.action";
 import { TagInput } from "~/components/tag/tag-input";
 import { Button } from "~/components/ui/button";
 import {
@@ -28,8 +31,18 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Textarea } from "~/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { useUserTagsWithCount } from "~/hooks/use-tags";
-import { entriesEqual, type TagEntry, tagsToEntries } from "~/lib/utils";
+import {
+  entriesEqual,
+  mergeSuggestedTags,
+  type TagEntry,
+  tagsToEntries,
+} from "~/lib/utils/tag-entries";
 
 import { BookmarkNoteText } from "./bookmark-note-text";
 import { MarkdownIcon } from "./markdown-icon";
@@ -92,6 +105,8 @@ function EditFormInner({
   const { tags: allUserTags } = useUserTagsWithCount();
   const [generating, setGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [tagSuggestions, setTagSuggestions] = useState<string[] | null>(null);
 
   const initialValues = {
     title: bookmark.title,
@@ -122,6 +137,24 @@ function EditFormInner({
       );
     }
     setGenerating(false);
+  }
+
+  async function handleSuggestTags() {
+    setSuggesting(true);
+    setTagSuggestions(null);
+    try {
+      const result = await suggestBookmarkTags({ bookmarkId: bookmark.id });
+      if (result.success) {
+        setTagSuggestions(result.data.suggestions);
+      } else {
+        toast.error(result.error || "Failed to suggest tags");
+      }
+    } catch {
+      toast.error(
+        "Failed to suggest tags. Check your connection and try again.",
+      );
+    }
+    setSuggesting(false);
   }
 
   const form = useForm({
@@ -180,21 +213,28 @@ function EditFormInner({
                     required
                     className="pr-9"
                   />
-                  <button
-                    type="button"
-                    onClick={handleGenerateTitle}
-                    disabled={generating}
-                    aria-label="Generate title with AI"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:bg-muted"
-                  >
-                    {generating ? (
-                      <span aria-hidden="true" className="inline-flex">
-                        <Orb size={24} />
-                      </span>
-                    ) : (
-                      <Sparkle className="h-4 w-auto" aria-hidden="true" />
-                    )}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={handleGenerateTitle}
+                          disabled={generating}
+                          aria-label="Generate title with AI"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:bg-muted"
+                        />
+                      }
+                    >
+                      {generating ? (
+                        <span aria-hidden="true" className="inline-flex">
+                          <Orb size={24} />
+                        </span>
+                      ) : (
+                        <Sparkle className="h-4 w-auto" aria-hidden="true" />
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent>Generate title with AI</TooltipContent>
+                  </Tooltip>
                 </div>
                 {aiSuggestion && (
                   <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
@@ -283,11 +323,101 @@ function EditFormInner({
 
           <form.Field name="tags">
             {(field) => (
-              <TagInput
-                value={field.state.value}
-                onChange={(next) => field.handleChange(next)}
-                allUserTags={allUserTags}
-              />
+              <div className="space-y-2">
+                <TagInput
+                  value={field.state.value}
+                  onChange={(next) => field.handleChange(next)}
+                  allUserTags={allUserTags}
+                />
+                <div>
+                  <output className="sr-only">
+                    {suggesting ? "Suggesting tags..." : ""}
+                  </output>
+                  {suggesting ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Orb size={16} />
+                      <span className="shimmer">Suggesting...</span>
+                    </span>
+                  ) : !tagSuggestions ? (
+                    <button
+                      type="button"
+                      onClick={handleSuggestTags}
+                      className="inline-flex items-center gap-1 rounded-sm text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground"
+                    >
+                      <MagicWand className="size-3.5" aria-hidden="true" />
+                      Suggest tags
+                    </button>
+                  ) : tagSuggestions.length === 0 ? (
+                    <span className="text-xs text-muted-foreground">
+                      No tag suggestions.{" "}
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        onClick={handleSuggestTags}
+                        className="h-auto p-0 text-xs"
+                      >
+                        Try again
+                      </Button>
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {tagSuggestions.map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => {
+                            field.handleChange(
+                              mergeSuggestedTags(
+                                field.state.value,
+                                [name],
+                                allUserTags,
+                              ),
+                            );
+                            setTagSuggestions(
+                              (prev) => prev?.filter((n) => n !== name) ?? null,
+                            );
+                          }}
+                          aria-label={`Apply suggested tag ${name}`}
+                          className="inline-flex h-6 items-center gap-0.5 rounded-full border border-dashed border-border/70 px-2 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:bg-accent focus-visible:text-accent-foreground"
+                        >
+                          <Hash className="size-3" aria-hidden="true" />
+                          {name}
+                        </button>
+                      ))}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            field.handleChange(
+                              mergeSuggestedTags(
+                                field.state.value,
+                                tagSuggestions,
+                                allUserTags,
+                              ),
+                            );
+                            setTagSuggestions(null);
+                          }}
+                        >
+                          Add all
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs text-muted-foreground"
+                          onClick={() => setTagSuggestions(null)}
+                        >
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </form.Field>
         </div>

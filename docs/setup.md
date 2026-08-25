@@ -19,17 +19,18 @@ bun install
 
 Copy `.env.example` to `.env` and fill in:
 
-| Variable                        | Required                 | Description                                                                                                                                                            |
-| ------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL`          | yes                      | Public URL of the deployment. `http://localhost:3000` in dev. Crawler-facing metadata only (metadataBase, og:image); auth redirects follow the request origin instead. |
-| `NEXT_PUBLIC_SUPABASE_URL`      | yes                      | Supabase project URL (client-safe).                                                                                                                                    |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes                      | Supabase anon key (client-safe).                                                                                                                                       |
-| `SUPABASE_URL`                  | yes (server)             | Same Supabase URL, used by server actions + cron scripts.                                                                                                              |
-| `SUPABASE_SERVICE_ROLE_KEY`     | yes (server)             | Supabase service role key. Bypasses RLS — keep secret, never expose to client.                                                                                         |
-| `GOOGLE_CLIENT_ID`              | for Google OAuth         | Google OAuth client ID.                                                                                                                                                |
-| `GOOGLE_CLIENT_SECRET`          | for Google OAuth         | Google OAuth client secret.                                                                                                                                            |
-| `OLLAMA_API_KEY`                | for AI title suggestions | Ollama Cloud API key. See https://ollama.com/settings/keys                                                                                                             |
-| `NEXT_PUBLIC_LOG_LEVEL`         | no                       | `debug \| info \| warn \| error` (default: `info`).                                                                                                                    |
+| Variable                        | Required         | Description                                                                                                                                                            |
+| ------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`          | yes              | Public URL of the deployment. `http://localhost:3000` in dev. Crawler-facing metadata only (metadataBase, og:image); auth redirects follow the request origin instead. |
+| `NEXT_PUBLIC_SUPABASE_URL`      | yes              | Supabase project URL (client-safe).                                                                                                                                    |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes              | Supabase anon key (client-safe).                                                                                                                                       |
+| `SUPABASE_URL`                  | yes (server)     | Same Supabase URL, used by server actions + cron scripts.                                                                                                              |
+| `SUPABASE_SERVICE_ROLE_KEY`     | yes (server)     | Supabase service role key. Bypasses RLS — keep secret, never expose to client.                                                                                         |
+| `GOOGLE_CLIENT_ID`              | for Google OAuth | Google OAuth client ID.                                                                                                                                                |
+| `GOOGLE_CLIENT_SECRET`          | for Google OAuth | Google OAuth client secret.                                                                                                                                            |
+| `OLLAMA_API_KEY`                | for AI features  | Ollama Cloud API key. See https://ollama.com/settings/keys                                                                                                             |
+| `AI_MODEL`                      | for AI features  | Ollama model name, e.g. `minimax-m3:cloud`. No fallback — must be set for AI features to work.                                                                         |
+| `NEXT_PUBLIC_LOG_LEVEL`         | no               | `debug \| info \| warn \| error` (default: `info`).                                                                                                                    |
 
 Client-safe vars (`NEXT_PUBLIC_*`) are exposed to the browser. Server-only vars (`SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_SECRET`) must never be prefixed with `NEXT_PUBLIC_`.
 

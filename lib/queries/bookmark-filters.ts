@@ -50,15 +50,21 @@ export function filterBookmarksBySearch(
   bookmarks: Bookmark[],
   query: string,
   index: BookmarkSearchIndex,
+  // AI-derived terms default to OR so a multi-concept query doesn't
+  // over-filter; regular keyword search keeps AND semantics.
+  { matchAll = true }: { matchAll?: boolean } = {},
 ): Bookmark[] {
-  // Every whitespace-separated keyword must match somewhere across
-  // title/URL/note/tag names; keywords may hit different fields.
+  // Every (AND) or any (OR) whitespace-separated keyword must match
+  // somewhere across title/URL/note/tag names; keywords may hit
+  // different fields.
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return bookmarks;
   return bookmarks.filter((b) => {
     const haystack = index.get(b.id);
     if (!haystack) return false;
-    return tokens.every((token) => haystack.includes(token));
+    return tokens[matchAll ? "every" : "some"]((token) =>
+      haystack.includes(token),
+    );
   });
 }
 

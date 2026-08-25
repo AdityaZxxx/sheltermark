@@ -63,6 +63,18 @@ describe("filterBookmarksBySearch", () => {
     ).toHaveLength(0);
   });
 
+  it("matches any keyword when OR mode is requested (AI terms)", () => {
+    expect(
+      filterBookmarksBySearch(bookmarks, "react rust", index, {
+        matchAll: false,
+      }),
+    ).toHaveLength(2);
+    // AND remains the default.
+    expect(
+      filterBookmarksBySearch(bookmarks, "react rust", index),
+    ).toHaveLength(0);
+  });
+
   it("is case-insensitive and collapses whitespace", () => {
     expect(
       filterBookmarksBySearch(bookmarks, "  REACT   HOOKS ", index),
