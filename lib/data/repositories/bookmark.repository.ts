@@ -10,9 +10,10 @@ import type { exportOptionsSchema } from "~/lib/schemas/profile.schema";
 import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { dbError, invalidData, type ActionResult } from "~/lib/action-result";
+import { generateTagSuggestions } from "~/lib/ai/generate-tag-suggestions";
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
-import { upsertTag } from "~/lib/data/repositories/tag.repository";
+import { getUserTags, upsertTag } from "~/lib/data/repositories/tag.repository";
 import { bookmarkTags, bookmarks, workspaces } from "~/lib/data/schema";
 import { fetchMetadata } from "~/lib/metadata/pipeline";
 import {
@@ -673,6 +674,75 @@ export async function generateAiTitleRepo(
   } catch (error) {
     logger.error("Title suggestion generation failed", { error });
     return { success: false, error: "Failed to generate title" };
+  }
+}
+
+export async function suggestBookmarkTagsRepo(
+  db: DrizzleDb,
+  userId: string,
+  input: GenerateAiTitleInput,
+  generateFn: typeof generateTagSuggestions = generateTagSuggestions,
+): Promise<ActionResult<{ suggestions: string[] }>> {
+  const validated = generateAiTitleSchema.safeParse(input);
+  if (!validated.success) {
+    return { success: false, error: invalidData("Bookmark", validated.error) };
+  }
+
+  const rateLimit = checkRateLimit(userId);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error:
+        "Rate limit exceeded. Daily generation limit reached. Try again tomorrow.",
+    };
+  }
+
+  let row: { url: string; title: string | null; note: string | null };
+  try {
+    const results = await db
+      .select({
+        url: bookmarks.url,
+        title: bookmarks.title,
+        note: bookmarks.note,
+      })
+      .from(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.id, validated.data.bookmarkId),
+          eq(bookmarks.user_id, userId),
+        ),
+      )
+      .limit(1);
+    const first = results[0];
+    if (!first) {
+      return { success: false, error: "Bookmark not found" };
+    }
+    row = first;
+  } catch (cause) {
+    return dbError("Bookmark", cause);
+  }
+
+  let existingTagNames: string[] = [];
+  const userTags = await getUserTags(db, userId);
+  if (!userTags.success) {
+    logger.warn("Tag suggestion vocabulary lookup failed", {
+      error: userTags.error,
+    });
+  } else {
+    existingTagNames = userTags.data.map((t) => t.name);
+  }
+
+  try {
+    const suggestions = await generateFn({
+      url: row.url,
+      title: row.title ?? "",
+      note: row.note,
+      existingTags: existingTagNames,
+    });
+    return { success: true, data: { suggestions } };
+  } catch (error) {
+    logger.error("Tag suggestion generation failed", { error });
+    return { success: false, error: "Failed to suggest tags" };
   }
 }
 

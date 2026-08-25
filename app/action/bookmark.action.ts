@@ -24,6 +24,7 @@ import {
   moveBookmarks as moveBookmarksRepo,
   refetchMetadata as refetchMetadataRepo,
   renameBookmark as renameBookmarkRepo,
+  suggestBookmarkTagsRepo,
   updateBookmarkFields as updateBookmarkFieldsRepo,
   updateBookmarkNote as updateBookmarkNoteRepo,
 } from "~/lib/data/repositories/bookmark.repository";
@@ -54,6 +55,13 @@ export async function generateAiTitle(
 ): Promise<ActionResult<{ suggestion: string }>> {
   const { user, db } = await auth();
   return generateAiTitleRepo(db, user.id, input);
+}
+
+export async function suggestBookmarkTags(
+  input: GenerateAiTitleInput,
+): Promise<ActionResult<{ suggestions: string[] }>> {
+  const { user, db } = await auth();
+  return suggestBookmarkTagsRepo(db, user.id, input);
 }
 
 export async function deleteBookmarks({
