@@ -1,4 +1,4 @@
-import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
+import { GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 
 import type { BrokenStatus } from "~/lib/link-health/types";
@@ -11,6 +11,7 @@ import { formatRelativeTime } from "~/lib/utils/format";
 
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BrokenLinkWarning } from "./broken-link-warning";
+import { Orb } from "./orb";
 
 interface BookmarkItemProps {
   id: string;
@@ -41,6 +42,7 @@ interface BookmarkItemProps {
   onSelectionModeToggle?: () => void;
   tabIndex?: number;
   disableContextMenu?: boolean;
+  showKbdHint?: boolean;
   refetchingId?: string | null;
 }
 
@@ -73,6 +75,7 @@ export function BookmarkListItem({
   onSelectionModeToggle,
   tabIndex,
   disableContextMenu = false,
+  showKbdHint = true,
   refetchingId,
 }: BookmarkListItemProps) {
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
@@ -116,22 +119,22 @@ export function BookmarkListItem({
 
       <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center relative">
-            {favicon_url ? (
+          <div className="shrink-0 w-6 h-6 overflow-hidden rounded-xs flex items-center justify-center">
+            {refetchingId === id ? (
+              <Orb
+                size={16}
+                label="Refreshing metadata…"
+                className="text-muted-foreground"
+              />
+            ) : favicon_url ? (
               // oxlint-disable-next-line next/no-img-element -- nothing to optimize
               <img
                 src={favicon_url}
                 alt=""
-                className={cn(
-                  "w-full h-full object-contain transition-opacity",
-                  refetchingId === id && "opacity-30",
-                )}
+                className="w-full h-full object-contain"
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
-            )}
-            {refetchingId === id && (
-              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-3 text-muted-foreground animate-spin" />
             )}
           </div>
           <div className="min-w-0">
@@ -168,14 +171,21 @@ export function BookmarkListItem({
             )}
           </div>
           <div className="relative shrink-0 text-xs text-muted-foreground">
-            <span className="transition-opacity group-hover:opacity-0">
+            <span
+              className={cn(
+                "transition-opacity",
+                showKbdHint && "group-hover:opacity-0",
+              )}
+            >
               {formatRelativeTime(created_at)}
             </span>
 
-            <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <Kbd>⌘</Kbd>
-              <Kbd>↵</Kbd>
-            </KbdGroup>
+            {showKbdHint && (
+              <KbdGroup className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <Kbd>⌘</Kbd>
+                <Kbd>↵</Kbd>
+              </KbdGroup>
+            )}
           </div>
         </div>
       </div>

@@ -22,16 +22,16 @@ const geistMono = Geist_Mono({
 const baseUrl = getBaseUrl();
 
 export const metadata: Metadata = {
-  title: "Sheltermark — Safe place for your bookmarks",
+  title: "Sheltermark — A quiet place for your bookmarks",
   description:
-    "A clean, minimalist bookmark manager. Organize and access your bookmarks from anywhere.",
+    "Save a link and Sheltermark files it, fills in the details, and keeps it healthy — searchable on every device.",
   metadataBase: new URL(baseUrl),
   keywords: ["bookmarks", "manager", "minimalist", "productivity", "organize"],
   authors: [{ name: "Aditya Rahmad" }],
   openGraph: {
-    title: "Sheltermark — Safe place for your bookmarks",
+    title: "Sheltermark — A quiet place for your bookmarks",
     description:
-      "A clean, minimalist bookmark manager. Organize and access your bookmarks from anywhere.",
+      "Save a link and Sheltermark files it, fills in the details, and keeps it healthy — searchable on every device.",
     url: baseUrl,
     siteName: "Sheltermark",
     locale: "en_US",
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sheltermark — Safe place for your bookmarks",
+    title: "Sheltermark — A quiet place for your bookmarks",
     description:
-      "A clean, minimalist bookmark manager. Organize and access your bookmarks from anywhere.",
+      "Save a link and Sheltermark files it, fills in the details, and keeps it healthy — searchable on every device.",
     images: ["/api/og"],
   },
   icons: {
