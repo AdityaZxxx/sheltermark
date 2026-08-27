@@ -9,7 +9,7 @@ import { Footer } from "~/components/layout/footer";
 export default function LandingPage() {
   return (
     <div className="min-h-[100dvh] bg-background font-sans text-foreground antialiased">
-      <nav className="sticky top-0 z-10 bg-background/80 pb-5 backdrop-blur [mask-image:linear-gradient(to_bottom,#000_calc(100%-1.25rem),transparent)]">
+      <nav className="sticky top-0 z-10 border-b border-border/70 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2">
             <Image
