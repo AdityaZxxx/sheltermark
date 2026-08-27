@@ -1,52 +1,70 @@
+import Image from "next/image";
 import Link from "next/link";
 
-import { DemoBookmarkViewLazy } from "~/components/demo/demo-bookmark-view-lazy";
-import { FeaturesSection } from "~/components/landing/features-section";
-import { YCIcon } from "~/components/landing/yc-icon";
+import { Hero } from "~/components/landing/hero";
+import { Reveal } from "~/components/landing/lib";
+import { StorySections } from "~/components/landing/story-sections";
 import { Footer } from "~/components/layout/footer";
-import Logo from "~/components/layout/logo";
-import { Button } from "~/components/ui/button";
 
-export default function Page() {
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 md:py-24">
-        <div className="flex flex-col items-center mt-8 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 ">
-            <YCIcon className="h-4 w-4" />
-            <span className="text-foreground md:text-sm text-xs shrink-0 tracking-tight">
-              NOT BACKED BY Y COMBINATOR
-            </span>
-          </span>
-
-          <Logo size={64} className="mb-2" />
-          <h1 className="text-4xl font-bold mb-8">Sheltermark</h1>
-          <p className="text-base md:text-xl mb-8 text-center text-muted-foreground max-w-2xl">
-            A clean, minimalist bookmark manager. Organize and access your
-            bookmarks from anywhere.
-          </p>
-          <div className="flex gap-4">
-            <Link href="/login">
-              <Button size="lg" className="rounded-full px-8">
-                Login
-              </Button>
+    <div className="min-h-[100dvh] bg-background font-sans text-foreground antialiased">
+      <nav className="sticky top-0 z-10 bg-background/80 pb-5 backdrop-blur [mask-image:linear-gradient(to_bottom,#000_calc(100%-1.25rem),transparent)]">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="Sheltermark"
+              width={20}
+              height={20}
+              className="invert dark:invert-0"
+            />
+            <span className="text-sm font-semibold">Sheltermark</span>
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:block"
+            >
+              Log in
             </Link>
-            <Link href="/signup">
-              <Button size="lg" className="rounded-full px-8">
-                Sign Up
-              </Button>
+            <Link
+              href="/signup"
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.96]"
+            >
+              Sign up
             </Link>
           </div>
         </div>
+      </nav>
+
+      <main>
+        <Hero />
+
+        <StorySections />
+
+        <section className="border-t border-border">
+          <div className="mx-auto max-w-6xl px-6 py-24">
+            <Reveal>
+              <div className="rounded-2xl bg-primary px-8 py-16 text-center">
+                <h2 className="mx-auto max-w-md text-3xl tracking-tighter text-balance text-primary-foreground">
+                  Your links deserve better than a browser bar.
+                </h2>
+                <Link
+                  href="/signup"
+                  className="mt-8 inline-flex h-11 items-center gap-2 rounded-xl bg-background px-6 text-sm font-semibold text-foreground transition-transform active:scale-[0.96]"
+                >
+                  Get started
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      </main>
+
+      <div className="border-t border-border">
+        <Footer />
       </div>
-
-      <div className="flex-1">
-        <DemoBookmarkViewLazy />
-      </div>
-
-      <FeaturesSection />
-
-      <Footer />
     </div>
   );
 }

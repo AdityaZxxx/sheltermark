@@ -158,6 +158,25 @@
   animation: pulse-subtle 2s ease-in-out infinite;
 }
 
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
+
 /* scroll-fade (vendored from shadcn/tailwind.css 4.16.2) */
 
 @property --scroll-fade-t {
@@ -702,5 +721,18 @@
     animation: none;
     background-image: none;
     -webkit-text-fill-color: currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes landing-fadein {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 }

@@ -19,7 +19,7 @@ export function Footer() {
           Privacy Policy
         </Link>
       </div>
-      <p>© {year} Sheltermark - Safe place for your bookmarks</p>
+      <p>© {year} Sheltermark - A quiet place for your bookmarks</p>
     </footer>
   );
 }
