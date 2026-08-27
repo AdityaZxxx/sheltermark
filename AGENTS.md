@@ -23,7 +23,7 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 ## Branch Model
 
 - `dev` — default branch, all day-to-day work and AI agent changes land here. Vercel builds a preview deployment on every push.
-- `prod` — production branch. Vercel tracks this in **Settings → Environments → Production → Branch Tracking**; pushes here deploy to `sheltermark.vercel.app`. Protected by a GitHub ruleset: no force-push, no deletion, linear history required.
+- `prod` — production branch. Vercel tracks this in **Settings → Environments → Production → Branch Tracking**; pushes here deploy to `sheltermark.vercel.app`. Protected by a GitHub ruleset: no force-push, no deletion.
 - `main` — retired. Do not create, base PRs, or branch from it. It will be removed once all references are gone.
 
 AI agents: target `dev` (or a feature branch cut from `dev`) — never push to `prod`. Promoting `dev` → `prod` is a deliberate human action (push or merge PR).
