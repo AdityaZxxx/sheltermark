@@ -1,4 +1,4 @@
-import { ArrowClockwiseIcon, GlobeIcon } from "@phosphor-icons/react";
+import { GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 
 import type { BrokenStatus } from "~/lib/link-health/types";
@@ -13,6 +13,7 @@ import { formatRelativeTime } from "~/lib/utils/format";
 import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BookmarkNoteText } from "./bookmark-note-text";
 import { BrokenLinkWarning } from "./broken-link-warning";
+import { Orb } from "./orb";
 
 interface BookmarkItemProps {
   id: string;
@@ -134,22 +135,22 @@ export function BookmarkComfortItem({
         )}
 
         <div className="flex flex-row items-center gap-2 mt-4">
-          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center relative">
-            {favicon_url ? (
+          <div className="shrink-0 w-4 h-4 rounded-xs overflow-hidden flex items-center justify-center">
+            {refetchingId === id ? (
+              <Orb
+                size={12}
+                label="Refreshing metadata…"
+                className="text-muted-foreground"
+              />
+            ) : favicon_url ? (
               // oxlint-disable-next-line next/no-img-element -- nothing to optimize
               <img
                 src={favicon_url}
                 alt={`${domain} favicon`}
-                className={cn(
-                  "w-full h-full object-contain transition-opacity",
-                  refetchingId === id && "opacity-30",
-                )}
+                className="w-full h-full object-contain"
               />
             ) : (
               <GlobeIcon className="w-full h-full text-muted-foreground" />
-            )}
-            {refetchingId === id && (
-              <ArrowClockwiseIcon className="absolute inset-0 m-auto size-2.5 text-muted-foreground animate-spin" />
             )}
           </div>
           <div className="min-w-0 flex-1 flex items-center gap-1">

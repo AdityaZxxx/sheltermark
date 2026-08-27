@@ -55,7 +55,7 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
         <SelectTrigger>
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="min-w-0">
           {SORT_OPTIONS.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}
