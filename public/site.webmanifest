@@ -1,7 +1,7 @@
 {
   "name": "Sheltermark",
   "short_name": "Sheltermark",
-  "description": "Safe place for your bookmarks",
+  "description": "A quiet place for your bookmarks",
   "id": "/",
   "start_url": "/",
   "categories": ["productivity", "utilities"],

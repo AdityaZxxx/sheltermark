@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const title = searchParams.get("title") || "Sheltermark";
   const description =
-    searchParams.get("description") || "Safe place for your bookmarks";
+    searchParams.get("description") || "A quiet place for your bookmarks";
   const username = searchParams.get("username") || undefined;
   const workspace = searchParams.get("workspace") || undefined;
 
