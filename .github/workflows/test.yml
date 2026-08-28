@@ -1,0 +1,25 @@
+name: Test
+
+on:
+  push:
+    branches: [dev, prod]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      # Live-database suites gate on DATABASE_URL (describe.skipIf) and are
+      # skipped here; they run against local Supabase on dev machines.
+      - name: Test
+        run: bun run test
