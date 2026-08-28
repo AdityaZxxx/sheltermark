@@ -32,7 +32,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <UserProvider user={user}>
-        <main className="min-h-dvh bg-background">
+        <main className="flex h-dvh flex-col overflow-hidden bg-background">
           <Header user={user} />
           <BookmarkView scope={{ type: "workspace", id }} />
           <ShareDialogManager />

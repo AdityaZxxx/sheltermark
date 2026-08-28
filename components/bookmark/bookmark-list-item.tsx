@@ -32,6 +32,7 @@ interface BookmarkItemProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
+  onOpen?: (id: string) => void;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
   onTagClick?: (tagId: string) => void;
@@ -66,6 +67,7 @@ export function BookmarkListItem({
   workspaces = [],
   currentWorkspaceId,
   onSelect,
+  onOpen,
   onDelete,
   onEdit,
   onMove,
@@ -104,6 +106,8 @@ export function BookmarkListItem({
         if (isSelectionMode) {
           e.preventDefault();
           onSelect?.(id);
+        } else if (onOpen) {
+          onOpen(id);
         } else {
           window.open(url, "_blank", "noopener,noreferrer");
         }

@@ -13,10 +13,12 @@ import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
 import { BookmarkList } from "./bookmark-list";
 import { BookmarkMoveDialog } from "./bookmark-move-dialog";
+import { BookmarkPreview } from "./bookmark-preview";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const vm = useBookmarkListManager(scope, sectionRef);
   const { tags: allTags } = useUserTagsWithCount();
 
@@ -24,101 +26,124 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
     <section
       ref={sectionRef}
       aria-label="Bookmarks"
-      className="max-w-3xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
+      className="relative flex min-h-0 flex-1 flex-col outline-none md:flex-row"
     >
-      <BookmarkHeader
-        inputRef={vm.inputRef}
-        view={vm.view}
-        searchQuery={vm.searchQuery}
-        sort={vm.sort}
-        count={vm.bookmarks.length}
-        title={vm.currentWorkspace?.name ?? "All Bookmarks"}
-        selectedTagIds={vm.selectedTagIds}
-        workspaceId={vm.currentWorkspace?.id}
-        aiSearchTerms={vm.aiSearchTerms}
-        onAskAi={vm.handleAskAi}
-        isAskingAi={vm.isAiSearching}
-        onSearchChange={vm.setSearchQuery}
-        onSubmit={vm.handleSubmit}
-        onViewChange={vm.setView}
-        onSortChange={vm.setSort}
-        onTagFilterChange={vm.setSelectedTagIds}
-        onManageTags={() => vm.setManageTagsDialogOpen(true)}
-      />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 min-h-0 flex-col px-4 pt-8 md:px-6">
+          <div className="shrink-0">
+            <BookmarkHeader
+              inputRef={vm.inputRef}
+              view={vm.view}
+              searchQuery={vm.searchQuery}
+              sort={vm.sort}
+              count={vm.bookmarks.length}
+              title={vm.currentWorkspace?.name ?? "All Bookmarks"}
+              selectedTagIds={vm.selectedTagIds}
+              workspaceId={vm.currentWorkspace?.id}
+              aiSearchTerms={vm.aiSearchTerms}
+              onAskAi={vm.handleAskAi}
+              isAskingAi={vm.isAiSearching}
+              onSearchChange={vm.setSearchQuery}
+              onSubmit={vm.handleSubmit}
+              onViewChange={vm.setView}
+              onSortChange={vm.setSort}
+              onTagFilterChange={vm.setSelectedTagIds}
+              onManageTags={() => vm.setManageTagsDialogOpen(true)}
+            />
+          </div>
 
-      <BookmarkList
-        view={vm.view}
-        isLoading={vm.isLoading}
-        searchQuery={vm.searchQuery}
-        filteredBookmarks={vm.bookmarks}
-        workspaces={vm.workspaces}
-        currentWorkspaceId={vm.currentWorkspace?.id}
-        selectedIds={vm.selection.selectedIds}
-        isSelectionMode={vm.selection.isSelectionMode}
-        focusedIndex={vm.focusedIndex}
-        onSelect={vm.selection.toggleSelect}
-        onDelete={vm.dialogs.handleDeleteTrigger}
-        onEdit={vm.dialogs.handleEditTrigger}
-        onTagClick={(tagId) => vm.setSelectedTagIds([tagId])}
-        onMove={vm.dialogs.handleMoveTrigger}
-        onMoveToWorkspace={vm.handleMoveToWorkspace}
-        onCopyUrl={vm.handleCopyUrl}
-        onRefetch={vm.handleRefetchTrigger}
-        onSelectionModeToggle={vm.selection.toggleSelectionMode}
-        autoCheckBroken={vm.currentWorkspace?.auto_check_broken !== false}
-        tagsByBookmarkId={vm.tagsByBookmarkId}
-        allTags={vm.allTags}
-        refetchingId={vm.refetchingId}
-        filterKey={vm.filterKey}
-      />
+          <div
+            ref={scrollRef}
+            data-virtual-scroll
+            className="scroll-fade mt-6 min-h-0 flex-1 overflow-y-auto pb-8"
+            style={{ contain: "layout paint style" }}
+          >
+            <BookmarkList
+              scrollRef={scrollRef}
+              view={vm.view}
+              isLoading={vm.isLoading}
+              searchQuery={vm.searchQuery}
+              filteredBookmarks={vm.bookmarks}
+              workspaces={vm.workspaces}
+              currentWorkspaceId={vm.currentWorkspace?.id}
+              selectedIds={vm.selection.selectedIds}
+              isSelectionMode={vm.selection.isSelectionMode}
+              focusedIndex={vm.focusedIndex}
+              onSelect={vm.selection.toggleSelect}
+              onOpen={vm.openPreview}
+              onDelete={vm.dialogs.handleDeleteTrigger}
+              onEdit={vm.dialogs.handleEditTrigger}
+              onTagClick={(tagId) => vm.setSelectedTagIds([tagId])}
+              onMove={vm.dialogs.handleMoveTrigger}
+              onMoveToWorkspace={vm.handleMoveToWorkspace}
+              onCopyUrl={vm.handleCopyUrl}
+              onRefetch={vm.handleRefetchTrigger}
+              onSelectionModeToggle={vm.selection.toggleSelectionMode}
+              autoCheckBroken={vm.currentWorkspace?.auto_check_broken !== false}
+              tagsByBookmarkId={vm.tagsByBookmarkId}
+              allTags={vm.allTags}
+              refetchingId={vm.refetchingId}
+              filterKey={vm.filterKey}
+            />
+          </div>
 
-      <BookmarkToolbar
-        selectedCount={vm.selection.selectedIds.length}
-        isSelectionMode={vm.selection.isSelectionMode}
-        isAllSelected={vm.isAllSelected}
-        onClear={vm.selection.clearSelection}
-        onToggleSelectAll={
-          vm.isAllSelected
-            ? vm.selection.clearSelectionOnly
-            : () => vm.selection.selectAll(vm.bookmarks.map((b) => b.id))
-        }
-        onDelete={vm.dialogs.handleBulkDeleteTrigger}
-        onMove={vm.dialogs.handleBulkMoveTrigger}
-        onCopyUrls={vm.handleBulkCopyUrls}
-        pendingAction={vm.toolbarPendingAction}
-      />
+          <BookmarkToolbar
+            selectedCount={vm.selection.selectedIds.length}
+            isSelectionMode={vm.selection.isSelectionMode}
+            isAllSelected={vm.isAllSelected}
+            onClear={vm.selection.clearSelection}
+            onToggleSelectAll={
+              vm.isAllSelected
+                ? vm.selection.clearSelectionOnly
+                : () => vm.selection.selectAll(vm.bookmarks.map((b) => b.id))
+            }
+            onDelete={vm.dialogs.handleBulkDeleteTrigger}
+            onMove={vm.dialogs.handleBulkMoveTrigger}
+            onCopyUrls={vm.handleBulkCopyUrls}
+            pendingAction={vm.toolbarPendingAction}
+          />
 
-      <BookmarkEditDialog
-        open={vm.dialogs.editDialogOpen}
-        onOpenChange={vm.dialogs.setEditDialogOpen}
-        bookmark={vm.dialogs.activeBookmark}
-        allTags={allTags}
-        updateBookmarkFields={vm.updateBookmarkFields}
-        isPending={vm.isUpdatingBookmarkFields}
-      />
+          <BookmarkEditDialog
+            open={vm.dialogs.editDialogOpen}
+            onOpenChange={vm.dialogs.setEditDialogOpen}
+            bookmark={vm.dialogs.activeBookmark}
+            allTags={allTags}
+            updateBookmarkFields={vm.updateBookmarkFields}
+            isPending={vm.isUpdatingBookmarkFields}
+          />
 
-      <BookmarkMoveDialog
-        open={vm.dialogs.moveDialogOpen}
-        onOpenChange={vm.dialogs.setMoveDialogOpen}
-        ids={vm.dialogs.bookmarksToMove}
-        workspaces={vm.workspaces}
-        currentWorkspaceId={vm.currentWorkspace?.id}
-        onSuccess={() => {
-          if (vm.dialogs.bookmarksToMove.length > 0)
-            vm.selection.clearSelection();
-        }}
-      />
+          <BookmarkMoveDialog
+            open={vm.dialogs.moveDialogOpen}
+            onOpenChange={vm.dialogs.setMoveDialogOpen}
+            ids={vm.dialogs.bookmarksToMove}
+            workspaces={vm.workspaces}
+            currentWorkspaceId={vm.currentWorkspace?.id}
+            onSuccess={() => {
+              if (vm.dialogs.bookmarksToMove.length > 0)
+                vm.selection.clearSelection();
+            }}
+          />
 
-      <TagManageDialog
-        open={vm.manageTagsDialogOpen}
-        onOpenChange={vm.setManageTagsDialogOpen}
-        workspaceId={vm.currentWorkspace?.id}
-      />
+          <TagManageDialog
+            open={vm.manageTagsDialogOpen}
+            onOpenChange={vm.setManageTagsDialogOpen}
+            workspaceId={vm.currentWorkspace?.id}
+          />
 
-      <KeyboardShortcutsDialog
-        open={vm.shortcutsOpen}
-        onOpenChange={vm.setShortcutsOpen}
-      />
+          <KeyboardShortcutsDialog
+            open={vm.shortcutsOpen}
+            onOpenChange={vm.setShortcutsOpen}
+          />
+        </div>
+      </div>
+
+      {vm.previewBookmark && (
+        <BookmarkPreview
+          key={vm.previewBookmark.id}
+          bookmark={vm.previewBookmark}
+          onClose={vm.closePreview}
+        />
+      )}
     </section>
   );
 }

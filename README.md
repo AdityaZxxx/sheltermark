@@ -69,7 +69,8 @@ For local dev, set the web app URL via the extension's options page (chrome://ex
 - [x] RSS/Atom feed subscriptions
 - [x] Bookmark notes and tagging
 - [x] Trash with auto-cleanup
-- [x] Link health checks with manual override
+- [x] Link health checks
 - [x] Full-text search
 - [x] Import from browser bookmarks
 - [x] AI integration for bookmark search, title, and tags
+- [x] Inline bookmark preview
