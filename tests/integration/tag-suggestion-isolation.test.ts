@@ -101,7 +101,14 @@ describe.skipIf(!HAS_DB)(
 
     afterAll(async () => {
       const db = getDb();
-      await db.delete(bookmarks).where(like(bookmarks.url, `${PREFIX}%`));
+      await db
+        .delete(bookmarks)
+        .where(
+          and(
+            eq(bookmarks.user_id, AGENT_USER),
+            like(bookmarks.url, `%${PREFIX}%`),
+          ),
+        );
     });
 
     it("suggests tags for the owner's bookmark using injected AI", async () => {
