@@ -28,6 +28,10 @@ Cross-device bookmark manager. Next.js web app + Chrome extension, backed by Sup
 
 AI agents: target `dev` (or a feature branch cut from `dev`) — never push to `prod`. Promoting `dev` → `prod` is a deliberate human action (push or merge PR).
 
+## Commit & PR Conventions
+
+Conventional commits (`type(scope): imperative summary`), one logical change per commit, PRs target `dev` and are squash-merged, CI green before merge. Full rules in [`docs/agents/commit-pr-conventions.md`](./docs/agents/commit-pr-conventions.md) — read it before committing or opening a PR.
+
 ## Project Structure
 
 ```
