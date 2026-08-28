@@ -10,8 +10,8 @@ Getting the Sheltermark web app + extension running locally.
 - Node 20+ (for some tooling)
 
 Day-to-day development runs entirely against the local Supabase stack — no
-cloud project needed. Access to the production Supabase project is only
-required for promoting migrations (`supabase db push`).
+cloud project needed. Production migrations are applied automatically by CI
+on push to `prod` (see [`docs/deployment.md`](./deployment.md)).
 
 ## Install
 
@@ -98,15 +98,16 @@ bun run test
 
 ### Promote to production
 
-```bash
-supabase db push --dry-run   # preview against the linked production project
-supabase db push             # apply unapplied migrations to production
-```
+There is no manual push step. Migrations reach production only through the
+[`deploy-migrations.yml`](../.github/workflows/deploy-migrations.yml) GitHub
+Actions workflow, which runs `supabase db push` on every push to `prod`:
 
-Push the migration **before** deploying the code that uses it (promote `dev` →
-`prod` after the push) — migrations are additive, so this order never breaks
-the running app. `supabase db push` is the only way migrations reach the
-remote database; production deploys (Vercel) never run migrations.
+1. Promote `dev` → `prod` (human-only action).
+2. CI applies any unapplied migrations; Vercel deploys the code in parallel.
+
+Keep migrations additive so the code deploy and the migration run can race
+safely. The repo is intentionally not linked to the production project —
+local `supabase db push` against production is not possible by accident.
 
 The `supabase/migrations/meta/` journal is drizzle-kit's record of what has
 been generated; commit it alongside the `.sql` files. Never hand-edit `schema.ts`

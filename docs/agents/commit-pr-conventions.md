@@ -36,5 +36,6 @@ opening a PR.
 
 - Human-only. Either push `dev` to `prod` or open a merge PR
   (`chore: promote dev to prod`).
-- Before promoting: confirm any new migrations have been applied to
-  production (`supabase db push`) — migrations first, code second.
+- Migrations ride along automatically: `deploy-migrations.yml` applies any
+  new migrations on push to `prod`. Keep migrations additive so the Vercel
+  code deploy and the migration run can race safely.
