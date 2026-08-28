@@ -98,6 +98,8 @@ export function BookmarkComfortItem({
     <button
       type="button"
       tabIndex={tabIndex}
+      data-bookmark-item
+      data-bookmark-id={id}
       onKeyDown={handleKeyDown}
       className={cn(
         "group relative flex flex-row gap-3 md:gap-4 rounded-lg p-3 overflow-hidden hover-only:hover:bg-muted/50 w-full cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left",

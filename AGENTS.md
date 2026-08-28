@@ -85,7 +85,7 @@ Reads go through `lib/queries/*.ts` hooks.
 
 ## Design Principles
 
-1. **Keyboard-first.** All actions accessible via keyboard (see `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-list-manager.ts` (global shortcuts)).
+1. **Keyboard-first.** All actions accessible via keyboard (see `hooks/use-bookmark-list-manager.ts` (global shortcuts)).
 2. **Minimal clicks.** Quick actions, smart defaults, optimistic UI.
 3. **Fast metadata.** Auto-fetch title, favicon, og:image via a multi-strategy pipeline; never block the UI on it.
 4. **Clean UI.** Minimalist, no clutter, focus on content. Function over form.
@@ -96,7 +96,7 @@ Reads go through `lib/queries/*.ts` hooks.
 - **Error handling:** Actions and repositories return `ActionResult`. Never send raw exception, driver, or Zod messages to the client. To return a failure, call `dbError`, `supabaseError`, or `invalidData` from `~/lib/action-result`. Each logs the cause server-side and returns a generic message. For an expected domain failure, return an explicit message instead (for example, "Bookmark not found"). Pass auth errors through `friendlyAuthError` in `~/lib/supabase/auth-error`. Extension API routes use the `withExtension` pipeline in `app/api/extension/_lib/` for body parsing, authentication, and error responses.
 - **Zod validates at action boundary.** Schemas in `lib/schemas/`.
 - **Server components by default.** Use `"use client"` only where interactivity is required.
-- **Keyboard-first.** All actions accessible via keyboard. See `hooks/use-bookmark-keyboard.ts`, `hooks/use-bookmark-list-manager.ts` (global shortcuts).
+- **Keyboard-first.** All actions accessible via keyboard. See `hooks/use-bookmark-list-manager.ts` (global shortcuts).
 - **Follow shadcn/ui patterns.** Components in `components/ui/` are vendored — don't hand-edit; regenerate via `shadcn` CLI.
 - **Do not add comments proactively** Only add comments for non-obvious intent, business rules, constraints, workarounds, security considerations, or important trade-offs.
 - **Do not add tests solely to increase coverage**

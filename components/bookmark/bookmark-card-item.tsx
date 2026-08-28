@@ -93,6 +93,8 @@ export function BookmarkCardItem({
     <button
       type="button"
       tabIndex={tabIndex}
+      data-bookmark-item
+      data-bookmark-id={id}
       onKeyDown={handleKeyDown}
       className={cn(
         "group flex flex-col rounded-lg overflow-hidden hover-only:hover:bg-muted/50 h-full relative cursor-pointer transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full",

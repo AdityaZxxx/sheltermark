@@ -1,7 +1,10 @@
 "use client";
 
+import { useRef } from "react";
+
 import type { BookmarkScope } from "~/lib/schemas/common";
 
+import { KeyboardShortcutsDialog } from "~/components/settings/keyboard-shortcuts-dialog";
 import { TagManageDialog } from "~/components/tag/tag-manage-dialog";
 import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
 import { useUserTagsWithCount } from "~/hooks/use-tags";
@@ -13,15 +16,15 @@ import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
-  const vm = useBookmarkListManager(scope);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const vm = useBookmarkListManager(scope, sectionRef);
   const { tags: allTags } = useUserTagsWithCount();
 
   return (
-    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- container-level keyboard shortcut dispatch for bookmark list navigation; no interactive semantics needed
     <section
+      ref={sectionRef}
       aria-label="Bookmarks"
       className="max-w-3xl mx-auto py-8 px-4 md:px-6 space-y-6 relative outline-none"
-      onKeyDown={vm.onKeyDown}
     >
       <BookmarkHeader
         inputRef={vm.inputRef}
@@ -110,6 +113,11 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
         open={vm.manageTagsDialogOpen}
         onOpenChange={vm.setManageTagsDialogOpen}
         workspaceId={vm.currentWorkspace?.id}
+      />
+
+      <KeyboardShortcutsDialog
+        open={vm.shortcutsOpen}
+        onOpenChange={vm.setShortcutsOpen}
       />
     </section>
   );

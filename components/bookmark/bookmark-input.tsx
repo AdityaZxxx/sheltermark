@@ -72,6 +72,8 @@ export function BookmarkInput({
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Dialogs own the keyboard while open.
+      if (document.querySelector("[role='dialog']")) return;
       const input = ref && "current" in ref ? ref.current : null;
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         if (input && document.activeElement === input) {
