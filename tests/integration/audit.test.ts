@@ -45,7 +45,9 @@ function testEvent(
 }
 
 describe.skipIf(!HAS_DB)("audit trail — live database", () => {
-  const db = getDb();
+  // Lazy: getDb() throws without DATABASE_URL, and the describe body runs
+  // even when skipIf skips the suite (hooks/tests do not).
+  let db: ReturnType<typeof getDb>;
 
   async function fetchSingle(action: string) {
     const rows = await db
@@ -60,6 +62,7 @@ describe.skipIf(!HAS_DB)("audit trail — live database", () => {
   }
 
   beforeAll(async () => {
+    db = getDb();
     // Reap leftovers from crashed earlier runs (test rows older than 10 minutes).
     const cutoff = new Date(Date.now() - 10 * 60 * 1000);
     await db

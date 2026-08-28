@@ -93,6 +93,8 @@ export function BookmarkListItem({
     <button
       type="button"
       tabIndex={tabIndex}
+      data-bookmark-item
+      data-bookmark-id={id}
       onKeyDown={handleKeyDown}
       className={cn(
         "group flex items-center gap-3 px-3 py-2 rounded-lg hover-only:hover:bg-muted/50 transition-[background-color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] text-left w-full relative",

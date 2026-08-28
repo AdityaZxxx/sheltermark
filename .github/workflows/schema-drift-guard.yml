@@ -8,7 +8,7 @@ name: Schema Drift Guard
 
 on:
   push:
-    branches: [main]
+    branches: [dev, prod]
   pull_request:
 
 jobs:

@@ -33,8 +33,6 @@ CREATE TABLE public.profiles (
   trash_cleanup_interval integer NOT NULL DEFAULT 30
 );
 
-CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id);
-CREATE UNIQUE INDEX profiles_username_key ON public.profiles USING btree (username);
 CREATE INDEX profiles_username_idx ON public.profiles USING btree (username);
 
 -- RLS
@@ -85,7 +83,6 @@ CREATE TABLE public.workspaces (
   PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX workspaces_pkey ON public.workspaces USING btree (id);
 CREATE INDEX workspaces_user_id_idx ON public.workspaces USING btree (user_id);
 CREATE INDEX workspaces_one_default_per_user ON public.workspaces USING btree (user_id) WHERE (is_default = true);
 CREATE INDEX idx_workspaces_user_default ON public.workspaces USING btree (user_id, is_default);
@@ -138,7 +135,6 @@ CREATE TABLE public.bookmarks (
   PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX bookmarks_pkey ON public.bookmarks USING btree (id);
 CREATE INDEX bookmarks_user_id_idx ON public.bookmarks USING btree (user_id);
 CREATE INDEX bookmarks_workspace_id_idx ON public.bookmarks USING btree (workspace_id);
 CREATE INDEX bookmarks_created_at_idx ON public.bookmarks USING btree (created_at DESC);
@@ -215,7 +211,6 @@ CREATE TABLE public.feeds (
   PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX feeds_pkey ON public.feeds USING btree (id);
 CREATE UNIQUE INDEX feeds_user_id_url_key ON public.feeds USING btree (user_id, url);
 
 -- RLS
@@ -255,7 +250,6 @@ CREATE TABLE public.feed_entries (
   PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX feed_entries_pkey ON public.feed_entries USING btree (id);
 CREATE UNIQUE INDEX feed_entries_feed_id_guid_key ON public.feed_entries USING btree (feed_id, guid);
 
 -- RLS
@@ -293,7 +287,6 @@ CREATE TABLE public.tags (
   PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX tags_pkey ON public.tags USING btree (id);
 CREATE INDEX idx_tags_user_id ON public.tags USING btree (user_id);
 CREATE INDEX idx_tags_user_name ON public.tags USING btree (user_id, name);
 CREATE UNIQUE INDEX tags_user_id_name_key ON public.tags USING btree (user_id, name);

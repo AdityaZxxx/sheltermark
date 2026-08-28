@@ -21,6 +21,14 @@ function copyUrlToClipboard(url: string) {
   toast.success("URL copied to clipboard");
 }
 
+// Row pitch (row height + gap) per view, for keyboard paging and for
+// scrolling unmounted virtualized rows into range.
+const ROW_PITCH = {
+  list: 42,
+  comfort: 104,
+  card: 240,
+} satisfies Record<BookmarkViewVariant, number>;
+
 interface ActiveBookmark {
   id: string;
   title: string;
@@ -45,7 +53,6 @@ interface BookmarkListManager {
   inputRef: React.RefObject<HTMLInputElement | null>;
   workspaces: WorkspaceWithCount[];
   currentWorkspace: WorkspaceWithCount | null | undefined;
-  onKeyDown: (e: React.KeyboardEvent) => void;
   focusedIndex: number;
   selection: {
     selectedIds: string[];
@@ -74,6 +81,8 @@ interface BookmarkListManager {
   };
   manageTagsDialogOpen: boolean;
   setManageTagsDialogOpen: (open: boolean) => void;
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
   handleSubmit: (val: string) => void;
   handleAskAi: () => Promise<void>;
   isAiSearching: boolean;
@@ -91,6 +100,7 @@ interface BookmarkListManager {
 
 export function useBookmarkListManager(
   scope: { type: "workspace"; id: string } | { type: "global" },
+  sectionRef: React.RefObject<HTMLElement | null>,
 ): BookmarkListManager {
   const { view, setView } = useViewPreference();
   const { workspaces, currentWorkspace } = useWorkspaces();
@@ -151,6 +161,8 @@ export function useBookmarkListManager(
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [bookmarksToMove, setBookmarksToMove] = useState<string[]>([]);
   const [manageTagsDialogOpen, setManageTagsDialogOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const lastTriggerRef = useRef<HTMLElement | null>(null);
 
   // ── Inline delete ────────────────────────────────────────────
   const executeDelete = (ids: string[]) => {
@@ -180,6 +192,10 @@ export function useBookmarkListManager(
   const handleEditTrigger = (id: string) => {
     const bookmark = bookmarks.find((b) => b.id === id);
     if (!bookmark) return;
+    lastTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const tagIds = tagsByBookmarkId.get(id) ?? [];
     const tags = tagIds
       .map((tagId) => allTags.find((t) => t.id === tagId))
@@ -195,6 +211,10 @@ export function useBookmarkListManager(
 
   // ── Move dialog ──────────────────────────────────────────────
   const handleMoveTrigger = (id: string) => {
+    lastTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     setBookmarksToMove([id]);
     setMoveDialogOpen(true);
   };
@@ -213,82 +233,43 @@ export function useBookmarkListManager(
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const getItem = (index: number) => {
-    const bookmark = bookmarks[index];
-    if (bookmark) {
-      return { id: bookmark.id, url: bookmark.url };
-    }
-    return undefined;
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (
-      document.activeElement === inputRef.current ||
-      document.activeElement?.tagName === "INPUT" ||
-      document.activeElement?.tagName === "TEXTAREA"
-    ) {
-      return;
-    }
-
-    if (bookmarks.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setFocusedIndex((prev) =>
-        prev < bookmarks.length - 1 ? prev + 1 : prev,
-      );
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-    } else if (view === "card") {
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        setFocusedIndex((prev) =>
-          prev < bookmarks.length - 1 ? prev + 1 : prev,
-        );
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      }
-    }
-
-    if (e.key === "Enter" && focusedIndex >= 0) {
-      const item = getItem(focusedIndex);
-      if (item) {
-        if (isSelectionMode) {
-          toggleSelect(item.id);
-        } else {
-          window.open(item.url, "_blank", "noopener,noreferrer");
-        }
-      }
-    }
-  };
-
   // ── Global shortcuts (window-level) ──────────────────────────
   const editDialogOpenRef = useRef(editDialogOpen);
   const moveDialogOpenRef = useRef(moveDialogOpen);
+  const shortcutsOpenRef = useRef(shortcutsOpen);
+  const manageTagsDialogOpenRef = useRef(manageTagsDialogOpen);
   const isSelectionModeRef = useRef(isSelectionMode);
   const focusedIndexRef = useRef(focusedIndex);
   const bookmarksRef = useRef(bookmarks);
+  const viewRef = useRef(view);
+  const selectedIdsRef = useRef(selectedIds);
   const selectAllRef = useRef(selectAll);
   const toggleSelectRef = useRef(toggleSelect);
   const clearSelectionRef = useRef(clearSelection);
   const handleEditTriggerRef = useRef(handleEditTrigger);
   const handleDeleteTriggerRef = useRef(handleDeleteTrigger);
+  const handleMoveTriggerRef = useRef(handleMoveTrigger);
+  const handleBulkMoveTriggerRef = useRef(handleBulkMoveTrigger);
 
   // Latest-ref pattern: the keydown effect below mounts once and reads
   // changing values through these refs at event time.
   useEffect(() => {
     editDialogOpenRef.current = editDialogOpen;
     moveDialogOpenRef.current = moveDialogOpen;
+    shortcutsOpenRef.current = shortcutsOpen;
+    manageTagsDialogOpenRef.current = manageTagsDialogOpen;
     isSelectionModeRef.current = isSelectionMode;
     focusedIndexRef.current = focusedIndex;
     bookmarksRef.current = bookmarks;
+    viewRef.current = view;
+    selectedIdsRef.current = selectedIds;
     selectAllRef.current = selectAll;
     toggleSelectRef.current = toggleSelect;
     clearSelectionRef.current = clearSelection;
     handleEditTriggerRef.current = handleEditTrigger;
     handleDeleteTriggerRef.current = handleDeleteTrigger;
+    handleMoveTriggerRef.current = handleMoveTrigger;
+    handleBulkMoveTriggerRef.current = handleBulkMoveTrigger;
   });
 
   useEffect(() => {
@@ -300,16 +281,28 @@ export function useBookmarkListManager(
         activeElement === inputRef.current ||
         activeElement?.tagName === "INPUT" ||
         activeElement?.tagName === "TEXTAREA";
+      const key = e.key.toLowerCase();
 
       if (isInputFocused) {
-        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        if ((e.metaKey || e.ctrlKey) && key === "k") {
           e.preventDefault();
           inputRef.current?.focus();
         }
         return;
       }
 
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (manageTagsDialogOpenRef.current) return;
+        e.preventDefault();
+        setShortcutsOpen((v) => !v);
+        return;
+      }
+
+      if (shortcutsOpenRef.current || manageTagsDialogOpenRef.current) {
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && key === "k") {
         e.preventDefault();
         inputRef.current?.focus();
         return;
@@ -319,8 +312,21 @@ export function useBookmarkListManager(
       if (items.length === 0) return;
       const activeIdx = focusedIndexRef.current;
 
+      // List shortcuts work regardless of where DOM focus is, except inside
+      // widgets that own arrow/character keys themselves.
+      const target =
+        activeElement instanceof HTMLElement ? activeElement : null;
+      const isNeutral =
+        !target || target === document.body || target === sectionRef.current;
+      if (
+        activeElement?.closest("select, [role='listbox'], [role='menu']") ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+
       if (isSelectionModeRef.current) {
-        if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+        if ((e.metaKey || e.ctrlKey) && key === "a") {
           e.preventDefault();
           selectAllRef.current(items.map((b) => b.id));
           return;
@@ -342,14 +348,14 @@ export function useBookmarkListManager(
         const item = items[activeIdx];
         if (!item) return;
 
-        if ((e.metaKey || e.ctrlKey) && e.key === "c") {
+        if ((e.metaKey || e.ctrlKey) && key === "c") {
           e.preventDefault();
           navigator.clipboard.writeText(item.url);
           toast.success("URL copied to clipboard");
           return;
         }
 
-        if ((e.metaKey || e.ctrlKey) && e.key === "e") {
+        if ((e.metaKey || e.ctrlKey) && key === "e") {
           e.preventDefault();
           handleEditTriggerRef.current(item.id);
           return;
@@ -360,6 +366,105 @@ export function useBookmarkListManager(
           handleDeleteTriggerRef.current(item.id);
           return;
         }
+      }
+
+      const noModifiers = !e.metaKey && !e.ctrlKey && !e.altKey;
+
+      // ⌘M minimizes the window on macOS and Ctrl+M mutes the tab in
+      // Firefox, so move is a plain key.
+      if (key === "m" && noModifiers) {
+        e.preventDefault();
+        if (isSelectionModeRef.current && selectedIdsRef.current.length > 0) {
+          handleBulkMoveTriggerRef.current();
+        } else if (activeIdx >= 0) {
+          const item = items[activeIdx];
+          if (item) handleMoveTriggerRef.current(item.id);
+        }
+        return;
+      }
+
+      if (key === "x" && noModifiers && !e.shiftKey) {
+        const isOnItem = target?.hasAttribute("data-bookmark-item") ?? false;
+        if ((isNeutral || isOnItem) && activeIdx >= 0) {
+          e.preventDefault();
+          if (!isSelectionModeRef.current) setIsSelectionMode(true);
+          const item = items[activeIdx];
+          if (item) toggleSelectRef.current(item.id);
+        }
+        return;
+      }
+
+      const isCard = viewRef.current === "card";
+      const isNext =
+        e.key === "ArrowDown" || (isCard && e.key === "ArrowRight");
+      const isPrev = e.key === "ArrowUp" || (isCard && e.key === "ArrowLeft");
+
+      if (isNext || isPrev) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Shift+arrows extend the selection, entering selection mode on
+          // first use. Additive: reversing direction keeps prior picks.
+          const start =
+            activeIdx < 0 ? (isNext ? 0 : items.length - 1) : activeIdx;
+          const next = isNext
+            ? Math.min(start + 1, items.length - 1)
+            : Math.max(start - 1, 0);
+          if (!isSelectionModeRef.current) setIsSelectionMode(true);
+          setSelectedIds((prev) => {
+            const set = new Set(prev);
+            const startItem = items[start];
+            const nextItem = items[next];
+            if (startItem) set.add(startItem.id);
+            if (nextItem) set.add(nextItem.id);
+            return Array.from(set);
+          });
+          setFocusedIndex(next);
+        } else {
+          setFocusedIndex((prev) => {
+            if (isNext) return prev < items.length - 1 ? prev + 1 : prev;
+            return prev > 0 ? prev - 1 : 0;
+          });
+        }
+        return;
+      }
+
+      if (e.key === "Home" || e.key === "End") {
+        e.preventDefault();
+        setFocusedIndex(e.key === "Home" ? 0 : items.length - 1);
+        return;
+      }
+
+      if (e.key === "PageDown" || e.key === "PageUp") {
+        e.preventDefault();
+        const scroller = sectionRef.current?.querySelector(
+          "[data-virtual-scroll]",
+        );
+        const rowHeight = ROW_PITCH[viewRef.current];
+        const pageSize = Math.max(
+          1,
+          Math.floor(
+            (scroller?.clientHeight ?? window.innerHeight) / rowHeight,
+          ),
+        );
+        setFocusedIndex((prev) => {
+          const cur = prev < 0 ? 0 : prev;
+          const next = e.key === "PageDown" ? cur + pageSize : cur - pageSize;
+          return Math.max(0, Math.min(items.length - 1, next));
+        });
+        return;
+      }
+
+      if (e.key === "Enter" && activeIdx >= 0 && noModifiers && !e.shiftKey) {
+        // On a bookmark item, native button activation already opens the
+        // URL — handling Enter here too would open it twice. Any other
+        // interactive element keeps its own Enter behavior; only from a
+        // neutral spot (body/section) does Enter open the focused item.
+        if (!isNeutral) return;
+        const item = items[activeIdx];
+        if (!item) return;
+        e.preventDefault();
+        if (isSelectionModeRef.current) toggleSelectRef.current(item.id);
+        else window.open(item.url, "_blank", "noopener,noreferrer");
       }
     };
 
@@ -375,7 +480,54 @@ export function useBookmarkListManager(
       window.removeEventListener("keydown", handleGlobalKeyDown);
       window.removeEventListener("keydown", handleSelectionEscape);
     };
-  }, []);
+  }, [sectionRef]);
+
+  // Roving tabindex: arrow keys move real DOM focus to the focused item so
+  // screen readers follow and :focus-visible rings appear. Virtualized rows
+  // that aren't mounted yet get scrolled into range first.
+  useEffect(() => {
+    if (focusedIndex < 0) return;
+    const section = sectionRef.current;
+    const bookmark = bookmarksRef.current[focusedIndex];
+    if (!section || !bookmark) return;
+
+    const focusItem = (): boolean => {
+      const btn = section.querySelector<HTMLElement>(
+        `[data-bookmark-id="${bookmark.id}"]`,
+      );
+      if (!btn) return false;
+      btn.focus({ preventScroll: true });
+      btn.scrollIntoView({ block: "nearest" });
+      return true;
+    };
+
+    if (focusItem()) return;
+
+    const scroller = section.querySelector<HTMLElement>(
+      "[data-virtual-scroll]",
+    );
+    if (!scroller) return;
+    const rowHeight = ROW_PITCH[viewRef.current];
+    scroller.scrollTop = Math.max(
+      0,
+      focusedIndex * rowHeight - scroller.clientHeight / 2,
+    );
+    requestAnimationFrame(() => {
+      if (!focusItem()) requestAnimationFrame(focusItem);
+    });
+  }, [focusedIndex, sectionRef]);
+
+  // Restore focus to the element that opened a dialog when it closes.
+  const wasDialogOpenRef = useRef(false);
+  useEffect(() => {
+    const isOpen = editDialogOpen || moveDialogOpen;
+    if (wasDialogOpenRef.current && !isOpen) {
+      const trigger = lastTriggerRef.current;
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      lastTriggerRef.current = null;
+    }
+    wasDialogOpenRef.current = isOpen;
+  }, [editDialogOpen, moveDialogOpen]);
 
   // ── AI-assisted search ──────────────────────────────────────
   const [isAiSearching, setIsAiSearching] = useState(false);
@@ -438,30 +590,66 @@ export function useBookmarkListManager(
     );
   };
 
-  const handleSubmit = (val: string) => {
-    const trimmed = val.trim();
+  const addBookmarkFromUrl = (rawUrl: string): boolean => {
+    const trimmed = rawUrl.trim();
+    if (!isUrlLike(trimmed)) return false;
     const targetWorkspace =
       currentWorkspace ??
       workspaces.find((ws) => ws.is_default) ??
       workspaces[0];
     if (!targetWorkspace) {
       toast.error("Please create a workspace first");
-      return;
+      return false;
     }
-    if (trimmed.includes(".") || trimmed.startsWith("http")) {
-      const normalizedUrl = trimmed.startsWith("http")
-        ? trimmed
-        : `https://${trimmed}`;
-      setSearchQuery("");
-      mutations.addBookmark(
-        { url: normalizedUrl, workspaceId: targetWorkspace.id },
-        {
-          onSuccess: () => invalidate(),
-          onError: () => toast.error("Failed to add bookmark"),
-        },
-      );
-    }
+    const normalizedUrl = trimmed.startsWith("http")
+      ? trimmed
+      : `https://${trimmed}`;
+    mutations.addBookmark(
+      { url: normalizedUrl, workspaceId: targetWorkspace.id },
+      {
+        onSuccess: () => invalidate(),
+        onError: () => toast.error("Failed to add bookmark"),
+      },
+    );
+    return true;
   };
+
+  const handleSubmit = (val: string) => {
+    if (addBookmarkFromUrl(val)) setSearchQuery("");
+  };
+
+  // ── Paste a URL anywhere to add it ────────────────────────────
+  const addBookmarkFromUrlRef = useRef(addBookmarkFromUrl);
+  useEffect(() => {
+    addBookmarkFromUrlRef.current = addBookmarkFromUrl;
+  });
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Any open dialog keeps native paste semantics; a DOM check also
+      // covers dialogs this hook doesn't own (settings, delete confirms).
+      if (document.querySelector("[role='dialog']")) return;
+      const activeElement = document.activeElement;
+      if (
+        activeElement === inputRef.current ||
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA" ||
+        activeElement?.closest("select, [role='listbox'], [role='menu']") ||
+        (activeElement instanceof HTMLElement &&
+          activeElement.isContentEditable)
+      ) {
+        return;
+      }
+      const text = e.clipboardData?.getData("text/plain").trim() ?? "";
+      // Single-token URLs only: pasted prose containing a dot must not
+      // become a bookmark.
+      if (!text || /\s/.test(text) || !isUrlLike(text)) return;
+      e.preventDefault();
+      addBookmarkFromUrlRef.current(text);
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, []);
 
   // ── Composed values ──────────────────────────────────────────
   const isAllSelected =
@@ -492,7 +680,6 @@ export function useBookmarkListManager(
     inputRef,
     workspaces,
     currentWorkspace,
-    onKeyDown,
     focusedIndex,
     selection: {
       selectedIds,
@@ -521,6 +708,8 @@ export function useBookmarkListManager(
     },
     manageTagsDialogOpen,
     setManageTagsDialogOpen,
+    shortcutsOpen,
+    setShortcutsOpen,
     handleSubmit,
     handleAskAi,
     isAiSearching,

@@ -115,7 +115,7 @@ describe.skipIf(!HAS_DB)(
         .where(
           and(
             eq(bookmarks.user_id, AGENT_USER),
-            like(bookmarks.url, `${PREFIX}%`),
+            like(bookmarks.url, `%${PREFIX}%`),
           ),
         );
       const agentTags = await db
