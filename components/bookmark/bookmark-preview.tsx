@@ -19,6 +19,7 @@ import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 
 import { checkEmbeddable } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import {
   cycleTextSize,
   parseStoredReaderPrefs,
@@ -76,6 +77,8 @@ interface BookmarkPreviewProps {
   onClose: () => void;
 }
 
+type PreviewMode = "original" | "reader";
+
 export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -85,6 +88,8 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
   const [closing, setClosing] = useState(false);
   const [maximized, setMaximized] = useState(false);
   const [reader, setReader] = useState<ReaderPrefs>(READER_DEFAULT);
+  const [mode, setMode] = useState<PreviewMode>("original");
+  const [betaDismissed, setBetaDismissed] = useState(false);
 
   useEffect(() => {
     // oxlint-disable-next-line react/set-state-in-effect -- canonical mounted guard: reader prefs live in localStorage, unknowable during SSR/render; hydrating post-mount prevents a server/client mismatch
@@ -100,22 +105,29 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
   // ADR-0007 resolver: embed/server kinds resolve synchronously; iframe kinds
   // start optimistic and downgrade to the server extraction preview when the
   // embeddability probe says the origin refuses framing. Derivation happens in
-  // render — only the probe result lands in state.
+  // render — only the probe result lands in state. The Reader tab overrides
+  // the resolver's answer: it always renders the server-extracted document.
   const [downgraded, setDowngraded] = useState(false);
   const base = resolvePreview(bookmark);
   const serverSrc = (u: string) =>
     `/api/preview?url=${encodeURIComponent(u)}&theme=${reader.theme}&font=${reader.font}&size=${reader.size}`;
   const resolved: PreviewKind =
-    downgraded || base.kind === "server"
+    mode === "reader" || downgraded || base.kind === "server"
       ? { kind: "server", src: serverSrc(bookmark.url) }
       : base;
 
+  // Load gate: runs per rendered document (mode switches remount the frame
+  // via the src key), so timeout state resets on every tab change.
   useEffect(() => {
+    loadedRef.current = false;
+    setLoaded(false);
+    setTimedOut(false);
     const timer = setTimeout(() => {
       if (!loadedRef.current) setTimedOut(true);
     }, LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resets load state whenever the rendered document changes
+  }, [resolved.src]);
 
   useEffect(() => {
     closeRef.current?.focus({ preventScroll: true });
@@ -209,7 +221,22 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           </div>
         </div>
 
-        {resolved.kind === "server" && (
+        <Tabs
+          value={mode}
+          onValueChange={(v) => {
+            // SAFETY: both TabsTrigger values map 1:1 to PreviewMode; the
+            // cast only re-narrows the string union BaseUI hands back.
+            setMode(v as PreviewMode);
+          }}
+          className="shrink-0"
+        >
+          <TabsList className="h-7">
+            <TabsTrigger value="reader">Reader</TabsTrigger>
+            <TabsTrigger value="original">Original</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {mode === "reader" && (
           <div className="flex shrink-0 items-center gap-0.5 text-muted-foreground">
             <Button
               variant="ghost"
@@ -289,6 +316,28 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           </Button>
         </div>
       </div>
+
+      {mode === "reader" && !betaDismissed && (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-border/60 bg-muted/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+          <span>
+            Reader is still new — some pages may not come through quite right.
+          </span>
+          <a
+            href="mailto:adityaofficial714@gmail.com"
+            className="shrink-0 font-medium text-foreground underline underline-offset-2 hover:text-muted-foreground"
+          >
+            Send feedback
+          </a>
+          <button
+            type="button"
+            onClick={() => setBetaDismissed(true)}
+            aria-label="Dismiss notice"
+            className="shrink-0 rounded-xs p-0.5 hover:bg-foreground/10"
+          >
+            <XIcon className="size-3" />
+          </button>
+        </div>
+      )}
 
       <div className="relative flex-1 bg-muted/30">
         <iframe
