@@ -102,8 +102,10 @@ export async function checkEmbeddable(
   }
 
   try {
+    // GET, not HEAD: some sites (HN) 405 HEAD and omit XFO/CSP on the error
+    // response, hiding their framing policy. The body is never read — only
+    // headers are inspected — so GET costs nothing extra.
     const { response } = await httpFetch(validated.data.url, {
-      method: "HEAD",
       timeout: 5_000,
       retries: 0,
       followRedirect: { maxHops: 5 },
