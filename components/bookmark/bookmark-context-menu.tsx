@@ -1,5 +1,6 @@
 import {
   ArrowClockwiseIcon,
+  ArrowSquareOutIcon,
   CopyIcon,
   FolderOpenIcon,
   PencilIcon,
@@ -78,6 +79,13 @@ export function BookmarkContextMenu({
         <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
           <CopyIcon />
           Copy URL
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+        >
+          <ArrowSquareOutIcon />
+          Open in new tab
         </ContextMenuItem>
 
         <ContextMenuItem onClick={() => onRefetch?.(id)}>
