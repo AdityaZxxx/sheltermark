@@ -1,5 +1,7 @@
 "use client";
 
+import type { RefObject } from "react";
+
 import { BookmarkIcon } from "@phosphor-icons/react";
 
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
@@ -27,6 +29,7 @@ interface BookmarkListProps {
   isSelectionMode: boolean;
   focusedIndex: number;
   onSelect: (id: string) => void;
+  onOpen?: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string) => void;
   onTagClick: (tagId: string) => void;
@@ -40,6 +43,7 @@ interface BookmarkListProps {
   allTags: Tag[];
   refetchingId?: string | null;
   filterKey?: string;
+  scrollRef: RefObject<HTMLDivElement | null>;
 }
 
 export function BookmarkList({
@@ -53,6 +57,7 @@ export function BookmarkList({
   isSelectionMode,
   focusedIndex,
   onSelect,
+  onOpen,
   onDelete,
   onEdit,
   onTagClick,
@@ -66,6 +71,7 @@ export function BookmarkList({
   allTags,
   refetchingId,
   filterKey,
+  scrollRef,
 }: BookmarkListProps) {
   const { exiting } = useExitAnimation(filteredBookmarks, 150, filterKey);
   const isEmpty = filteredBookmarks.length === 0 && exiting.length === 0;
@@ -119,6 +125,7 @@ export function BookmarkList({
       workspaces,
       currentWorkspaceId,
       onSelect,
+      onOpen,
       onDelete,
       onEdit,
       onTagClick,
@@ -158,6 +165,7 @@ export function BookmarkList({
             the previous view's row heights paint one misaligned frame */}
         <VirtualList
           key={view}
+          scrollRef={scrollRef}
           items={filteredBookmarks}
           estimateSize={IsList ? 38 : 100}
           gap={4}

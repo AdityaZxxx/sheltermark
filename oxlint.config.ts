@@ -43,6 +43,15 @@ export default defineConfig({
         "jsx-a11y/prefer-tag-over-role": "off",
       },
     },
+    {
+      // The bookmark preview needs a functional embed: allow-scripts +
+      // allow-same-origin. Embedded sites are cross-origin, so the
+      // same-origin policy still isolates them from Sheltermark.
+      files: ["components/bookmark/bookmark-preview.tsx"],
+      rules: {
+        "react/iframe-missing-sandbox": "off",
+      },
+    },
   ],
   jsPlugins: [
     { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },

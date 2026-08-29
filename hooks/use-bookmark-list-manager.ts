@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { BookmarkEditInput } from "~/lib/schemas/bookmark.schema";
+import type {
+  Bookmark,
+  BookmarkEditInput,
+} from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
@@ -54,6 +57,9 @@ interface BookmarkListManager {
   workspaces: WorkspaceWithCount[];
   currentWorkspace: WorkspaceWithCount | null | undefined;
   focusedIndex: number;
+  previewBookmark: Bookmark | null;
+  openPreview: (id: string) => void;
+  closePreview: () => void;
   selection: {
     selectedIds: string[];
     isSelectionMode: boolean;
@@ -164,6 +170,27 @@ export function useBookmarkListManager(
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
 
+  // ── Preview panel ────────────────────────────────────────────
+  const [previewBookmark, setPreviewBookmark] = useState<Bookmark | null>(null);
+  const previewTriggerRef = useRef<HTMLElement | null>(null);
+
+  const openPreview = (id: string) => {
+    const bookmark = bookmarks.find((b) => b.id === id);
+    if (!bookmark) return;
+    previewTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setPreviewBookmark(bookmark);
+  };
+
+  const closePreview = () => {
+    setPreviewBookmark(null);
+    const trigger = previewTriggerRef.current;
+    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    previewTriggerRef.current = null;
+  };
+
   // ── Inline delete ────────────────────────────────────────────
   const executeDelete = (ids: string[]) => {
     mutations.deleteBookmarks({ ids });
@@ -250,6 +277,9 @@ export function useBookmarkListManager(
   const handleDeleteTriggerRef = useRef(handleDeleteTrigger);
   const handleMoveTriggerRef = useRef(handleMoveTrigger);
   const handleBulkMoveTriggerRef = useRef(handleBulkMoveTrigger);
+  const previewBookmarkRef = useRef(previewBookmark);
+  const openPreviewRef = useRef(openPreview);
+  const closePreviewRef = useRef(closePreview);
 
   // Latest-ref pattern: the keydown effect below mounts once and reads
   // changing values through these refs at event time.
@@ -270,11 +300,20 @@ export function useBookmarkListManager(
     handleDeleteTriggerRef.current = handleDeleteTrigger;
     handleMoveTriggerRef.current = handleMoveTrigger;
     handleBulkMoveTriggerRef.current = handleBulkMoveTrigger;
+    previewBookmarkRef.current = previewBookmark;
+    openPreviewRef.current = openPreview;
+    closePreviewRef.current = closePreview;
   });
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (editDialogOpenRef.current || moveDialogOpenRef.current) return;
+
+      if (e.key === "Escape" && previewBookmarkRef.current) {
+        e.preventDefault();
+        closePreviewRef.current();
+        return;
+      }
 
       const activeElement = document.activeElement;
       const isInputFocused =
@@ -464,7 +503,7 @@ export function useBookmarkListManager(
         if (!item) return;
         e.preventDefault();
         if (isSelectionModeRef.current) toggleSelectRef.current(item.id);
-        else window.open(item.url, "_blank", "noopener,noreferrer");
+        else openPreviewRef.current(item.id);
       }
     };
 
@@ -681,6 +720,9 @@ export function useBookmarkListManager(
     workspaces,
     currentWorkspace,
     focusedIndex,
+    previewBookmark,
+    openPreview,
+    closePreview,
     selection: {
       selectedIds,
       isSelectionMode,

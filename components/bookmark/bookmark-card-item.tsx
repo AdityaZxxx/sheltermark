@@ -33,6 +33,7 @@ interface BookmarkItemProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string | undefined;
   onSelect?: ((id: string) => void) | undefined;
+  onOpen?: ((id: string) => void) | undefined;
   onDelete?: ((id: string) => void) | undefined;
   onEdit?: ((id: string) => void) | undefined;
   onTagClick?: ((tagId: string) => void) | undefined;
@@ -67,6 +68,7 @@ export function BookmarkCardItem({
   workspaces = [],
   currentWorkspaceId,
   onSelect,
+  onOpen,
   onDelete,
   onEdit,
   onMove,
@@ -103,6 +105,8 @@ export function BookmarkCardItem({
       onClick={() => {
         if (isSelectionMode) {
           onSelect?.(id);
+        } else if (onOpen) {
+          onOpen(id);
         } else {
           window.open(url, "_blank", "noopener,noreferrer");
         }

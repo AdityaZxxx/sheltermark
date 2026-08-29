@@ -1,4 +1,5 @@
 import { isAlwaysAliveDomain } from "~/lib/link-health/domains";
+import { extractYouTubeVideoId } from "~/lib/preview/embeds";
 import { httpFetch, readResponseBody } from "~/lib/utils/http-fetch";
 
 import type { Metadata } from "./types";
@@ -35,27 +36,6 @@ function detectPlatform(hostname: string): Platform {
   )
     return "js-heavy";
   return "generic";
-}
-
-function extractYouTubeVideoId(url: string): string | null {
-  try {
-    const urlObj = new URL(url);
-    if (
-      urlObj.hostname === "youtu.be" ||
-      urlObj.hostname.endsWith(".youtu.be")
-    ) {
-      return urlObj.pathname.slice(1).split("/")[0] || null;
-    }
-    if (urlObj.pathname === "/watch") return urlObj.searchParams.get("v");
-    const embedMatch = urlObj.pathname.match(
-      /^\/(embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/,
-    );
-    if (embedMatch) return embedMatch[2] ?? null;
-    const vMatch = urlObj.pathname.match(/^\/([a-zA-Z0-9_-]{11})$/);
-    return vMatch?.[1] ?? null;
-  } catch {
-    return null;
-  }
 }
 
 function extractXArticleId(url: string): string | null {

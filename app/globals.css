@@ -128,6 +128,15 @@
 
 /* Bookmark Loading Animations  */
 
+[data-virtual-scroll] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[data-virtual-scroll]::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes matrix-dot-pulse {
   0%,
   100% {

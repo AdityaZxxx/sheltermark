@@ -33,7 +33,16 @@ const shortcuts: Shortcut[] = [
   { key: "↑ ↓", label: "Navigate", description: "← → in gallery view" },
   { key: "Home End", label: "Jump", description: "First / last bookmark" },
   { key: "PgUp PgDn", label: "Page", description: "Jump a page at a time" },
-  { key: "Enter", label: "Open", description: "Open bookmark in new tab" },
+  {
+    key: "Enter",
+    label: "Preview",
+    description: "Open bookmark in the preview panel",
+  },
+  {
+    key: `${mod}+↵`,
+    label: "New tab",
+    description: "Open bookmark in a new tab",
+  },
   {
     key: "Shift+↓",
     label: "Extend selection",
@@ -42,7 +51,11 @@ const shortcuts: Shortcut[] = [
   { key: "X", label: "Select", description: "Toggle focused bookmark" },
   { key: "Space", label: "Toggle", description: "Toggle selection" },
   { key: `${mod}+A`, label: "Select All", description: "Select all bookmarks" },
-  { key: "Esc", label: "Cancel", description: "Exit selection mode" },
+  {
+    key: "Esc",
+    label: "Cancel",
+    description: "Exit selection mode or close preview",
+  },
   { key: `${mod}+E`, label: "Rename", description: "Edit bookmark name" },
   { key: "M", label: "Move", description: "Move to another workspace" },
   { key: `${mod}+C`, label: "Copy", description: "Copy bookmark URL" },

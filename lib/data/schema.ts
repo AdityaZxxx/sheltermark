@@ -320,3 +320,42 @@ export const auditEvents = pgTable(
     ),
   ],
 );
+
+// Server-side extracted content cache for the inline preview (ADR-0007).
+// Global (not per-user): a sanitized article is identical for every reader, so
+// the row is keyed by the normalized URL. Service-role only — never exposed to
+// anon/authenticated roles (no RLS policies).
+export const bookmarkExtractions = pgTable(
+  "bookmark_extractions",
+  {
+    id: uuid()
+      .primaryKey()
+      .notNull()
+      .default(sql`gen_random_uuid()`),
+    url_hash: text().notNull(),
+    kind: text().notNull().default("extract"),
+    url: text().notNull(),
+    status: text().notNull(),
+    title: text(),
+    byline: text(),
+    site_name: text(),
+    excerpt: text(),
+    html: text(),
+    length: integer(),
+    fetched_at: isoTimestamptz()
+      .notNull()
+      .default(sql`now()`),
+    created_at: isoTimestamptz()
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    uniqueIndex("bookmark_extractions_kind_url_hash_key").on(
+      table.kind,
+      table.url_hash,
+    ),
+    index("idx_bookmark_extractions_fetched_at").on(table.fetched_at),
+    check("bookmark_extractions_status_check", sql`status IN ('ok', 'empty')`),
+    check("bookmark_extractions_kind_check", sql`kind IN ('extract', 'proxy')`),
+  ],
+);

@@ -69,6 +69,10 @@ export const bookmarkRestoreSchema = z.object({
   newWorkspaceName: workspaceNameSchema.optional(),
 });
 
+export const bookmarkEmbedCheckSchema = z.object({
+  url: z.url("Invalid URL format"),
+});
+
 const bookmarkPreviewSchema = z.object({
   id: z.string(),
   url: z.string(),
@@ -89,6 +93,7 @@ const workspaceWithBookmarksSchema = z.object({
 
 export type Bookmark = typeof bookmarks.$inferSelect;
 export type BookmarkCreateInput = z.infer<typeof bookmarkCreateSchema>;
+export type BookmarkEmbedCheckInput = z.infer<typeof bookmarkEmbedCheckSchema>;
 export type BookmarkDeleteInput = z.infer<typeof bookmarkDeleteSchema>;
 export type BookmarkRestoreInput = z.infer<typeof bookmarkRestoreSchema>;
 export type BookmarkMoveInput = z.infer<typeof bookmarkMoveSchema>;

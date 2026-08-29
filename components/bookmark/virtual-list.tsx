@@ -1,7 +1,8 @@
 "use client";
 
+import type { ReactNode, RefObject } from "react";
+
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 
 interface VirtualListProps<T> {
   items: T[];
@@ -9,6 +10,7 @@ interface VirtualListProps<T> {
   renderItem: (item: T, index: number) => ReactNode;
   overscan?: number;
   gap?: number;
+  scrollRef: RefObject<HTMLDivElement | null>;
 }
 
 export function VirtualList<T extends { id: string }>({
@@ -17,37 +19,16 @@ export function VirtualList<T extends { id: string }>({
   renderItem,
   overscan = 5,
   gap = 0,
+  scrollRef,
 }: VirtualListProps<T>) {
   // @tanstack/react-virtual mutates options during render internally, which
   // the React Compiler cannot memoize — opt this component out explicitly.
   "use no memo";
-  const parentRef = useRef<HTMLDivElement>(null);
-  const [listHeight, setListHeight] = useState(600);
-
-  useLayoutEffect(() => {
-    function update() {
-      if (parentRef.current) {
-        const rect = parentRef.current.getBoundingClientRect();
-        setListHeight(window.innerHeight - rect.top);
-      }
-    }
-    update();
-    window.addEventListener("resize", update);
-    const observer = new ResizeObserver(update);
-    const parent = parentRef.current?.parentElement;
-    if (parent) {
-      observer.observe(parent);
-    }
-    return () => {
-      window.removeEventListener("resize", update);
-      observer.disconnect();
-    };
-  }, []);
 
   // oxlint-disable-next-line react/incompatible-library -- @tanstack/react-virtual mutates options during render; component is opted out of the compiler via "use no memo"
   const virtualizer = useVirtualizer({
     count: items.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollRef.current,
     estimateSize: () => estimateSize,
     measureElement: (el) => {
       const h = el.getBoundingClientRect().height;
@@ -61,48 +42,32 @@ export function VirtualList<T extends { id: string }>({
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <>
-      <style>{`[data-virtual-scroll]::-webkit-scrollbar { display: none; }`}</style>
-      <div
-        ref={parentRef}
-        data-virtual-scroll
-        className="scroll-fade"
-        style={{
-          height: listHeight > 0 ? `${listHeight}px` : "auto",
-          overflowY: "auto",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-          contain: "layout paint style",
-        }}
-      >
-        <div
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            position: "relative",
-          }}
-        >
-          {virtualItems.map((virtualItem) => {
-            const item = items[virtualItem.index];
-            if (!item) return null;
-            return (
-              <div
-                key={virtualItem.key}
-                data-index={virtualItem.index}
-                ref={virtualizer.measureElement}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
-                {renderItem(item, virtualItem.index)}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </>
+    <div
+      style={{
+        height: `${virtualizer.getTotalSize()}px`,
+        position: "relative",
+      }}
+    >
+      {virtualItems.map((virtualItem) => {
+        const item = items[virtualItem.index];
+        if (!item) return null;
+        return (
+          <div
+            key={virtualItem.key}
+            data-index={virtualItem.index}
+            ref={virtualizer.measureElement}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${virtualItem.start}px)`,
+            }}
+          >
+            {renderItem(item, virtualItem.index)}
+          </div>
+        );
+      })}
+    </div>
   );
 }
