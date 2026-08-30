@@ -15,7 +15,7 @@ import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { generateSearchTerms } from "~/lib/ai/interpret-search-query";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
 import { getUserTags, upsertTag } from "~/lib/data/repositories/tag.repository";
-import { bookmarkTags, bookmarks, workspaces } from "~/lib/data/schema";
+import { bookmarkTags, bookmarks, tags, workspaces } from "~/lib/data/schema";
 import { fetchMetadata } from "~/lib/metadata/pipeline";
 import {
   type BookmarkDeleteInput,
@@ -266,6 +266,15 @@ type BatchBookmarkInput = {
   title: string;
   favicon_url?: string | null;
   og_image_url?: string | null;
+  note?: string | null;
+  /** Tag names to create-and-link to each imported bookmark. */
+  tags?: string[];
+};
+
+type BatchInsertOptions = {
+  duplicateStrategy?: "skip" | "replace";
+  /** Tag-links only, for backup-restore through the import pipeline. */
+  linkTags?: boolean;
 };
 
 export async function batchInsertBookmarks(
@@ -273,7 +282,7 @@ export async function batchInsertBookmarks(
   userId: string,
   workspaceId: string | null,
   bookmarksToInsert: BatchBookmarkInput[],
-  options?: { duplicateStrategy?: "skip" | "replace" },
+  options?: BatchInsertOptions,
 ): Promise<
   ActionResult<{ imported: number; skipped: number; errors: string[] }>
 > {
@@ -281,6 +290,7 @@ export async function batchInsertBookmarks(
   const toInsert: BatchBookmarkInput[] = [];
   const replaceUrls: string[] = [];
   const strategy = options?.duplicateStrategy ?? "skip";
+  const linkTags = options?.linkTags ?? false;
 
   const existingRows = await db
     .select({ url: bookmarks.url })
@@ -322,6 +332,8 @@ export async function batchInsertBookmarks(
       title: bookmark.title || bookmark.url,
       favicon_url: bookmark.favicon_url || null,
       og_image_url: bookmark.og_image_url || null,
+      note: bookmark.note || null,
+      tags: bookmark.tags,
     });
   }
 
@@ -362,31 +374,47 @@ export async function batchInsertBookmarks(
 
   const batchResults = await Promise.allSettled(
     batches.map(({ batch }) =>
-      db.insert(bookmarks).values(
-        batch.map((bm) => ({
-          user_id: userId,
-          workspace_id: workspaceId,
-          url: bm.url,
-          title: bm.title,
-          favicon_url: bm.favicon_url || null,
-          og_image_url: bm.og_image_url || null,
-        })),
-      ),
+      db
+        .insert(bookmarks)
+        .values(
+          batch.map((bm) => ({
+            user_id: userId,
+            workspace_id: workspaceId,
+            url: bm.url,
+            title: bm.title,
+            favicon_url: bm.favicon_url || null,
+            og_image_url: bm.og_image_url || null,
+            note: bm.note || null,
+          })),
+        )
+        .returning({ id: bookmarks.id, url: bookmarks.url }),
     ),
   );
 
   let imported = 0;
+  const insertedRows: { id: string; url: string }[] = [];
   for (let i = 0; i < batchResults.length; i++) {
     const result = batchResults[i];
     if (!result) continue;
     const batchLabel = i + 1;
     if (result.status === "fulfilled") {
       imported += batches[i]?.batch.length ?? 0;
+      if (linkTags) insertedRows.push(...result.value);
     } else {
       errors.push(
         `Batch ${batchLabel}: ${result.reason?.message ?? "Insert failed"}`,
       );
     }
+  }
+
+  if (linkTags && insertedRows.length > 0) {
+    const tagErrors = await linkImportedBookmarkTags(
+      db,
+      userId,
+      insertedRows,
+      toInsert,
+    );
+    errors.push(...tagErrors);
   }
 
   return {
@@ -397,6 +425,77 @@ export async function batchInsertBookmarks(
       errors,
     },
   };
+}
+
+/**
+ * Tag links for restore: resolve-or-create each tag by name, then link by
+ * matching the inserted row's URL to the source bookmark's URL. URL matching
+ * (not positional order) survives skipped duplicates and batch failures.
+ */
+async function linkImportedBookmarkTags(
+  db: DrizzleDb,
+  userId: string,
+  insertedRows: { id: string; url: string }[],
+  sourceBookmarks: BatchBookmarkInput[],
+): Promise<string[]> {
+  const errors: string[] = [];
+  const tagNames = new Set<string>();
+  for (const bm of sourceBookmarks) {
+    for (const name of bm.tags ?? []) {
+      const trimmed = name.trim();
+      if (trimmed) tagNames.add(trimmed);
+    }
+  }
+  if (tagNames.size === 0) return errors;
+
+  const tagIdsByName = new Map<string, string>();
+  for (const name of tagNames) {
+    const upserted = await upsertTag(db, userId, name);
+    if (!upserted.success) {
+      errors.push("Failed to restore tags");
+      return errors;
+    }
+    tagIdsByName.set(name, upserted.data.id);
+  }
+
+  const tagsByUrl = new Map<string, string[]>();
+  for (const bm of sourceBookmarks) {
+    const names = (bm.tags ?? [])
+      .map((rawName) => rawName.trim())
+      .filter((name) => name && tagIdsByName.has(name));
+    if (names.length === 0) continue;
+    const existing = tagsByUrl.get(bm.url);
+    if (existing) {
+      existing.push(...names);
+    } else {
+      tagsByUrl.set(bm.url, [...names]);
+    }
+  }
+
+  const linkRows: { bookmark_id: string; tag_id: string }[] = [];
+  const seen = new Set<string>();
+  for (const row of insertedRows) {
+    const names = tagsByUrl.get(row.url);
+    if (!names) continue;
+    for (const name of names) {
+      const tagId = tagIdsByName.get(name);
+      if (!tagId) continue;
+      const key = `${row.id}:${tagId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      linkRows.push({ bookmark_id: row.id, tag_id: tagId });
+    }
+  }
+
+  if (linkRows.length > 0) {
+    try {
+      await db.insert(bookmarkTags).values(linkRows).onConflictDoNothing();
+    } catch (cause) {
+      logger.error("Backup restore tag linking failed", { error: cause });
+      errors.push("Failed to restore tags");
+    }
+  }
+  return errors;
 }
 
 export async function permanentDeleteBookmarks(
@@ -561,7 +660,7 @@ export async function updateBookmarkFields(
     return { success: false, error: invalidData("Bookmark", validated.error) };
   }
 
-  const { id, title, note, tags } = validated.data;
+  const { id, title, note, tags: tagNames } = validated.data;
 
   try {
     await db
@@ -572,7 +671,12 @@ export async function updateBookmarkFields(
     return dbError("Bookmark", cause);
   }
 
-  const tagResult = await resolveAndReplaceBookmarkTags(db, userId, id, tags);
+  const tagResult = await resolveAndReplaceBookmarkTags(
+    db,
+    userId,
+    id,
+    tagNames,
+  );
   if (!tagResult.success) return tagResult;
 
   return { success: true, data: tagResult.data };
@@ -796,6 +900,7 @@ type BookmarkWithWorkspace = {
   title: string | null;
   favicon_url: string | null;
   og_image_url: string | null;
+  note: string | null;
   created_at: string;
   workspace_id: string | null;
   workspaces: { id: string; name: string }[] | null;
@@ -839,9 +944,83 @@ export async function exportBookmarks(
         title: bm.title,
         favicon_url: bm.favicon_url,
         og_image_url: bm.og_image_url,
+        note: bm.note,
         created_at: bm.created_at,
         workspace_id: bm.workspace_id,
         workspaces: [{ id: row.workspace.id, name: row.workspace.name }],
+      };
+    });
+    return { success: true, data };
+  } catch (cause) {
+    return dbError("Bookmark", cause);
+  }
+}
+
+/** Backup read side: bookmarks with workspace names AND tag names attached. */
+export async function exportBookmarksForBackup(
+  db: DrizzleDb,
+  userId: string,
+): Promise<ActionResult<BookmarkWithWorkspace[]>> {
+  try {
+    // Unlike JSON export (innerJoin, historical), backup must capture EVERY
+    // user-owned bookmark: leftJoin so workspace-less rows are included
+    // (they restore into a workspace by name below).
+    const rows = await db
+      .select({
+        bookmark: bookmarks,
+        workspace: { id: workspaces.id, name: workspaces.name },
+      })
+      .from(bookmarks)
+      .leftJoin(workspaces, eq(workspaces.id, bookmarks.workspace_id))
+      .where(and(eq(bookmarks.user_id, userId), isNull(bookmarks.deleted_at)))
+      .orderBy(
+        sql`${bookmarks.updated_at} desc nulls last, ${bookmarks.created_at} desc`,
+      );
+
+    const bookmarkIds = rows.map((row) => row.bookmark.id);
+
+    const linkRows =
+      bookmarkIds.length === 0
+        ? []
+        : await db
+            .select({
+              bookmark_id: bookmarkTags.bookmark_id,
+              tag_name: tags.name,
+            })
+            .from(bookmarkTags)
+            .innerJoin(tags, eq(tags.id, bookmarkTags.tag_id))
+            .where(
+              and(
+                eq(tags.user_id, userId),
+                inArray(bookmarkTags.bookmark_id, bookmarkIds),
+              ),
+            );
+
+    const tagsByBookmark = new Map<string, string[]>();
+    for (const link of linkRows) {
+      const list = tagsByBookmark.get(link.bookmark_id);
+      if (list) {
+        list.push(link.tag_name);
+      } else {
+        tagsByBookmark.set(link.bookmark_id, [link.tag_name]);
+      }
+    }
+
+    const data: BookmarkWithWorkspace[] = rows.map((row) => {
+      const bm = row.bookmark;
+      return {
+        id: bm.id,
+        url: bm.url,
+        title: bm.title,
+        favicon_url: bm.favicon_url,
+        og_image_url: bm.og_image_url,
+        note: bm.note,
+        created_at: bm.created_at,
+        workspace_id: bm.workspace_id,
+        workspaces: row.workspace?.id
+          ? [{ id: row.workspace.id, name: row.workspace.name }]
+          : null,
+        tags: tagsByBookmark.get(bm.id) ?? [],
       };
     });
     return { success: true, data };

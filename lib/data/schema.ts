@@ -321,6 +321,53 @@ export const auditEvents = pgTable(
   ],
 );
 
+/**
+ * Cloud Backup v1 (ADR-0008): one OAuth connection per user per provider.
+ * Tokens are plaintext under RLS — noted tradeoff, see the ADR. Drizzle
+ * (service role) bypasses RLS, so every repository query here enforces
+ * user_id ownership explicitly.
+ */
+export const cloudConnections = pgTable(
+  "cloud_connections",
+  {
+    id: uuid()
+      .primaryKey()
+      .notNull()
+      .default(sql`uuid_generate_v4()`),
+    user_id: uuid()
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    provider: text().notNull(),
+    account_email: text(),
+    access_token: text().notNull(),
+    refresh_token: text(),
+    token_expires_at: isoTimestamptz(),
+    last_backup_at: isoTimestamptz(),
+    last_backup_status: text().$type<"success" | "failed">(),
+    created_at: isoTimestamptz()
+      .notNull()
+      .default(sql`now()`),
+    updated_at: isoTimestamptz()
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    index("idx_cloud_connections_user_id").on(table.user_id),
+    uniqueIndex("cloud_connections_user_provider_key").on(
+      table.user_id,
+      table.provider,
+    ),
+    check(
+      "cloud_connections_provider_check",
+      sql`provider IN ('google_drive', 'dropbox', 'onedrive')`,
+    ),
+    check(
+      "cloud_connections_last_backup_status_check",
+      sql`last_backup_status IN ('success', 'failed')`,
+    ),
+  ],
+);
+
 // Server-side extracted content cache for the inline preview (ADR-0007).
 // Global (not per-user): a sanitized article is identical for every reader, so
 // the row is keyed by the normalized URL. Service-role only — never exposed to

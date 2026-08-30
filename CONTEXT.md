@@ -95,6 +95,24 @@ _Avoid_: Duplicate mode, conflict resolution
 A dry-run showing total bookmarks, valid count, duplicate count, and workspace distribution before committing. For browser imports, also shows a folder tree so the user can deselect folders they don't want.
 _Avoid_: Import summary, pre-check
 
+### Cloud Backup
+
+**Cloud Backup**:
+A one-click copy of the user's bookmarks pushed into their own cloud storage (Google Drive, Dropbox, or OneDrive), stored under `Sheltermark/Backups/` in the canonical JSON export format. Complements Import/Export — same data, different delivery. Manual only in v1: no scheduler, no sync.
+_Avoid_: Sync, cloud sync, backup job
+
+**Cloud Connection**:
+The per-user, per-provider OAuth authorization for Cloud Backup. One per provider; connecting another provider replaces it. Holds access/refresh tokens plus last backup status. Owner-only (RLS).
+_Avoid_: Integration, linked account
+
+**Backup File**:
+One JSON file per calendar day (`sheltermark-backup-YYYY-MM-DD.json`) in the `Sheltermark/Backups/` folder of the connected provider. Same shape as the JSON export; re-running a backup the same day overwrites the file.
+_Avoid_: Snapshot, version
+
+**Restore**:
+Downloading a Backup File and running it through the existing import pipeline behind a preview/confirmation step. Duplicates follow the Import Strategy vocabulary; bookmarks land in same-named workspaces (created when missing).
+_Avoid_: Migration, sync back, rollback
+
 **Browser Bookmark Export**:
 The `bookmarks.html` file Chrome, Firefox, Edge, and Safari produce when the user clicks "Export bookmarks". Netscape Bookmark File format. Parsed client-side and converted into the same `ParsedBookmark[]` shape as Sheltermark JSON/CSV imports. Folder hierarchy is preserved as `folderPath` on each candidate for preview filtering only — never persisted.
 _Avoid_: Native bookmark format, browser bookmarks (when used as a noun without the file context)

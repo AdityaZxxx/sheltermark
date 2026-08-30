@@ -461,6 +461,52 @@ describe.skipIf(!HAS_DB)(
         }
       });
 
+      it("batchInsertBookmarks with linkTags restores notes and tags", async () => {
+        const db = getDb();
+        const url = prefixUrl();
+        const tagName = `${PREFIX}restore-tag`;
+
+        const result = await batchInsertBookmarks(
+          db,
+          AGENT_USER,
+          agentDefaultWsId,
+          [
+            {
+              url,
+              title: `${PREFIX}restore`,
+              note: "restore note",
+              tags: [tagName],
+            },
+          ],
+          { linkTags: true },
+        );
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.imported).toBe(1);
+          expect(result.data.errors).toEqual([]);
+        }
+
+        // Note survived the insert.
+        const rows = await db
+          .select({ note: bookmarks.note })
+          .from(bookmarks)
+          .where(
+            and(eq(bookmarks.url, url), eq(bookmarks.user_id, AGENT_USER)),
+          );
+        expect(rows[0]?.note).toBe("restore note");
+
+        // Tag was created and linked.
+        const links = await db
+          .select({ name: tags.name })
+          .from(bookmarkTags)
+          .innerJoin(tags, eq(tags.id, bookmarkTags.tag_id))
+          .innerJoin(bookmarks, eq(bookmarks.id, bookmarkTags.bookmark_id))
+          .where(
+            and(eq(bookmarks.url, url), eq(bookmarks.user_id, AGENT_USER)),
+          );
+        expect(links.map((l) => l.name)).toEqual([tagName]);
+      });
+
       it("exportBookmarks includes own workspaced bookmarks", async () => {
         const db = getDb();
         const inserted = await insertBookmark(

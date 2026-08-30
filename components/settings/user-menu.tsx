@@ -12,7 +12,8 @@ import {
   UserCircleIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { logout } from "~/app/action/logout.action";
 import { FeedManager } from "~/components/feed/feed-manager";
@@ -35,11 +36,65 @@ interface UserMenuProps {
   user: User;
 }
 
+type BackupOutcome = "ok" | "denied" | "failed" | "invalid" | "unconfigured";
+
+/**
+ * Read the OAuth round-trip outcome from the URL once, at mount. Returns
+ * null on normal loads (or during SSR, where window is unavailable) —
+ * Settings stays closed in that case.
+ */
+function readBackupOutcome(): BackupOutcome | null {
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- standard Next.js SSR guard
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("settings") !== "backup") return null;
+  const raw = params.get("backup");
+  if (
+    raw === "ok" ||
+    raw === "denied" ||
+    raw === "failed" ||
+    raw === "invalid" ||
+    raw === "unconfigured"
+  ) {
+    return raw;
+  }
+  return "ok";
+}
+
 export function UserMenu({ user }: UserMenuProps) {
   const [isPending, startTransition] = useTransition();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [backupOutcome] = useState(readBackupOutcome);
+  // Open Settings automatically only when the OAuth round-trip returns.
+  const [settingsOpen, setSettingsOpen] = useState(backupOutcome !== null);
   const [feedsOpen, setFeedsOpen] = useState(false);
   const { profile } = useProfile();
+
+  // Cloud Backup OAuth round-trip lands on /dashboard with ?settings=backup
+  // (+ &backup=ok|denied|…). State is derived at mount; this effect only
+  // clears the consumed params and reports the outcome.
+  useEffect(() => {
+    if (backupOutcome === null) return;
+    const params = new URLSearchParams(window.location.search);
+    params.delete("settings");
+    params.delete("backup");
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}`,
+    );
+    if (backupOutcome === "ok") {
+      toast.success("Cloud backup connected");
+    } else {
+      const messages = {
+        denied: "Cloud backup was not authorized.",
+        failed: "Could not connect the provider. Try again.",
+        invalid: "The authorization link expired. Try again.",
+        unconfigured: "This provider is not configured yet.",
+      } as const;
+      toast.error(messages[backupOutcome] ?? "Cloud backup failed.");
+    }
+  }, [backupOutcome]);
 
   if (!profile) {
     return null;

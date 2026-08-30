@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting.action";
 import { AvatarUpload } from "~/components/settings/avatar-upload";
+import { CloudBackupSection } from "~/components/settings/cloud-backup-section";
 import { Button } from "~/components/ui/button";
 import {
   Field,
@@ -301,6 +302,10 @@ export function SettingsGeneralTab({
             </Button>
           </div>
         </FieldSet>
+
+        <FieldSeparator />
+
+        <CloudBackupSection />
 
         <FieldSeparator />
 

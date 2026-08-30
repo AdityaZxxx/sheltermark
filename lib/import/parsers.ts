@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { parseCSVLine } from "~/lib/import/csv";
 import { parseNetscapeHTML } from "~/lib/import/netscape";
 
@@ -7,6 +9,10 @@ export interface ParsedBookmark {
   title: string;
   favicon_url?: string;
   og_image_url?: string;
+  /** Free-form user note attached to the bookmark. */
+  note?: string;
+  /** Tag names attached to the bookmark via the many-to-many junction. */
+  tags?: string[];
   workspaceName?: string;
   workspaceId?: string;
   /**
@@ -22,6 +28,8 @@ export type ParseResult =
   | { success: false; error: string };
 
 export type ImportFileType = "json" | "csv" | "netscape";
+
+const tagNamesSchema = z.array(z.string()).catch([]);
 
 export function parseImportFile(
   content: string,
@@ -49,6 +57,11 @@ function parseJSON(content: string): ParseResult {
               title: bm.title || "",
               favicon_url: bm.faviconUrl || bm.favicon_url || null,
               og_image_url: bm.ogImageUrl || bm.og_image_url || null,
+              note: bm.note || null,
+              tags:
+                bm.tags === undefined
+                  ? undefined
+                  : tagNamesSchema.parse(bm.tags),
               workspaceName: wsName,
               workspaceId: wsId,
             });
@@ -63,6 +76,9 @@ function parseJSON(content: string): ParseResult {
           title: bm.title || "",
           favicon_url: bm.faviconUrl || bm.favicon_url || null,
           og_image_url: bm.ogImageUrl || bm.og_image_url || null,
+          note: bm.note || null,
+          tags:
+            bm.tags === undefined ? undefined : tagNamesSchema.parse(bm.tags),
         });
       }
     }
