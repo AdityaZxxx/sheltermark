@@ -89,9 +89,6 @@
     ],
     "*": "oxfmt --no-error-on-unmatched-pattern"
   },
-  "engines": {
-    "node": "24.x"
-  },
   "ignoreScripts": [
     "sharp",
     "unrs-resolver"
