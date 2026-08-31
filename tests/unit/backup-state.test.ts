@@ -6,13 +6,18 @@ import { signState, verifyState } from "~/lib/backup/oauth";
 const USER_A = "11111111-1111-4111-8111-111111111111";
 const USER_B = "22222222-2222-4222-8222-222222222222";
 
+// The HMAC is keyed off the service secret; CI has no secrets, so the
+// suite self-skips there and runs wherever the env exists (local dev,
+// environments with SUPABASE_SERVICE_ROLE_KEY set).
+const HAS_SECRET = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 function resign(payload: string): string {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret) throw new Error("test requires SUPABASE_SERVICE_ROLE_KEY");
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-describe("backup OAuth state", () => {
+describe.skipIf(!HAS_SECRET)("backup OAuth state", () => {
   it("round-trips a signed provider for the same user", () => {
     for (const provider of ["google_drive", "dropbox", "onedrive"] as const) {
       expect(verifyState(signState(provider, USER_A), USER_A)).toBe(provider);
