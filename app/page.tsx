@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { FaqSection } from "~/components/landing/faq-section";
 import { Hero } from "~/components/landing/hero";
 import { Reveal } from "~/components/landing/lib";
 import { StorySections } from "~/components/landing/story-sections";
@@ -42,6 +43,8 @@ export default function LandingPage() {
         <Hero />
 
         <StorySections />
+
+        <FaqSection />
 
         <section className="border-t border-border">
           <div className="mx-auto max-w-6xl px-6 py-24">
