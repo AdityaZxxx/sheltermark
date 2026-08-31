@@ -173,7 +173,7 @@ function anchorToBookmark(
   try {
     url = new URL(rawHref).toString();
   } catch {
-    return null; // malformed URL
+    return null;
   }
 
   // Reject unsafe schemes — same policy as the metadata pipeline.

@@ -26,11 +26,9 @@ interface PreviewResolver {
   resolve: (bookmark: Bookmark) => PreviewKind | null;
 }
 
-// ---------------------------------------------------------------------------
 // Strategy 1: provider embeds — pure client-side URL transformation into the
 // provider's officially frameable embed endpoint. No server fetch; the embed
 // host is a hard-coded provider origin, not user input.
-// ---------------------------------------------------------------------------
 
 function isYouTubeHost(hostname: string): boolean {
   return (
@@ -81,12 +79,10 @@ const providerEmbed: PreviewResolver = {
   },
 };
 
-// ---------------------------------------------------------------------------
 // Strategy 2.5: native proxy — GitHub-only full-page re-serve (ADR-0007).
 // Runs before platform strategies because the proxy renders the real page
 // rather than an extracted card. Any github.com/gist.github.com URL renders
 // natively; the document transform is page-agnostic.
-// ---------------------------------------------------------------------------
 
 const nativeProxy: PreviewResolver = {
   resolve: (bookmark) => {
@@ -111,13 +107,11 @@ const nativeProxy: PreviewResolver = {
   },
 };
 
-// ---------------------------------------------------------------------------
 // Strategy 3: platform strategies — framing-hostile sites with structured
 // data sources. Matched by hostname before any embeddability probe; the
 // server route picks the adapter internally. Predicates are the adapters'
 // own exported `matches` logic — one definition of "an HN item / X status /
 // Reddit thread" per platform, shared by resolver and route.
-// ---------------------------------------------------------------------------
 
 const platformStrategy: PreviewResolver = {
   resolve: (bookmark) => {

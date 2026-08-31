@@ -35,7 +35,6 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
   const { subscribeToFeed, deleteFeed, refreshFeed, isSubscribing } = feedsHook;
   const { workspaces } = useWorkspaces();
   const [url, setUrl] = useState("");
-  // Replace workspaceId with a selectedWorkspace object to reflect UI state without triggering extra renders
   const [selectedWorkspace, setSelectedWorkspace] = useState<{
     id: string;
     name: string;
@@ -52,7 +51,6 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
       setSelectedWorkspace(null);
     }
   };
-  // Use the selectedWorkspace state for rendering and UX
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -133,7 +133,6 @@ export function useBookmarkListManager(
   const { updateBookmarkFields, isUpdatingBookmarkFields, refetchingId } =
     mutations;
 
-  // ── Selection ────────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
 
@@ -159,7 +158,6 @@ export function useBookmarkListManager(
 
   const clearSelectionOnly = () => setSelectedIds([]);
 
-  // ── Dialog state ─────────────────────────────────────────────
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [activeBookmark, setActiveBookmark] = useState<ActiveBookmark | null>(
     null,
@@ -170,7 +168,6 @@ export function useBookmarkListManager(
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
 
-  // ── Preview panel ────────────────────────────────────────────
   const [previewBookmark, setPreviewBookmark] = useState<Bookmark | null>(null);
   const previewTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -191,7 +188,6 @@ export function useBookmarkListManager(
     previewTriggerRef.current = null;
   };
 
-  // ── Inline delete ────────────────────────────────────────────
   const executeDelete = (ids: string[]) => {
     mutations.deleteBookmarks({ ids });
     if (ids.length > 0) clearSelection();
@@ -210,7 +206,6 @@ export function useBookmarkListManager(
 
   const handleBulkDeleteTrigger = () => executeDelete(selectedIds);
 
-  // ── Edit dialog ──────────────────────────────────────────────
   const resetEdit = () => {
     setActiveBookmark(null);
     setEditDialogOpen(false);
@@ -236,7 +231,6 @@ export function useBookmarkListManager(
     setEditDialogOpen(true);
   };
 
-  // ── Move dialog ──────────────────────────────────────────────
   const handleMoveTrigger = (id: string) => {
     lastTriggerRef.current =
       document.activeElement instanceof HTMLElement
@@ -256,11 +250,9 @@ export function useBookmarkListManager(
     setMoveDialogOpen(false);
   };
 
-  // ── Keyboard navigation ─────────────────────────────────────
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ── Global shortcuts (window-level) ──────────────────────────
   const editDialogOpenRef = useRef(editDialogOpen);
   const moveDialogOpenRef = useRef(moveDialogOpen);
   const shortcutsOpenRef = useRef(shortcutsOpen);
@@ -568,7 +560,6 @@ export function useBookmarkListManager(
     wasDialogOpenRef.current = isOpen;
   }, [editDialogOpen, moveDialogOpen]);
 
-  // ── AI-assisted search ──────────────────────────────────────
   const [isAiSearching, setIsAiSearching] = useState(false);
 
   const handleAskAi = async () => {
@@ -589,7 +580,6 @@ export function useBookmarkListManager(
     setAiSearchTerms(result.data.terms);
   };
 
-  // ── Actions ──────────────────────────────────────────────────
   const handleBulkCopyUrls = () => {
     const urls = bookmarks
       .filter((b) => selectedIds.includes(b.id))
@@ -657,7 +647,6 @@ export function useBookmarkListManager(
     if (addBookmarkFromUrl(val)) setSearchQuery("");
   };
 
-  // ── Paste a URL anywhere to add it ────────────────────────────
   const addBookmarkFromUrlRef = useRef(addBookmarkFromUrl);
   useEffect(() => {
     addBookmarkFromUrlRef.current = addBookmarkFromUrl;
@@ -690,7 +679,6 @@ export function useBookmarkListManager(
     return () => window.removeEventListener("paste", handlePaste);
   }, []);
 
-  // ── Composed values ──────────────────────────────────────────
   const isAllSelected =
     selectedIds.length === bookmarks.length && bookmarks.length > 0;
 

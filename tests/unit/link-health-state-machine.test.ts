@@ -52,9 +52,7 @@ describe("checkUrl — state machine E2E", () => {
     jest.restoreAllMocks();
   });
 
-  // ---------------------------------------------------------------------------
   // §3.1 — Success path (2xx)
-  // ---------------------------------------------------------------------------
 
   describe("2xx responses", () => {
     it("alive on HEAD 200 with a long, non-soft-404 body", async () => {
@@ -160,9 +158,7 @@ describe("checkUrl — state machine E2E", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // §3.2 — Redirects (3xx)
-  // ---------------------------------------------------------------------------
 
   describe("redirects", () => {
     it("alive on 301 → 200 final (auto-followed)", async () => {
@@ -201,9 +197,7 @@ describe("checkUrl — state machine E2E", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // §3.3 — Client errors (4xx)
-  // ---------------------------------------------------------------------------
 
   describe("4xx responses", () => {
     it("confirmed_broken on HEAD 404", async () => {
@@ -298,9 +292,7 @@ describe("checkUrl — state machine E2E", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // §3.4 — Server errors (5xx)
-  // ---------------------------------------------------------------------------
 
   describe("5xx responses", () => {
     it("unknown on HEAD 500 (server error is transient)", async () => {
@@ -339,9 +331,7 @@ describe("checkUrl — state machine E2E", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // §3.5 — Network errors
-  // ---------------------------------------------------------------------------
 
   describe("network errors", () => {
     it("unknown on timeout (AbortError)", async () => {
@@ -387,9 +377,7 @@ describe("checkUrl — state machine E2E", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // §3.6 — Always-alive domains
-  // ---------------------------------------------------------------------------
 
   describe("always-alive domains", () => {
     it("alive (no fetch) for twitter.com", async () => {
@@ -429,9 +417,7 @@ describe("checkUrl — state machine E2E", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // §3.7 — Login walls / interstitials
-  // ---------------------------------------------------------------------------
 
   describe("login walls and interstitials", () => {
     it("alive on 200 login wall (not broken — resource exists, just auth-gated)", async () => {

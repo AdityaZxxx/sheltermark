@@ -47,10 +47,6 @@ export function createProviderClient(
   return new OneDriveClient(accessToken);
 }
 
-// ---------------------------------------------------------------------------
-// Google Drive
-// ---------------------------------------------------------------------------
-
 const DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
 
 const driveFileListSchema = z.object({
@@ -239,10 +235,6 @@ class GoogleDriveClient implements ProviderClient {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Dropbox
-// ---------------------------------------------------------------------------
-
 const dropboxListSchema = z.object({
   entries: z
     .array(
@@ -364,9 +356,7 @@ class DropboxClient implements ProviderClient {
   }
 }
 
-// ---------------------------------------------------------------------------
 // OneDrive (Microsoft Graph, personal accounts via /common)
-// ---------------------------------------------------------------------------
 
 const oneDriveItemSchema = z.object({
   id: z.string(),

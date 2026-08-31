@@ -29,10 +29,8 @@ function cleanText(text: string | undefined): string {
 
 function extractAtomEntryLink(entryXml: string): string {
   const $ = cheerio.load(entryXml, { xmlMode: true });
-  // rel="alternate" has highest priority
   let link = $('link[rel="alternate"]').attr("href");
   if (link) return link;
-  // Then any link with href
   link = $("link[href]").attr("href");
   if (link) return link;
   return "";

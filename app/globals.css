@@ -126,8 +126,6 @@
   }
 }
 
-/* Bookmark Loading Animations  */
-
 [data-virtual-scroll] {
   scrollbar-width: none;
   -ms-overflow-style: none;
