@@ -28,12 +28,15 @@ const HAS_DB = Boolean(process.env.DATABASE_URL);
 describe.skipIf(!HAS_DB)(
   "cloud-connection repository — isolation suite",
   () => {
-    const db = getDb();
+    // Lazy: describe.skipIf still evaluates this body, and getDb() throws
+    // without DATABASE_URL (CI) — so the client is created on first use.
+    let dbInstance: ReturnType<typeof getDb> | null = null;
+    const db = () => (dbInstance ??= getDb());
     const usedProviders: BackupProvider[] = [];
 
     async function cleanup() {
       for (const provider of usedProviders) {
-        await deleteCloudConnection(db, AGENT_USER, provider);
+        await deleteCloudConnection(db(), AGENT_USER, provider);
       }
     }
 
@@ -42,7 +45,7 @@ describe.skipIf(!HAS_DB)(
     });
 
     it("upserts and reads back a connection scoped to the user", async () => {
-      const result = await upsertCloudConnection(db, AGENT_USER, {
+      const result = await upsertCloudConnection(db(), AGENT_USER, {
         provider: "google_drive",
         accountEmail: "agent@example.com",
         accessToken: "token-1",
@@ -52,7 +55,7 @@ describe.skipIf(!HAS_DB)(
       expect(result.success).toBe(true);
       usedProviders.push("google_drive");
 
-      const read = await getCloudConnection(db, AGENT_USER, "google_drive");
+      const read = await getCloudConnection(db(), AGENT_USER, "google_drive");
       expect(read.success).toBe(true);
       if (read.success && read.data) {
         expect(read.data.account_email).toBe("agent@example.com");
@@ -61,7 +64,7 @@ describe.skipIf(!HAS_DB)(
     });
 
     it("upsert replaces tokens on reconnect", async () => {
-      const result = await upsertCloudConnection(db, AGENT_USER, {
+      const result = await upsertCloudConnection(db(), AGENT_USER, {
         provider: "google_drive",
         accountEmail: "agent@example.com",
         accessToken: "token-2",
@@ -70,7 +73,7 @@ describe.skipIf(!HAS_DB)(
       });
       expect(result.success).toBe(true);
 
-      const read = await getCloudConnection(db, AGENT_USER, "google_drive");
+      const read = await getCloudConnection(db(), AGENT_USER, "google_drive");
       if (read.success && read.data) {
         expect(read.data.access_token).toBe("token-2");
         expect(read.data.refresh_token).toBe("refresh-2");
@@ -79,7 +82,7 @@ describe.skipIf(!HAS_DB)(
 
     it("foreign user cannot see the agent's connection", async () => {
       const foreign = await getCloudConnection(
-        db,
+        db(),
         FOREIGN_USER,
         "google_drive",
       );
@@ -91,14 +94,14 @@ describe.skipIf(!HAS_DB)(
 
     it("token update keeps stored refresh token when provider didn't rotate", async () => {
       const updated = await updateConnectionTokens(
-        db,
+        db(),
         AGENT_USER,
         "google_drive",
         { accessToken: "token-3", refreshToken: null },
       );
       expect(updated.success).toBe(true);
 
-      const read = await getCloudConnection(db, AGENT_USER, "google_drive");
+      const read = await getCloudConnection(db(), AGENT_USER, "google_drive");
       if (read.success && read.data) {
         expect(read.data.access_token).toBe("token-3");
         expect(read.data.refresh_token).toBe("refresh-2");
@@ -107,21 +110,21 @@ describe.skipIf(!HAS_DB)(
 
     it("marks backup outcome on the owning user's row only", async () => {
       const marked = await markBackupOutcome(
-        db,
+        db(),
         AGENT_USER,
         "google_drive",
         "success",
       );
       expect(marked.success).toBe(true);
 
-      const read = await getCloudConnection(db, AGENT_USER, "google_drive");
+      const read = await getCloudConnection(db(), AGENT_USER, "google_drive");
       if (read.success && read.data) {
         expect(read.data.last_backup_status).toBe("success");
         expect(read.data.last_backup_at).not.toBeNull();
       }
 
       const foreign = await getCloudConnection(
-        db,
+        db(),
         FOREIGN_USER,
         "google_drive",
       );
@@ -131,7 +134,7 @@ describe.skipIf(!HAS_DB)(
     });
 
     it("delete removes only the owner's connection", async () => {
-      await upsertCloudConnection(db, AGENT_USER, {
+      await upsertCloudConnection(db(), AGENT_USER, {
         provider: "dropbox",
         accountEmail: null,
         accessToken: "dbx",
@@ -140,10 +143,10 @@ describe.skipIf(!HAS_DB)(
       });
       usedProviders.push("dropbox");
 
-      const removed = await deleteCloudConnection(db, AGENT_USER, "dropbox");
+      const removed = await deleteCloudConnection(db(), AGENT_USER, "dropbox");
       expect(removed.success).toBe(true);
 
-      const read = await getCloudConnection(db, AGENT_USER, "dropbox");
+      const read = await getCloudConnection(db(), AGENT_USER, "dropbox");
       if (read.success) {
         expect(read.data).toBeNull();
       }
@@ -152,7 +155,7 @@ describe.skipIf(!HAS_DB)(
     it("lists connections newest-updated first so UI and actions agree on the active one", async () => {
       // Dropbox already removed by the delete test; ensure a defined
       // ordering state: dropbox stale, google_drive fresh.
-      await upsertCloudConnection(db, AGENT_USER, {
+      await upsertCloudConnection(db(), AGENT_USER, {
         provider: "dropbox",
         accountEmail: "stale@example.com",
         accessToken: "stale",
@@ -160,10 +163,10 @@ describe.skipIf(!HAS_DB)(
         tokenExpiresAt: null,
       });
       usedProviders.push("dropbox");
-      await db.execute(
+      await db().execute(
         sql`update cloud_connections set updated_at = '2026-08-01T00:00:00Z' where user_id = ${AGENT_USER} and provider = 'dropbox'`,
       );
-      await upsertCloudConnection(db, AGENT_USER, {
+      await upsertCloudConnection(db(), AGENT_USER, {
         provider: "google_drive",
         accountEmail: "fresh@example.com",
         accessToken: "fresh",
@@ -171,7 +174,7 @@ describe.skipIf(!HAS_DB)(
         tokenExpiresAt: null,
       });
 
-      const mine = await listCloudConnections(db, AGENT_USER);
+      const mine = await listCloudConnections(db(), AGENT_USER);
       expect(mine.success).toBe(true);
       if (mine.success) {
         expect(mine.data[0]?.provider).toBe("google_drive");
@@ -183,8 +186,8 @@ describe.skipIf(!HAS_DB)(
     });
 
     it("lists only the caller's connections", async () => {
-      const mine = await listCloudConnections(db, AGENT_USER);
-      const foreign = await listCloudConnections(db, FOREIGN_USER);
+      const mine = await listCloudConnections(db(), AGENT_USER);
+      const foreign = await listCloudConnections(db(), FOREIGN_USER);
       expect(mine.success).toBe(true);
       expect(foreign.success).toBe(true);
       if (mine.success && foreign.success) {
