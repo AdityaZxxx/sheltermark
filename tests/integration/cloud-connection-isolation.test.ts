@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import "dotenv/config";
+import { sql } from "drizzle-orm";
 
 import type { BackupProvider } from "~/lib/schemas/backup.schema";
 
@@ -145,6 +146,39 @@ describe.skipIf(!HAS_DB)(
       const read = await getCloudConnection(db, AGENT_USER, "dropbox");
       if (read.success) {
         expect(read.data).toBeNull();
+      }
+    });
+
+    it("lists connections newest-updated first so UI and actions agree on the active one", async () => {
+      // Dropbox already removed by the delete test; ensure a defined
+      // ordering state: dropbox stale, google_drive fresh.
+      await upsertCloudConnection(db, AGENT_USER, {
+        provider: "dropbox",
+        accountEmail: "stale@example.com",
+        accessToken: "stale",
+        refreshToken: null,
+        tokenExpiresAt: null,
+      });
+      usedProviders.push("dropbox");
+      await db.execute(
+        sql`update cloud_connections set updated_at = '2026-08-01T00:00:00Z' where user_id = ${AGENT_USER} and provider = 'dropbox'`,
+      );
+      await upsertCloudConnection(db, AGENT_USER, {
+        provider: "google_drive",
+        accountEmail: "fresh@example.com",
+        accessToken: "fresh",
+        refreshToken: null,
+        tokenExpiresAt: null,
+      });
+
+      const mine = await listCloudConnections(db, AGENT_USER);
+      expect(mine.success).toBe(true);
+      if (mine.success) {
+        expect(mine.data[0]?.provider).toBe("google_drive");
+        const sorted = mine.data.toSorted((a, b) =>
+          b.updated_at.localeCompare(a.updated_at),
+        );
+        expect(mine.data).toEqual(sorted);
       }
     });
 

@@ -70,8 +70,8 @@ export function UserMenu({ user }: UserMenuProps) {
   const { profile } = useProfile();
 
   // Cloud Backup OAuth round-trip lands on /dashboard with ?settings=backup
-  // (+ &backup=ok|denied|…). State is derived at mount; this effect only
-  // clears the consumed params and reports the outcome.
+  // (+ &backup=ok|denied|…). Consumed once at mount: clear the URL params
+  // and report the outcome. Opening state is derived in the initializer.
   useEffect(() => {
     if (backupOutcome === null) return;
     const params = new URLSearchParams(window.location.search);

@@ -36,7 +36,11 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
     "skip" | "replace"
   >("skip");
 
-  const { data: files, isLoading: isLoadingFiles } = useBackupFiles(open);
+  const {
+    data: files,
+    isLoading: isLoadingFiles,
+    isError: isFilesError,
+  } = useBackupFiles(open);
   const previewMutation = usePreviewRestore();
   const restoreMutation = useRestoreBackup();
 
@@ -84,9 +88,9 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Restore from Backup</DialogTitle>
+          <DialogTitle>Restore from backup</DialogTitle>
           <DialogDescription>
-            Restore bookmarks from a file in your cloud backup folder.
+            Restore bookmarks from a file in your Sheltermark/Backups folder.
           </DialogDescription>
         </DialogHeader>
 
@@ -97,9 +101,14 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
                 <SpinnerIcon className="mr-1 inline size-4 animate-spin" />
                 Loading backups…
               </p>
+            ) : isFilesError ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                Unable to load backups. Reconnect the provider in Settings, then
+                try again.
+              </p>
             ) : backups.length === 0 ? (
               <p className="py-4 text-center text-sm text-muted-foreground">
-                No backups found yet. Run Back Up Now first.
+                No backups yet. Back up first, then restore here.
               </p>
             ) : (
               <ul className="flex flex-col gap-1">
@@ -140,7 +149,10 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
                 <div className="mt-1 flex flex-col gap-1 text-sm text-muted-foreground">
                   <p>
                     {previewMutation.data.totalBookmarks} bookmarks across{" "}
-                    {previewMutation.data.workspaces.length} workspace(s)
+                    {previewMutation.data.workspaces.length}{" "}
+                    {previewMutation.data.workspaces.length === 1
+                      ? "workspace"
+                      : "workspaces"}
                   </p>
                   <ul className="list-inside list-disc">
                     {previewMutation.data.workspaces.map((ws) => (
@@ -152,13 +164,13 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
                 </div>
               ) : (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Could not read this backup.
+                  Unable to read this backup. Choose another file.
                 </p>
               )}
             </div>
 
             <Field>
-              <FieldLabel>Existing bookmarks</FieldLabel>
+              <FieldLabel>Restore duplicates</FieldLabel>
               <RadioGroup
                 value={duplicateStrategy}
                 onValueChange={handleDuplicateStrategyChange}
@@ -166,13 +178,13 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="skip" id="restore-skip" />
                   <label htmlFor="restore-skip" className="text-sm">
-                    Keep mine — skip duplicates
+                    Keep existing bookmarks
                   </label>
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="replace" id="restore-replace" />
                   <label htmlFor="restore-replace" className="text-sm">
-                    Replace — backup wins for duplicates
+                    Replace with backup
                   </label>
                 </div>
               </RadioGroup>
@@ -181,8 +193,9 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
             {duplicateStrategy === "replace" && (
               <p className="flex items-start gap-2 rounded-md bg-muted p-3 text-xs text-muted-foreground">
                 <WarningIcon className="mt-0.5 size-4 shrink-0" />
-                Replace deletes your current bookmark for a duplicate URL in the
-                target workspace, then inserts the backup&apos;s version.
+                Restoring with replace deletes a current bookmark when the
+                backup holds the same URL, then inserts the backup&apos;s
+                version.
               </p>
             )}
           </div>

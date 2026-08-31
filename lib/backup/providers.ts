@@ -22,8 +22,12 @@ export interface BackupFileMeta {
 }
 
 export interface ProviderClient {
-  /** Ensure the backups folder exists; returns its provider id/path. */
-  ensureFolder(): Promise<string>;
+  /**
+   * Ensure the backups folder exists; returns its provider id/path.
+   * `pinnedRef` is the previously resolved reference (Drive file id);
+   * clients with stable paths (Dropbox/OneDrive) may ignore it.
+   */
+  ensureFolder(pinnedRef?: string): Promise<string>;
   listBackups(folderRef: string): Promise<BackupFileMeta[]>;
   uploadBackup(
     folderRef: string,
@@ -63,6 +67,13 @@ const driveFileListSchema = z.object({
     .catch([]),
 });
 
+// Folder lookups ask Drive for files(id) — name is not in the payload,
+// so validating it here would fail every lookup and mint duplicate
+// folders. Keep this schema in sync with the fields= param.
+const driveFolderListSchema = z.object({
+  files: z.array(z.object({ id: z.string() })).catch([]),
+});
+
 const driveFileSchema = z.object({ id: z.string() });
 
 class GoogleDriveClient implements ProviderClient {
@@ -92,16 +103,29 @@ class GoogleDriveClient implements ProviderClient {
     return parsed.success ? parsed.data : null;
   }
 
-  async ensureFolder(): Promise<string> {
+  async ensureFolder(pinnedRef?: string): Promise<string> {
+    // drive.file scope + repeated consents can leave duplicate
+    // "Sheltermark" folders; the pinned id keeps every operation on the
+    // same folder once one has been resolved.
+    if (pinnedRef) {
+      const pinned = await this.api(
+        z.object({ id: z.string() }),
+        `https://www.googleapis.com/drive/v3/files/${pinnedRef}?fields=id`,
+      );
+      if (pinned?.id) return pinned.id;
+    }
+
     let parentId = "root";
     for (const segment of BACKUP_FOLDER_PATH) {
       const query = encodeURIComponent(
         `name='${segment}' and mimeType='${DRIVE_FOLDER_MIME}' and trashed=false and '${parentId}' in parents`,
       );
       const existing = await this.api(
-        driveFileListSchema,
-        `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`,
+        driveFolderListSchema,
+        `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)&orderBy=createdTime desc`,
       );
+      // With duplicates, files[0] is arbitrary; createdTime desc makes the
+      // pick deterministic — newest is the one this app just wrote to.
       const found = existing?.files[0]?.id;
       if (found) {
         parentId = found;
@@ -134,14 +158,15 @@ class GoogleDriveClient implements ProviderClient {
       driveFileListSchema,
       `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,size,modifiedTime)&orderBy=modifiedTime desc`,
     );
-    return (payload?.files ?? [])
-      .filter((f) => !f.mimeType || f.mimeType !== DRIVE_FOLDER_MIME)
-      .map((f) => ({
-        id: f.id,
-        name: f.name,
-        size: f.size !== undefined ? Number(f.size) : null,
-        modifiedTime: f.modifiedTime ?? null,
-      }));
+    // null = API/schema failure; an empty folder is a valid `{files: []}`.
+    // Collapsing failure to [] makes the UI claim "No backups yet".
+    if (!payload) throw new Error("list failed");
+    return payload.files.map((f) => ({
+      id: f.id,
+      name: f.name,
+      size: f.size !== undefined ? Number(f.size) : null,
+      modifiedTime: f.modifiedTime ?? null,
+    }));
   }
 
   async uploadBackup(
@@ -156,7 +181,7 @@ class GoogleDriveClient implements ProviderClient {
       `name='${filename}' and '${folderId}' in parents and trashed=false`,
     );
     const existing = await this.api(
-      driveFileListSchema,
+      driveFolderListSchema,
       `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`,
     );
     for (const file of existing?.files ?? []) {
@@ -270,7 +295,7 @@ class DropboxClient implements ProviderClient {
     return parsed.success ? parsed.data : null;
   }
 
-  async ensureFolder(): Promise<string> {
+  async ensureFolder(_pinnedRef?: string): Promise<string> {
     const path = `/${BACKUP_FOLDER_PATH.join("/")}`;
     // create_folder_v2 creates intermediate folders; 409 = already exists,
     // the expected steady state for repeat backups.
@@ -284,7 +309,9 @@ class DropboxClient implements ProviderClient {
       path,
       limit: 100,
     });
-    return (payload?.entries ?? []).map((e) => ({
+    // null = API/schema failure; an empty folder is a valid `{entries: []}`.
+    if (!payload) throw new Error("list failed");
+    return payload.entries.map((e) => ({
       id: e.id,
       name: e.name,
       size: e.size ?? null,
@@ -383,7 +410,7 @@ class OneDriveClient implements ProviderClient {
     return parsed.success ? parsed.data : null;
   }
 
-  async ensureFolder(): Promise<string> {
+  async ensureFolder(_pinnedRef?: string): Promise<string> {
     // Graph has no mkdir -p: walk segment by segment, creating each level.
     let currentPath = "";
     for (const segment of BACKUP_FOLDER_PATH) {
@@ -420,7 +447,9 @@ class OneDriveClient implements ProviderClient {
       oneDriveChildrenSchema,
       `/me/drive/root:${folderPath}:/children`,
     );
-    return (payload?.value ?? []).map((i) => ({
+    // null = API/schema failure; an empty folder is a valid `{value: []}`.
+    if (!payload) throw new Error("list failed");
+    return payload.value.map((i) => ({
       id: i.id,
       name: i.name,
       size: i.size ?? null,

@@ -119,6 +119,9 @@ export function backupAuthorizeUrl(
       redirect_uri: redirectUri,
       response_type: "code",
       token_access_type: "offline",
+      // Scopes are bound at authorization time — request them explicitly so
+      // the token can actually write/read the Backups folder.
+      scope: "files.content.read files.content.write files.metadata.read",
       state,
     });
     return `https://www.dropbox.com/oauth2/authorize?${params}`;

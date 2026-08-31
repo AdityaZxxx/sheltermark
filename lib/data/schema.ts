@@ -344,6 +344,7 @@ export const cloudConnections = pgTable(
     token_expires_at: isoTimestamptz(),
     last_backup_at: isoTimestamptz(),
     last_backup_status: text().$type<"success" | "failed">(),
+    provider_folder_id: text(),
     created_at: isoTimestamptz()
       .notNull()
       .default(sql`now()`),

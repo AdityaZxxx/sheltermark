@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { DrizzleDb } from "~/lib/data/db";
 import type { BackupProvider } from "~/lib/schemas/backup.schema";
@@ -18,6 +18,7 @@ export interface CloudConnectionRow {
   token_expires_at: string | null;
   last_backup_at: string | null;
   last_backup_status: "success" | "failed" | null;
+  provider_folder_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +46,7 @@ function toRow(row: typeof cloudConnections.$inferSelect): CloudConnectionRow {
       row.last_backup_status === "failed"
         ? row.last_backup_status
         : null,
+    provider_folder_id: row.provider_folder_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -81,7 +83,11 @@ export async function listCloudConnections(
     const rows = await db
       .select()
       .from(cloudConnections)
-      .where(eq(cloudConnections.user_id, userId));
+      .where(eq(cloudConnections.user_id, userId))
+      // Newest updated first: the UI takes [0] as the active connection and
+      // requireConnection picks the most recently updated one — both must
+      // agree, and unordered SELECT gives no such guarantee.
+      .orderBy(desc(cloudConnections.updated_at));
     return { success: true, data: rows.map(toRow) };
   } catch (cause) {
     return dbError("Cloud connection", cause);
@@ -163,6 +169,32 @@ export async function updateConnectionTokens(
           input.refreshToken ?? sql`${cloudConnections.refresh_token}`,
         token_expires_at: input.tokenExpiresAt ?? null,
         updated_at: now,
+      })
+      .where(
+        and(
+          eq(cloudConnections.user_id, userId),
+          eq(cloudConnections.provider, provider),
+        ),
+      );
+    return { success: true, data: null };
+  } catch (cause) {
+    return dbError("Cloud connection", cause);
+  }
+}
+
+/** Pin the resolved backups-folder reference (Drive file id) on the connection. */
+export async function setProviderFolderId(
+  db: DrizzleDb,
+  userId: string,
+  provider: BackupProvider,
+  folderId: string,
+): Promise<ActionResult<null>> {
+  try {
+    await db
+      .update(cloudConnections)
+      .set({
+        provider_folder_id: folderId,
+        updated_at: new Date().toISOString(),
       })
       .where(
         and(

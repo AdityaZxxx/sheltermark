@@ -9,7 +9,10 @@ import {
   batchInsertBookmarks,
   exportBookmarksForBackup,
 } from "~/lib/data/repositories/bookmark.repository";
-import { updateConnectionTokens } from "~/lib/data/repositories/cloud-connection.repository";
+import {
+  setProviderFolderId,
+  updateConnectionTokens,
+} from "~/lib/data/repositories/cloud-connection.repository";
 import {
   createWorkspaceRaw,
   findWorkspaceIdByName,
@@ -83,6 +86,31 @@ interface BackupOutcome {
   bookmarkCount: number;
 }
 
+/**
+ * Resolve the backups folder via the client, passing the pinned ref and
+ * persisting a new resolution (Drive: duplicate consents can mint new
+ * folders; the pin keeps later operations on the same one).
+ */
+async function ensurePinnedFolder(
+  db: DrizzleDb,
+  connection: CloudConnectionRow,
+  client: ProviderClient,
+): Promise<string> {
+  const folderRef = await client.ensureFolder(
+    connection.provider_folder_id ?? undefined,
+  );
+  if (folderRef && folderRef !== connection.provider_folder_id) {
+    const pinned = await setProviderFolderId(
+      db,
+      connection.user_id,
+      connection.provider,
+      folderRef,
+    );
+    if (pinned.success) connection.provider_folder_id = folderRef;
+  }
+  return folderRef;
+}
+
 /** Serialize + upload a backup. Provider errors collapse to GENERIC_ERROR. */
 export async function runBackup(
   db: DrizzleDb,
@@ -105,7 +133,7 @@ export async function runBackup(
 
   const client = createProviderClient(connection.provider, token);
   try {
-    const folderRef = await client.ensureFolder();
+    const folderRef = await ensurePinnedFolder(db, connection, client);
     if (!folderRef) {
       return { success: false, error: GENERIC_ERROR };
     }
@@ -143,7 +171,7 @@ export async function listBackups(
   }
   const client = createProviderClient(connection.provider, token);
   try {
-    const folderRef = await client.ensureFolder();
+    const folderRef = await ensurePinnedFolder(db, connection, client);
     if (!folderRef) return { success: false, error: GENERIC_ERROR };
     const files = await client.listBackups(folderRef);
     // Newer first; providers don't guarantee ordering across pagination.
@@ -183,7 +211,7 @@ export async function previewRestore(
   }
 
   const client = createProviderClient(connection.provider, token);
-  const file = await findBackupFile(client, fileId);
+  const file = await findBackupFile(db, connection, client, fileId);
   if (!file) return { success: false, error: "Backup file not found." };
 
   let content: string | null = null;
@@ -256,7 +284,7 @@ export async function restoreBackup(
   }
 
   const client = createProviderClient(connection.provider, token);
-  const file = await findBackupFile(client, fileId);
+  const file = await findBackupFile(db, connection, client, fileId);
   if (!file) {
     return { success: false, error: "Backup file not found." };
   }
@@ -348,10 +376,12 @@ export async function restoreBackup(
  * the restore pipeline.
  */
 async function findBackupFile(
+  db: DrizzleDb,
+  connection: CloudConnectionRow,
   client: ProviderClient,
   fileId: string,
 ): Promise<BackupFileMeta | null> {
-  const folderRef = await client.ensureFolder();
+  const folderRef = await ensurePinnedFolder(db, connection, client);
   if (!folderRef) return null;
   const files = await client.listBackups(folderRef);
   return files.find((f) => f.id === fileId) ?? null;
