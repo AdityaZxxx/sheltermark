@@ -47,8 +47,9 @@ Conventional commits (`type(scope): imperative summary`), one logical change per
 ├── hooks/                  # Client hooks (queries, mutations, keyboard, dialogs)
 ├── lib/
 │   ├── data/               # Drizzle schema, db connections, repositories (one per entity)
+│   ├── backup/              # Cloud Backup v1: OAuth dance, provider adapters, backup/restore service
 │   ├── feeds/              # RSS/Atom parsing (feed-domain infrastructure)
-│   ├── import/             # Browser bookmark import parsers
+│   ├── import/             # Browser bookmark import parsers + canonical export JSON
 │   ├── link-health/        # URL health checker (used by cron)
 │   ├── metadata/           # Multi-strategy URL metadata fetcher (pipeline.ts)
 │   ├── mutations/          # TanStack Query mutation wrappers (optimistic UI)

@@ -43,6 +43,31 @@ describe("parseImportFile dispatcher", () => {
       const result = parseImportFile("{ not json", "json");
       expect(result.success).toBe(false);
     });
+
+    it("carries note and tags through from backup-format JSON", () => {
+      const json = JSON.stringify({
+        workspaces: [
+          {
+            name: "WS1",
+            bookmarks: [
+              {
+                url: "https://a.com/",
+                title: "A",
+                note: "read later",
+                tags: ["docs", "keep"],
+              },
+            ],
+          },
+        ],
+      });
+      const result = parseImportFile(json, "json");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const first = result.bookmarks[0];
+        expect(first?.note).toBe("read later");
+        expect(first?.tags).toEqual(["docs", "keep"]);
+      }
+    });
   });
 
   describe("CSV path", () => {

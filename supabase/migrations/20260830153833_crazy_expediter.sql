@@ -1,0 +1,1 @@
+ALTER TABLE "cloud_connections" ADD COLUMN "provider_folder_id" text;

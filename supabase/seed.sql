@@ -4,10 +4,16 @@
 -- AGENT_USER:   52a3cabd-90dd-4019-8267-b926ffd59a6e
 -- FOREIGN_USER: 8256b5a2-2c49-4e30-afd1-671c183fb7c9
 
+-- GoTrue cannot scan NULL into its varchar columns (login 500s with
+-- "Database error querying schema"), so every nullable token column
+-- the seed omits must be an empty string instead of the NULL default.
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, created_at, updated_at,
-  raw_app_meta_data, raw_user_meta_data
+  raw_app_meta_data, raw_user_meta_data,
+  confirmation_token, recovery_token, email_change,
+  email_change_token_new, email_change_token_current,
+  reauthentication_token, phone_change_token
 ) values
   (
     '00000000-0000-0000-0000-000000000000',
@@ -16,7 +22,8 @@ insert into auth.users (
     'agent-fixture@example.com', crypt('password', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Agent Fixture"}'
+    '{"full_name":"Agent Fixture"}',
+    '', '', '', '', '', '', ''
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -25,7 +32,8 @@ insert into auth.users (
     'foreign-fixture@example.com', crypt('password', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Foreign Fixture"}'
+    '{"full_name":"Foreign Fixture"}',
+    '', '', '', '', '', '', ''
   );
 
 -- on_auth_user_created gives each user a profile + default "Personal" workspace.

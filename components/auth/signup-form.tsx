@@ -23,6 +23,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { GENERIC_ERROR } from "~/lib/action-result";
 import { cn } from "~/lib/utils";
+import { safeRedirectPath } from "~/lib/utils/safe-redirect";
 
 import { AuthError } from "./auth-error";
 
@@ -86,6 +87,11 @@ export function SignupForm({
       const result = await signupWithEmail(formData);
       if (!result.success) {
         setError(result.error);
+      } else if (result.data.autoLogin) {
+        // Autoconfirm (local dev): session already set server-side —
+        // a full page load, same as login, so the SPA router cache
+        // doesn't keep the unauthenticated dashboard state.
+        window.location.assign(safeRedirectPath(next || "/dashboard"));
       } else {
         setSuccess(true);
       }

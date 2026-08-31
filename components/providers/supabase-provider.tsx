@@ -33,6 +33,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user: supabaseUser } }) => {
+      // Record the identity before onAuthStateChange fires its initial
+      // event for the same session: the ref is still null there, so the
+      // "identity changed" branch would wipe every in-flight query
+      // (queryClient.clear()) right as the app starts fetching, leaving
+      // mounted observers pointing at removed cache rows (stuck loading).
+      lastUserIdRef.current = supabaseUser?.id ?? null;
       setUser(supabaseUser);
       setIsLoading(false);
     });

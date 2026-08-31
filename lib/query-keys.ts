@@ -36,3 +36,9 @@ export const tagKeys = {
   byWorkspace: (userId: string, workspaceId: string) =>
     ["tags", userId, "byWorkspace", workspaceId] as const,
 };
+
+export const backupKeys = {
+  all: (userId: string) => ["backup", userId] as const,
+  status: (userId: string) => ["backup", userId, "status"] as const,
+  files: (userId: string) => ["backup", userId, "files"] as const,
+};

@@ -377,3 +377,23 @@ export async function touchWorkspaceLastUsed(
     return dbError("Workspace", cause);
   }
 }
+
+/** Id of the user's live (non-trashed) workspace with this exact name. */
+export async function findWorkspaceIdByName(
+  db: DrizzleDb,
+  userId: string,
+  name: string,
+): Promise<string | null> {
+  const rows = await db
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(
+      and(
+        eq(workspaces.user_id, userId),
+        eq(workspaces.name, name),
+        isNull(workspaces.deleted_at),
+      ),
+    )
+    .limit(1);
+  return rows[0]?.id ?? null;
+}

@@ -17,7 +17,7 @@ interface LogContext {
   digest?: string;
   name?: string;
   stack?: string;
-  status?: string;
+  status?: string | number;
   success?: boolean;
   written?: boolean;
   synced?: number;
@@ -29,6 +29,7 @@ interface LogContext {
   removedBookmarks?: number;
   removedWorkspaces?: number;
   errorCount?: number;
+  provider?: string;
 }
 
 const LOG_LEVELS = {
