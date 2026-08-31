@@ -3,16 +3,22 @@
 import {
   CloudArrowDownIcon,
   CloudArrowUpIcon,
-  CloudIcon,
-  PlugsConnectedIcon,
+  PlugsIcon,
   SpinnerIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { BackupProvider } from "~/lib/schemas/backup.schema";
 
+import { DropboxIcon } from "~/components/auth/dropbox-icon";
+import { GoogleDriveIcon } from "~/components/auth/google-drive-icon";
 import { Button } from "~/components/ui/button";
-import { FieldDescription, FieldSet, FieldLegend } from "~/components/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldSet,
+  FieldLegend,
+} from "~/components/ui/field";
 import {
   useBackupNow,
   useDisconnectProvider,
@@ -22,14 +28,32 @@ import { formatRelativeTime } from "~/lib/utils/format";
 
 import { RestoreDialog } from "./restore-dialog";
 
-const PROVIDER_LABELS = {
-  google_drive: "Google Drive",
-  dropbox: "Dropbox",
-  onedrive: "OneDrive",
-} as const satisfies Record<BackupProvider, string>;
+// OneDrive is hidden until MS_CLIENT_ID/SECRET credentials exist; the
+// backend (schema, adapter, authorize route) stays wired so re-enabling
+// is a one-line change here.
+const PROVIDERS = [
+  { id: "google_drive", label: "Google Drive", Icon: GoogleDriveIcon },
+  { id: "dropbox", label: "Dropbox", Icon: DropboxIcon },
+] as const satisfies {
+  id: BackupProvider;
+  label: string;
+  Icon: (props: { className?: string }) => React.ReactNode;
+}[];
+
+function ProviderLabel({ provider }: { provider: BackupProvider }) {
+  const entry = PROVIDERS.find((p) => p.id === provider);
+  if (!entry) return provider;
+  const { Icon, label } = entry;
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <Icon className="size-4 shrink-0" />
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
 
 export function CloudBackupSection() {
-  const { data: statuses, isLoading } = useCloudBackupStatus();
+  const { data: statuses, isLoading, isError } = useCloudBackupStatus();
   const [restoreOpen, setRestoreOpen] = useState(false);
   const backupNowMutation = useBackupNow();
   const disconnectMutation = useDisconnectProvider();
@@ -39,94 +63,92 @@ export function CloudBackupSection() {
   return (
     <FieldSet>
       <FieldLegend variant="label">Cloud Backup</FieldLegend>
-      <FieldDescription>
-        Automatically keeps a copy of your bookmarks in your own cloud storage
-        (Sheltermark/Backups/). Uses the same format as JSON export.
-      </FieldDescription>
 
       {isLoading ? (
         <FieldDescription>Loading backup status…</FieldDescription>
+      ) : isError ? (
+        <FieldDescription>
+          Unable to load backup status. Reopen Settings to try again.
+        </FieldDescription>
       ) : connection ? (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <PlugsConnectedIcon className="size-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">
-                  {PROVIDER_LABELS[connection.provider]}
-                  {connection.accountEmail
-                    ? ` · ${connection.accountEmail}`
-                    : ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {connection.lastBackupAt
-                    ? `Last backup ${formatRelativeTime(connection.lastBackupAt)} · ${
-                        connection.lastBackupStatus === "failed"
-                          ? "failed"
-                          : "successful"
-                      }`
-                    : "No backups yet"}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => disconnectMutation.mutate(connection.provider)}
-              disabled={disconnectMutation.isPending}
-            >
-              Disconnect
-            </Button>
+        <Field>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="min-w-0 truncate text-sm font-medium">
+              <ProviderLabel provider={connection.provider} />
+              {connection.accountEmail ? (
+                <span className="text-muted-foreground">
+                  {" "}
+                  {connection.accountEmail}
+                </span>
+              ) : null}
+            </p>
           </div>
-
-          <div className="flex gap-2">
+          <FieldDescription>
+            {connection.lastBackupAt
+              ? `Last backup ${formatRelativeTime(connection.lastBackupAt)} · ${
+                  connection.lastBackupStatus === "failed"
+                    ? "failed"
+                    : "successful"
+                }`
+              : "No backups yet"}
+          </FieldDescription>
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 gap-2"
+              className="min-w-28 flex-1 gap-2"
               onClick={() => backupNowMutation.mutate()}
               disabled={backupNowMutation.isPending}
             >
               {backupNowMutation.isPending ? (
-                <SpinnerIcon className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 shrink-0 animate-spin" />
               ) : (
-                <CloudArrowUpIcon className="size-4" />
+                <CloudArrowUpIcon className="size-4 shrink-0" />
               )}
-              Back Up Now
+              Back up now
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 gap-2"
+              className="min-w-28 flex-1 gap-2"
               onClick={() => setRestoreOpen(true)}
             >
-              <CloudArrowDownIcon className="size-4" />
-              Restore…
+              <CloudArrowDownIcon className="size-4 shrink-0" />
+              Restore
             </Button>
           </div>
-        </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start text-muted-foreground"
+            onClick={() => disconnectMutation.mutate(connection.provider)}
+            disabled={disconnectMutation.isPending}
+          >
+            <PlugsIcon className="size-4 shrink-0" />
+            Disconnect
+          </Button>
+        </Field>
       ) : (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-muted-foreground">
-            Not connected. Choose a provider to enable backups.
-          </p>
-          <div className="flex gap-2">
-            {(
-              ["google_drive", "dropbox", "onedrive"] satisfies BackupProvider[]
-            ).map((provider) => (
+        <Field>
+          <FieldDescription>
+            Save a copy of your bookmarks to your own cloud storage in
+            Sheltermark/Backups/.
+          </FieldDescription>
+          <div className="flex flex-wrap gap-2">
+            {PROVIDERS.map(({ id, label, Icon }) => (
               <a
-                key={provider}
-                href={`/api/backup/authorize/${provider}`}
-                className="flex-1"
+                key={id}
+                href={`/api/backup/authorize/${id}`}
+                className="min-w-28 flex-1"
               >
                 <Button variant="outline" size="sm" className="w-full gap-2">
-                  <CloudIcon className="size-4" />
-                  {PROVIDER_LABELS[provider]}
+                  <Icon className="size-4 shrink-0" />
+                  <span className="truncate">{label}</span>
                 </Button>
               </a>
             ))}
           </div>
-        </div>
+        </Field>
       )}
 
       <RestoreDialog open={restoreOpen} onOpenChange={setRestoreOpen} />
