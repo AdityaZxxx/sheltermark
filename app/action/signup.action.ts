@@ -19,7 +19,7 @@ const signupSchema = z.object({
 
 export async function signupWithEmail(
   formData: FormData,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<{ autoLogin: boolean }>> {
   const supabase = await createClient();
 
   const next = formData.get("next")?.toString();
@@ -37,11 +37,13 @@ export async function signupWithEmail(
   const { name, email, password } = result.data;
   const redirectUrl = authCallbackUrl(await getRequestBaseUrl(), next);
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { name },
+      // Key must be `full_name`: the on_auth_user_created trigger reads
+      // this exact key to seed profiles.name.
+      data: { full_name: name },
       emailRedirectTo: redirectUrl,
     },
   });
@@ -50,5 +52,8 @@ export async function signupWithEmail(
     return { success: false, error: friendlyAuthError(error) };
   }
 
-  return { success: true, data: null };
+  // Autoconfirm ON (local dev): a session comes back and the user is in.
+  // Autoconfirm OFF (hosted): only a user object — the email confirmation
+  // screen is the correct next step.
+  return { success: true, data: { autoLogin: data.session !== null } };
 }
