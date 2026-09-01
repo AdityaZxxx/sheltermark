@@ -387,6 +387,8 @@ export const bookmarkExtractions = pgTable(
     title: text(),
     byline: text(),
     site_name: text(),
+    // ISO string when the source page declared a publication date.
+    published_time: text(),
     excerpt: text(),
     html: text(),
     length: integer(),

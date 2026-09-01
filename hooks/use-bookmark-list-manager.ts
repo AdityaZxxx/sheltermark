@@ -17,6 +17,7 @@ import { useBookmarks } from "~/hooks/use-bookmarks";
 import { useViewPreference } from "~/hooks/use-view-preference";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
+import { PREVIEW_PANEL_ATTR } from "~/lib/preview/reader-prefs";
 import { isUrlLike } from "~/lib/utils";
 
 function copyUrlToClipboard(url: string) {
@@ -308,6 +309,14 @@ export function useBookmarkListManager(
       }
 
       const activeElement = document.activeElement;
+      // When a preview is open and focus is inside it (PDF scroll container,
+      // reader article), arrows scroll the preview — the list keeps j/k.
+      if (
+        previewBookmarkRef.current &&
+        activeElement?.closest(`[${PREVIEW_PANEL_ATTR}]`)
+      ) {
+        return;
+      }
       const isInputFocused =
         activeElement === inputRef.current ||
         activeElement?.tagName === "INPUT" ||

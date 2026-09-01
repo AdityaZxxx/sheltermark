@@ -369,6 +369,46 @@ function externalAbortError(): Error {
 }
 
 /**
+ * Read a response body as bytes with a hard limit. Unlike readResponseBody
+ * (which returns a truncated string), this throws when the payload exceeds
+ * `maxBytes` — binary formats (PDF) must not be silently truncated, the
+ * caller needs to know the file was too big.
+ */
+export async function readArrayBufferWithLimit(
+  response: Response,
+  maxBytes: number,
+): Promise<ArrayBuffer> {
+  const reader = response.body?.getReader();
+  if (!reader) return response.arrayBuffer();
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      totalBytes += value.length;
+      if (totalBytes >= maxBytes) {
+        await reader.cancel();
+        throw new Error(
+          `Response body exceeds limit (${totalBytes} > ${maxBytes} bytes)`,
+        );
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return combined.buffer;
+}
+
+/**
  * Returns true for errors that are likely transient and worth retrying.
  * Permanent errors (invalid URL, bad TLS, unreachable host) return false.
  */

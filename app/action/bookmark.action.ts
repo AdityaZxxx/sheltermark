@@ -86,7 +86,7 @@ export async function interpretSearchQuery(
 // pipeline (https-only, private-IP/DNS validation on every redirect hop).
 export async function checkEmbeddable(
   input: BookmarkEmbedCheckInput,
-): Promise<ActionResult<{ embeddable: boolean }>> {
+): Promise<ActionResult<{ embeddable: boolean; contentType: string | null }>> {
   await requireAuth();
   const validated = bookmarkEmbedCheckSchema.safeParse(input);
   if (!validated.success) {
@@ -98,7 +98,7 @@ export async function checkEmbeddable(
 
   if (!(await isSafeUrl(validated.data.url))) {
     // Don't probe unsafe URLs server-side; let the iframe try client-side.
-    return { success: true, data: { embeddable: true } };
+    return { success: true, data: { embeddable: true, contentType: null } };
   }
 
   try {
@@ -113,11 +113,17 @@ export async function checkEmbeddable(
     });
     return {
       success: true,
-      data: { embeddable: isEmbeddable(response.headers) },
+      data: {
+        embeddable: isEmbeddable(response.headers),
+        // Content-first classification (ADR-0007): the probe already has
+        // the authoritative Content-Type; the panel needs it to pick the
+        // PDF/image/media viewer over the iframe-before-extract path.
+        contentType: response.headers.get("content-type"),
+      },
     };
   } catch {
     // Network failure or timeout: stay optimistic and let the iframe try.
-    return { success: true, data: { embeddable: true } };
+    return { success: true, data: { embeddable: true, contentType: null } };
   }
 }
 

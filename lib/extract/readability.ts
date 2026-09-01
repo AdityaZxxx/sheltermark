@@ -33,6 +33,7 @@ export function extractArticle(
         title: article.title ?? url,
         byline: article.byline ?? null,
         siteName: article.siteName ?? null,
+        publishedTime: article.publishedTime ?? null,
         excerpt: article.excerpt ?? null,
         html: article.content,
         length: article.textContent?.length ?? 0,

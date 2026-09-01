@@ -89,6 +89,7 @@ interface RedditPostListing {
         subreddit?: string;
         score?: number;
         num_comments?: number;
+        created_utc?: number;
         permalink?: string;
         is_video?: boolean;
         is_gallery?: boolean;
@@ -225,6 +226,9 @@ export function renderThread(
     title: post.title ?? url,
     byline: post.author ? `u/${post.author}` : null,
     siteName: post.subreddit ? `r/${post.subreddit}` : "Reddit",
+    publishedTime: post.created_utc
+      ? new Date(post.created_utc * 1000).toISOString()
+      : null,
     excerpt: null,
     html: [...pieces, stats ? `<p><small>${stats}</small></p>` : ""].join(""),
     length: (post.title ?? "").length,

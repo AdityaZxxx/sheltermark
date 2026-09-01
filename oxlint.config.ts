@@ -52,6 +52,18 @@ export default defineConfig({
         "react/iframe-missing-sandbox": "off",
       },
     },
+    {
+      // The PDF viewer's scroll container is a focusable document region:
+      // arrows/PgUp/PgDn scroll it, Home/End jump pages. ARIA has no
+      // interactive role for "scrollable document"; the region pattern
+      // (tabIndex + onKeyDown on the scroll container) is the standard way
+      // screen readers expose it.
+      files: ["components/bookmark/pdf-viewer.tsx"],
+      rules: {
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/no-noninteractive-tabindex": "off",
+      },
+    },
   ],
   jsPlugins: [
     { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },

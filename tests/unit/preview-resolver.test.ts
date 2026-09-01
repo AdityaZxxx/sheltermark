@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 
-import { resolvePreview } from "~/lib/preview/resolve";
+import { resolvePreview, effectivePreview } from "~/lib/preview/resolve";
 
 function bookmarkFor(url: string): Bookmark {
   const fixture = {
@@ -237,6 +237,99 @@ describe("resolvePreview", () => {
     it("resolves unknown URLs to a direct iframe of the original", () => {
       const out = resolvePreview(bookmarkFor("https://example.com/post"));
       expect(out).toEqual({ kind: "iframe", src: "https://example.com/post" });
+    });
+  });
+
+  describe("effectivePreview: media classification (phase 3)", () => {
+    it("routes .pdf URLs to the media proxy kind", () => {
+      const out = effectivePreview(
+        bookmarkFor("https://example.com/paper.pdf"),
+        null,
+      );
+      expect(out).toEqual({
+        kind: "pdf",
+        src: `/api/preview/media?url=${encodeURIComponent("https://example.com/paper.pdf")}`,
+      });
+    });
+
+    it("routes arXiv /pdf/<id> URLs to the PDF viewer", () => {
+      const out = effectivePreview(
+        bookmarkFor("https://arxiv.org/pdf/2401.12345"),
+        null,
+      );
+      expect(out.kind).toBe("pdf");
+    });
+
+    it("prefers the probe's Content-Type over the URL guess", () => {
+      // URL says .pdf but the origin actually serves HTML (common for
+      // rewritten CMS routes): the header is authoritative, so the PDF
+      // viewer is skipped. The embeddable:false downgrade to extraction is
+      // the panel's job (same as any HTML iframe refusal).
+      const out = effectivePreview(
+        bookmarkFor("https://example.com/paper.pdf"),
+        { embeddable: false, contentType: "text/html" },
+      );
+      expect(out.kind).toBe("iframe");
+    });
+
+    it("uses Content-Type when the URL has no extension", () => {
+      const out = effectivePreview(bookmarkFor("https://example.com/get/42"), {
+        embeddable: true,
+        contentType: "application/pdf",
+      });
+      expect(out.kind).toBe("pdf");
+    });
+
+    it("keeps the iframe for embeddable HTML documents", () => {
+      const out = effectivePreview(bookmarkFor("https://example.com/post"), {
+        embeddable: true,
+        contentType: "text/html; charset=utf-8",
+      });
+      expect(out).toEqual({ kind: "iframe", src: "https://example.com/post" });
+    });
+
+    it("still routes media when the origin also refuses framing", () => {
+      // A PDF behind XFO DENY: embeddability is moot for non-HTML content —
+      // the viewer must win over the extraction downgrade.
+      const out = effectivePreview(bookmarkFor("https://example.com/a.pdf"), {
+        embeddable: false,
+        contentType: "application/pdf",
+      });
+      expect(out.kind).toBe("pdf");
+    });
+
+    it("routes images, video, and audio to the proxy route", () => {
+      const img = effectivePreview(
+        bookmarkFor("https://example.com/pic.png"),
+        null,
+      );
+      expect(img.kind).toBe("image");
+      const vid = effectivePreview(bookmarkFor("https://example.com/v/9"), {
+        embeddable: true,
+        contentType: "video/mp4",
+      });
+      expect(vid.kind).toBe("video");
+      const aud = effectivePreview(bookmarkFor("https://example.com/a/1"), {
+        embeddable: true,
+        contentType: "audio/ogg",
+      });
+      expect(aud.kind).toBe("audio");
+      expect(img.src).toContain("/api/preview/media?url=");
+    });
+
+    it("never overrides domain strategies (embed/proxy/server win)", () => {
+      const yt = effectivePreview(bookmarkFor("https://youtu.be/x"), {
+        embeddable: true,
+        contentType: "text/html",
+      });
+      expect(yt.kind).toBe("embed");
+      const gh = effectivePreview(bookmarkFor("https://github.com/a/b"), null);
+      expect(gh.kind).toBe("proxy");
+      const hn = effectivePreview(
+        bookmarkFor("https://news.ycombinator.com/item?id=1"),
+        { embeddable: false, contentType: "text/html" },
+      );
+      expect(hn.kind).toBe("server");
     });
   });
 });

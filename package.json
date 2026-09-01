@@ -48,6 +48,7 @@
     "nuqs": "^2.8.8",
     "ollama-ai-provider-v2": "^3.6.0",
     "parse5": "^8.0.1",
+    "pdfjs-dist": "5.7.284",
     "postgres": "^3.4.9",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

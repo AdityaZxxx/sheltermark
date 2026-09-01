@@ -3,6 +3,7 @@
 import type React from "react";
 
 import {
+  ArrowClockwiseIcon,
   ArrowSquareOutIcon,
   ArrowsInSimpleIcon,
   ArrowsOutSimpleIcon,
@@ -20,6 +21,7 @@ import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { checkEmbeddable } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { classifyUrl } from "~/lib/preview/classify";
 import {
   cycleTextSize,
   parseStoredReaderPrefs,
@@ -27,11 +29,17 @@ import {
   READER_KEY,
   type ReaderPrefs,
 } from "~/lib/preview/reader-prefs";
-import { resolvePreview, type PreviewKind } from "~/lib/preview/resolve";
+import {
+  effectivePreview,
+  resolvePreview,
+  type PreviewKind,
+} from "~/lib/preview/resolve";
 import { safeDomain } from "~/lib/utils";
 import { cn } from "~/lib/utils";
 
 import { Orb } from "./orb";
+import { PdfViewer } from "./pdf-viewer";
+import { ReadableDocument } from "./readable-document";
 
 // Sites that refuse embedding (X-Frame-Options / CSP) still fire load in some
 // browsers, so this timeout is a heuristic — the fallback stays dismissible.
@@ -103,18 +111,43 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
   }, [reader]);
 
   // ADR-0007 resolver: embed/server kinds resolve synchronously; iframe kinds
-  // start optimistic and downgrade to the server extraction preview when the
-  // embeddability probe says the origin refuses framing. Derivation happens in
-  // render — only the probe result lands in state. The Reader tab overrides
+  // start optimistic and are refined by the embeddability probe — a framing
+  // refusal downgrades to server extraction, and a non-HTML Content-Type
+  // (PDF/image/media) routes to the matching viewer (classify.ts). A
+  // confident URL guess (explicit .pdf, arXiv /pdf/<id>) skips the probe
+  // entirely — Raindrop-style instant media routing; the media proxy
+  // re-verifies Content-Type server-side anyway. The Reader tab overrides
   // the resolver's answer: it always renders the server-extracted document.
   const [downgraded, setDowngraded] = useState(false);
+  const [probe, setProbe] = useState<{
+    embeddable: boolean;
+    contentType: string | null;
+  } | null>(null);
+  // Set when a confident URL media guess turned out wrong (viewer hit the
+  // proxy's 415) — re-enters the probe path and stops the instant routing.
+  const [guessWrong, setGuessWrong] = useState(false);
   const base = resolvePreview(bookmark);
+  const urlGuess = guessWrong ? null : classifyUrl(bookmark.url);
+  const [previewNonce, setPreviewNonce] = useState(0);
+  const refreshPreview = () => setPreviewNonce((n) => n + 1);
   const serverSrc = (u: string) =>
-    `/api/preview?url=${encodeURIComponent(u)}&theme=${reader.theme}&font=${reader.font}&size=${reader.size}`;
+    `/api/preview?${previewNonce ? "refresh=1&" : ""}url=${encodeURIComponent(u)}&theme=${reader.theme}&font=${reader.font}&size=${reader.size}`;
+  // Media classification wins over the framing downgrade: a PDF/image/media
+  // Content-Type (from the probe or a confident URL guess) routes to the
+  // media viewer even when the origin also refuses framing — extracting
+  // HTML from binary bytes can never succeed (resolve.ts's contract).
+  const media: PreviewKind = effectivePreview(
+    bookmark,
+    urlGuess ? null : probe,
+  );
   const resolved: PreviewKind =
-    mode === "reader" || downgraded || base.kind === "server"
+    mode === "reader" || base.kind === "server"
       ? { kind: "server", src: serverSrc(bookmark.url) }
-      : base;
+      : media.kind !== "iframe"
+        ? media
+        : downgraded
+          ? { kind: "server", src: serverSrc(bookmark.url) }
+          : base;
 
   // Load gate: runs per rendered document (mode switches remount the frame
   // via the src key), so timeout state resets on every tab change.
@@ -135,13 +168,20 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
 
   // Direct-iframe gate (strategy 2): probe embeddable-unknown origins and
   // downgrade to the server preview when the origin refuses framing. The
-  // component remounts per bookmark (keyed), so boolean state is safe.
+  // probe's Content-Type also feeds effectivePreview's media classification.
+  // Skipped when the URL itself is confident media (classifyUrl) — but a
+  // viewer that reports the guess wrong (onUnavailable) re-enters the probe
+  // path here. The component remounts per bookmark (keyed), so boolean
+  // state is safe.
   useEffect(() => {
-    if (base.kind !== "iframe") return;
+    if (base.kind !== "iframe" || urlGuess) return;
     let cancelled = false;
     checkEmbeddable({ url: bookmark.url }).then((res) => {
-      if (!cancelled && res.success && res.data.embeddable === false) {
-        setDowngraded(true);
+      if (!cancelled && res.success) {
+        setProbe(res.data);
+        if (res.data.embeddable === false) {
+          setDowngraded(true);
+        }
       }
     });
     return () => {
@@ -185,13 +225,19 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
       open
       aria-modal={false}
       aria-label={`Preview of ${bookmark.title || domain}`}
+      data-sheltermark-preview=""
       className={cn(
         // Mobile: fullscreen overlay. Desktop: in-flow flex child stretched to
         // the section height; the list scrolls in its own column, not this one.
         // Inside a ResizablePanel the panel dictates width, so fill the parent.
-        // Maximized: fullscreen overlay at every breakpoint.
-        "fixed inset-0 z-50 m-0 flex h-dvh w-full flex-col border-0 bg-background p-0 outline-none md:static md:inset-auto md:z-auto md:h-full md:w-full md:max-w-none md:border-0",
-        maximized && "fixed inset-0 z-50 h-dvh max-w-none border-0",
+        // Maximized: fullscreen overlay at every breakpoint — mutually
+        // exclusive with the desktop in-flow classes, because Tailwind's
+        // md:* variants would otherwise override a plain `fixed` in the
+        // stylesheet order no matter how the strings are concatenated.
+        "m-0 flex w-full flex-col border-0 bg-background p-0 outline-none",
+        maximized
+          ? "fixed inset-0 z-50 h-dvh max-w-none"
+          : "fixed inset-0 z-50 h-dvh md:static md:inset-auto md:z-auto md:h-full md:w-full md:max-w-none md:border-0",
         closing
           ? "animate-out fade-out slide-out-to-right-4 duration-150 ease-out"
           : "animate-in fade-in slide-in-from-right-4 duration-200 ease-out",
@@ -288,6 +334,15 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           <Button
             variant="ghost"
             size="icon-sm"
+            onClick={refreshPreview}
+            aria-label="Refresh preview"
+            title="Refresh preview (re-extracts this page)"
+          >
+            <ArrowClockwiseIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setMaximized((m) => !m)}
             aria-label={maximized ? "Exit fullscreen" : "Fullscreen"}
             title={maximized ? "Exit fullscreen (Esc)" : "Fullscreen"}
@@ -340,50 +395,95 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
       )}
 
       <div className="relative flex-1 bg-muted/30">
-        <iframe
-          key={`${bookmark.id}-${resolved.src}`}
-          ref={iframeRef}
-          src={resolved.src}
-          title={`Preview of ${bookmark.title || domain}`}
-          onLoad={() => {
-            loadedRef.current = true;
-            setLoaded(true);
-          }}
-          sandbox={sandboxFor(resolved.kind)}
-          referrerPolicy={referrerPolicyFor(resolved.kind)}
-          className="absolute inset-0 size-full border-0 bg-white"
-        />
-
-        {!loaded && !blocked && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <Orb
-              size={24}
-              label="Loading preview…"
-              className="text-muted-foreground"
-            />
+        {resolved.kind === "pdf" ? (
+          <PdfViewer
+            src={resolved.src}
+            onUnavailable={() => setGuessWrong(true)}
+          />
+        ) : resolved.kind === "server" && mode === "reader" ? (
+          // Phase 2: native readable-document render — same extraction, same
+          // sanitizer, rendered as React DOM instead of a sandboxed iframe.
+          <ReadableDocument
+            url={bookmark.url}
+            api={`/api/preview?format=json&${previewNonce ? "refresh=1&" : ""}url=${encodeURIComponent(bookmark.url)}`}
+            theme={reader.theme}
+            font={reader.font}
+            size={reader.size}
+          />
+        ) : resolved.kind === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- arbitrary remote images, no optimization possible
+          <img
+            src={resolved.src}
+            alt={bookmark.title ?? domain}
+            className="absolute inset-0 m-auto max-h-full max-w-full object-contain p-4"
+            referrerPolicy="no-referrer"
+          />
+        ) : resolved.kind === "video" ? (
+          // oxlint-disable-next-line jsx-a11y/media-has-caption -- arbitrary bookmarked videos; we can't source caption tracks for third-party media
+          <video
+            src={resolved.src}
+            controls
+            preload="metadata"
+            className="absolute inset-0 m-auto max-h-full max-w-full p-4"
+          />
+        ) : resolved.kind === "audio" ? (
+          <div className="absolute inset-0 flex items-center justify-center p-6">
+            {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- arbitrary bookmarked audio; no caption tracks exist */}
+            <audio src={resolved.src} controls preload="metadata" />
           </div>
+        ) : (
+          // server-extract (non-reader) and generic iframe share one frame:
+          // both render our-or-their HTML with the kind's sandbox.
+          <iframe
+            key={`${bookmark.id}-${resolved.src}`}
+            ref={iframeRef}
+            src={resolved.src}
+            title={`Preview of ${bookmark.title || domain}`}
+            onLoad={() => {
+              loadedRef.current = true;
+              setLoaded(true);
+            }}
+            sandbox={sandboxFor(resolved.kind)}
+            referrerPolicy={referrerPolicyFor(resolved.kind)}
+            className="absolute inset-0 size-full border-0 bg-white"
+          />
         )}
 
-        {blocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
-            <GlobeIcon className="size-8 text-muted-foreground/50" />
-            <div>
-              <p className="text-sm font-medium">
-                This site can&apos;t be previewed here
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {domain} may block embedding. You can still open it in a new
-                tab.
-              </p>
+        {/* Loading/blocked overlays only make sense for iframe-rendered
+            kinds — native viewers handle their own states. */}
+        {(resolved.kind === "iframe" || resolved.kind === "server") &&
+          !loaded &&
+          !blocked && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <Orb
+                size={24}
+                label="Loading preview…"
+                className="text-muted-foreground"
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={openExternal}>Open in new tab</Button>
-              <Button variant="ghost" onClick={() => setTimedOut(false)}>
-                Try again
-              </Button>
+          )}
+
+        {(resolved.kind === "iframe" || resolved.kind === "server") &&
+          blocked && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+              <GlobeIcon className="size-8 text-muted-foreground/50" />
+              <div>
+                <p className="text-sm font-medium">
+                  This site can&apos;t be previewed here
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {domain} may block embedding. You can still open it in a new
+                  tab.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={openExternal}>Open in new tab</Button>
+                <Button variant="ghost" onClick={() => setTimedOut(false)}>
+                  Try again
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </dialog>
   );

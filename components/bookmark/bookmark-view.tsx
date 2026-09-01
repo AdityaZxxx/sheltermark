@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useSyncExternalStore } from "react";
 
 import type { BookmarkScope } from "~/lib/schemas/common";
 
@@ -21,18 +21,19 @@ import { BookmarkMoveDialog } from "./bookmark-move-dialog";
 import { BookmarkPreview } from "./bookmark-preview";
 import { BookmarkToolbar } from "./bookmark-toolbar";
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const onChange = (e: MediaQueryListEvent | MediaQueryList) =>
-      // oxlint-disable-next-line react/set-state-in-effect -- breakpoint lives in the browser, unknowable during SSR/render; syncing post-mount prevents a server/client mismatch
-      setIsMobile(e.matches);
-    onChange(mq);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return isMobile;
+// Desktop/mobile split via useSyncExternalStore: no effect → no post-mount
+// setState → the preview panel mounts exactly once (a false→true isMobile
+// flip after mount double-mounted BookmarkPreview and re-ran its probe).
+function useIsMobile(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia("(max-width: 767px)");
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(max-width: 767px)").matches,
+    () => false,
+  );
 }
 
 export function BookmarkView({ scope }: { scope: BookmarkScope }) {
