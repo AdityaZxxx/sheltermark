@@ -188,10 +188,10 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
       className={cn(
         // Mobile: fullscreen overlay. Desktop: in-flow flex child stretched to
         // the section height; the list scrolls in its own column, not this one.
+        // Inside a ResizablePanel the panel dictates width, so fill the parent.
         // Maximized: fullscreen overlay at every breakpoint.
-        "fixed inset-0 z-50 m-0 flex h-dvh w-full flex-col border-0 bg-background p-0 outline-none md:static md:inset-auto md:z-auto md:h-auto md:w-[42%] md:max-w-140 md:shrink-0 md:border-l md:border-border/60",
-        maximized &&
-          "md:fixed md:inset-0 md:z-50 md:h-dvh md:w-full md:max-w-none md:border-0",
+        "fixed inset-0 z-50 m-0 flex h-dvh w-full flex-col border-0 bg-background p-0 outline-none md:static md:inset-auto md:z-auto md:h-full md:w-full md:max-w-none md:border-0",
+        maximized && "fixed inset-0 z-50 h-dvh max-w-none border-0",
         closing
           ? "animate-out fade-out slide-out-to-right-4 duration-150 ease-out"
           : "animate-in fade-in slide-in-from-right-4 duration-200 ease-out",
