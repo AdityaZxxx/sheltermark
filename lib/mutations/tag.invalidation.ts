@@ -8,7 +8,6 @@ type BookmarkTagLink = { bookmark_id: string; tag_id: string };
 const BY_BOOKMARK_PREFIX = (userId: string) =>
   tagKeys.bookmarkLinksPrefix(userId);
 
-// ── useRenameTag ─────────────────────────────────────────────────
 // Links are id-pairs, not names, so a rename doesn't touch tagKeys.links;
 // per-bookmark caches refresh via the byBookmark prefix.
 
@@ -32,8 +31,6 @@ export function renameTagUpdates(
   ];
 }
 
-// ── useDeleteTag ─────────────────────────────────────────────────
-
 export function deleteTagDependentKeys(userId: string): readonly QueryKey[] {
   return [bookmarkKeys.all(userId), BY_BOOKMARK_PREFIX(userId)];
 }
@@ -51,8 +48,6 @@ export function deleteTagUpdates(
     }),
   ];
 }
-
-// ── useUpdateBookmarkFields ──────────────────────────────────────
 
 export function updateBookmarkFieldsDependentKeys(
   userId: string,

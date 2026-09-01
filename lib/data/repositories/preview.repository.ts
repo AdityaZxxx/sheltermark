@@ -27,6 +27,7 @@ interface ExtractionRow {
   title: string | null;
   byline: string | null;
   siteName: string | null;
+  publishedTime: string | null;
   excerpt: string | null;
   html: string | null;
   length: number | null;
@@ -63,6 +64,7 @@ export async function findExtraction(
       title: bookmarkExtractions.title,
       byline: bookmarkExtractions.byline,
       siteName: bookmarkExtractions.site_name,
+      publishedTime: bookmarkExtractions.published_time,
       excerpt: bookmarkExtractions.excerpt,
       html: bookmarkExtractions.html,
       length: bookmarkExtractions.length,
@@ -92,6 +94,7 @@ export async function findExtraction(
     title: row.title,
     byline: row.byline,
     siteName: row.siteName,
+    publishedTime: row.publishedTime,
     excerpt: row.excerpt,
     html: row.html,
     length: row.length,
@@ -107,6 +110,7 @@ const upsertExtractionSchema = z.object({
   title: z.string().nullable(),
   byline: z.string().nullable(),
   siteName: z.string().nullable(),
+  publishedTime: z.string().nullable(),
   excerpt: z.string().nullable(),
   html: z.string().nullable(),
   length: z.number().int().nullable(),
@@ -126,6 +130,7 @@ export async function upsertExtraction(
     title: parsed.title,
     byline: parsed.byline,
     site_name: parsed.siteName,
+    published_time: parsed.publishedTime,
     excerpt: parsed.excerpt,
     html: parsed.html,
     length: parsed.length,
@@ -142,6 +147,7 @@ export async function upsertExtraction(
         title: values.title,
         byline: values.byline,
         site_name: values.site_name,
+        published_time: values.published_time,
         excerpt: values.excerpt,
         html: values.html,
         length: values.length,
@@ -155,4 +161,22 @@ export function isFresh(
   kind: PreviewDocumentKind = "extract",
 ): boolean {
   return Date.now() - new Date(fetchedAt).getTime() < TTL_BY_KIND[kind];
+}
+
+// Manual "Refresh preview": drop the cached row so the next read extracts
+// fresh (Raindrop parity for the broken-preview escape hatch).
+export async function deleteExtraction(
+  db: DrizzleDb,
+  hash: string,
+  kind: PreviewDocumentKind,
+): Promise<void> {
+  const parsedKind = previewDocumentKindSchema.parse(kind);
+  await db
+    .delete(bookmarkExtractions)
+    .where(
+      and(
+        eq(bookmarkExtractions.url_hash, hash),
+        eq(bookmarkExtractions.kind, parsedKind),
+      ),
+    );
 }

@@ -1,8 +1,12 @@
 import type { NextRequest } from "next/server";
 
+import type { ExtractionResult } from "~/lib/extract/types";
+import type { CacheDocument } from "~/lib/preview/cache";
+
 import { requireAuthSafe } from "~/lib/auth";
 import { extractContent } from "~/lib/extract/extract-content";
 import {
+  evictCached,
   revalidateInBackground,
   readCached,
   writeCached,
@@ -47,6 +51,20 @@ export async function GET(req: NextRequest) {
     return new Response("Missing url", { status: 400 });
   }
 
+  // "Refresh preview" (Raindrop parity): evict the cached row and extract
+  // fresh instead of serving the 24h cache.
+  if (req.nextUrl.searchParams.get("refresh") === "1") {
+    await evictCached(url, "extract");
+  }
+
+  // Readable-document API (ADR-0007 phase 2): the panel renders extracted
+  // content natively (no iframe) and needs structured JSON. The HTML iframe
+  // path stays the default for the transition.
+  const format = req.nextUrl.searchParams.get("format");
+  if (format === "json") {
+    return await jsonDocument(url, req);
+  }
+
   try {
     const prefs = readerPrefsFrom(req);
     const cached = await readCached(url, "extract", revalidateExtract);
@@ -75,38 +93,94 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Structured readable document for native rendering. Shares the extract
+// cache and pipeline; only the response shape differs from the HTML path.
+async function jsonDocument(url: string, _req: NextRequest): Promise<Response> {
+  const cached = await readCached(url, "extract", revalidateExtract);
+  const doc = cached ?? (await extractAndCache(url));
+
+  const body = {
+    url,
+    ok: doc.status === "ok",
+    title: doc.title ?? url,
+    byline: doc.byline,
+    siteName: doc.siteName,
+    publishedTime: doc.publishedTime,
+    excerpt: doc.excerpt,
+    html: doc.status === "ok" ? doc.html : null,
+  };
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "private, max-age=300",
+    },
+  });
+}
+
+// ExtractionResult → cache document, one mapping for every caller (serve,
+// json, revalidate). Keeps the "empty" shape in one place.
+function docFrom(result: ExtractionResult): CacheDocument {
+  return result.ok
+    ? {
+        status: "ok",
+        title: result.content.title,
+        byline: result.content.byline,
+        siteName: result.content.siteName,
+        publishedTime: result.content.publishedTime,
+        excerpt: result.content.excerpt,
+        html: result.content.html,
+      }
+    : EMPTY_DOC;
+}
+
+const EMPTY_DOC: CacheDocument = {
+  status: "empty",
+  title: null,
+  byline: null,
+  siteName: null,
+  publishedTime: null,
+  excerpt: null,
+  html: null,
+};
+
+// Extract, persist to cache, and return the cache-shaped document.
+async function extractAndCache(url: string): Promise<CacheDocument> {
+  const result = await extractContent(url);
+  const doc = docFrom(result);
+  await writeCached(
+    url,
+    "extract",
+    doc,
+    result.ok ? result.content.length : null,
+  );
+  return doc;
+}
+
 async function extractAndServe(
   url: string,
   prefs: ReaderPrefs,
 ): Promise<Response> {
-  const result = await extractContent(url);
-  await writeCached(
-    url,
-    "extract",
-    result.ok
-      ? {
-          status: "ok",
-          title: result.content.title,
-          byline: result.content.byline,
-          siteName: result.content.siteName,
-          excerpt: result.content.excerpt,
-          html: result.content.html,
-        }
-      : {
-          status: "empty",
-          title: null,
-          byline: null,
-          siteName: null,
-          excerpt: null,
-          html: null,
-        },
-    result.ok ? result.content.length : null,
-  );
-
-  if (!result.ok) {
+  const doc = await extractAndCache(url);
+  if (doc.status !== "ok") {
     return htmlResponse(fallbackHtml(url, prefs));
   }
-  return htmlResponse(articleHtml(result.content, prefs));
+  // SAFETY: status "ok" only occurs with a successful extraction, so title/
+  // html are the extraction's values; the ?? re-narrows nullable cache
+  // columns to their write-time shape.
+  return htmlResponse(
+    articleHtml(
+      {
+        title: doc.title ?? url,
+        byline: doc.byline,
+        siteName: doc.siteName,
+        excerpt: doc.excerpt,
+        html: doc.html ?? "",
+        url,
+      },
+      prefs,
+    ),
+  );
 }
 
 function revalidateExtract(url: string): void {
@@ -114,25 +188,10 @@ function revalidateExtract(url: string): void {
     url,
     async (u) => {
       const result = await extractContent(u);
-      return result.ok
-        ? {
-            status: "ok",
-            title: result.content.title,
-            byline: result.content.byline,
-            siteName: result.content.siteName,
-            excerpt: result.content.excerpt,
-            html: result.content.html,
-            length: result.content.length,
-          }
-        : {
-            status: "empty",
-            title: null,
-            byline: null,
-            siteName: null,
-            excerpt: null,
-            html: null,
-            length: null,
-          };
+      return {
+        ...docFrom(result),
+        length: result.ok ? result.content.length : null,
+      };
     },
     "extract",
   );

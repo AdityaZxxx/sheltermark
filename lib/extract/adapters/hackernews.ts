@@ -49,6 +49,7 @@ export const hackerNewsAdapter: DomAdapter = {
       title: storyTitle,
       byline: author || null,
       siteName: "Hacker News",
+      publishedTime: null,
       excerpt: null,
       html: [
         selfText ? `<p>${selfText}</p>` : "",

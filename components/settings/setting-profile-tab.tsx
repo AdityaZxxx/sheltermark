@@ -131,11 +131,9 @@ export function SettingsProfileTab({
     },
   });
 
-  // Reactive form states
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
   const isDirty = useStore(form.store, (state) => state.isDirty);
 
-  // Get current username for debounced checking - use useStore for reactivity
   const usernameValue =
     useStore(form.store, (state) => state.values.username) || "";
   const debouncedUsername = useDebounce(usernameValue.trim(), 500);

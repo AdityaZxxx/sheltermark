@@ -1,0 +1,1 @@
+ALTER TABLE "bookmark_extractions" ADD COLUMN "published_time" text;

@@ -28,8 +28,6 @@ function clientWith(
   return client;
 }
 
-// ── renameTag ────────────────────────────────────────────────────
-
 describe("renameTagDependentKeys", () => {
   it("includes bookmark.all and byBookmark prefix (not tagKeys.links)", () => {
     const keys = renameTagDependentKeys(UID);
@@ -58,8 +56,6 @@ describe("renameTagUpdates", () => {
     ]);
   });
 });
-
-// ── deleteTag ────────────────────────────────────────────────────
 
 describe("deleteTagDependentKeys", () => {
   it("includes bookmark.all and byBookmark prefix", () => {
@@ -106,8 +102,6 @@ describe("deleteTagUpdates", () => {
   });
 });
 
-// ── updateBookmarkFields ─────────────────────────────────────────
-
 describe("updateBookmarkFieldsDependentKeys", () => {
   it("returns tag.all, tag links, and tag withCount", () => {
     expect(updateBookmarkFieldsDependentKeys(UID)).toEqual([
@@ -138,8 +132,6 @@ describe("updateBookmarkFieldsUpdates", () => {
     ]);
   });
 });
-
-// ── edge cases ───────────────────────────────────────────────────
 
 describe("tag-cache edge cases", () => {
   it("all updaters handle empty cache entries", () => {

@@ -2,6 +2,9 @@ export interface ExtractedContent {
   title: string;
   byline: string | null;
   siteName: string | null;
+  // ISO date string when the page declares a publication date (meta
+  // article:published_time / <time datetime>); null when unknown.
+  publishedTime: string | null;
   excerpt: string | null;
   html: string;
   length: number;

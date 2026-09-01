@@ -39,3 +39,8 @@ export function parseStoredReaderPrefs(raw: string | null): ReaderPrefs {
 export function cycleTextSize(size: ReaderPrefs["size"]): ReaderPrefs["size"] {
   return size === "sm" ? "md" : size === "md" ? "lg" : "sm";
 }
+
+// Shared DOM marker for the preview panel. The global keydown handler uses
+// this to scope arrow keys to the preview when focus is inside it — a
+// rename-safe contract instead of matching an aria-label template string.
+export const PREVIEW_PANEL_ATTR = "data-sheltermark-preview";

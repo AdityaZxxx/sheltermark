@@ -43,7 +43,6 @@ export function FolderTree({
       <div className="flex items-center gap-2 py-1 px-1">
         <Checkbox
           checked={allFoldersSelected}
-          // Indeterminate when some-but-not-all selected
           indeterminate={!allFoldersSelected && selectedCount > 0}
           onCheckedChange={() => {
             // Top-level toggle: empty path means "all" in toggleFolder.

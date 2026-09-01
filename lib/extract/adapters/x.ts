@@ -75,6 +75,7 @@ export function renderTweet(tweet: FxTweet, url: string): ExtractedContent {
     title: a ? `Post by ${a.name}` : "X post",
     byline,
     siteName: "X",
+    publishedTime: tweet.created_at,
     excerpt: tweet.text?.slice(0, 200) ?? null,
     html,
     length: (tweet.text ?? "").length,

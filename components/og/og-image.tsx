@@ -19,7 +19,6 @@ export function OGImage({
   const hasUser = Boolean(username);
   const hasWorkspace = Boolean(username && workspace);
 
-  // DEFAULT VARIANT (Centered)
   if (!hasUser) {
     return (
       <div
@@ -75,7 +74,6 @@ export function OGImage({
     );
   }
 
-  // USER PROFILE (Start Layout)
   if (hasUser && !hasWorkspace) {
     return (
       <div
@@ -91,7 +89,6 @@ export function OGImage({
           color: "#171717",
         }}
       >
-        {/* Top Left */}
         <div
           style={{
             display: "flex",
@@ -123,7 +120,6 @@ export function OGImage({
           </div>
         </div>
 
-        {/* Bottom Left */}
         <div
           style={{
             display: "flex",
@@ -168,7 +164,6 @@ export function OGImage({
     );
   }
 
-  // USER + WORKSPACE
   return (
     <div
       style={{
@@ -183,7 +178,6 @@ export function OGImage({
         color: "#171717",
       }}
     >
-      {/* Top Left (Workspace replaces display name) */}
       <div
         style={{
           display: "flex",
@@ -225,7 +219,6 @@ export function OGImage({
         </div>
       </div>
 
-      {/* Bottom Left (Same as user profile) */}
       <div
         style={{
           display: "flex",

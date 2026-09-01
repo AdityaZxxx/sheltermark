@@ -66,6 +66,43 @@ is deliberately no arbitrary-URL proxy mode.
 | `iframe`         | downloads + forms + popups + same-origin + scripts | `no-referrer`                                                                                     |
 | `proxy`/`server` | popups only                                        | `no-referrer`                                                                                     |
 
+## Content classification and media kinds (phase 3)
+
+`lib/preview/classify.ts` maps content to a _class_ — `pdf`, `image`,
+`video`, `audio`, `html` — kept strictly separate from the _rendering
+strategy_. Detection is content-first: the embeddability probe's
+Content-Type header is authoritative; URL extension/shape heuristics are
+only the optimistic pre-fetch guess (the one structural exception:
+arXiv-style `/pdf/<id>` paths). Domain knowledge stays in the resolver's
+provider/platform strategies — the classifier never special-cases a site.
+
+`effectivePreview(bookmark, probe)` refines the generic `iframe` fallback
+with the classification: non-HTML routes to the media proxy
+(`/api/preview/media?url=…`) as a `pdf`/`image`/`video`/`audio` kind; HTML
+keeps the iframe-or-extraction path. Domain strategies always win —
+classification only refines unresolved URLs.
+
+## Media proxy
+
+`/api/preview/media` re-serves PDFs, images, audio and video bytes from our
+origin behind auth + the same SSRF guard as extraction (https-only,
+private-IP/DNS on every redirect hop), restricted to media Content-Types
+(never an open HTML proxy), 10 MB hard cap, private no-store-ish caching,
+`nosniff`. PDFs are rendered client-side by pdf.js (worker vendored at
+`/vendor/pdf.worker.min.mjs`, drift-guarded by a unit test against the
+pinned pdfjs-dist version) — no third-party frame, consistent panel chrome.
+
+## Readable documents (phase 2)
+
+Text-heavy pages (articles, papers, docs) extract through the same
+pipeline; `/api/preview?format=json` serves the structured document
+(title, byline, siteName, publishedTime, excerpt, sanitized HTML) parsed
+client-side by a Zod schema. The Reader tab renders it natively as React
+DOM (`ReadableDocument`) instead of a sandboxed iframe when extraction
+succeeds — the sanitizer output is the security boundary either way.
+Metadata now includes `publishedTime` (meta `article:published_time` /
+`<time datetime>`), cached in `bookmark_extractions.published_time`.
+
 ## Cache
 
 `bookmark_extractions` keyed by `(kind, url_hash)`: extraction rows TTL 24h,

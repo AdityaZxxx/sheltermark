@@ -3,6 +3,7 @@ import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import { isHackerNewsItem } from "~/lib/extract/adapters/hackernews";
 import { isRedditThread } from "~/lib/extract/adapters/reddit";
 import { isXStatus } from "~/lib/extract/adapters/x";
+import { classifyContentType, classifyUrl } from "~/lib/preview/classify";
 import {
   soundcloudEmbedSrc,
   spotifyEmbedSrc,
@@ -20,17 +21,19 @@ export type PreviewKind =
   | { kind: "embed"; src: string }
   | { kind: "iframe"; src: string }
   | { kind: "proxy"; src: string }
-  | { kind: "server"; src: string };
+  | { kind: "server"; src: string }
+  | { kind: "pdf"; src: string }
+  | { kind: "image"; src: string }
+  | { kind: "video"; src: string }
+  | { kind: "audio"; src: string };
 
 interface PreviewResolver {
   resolve: (bookmark: Bookmark) => PreviewKind | null;
 }
 
-// ---------------------------------------------------------------------------
 // Strategy 1: provider embeds — pure client-side URL transformation into the
 // provider's officially frameable embed endpoint. No server fetch; the embed
 // host is a hard-coded provider origin, not user input.
-// ---------------------------------------------------------------------------
 
 function isYouTubeHost(hostname: string): boolean {
   return (
@@ -81,12 +84,10 @@ const providerEmbed: PreviewResolver = {
   },
 };
 
-// ---------------------------------------------------------------------------
 // Strategy 2.5: native proxy — GitHub-only full-page re-serve (ADR-0007).
 // Runs before platform strategies because the proxy renders the real page
 // rather than an extracted card. Any github.com/gist.github.com URL renders
 // natively; the document transform is page-agnostic.
-// ---------------------------------------------------------------------------
 
 const nativeProxy: PreviewResolver = {
   resolve: (bookmark) => {
@@ -111,13 +112,11 @@ const nativeProxy: PreviewResolver = {
   },
 };
 
-// ---------------------------------------------------------------------------
 // Strategy 3: platform strategies — framing-hostile sites with structured
 // data sources. Matched by hostname before any embeddability probe; the
 // server route picks the adapter internally. Predicates are the adapters'
 // own exported `matches` logic — one definition of "an HN item / X status /
 // Reddit thread" per platform, shared by resolver and route.
-// ---------------------------------------------------------------------------
 
 const platformStrategy: PreviewResolver = {
   resolve: (bookmark) => {
@@ -153,4 +152,33 @@ export function resolvePreview(bookmark: Bookmark): PreviewKind {
   // Unresolved URLs are not dead ends: the panel runs checkEmbeddable and
   // either frames the original or routes to /api/preview extraction.
   return { kind: "iframe", src: bookmark.url };
+}
+
+// Media-kind fallback for URLs the resolver chain left as `iframe` but whose
+// content isn't HTML. URL heuristics give the optimistic guess; the probe's
+// Content-Type is authoritative when present. Domain strategies (embed,
+// proxy, server) always win — this only refines the generic iframe path.
+// Pure and client-safe: the panel calls it with the probe result.
+export function effectivePreview(
+  bookmark: Bookmark,
+  probe: { embeddable: boolean; contentType: string | null } | null,
+): PreviewKind {
+  const base = resolvePreview(bookmark);
+  if (base.kind !== "iframe") return base;
+
+  const cls =
+    classifyContentType(probe?.contentType ?? null) ??
+    classifyUrl(bookmark.url);
+  if (!cls || cls === "html") return base;
+
+  // Not framable as HTML → embeddability is moot; route to the media viewer.
+  // Media streams through our auth+SSRF-guarded proxy route, never direct:
+  // cross-origin media in a plain <img>/<video> leaks nothing to us but
+  // often breaks on hotlink protection and mixed CSP, and PDFs need same-
+  // origin workers. The proxy also enforces a size cap.
+  const proxied = `/api/preview/media?url=${encodeURIComponent(bookmark.url)}`;
+  if (cls === "pdf") return { kind: "pdf", src: proxied };
+  if (cls === "image") return { kind: "image", src: proxied };
+  if (cls === "video") return { kind: "video", src: proxied };
+  return { kind: "audio", src: proxied };
 }

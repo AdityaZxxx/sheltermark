@@ -2,6 +2,7 @@ import type { PreviewDocumentKind } from "~/lib/schemas/preview.schema";
 
 import { getDb } from "~/lib/data/db";
 import {
+  deleteExtraction,
   findExtraction,
   isFresh,
   upsertExtraction,
@@ -9,11 +10,12 @@ import {
 } from "~/lib/data/repositories/preview.repository";
 import { logger } from "~/lib/utils/logger";
 
-interface CacheDocument {
+export interface CacheDocument {
   status: "ok" | "empty";
   title: string | null;
   byline: string | null;
   siteName: string | null;
+  publishedTime: string | null;
   excerpt: string | null;
   html: string | null;
 }
@@ -37,6 +39,7 @@ export async function readCached(
     title: cached.title,
     byline: cached.byline,
     siteName: cached.siteName,
+    publishedTime: cached.publishedTime,
     excerpt: cached.excerpt,
     html: cached.html,
   };
@@ -60,6 +63,7 @@ export async function writeCached(
       title: doc.title,
       byline: doc.byline,
       siteName: doc.siteName,
+      publishedTime: doc.publishedTime,
       excerpt: doc.excerpt,
       html: doc.html,
       length,
@@ -85,4 +89,19 @@ export function revalidateInBackground(
         error,
       });
     });
+}
+
+// "Refresh preview" support: evict a cached document so the next read
+// extracts fresh. Best-effort — a failed eviction degrades to the cached
+// doc, never a failed request.
+export async function evictCached(
+  url: string,
+  kind: PreviewDocumentKind,
+): Promise<void> {
+  if (!process.env.DATABASE_URL) return;
+  try {
+    await deleteExtraction(getDb(), urlHash(url), kind);
+  } catch (error) {
+    logger.warn("Preview cache evict failed", { url, error });
+  }
 }

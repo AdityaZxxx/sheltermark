@@ -51,6 +51,7 @@ export async function extractContent(url: string): Promise<ExtractionResult> {
     title: article.title ?? url,
     byline: article.byline,
     siteName: article.siteName,
+    publishedTime: article.publishedTime,
     excerpt: article.excerpt,
     // Absolutize before sanitizing so relative links/images resolve against
     // the source site, not our origin; sanitize afterwards to scrub whatever
