@@ -56,46 +56,26 @@ export async function getWorkspaceTagsWithCount(
 ): Promise<ActionResult<TagWithCount[]>> {
   try {
     const rows = await db
-      .select({ id: bookmarks.id })
-      .from(bookmarks)
+      .select({
+        tagId: tags.id,
+        tag: tags,
+        count: count(bookmarkTags.bookmark_id),
+      })
+      .from(bookmarkTags)
+      .innerJoin(bookmarks, eq(bookmarks.id, bookmarkTags.bookmark_id))
+      .innerJoin(tags, eq(tags.id, bookmarkTags.tag_id))
       .where(
         and(
           eq(bookmarks.workspace_id, workspaceId),
           eq(bookmarks.user_id, userId),
           isNull(bookmarks.deleted_at),
-        ),
-      );
-    const bookmarkIds = rows.map((b) => b.id);
-    if (bookmarkIds.length === 0) {
-      return { success: true, data: [] };
-    }
-
-    const links = await db
-      .select({
-        tagId: bookmarkTags.tag_id,
-        tag: tags,
-      })
-      .from(bookmarkTags)
-      .innerJoin(tags, eq(tags.id, bookmarkTags.tag_id))
-      .where(
-        and(
-          inArray(bookmarkTags.bookmark_id, bookmarkIds),
           eq(tags.user_id, userId),
         ),
-      );
+      )
+      .groupBy(tags.id);
 
-    const countByTag = new Map<string, number>();
-    const tagInfoMap = new Map<string, Tag>();
-    for (const link of links) {
-      tagInfoMap.set(link.tagId, toTag(link.tag));
-      countByTag.set(link.tagId, (countByTag.get(link.tagId) ?? 0) + 1);
-    }
-
-    const result: TagWithCount[] = Array.from(tagInfoMap.entries())
-      .map(([id, info]) => ({
-        ...info,
-        count: countByTag.get(id) ?? 0,
-      }))
+    const result: TagWithCount[] = rows
+      .map((row) => ({ ...toTag(row.tag), count: row.count }))
       .toSorted((a, b) => a.name.localeCompare(b.name));
 
     return { success: true, data: result };
@@ -188,6 +168,46 @@ export async function upsertTag(
       return { success: false, error: "Failed to upsert tag" };
     }
     return { success: true, data: toTag(row) };
+  } catch (err) {
+    return dbError("Tag", err);
+  }
+}
+
+/**
+ * Bulk variant of upsertTag: minimal round trips for any number of names.
+ * Names are deduped case-insensitively (citext collation) before the insert;
+ * returned rows have no guaranteed order — callers key by name/id, not
+ * position.
+ */
+export async function upsertTags(
+  db: DrizzleDb,
+  userId: string,
+  names: string[],
+): Promise<ActionResult<Tag[]>> {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const raw of names) {
+    const name = raw.trim();
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(name);
+  }
+  if (unique.length === 0) return { success: true, data: [] };
+
+  try {
+    // Two round trips for N names (vs N): insert the missing ones, then
+    // select all by name — onConflictDoNothing's RETURNING only yields the
+    // newly created rows, so the select is what resolves every name to a row.
+    await db
+      .insert(tags)
+      .values(unique.map((name) => ({ user_id: userId, name })))
+      .onConflictDoNothing({ target: [tags.user_id, tags.name] });
+    const rows = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.user_id, userId), inArray(tags.name, unique)));
+    return { success: true, data: rows.map(toTag) };
   } catch (err) {
     return dbError("Tag", err);
   }

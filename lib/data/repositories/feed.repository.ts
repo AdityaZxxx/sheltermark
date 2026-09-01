@@ -194,7 +194,7 @@ async function syncSingleFeed(
     await db
       .update(feeds)
       .set({ last_synced_at: new Date().toISOString() })
-      .where(eq(feeds.id, feed.id));
+      .where(and(eq(feeds.id, feed.id), eq(feeds.user_id, userId)));
     return {
       success: false,
       error: "Failed to sync this feed. Please try again.",
@@ -276,7 +276,7 @@ async function syncSingleFeed(
       icon_url: siteMeta?.favicon_url || null,
       last_synced_at: new Date().toISOString(),
     })
-    .where(eq(feeds.id, feed.id));
+    .where(and(eq(feeds.id, feed.id), eq(feeds.user_id, userId)));
 
   return { success: true, data: { syncedCount: newItems.length } };
 }

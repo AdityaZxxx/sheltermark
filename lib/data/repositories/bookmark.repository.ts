@@ -14,7 +14,10 @@ import { generateTagSuggestions } from "~/lib/ai/generate-tag-suggestions";
 import { generateBookmarkTitle } from "~/lib/ai/generate-title";
 import { generateSearchTerms } from "~/lib/ai/interpret-search-query";
 import { checkRateLimit } from "~/lib/ai/rate-limit";
-import { getUserTags, upsertTag } from "~/lib/data/repositories/tag.repository";
+import {
+  getUserTags,
+  upsertTags,
+} from "~/lib/data/repositories/tag.repository";
 import { bookmarkTags, bookmarks, tags, workspaces } from "~/lib/data/schema";
 import { fetchMetadata } from "~/lib/metadata/pipeline";
 import {
@@ -150,17 +153,13 @@ export async function insertBookmark(
 
   const bookmark = toBookmark(row);
 
-  // Resolve-or-create each tag by name then link. Post-insert failures leave
+  // Resolve-or-create all tags in bulk then link. Post-insert failures leave
   // the bookmark saved but return an error so the caller never reports a
   // broken partial state as success.
   if (tagNames && tagNames.length > 0) {
-    const deduped = dedupeTagNames(tagNames);
-    const resolved: Tag[] = [];
-    for (const name of deduped) {
-      const upserted = await upsertTag(db, userId, name);
-      if (!upserted.success) return { success: false, error: upserted.error };
-      resolved.push(upserted.data);
-    }
+    const upserted = await upsertTags(db, userId, tagNames);
+    if (!upserted.success) return { success: false, error: upserted.error };
+    const resolved = upserted.data;
     if (resolved.length > 0) {
       try {
         await db.insert(bookmarkTags).values(
@@ -177,20 +176,6 @@ export async function insertBookmark(
   }
 
   return { success: true, data: bookmark, tags: [] };
-}
-
-/** Case-insensitive, whitespace-trimmed dedup matching the citext collation. */
-function dedupeTagNames(names: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of names) {
-    const name = raw.trim();
-    const key = name.toLowerCase();
-    if (!name || seen.has(key)) continue;
-    seen.add(key);
-    out.push(name);
-  }
-  return out;
 }
 
 export async function getBookmarks(
@@ -448,20 +433,21 @@ async function linkImportedBookmarkTags(
   }
   if (tagNames.size === 0) return errors;
 
-  const tagIdsByName = new Map<string, string>();
-  for (const name of tagNames) {
-    const upserted = await upsertTag(db, userId, name);
-    if (!upserted.success) {
-      errors.push("Failed to restore tags");
-      return errors;
-    }
-    tagIdsByName.set(name, upserted.data.id);
+  const resolved = await upsertTags(db, userId, [...tagNames]);
+  if (!resolved.success) {
+    errors.push("Failed to restore tags");
+    return errors;
   }
+  // citext keeps the first-seen casing; input names may differ in case, so
+  // key the lookup case-insensitively.
+  const tagIdsByName = new Map(
+    resolved.data.map((tag) => [tag.name.toLowerCase(), tag.id]),
+  );
 
   const tagsByUrl = new Map<string, string[]>();
   for (const bm of sourceBookmarks) {
     const names = (bm.tags ?? [])
-      .map((rawName) => rawName.trim())
+      .map((rawName) => rawName.trim().toLowerCase())
       .filter((name) => name && tagIdsByName.has(name));
     if (names.length === 0) continue;
     const existing = tagsByUrl.get(bm.url);
