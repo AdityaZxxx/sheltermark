@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { DrizzleDb } from "~/lib/data/db";
@@ -83,7 +83,10 @@ export async function getWorkspaces(
           asc(workspaces.created_at),
         ),
       db
-        .select({ workspaceId: bookmarks.workspace_id })
+        .select({
+          workspaceId: bookmarks.workspace_id,
+          count: count(bookmarks.id),
+        })
         .from(bookmarks)
         .where(
           and(
@@ -91,14 +94,15 @@ export async function getWorkspaces(
             isNull(bookmarks.deleted_at),
             isNotNull(bookmarks.workspace_id),
           ),
-        ),
+        )
+        .groupBy(bookmarks.workspace_id),
     ]);
 
     const countMap = new Map<string, number>();
     for (const row of countRows) {
       const workspaceId = row.workspaceId;
       if (!workspaceId) continue;
-      countMap.set(workspaceId, (countMap.get(workspaceId) ?? 0) + 1);
+      countMap.set(workspaceId, row.count);
     }
 
     return {

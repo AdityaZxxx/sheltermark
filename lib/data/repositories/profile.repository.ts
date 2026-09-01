@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 
 import type { DrizzleDb } from "~/lib/data/db";
 import type {
@@ -253,6 +253,8 @@ export async function getPublicProfile(
         and(
           eq(workspaces.user_id, profileRow.id),
           eq(workspaces.is_public, true),
+          // RLS parity: trashed workspaces are invisible to anonymous readers.
+          isNull(workspaces.deleted_at),
         ),
       )
       .orderBy(asc(workspaces.created_at));
@@ -261,10 +263,17 @@ export async function getPublicProfile(
 
     let bookmarkRows: Array<typeof bookmarks.$inferSelect> = [];
     if (workspaceIds.length > 0) {
+      // RLS parity: only live rows of public workspaces are visible to
+      // anonymous readers — soft-deleted bookmarks must never leak here.
       bookmarkRows = await db
         .select()
         .from(bookmarks)
-        .where(inArray(bookmarks.workspace_id, workspaceIds));
+        .where(
+          and(
+            inArray(bookmarks.workspace_id, workspaceIds),
+            isNull(bookmarks.deleted_at),
+          ),
+        );
     }
 
     const bookmarksByWorkspace = new Map<string, BookmarkPreview[]>();

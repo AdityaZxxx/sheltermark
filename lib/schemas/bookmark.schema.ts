@@ -15,7 +15,9 @@ export const bookmarkDeleteSchema = z.object({
 
 export const bookmarkMoveSchema = z.object({
   ids: z.array(uuidSchema).min(1, "At least one bookmark ID required"),
-  targetWorkspaceId: uuidSchema,
+  // "null" is the unsorted workspace sentinel — the repository maps it to
+  // workspace_id IS NULL.
+  targetWorkspaceId: z.union([uuidSchema, z.literal("null")]),
 });
 
 export const bookmarkRenameSchema = z.object({
