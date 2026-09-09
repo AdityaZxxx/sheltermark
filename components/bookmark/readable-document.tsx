@@ -147,7 +147,7 @@ export function ReadableDocument({
 
   return (
     <div
-      className="h-full overflow-auto"
+      className="h-full min-h-0 overflow-auto overscroll-contain"
       style={readerStyle({ theme, font, size })}
     >
       <article

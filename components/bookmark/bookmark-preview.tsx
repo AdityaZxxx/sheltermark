@@ -394,7 +394,7 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
         </div>
       )}
 
-      <div className="relative flex-1 bg-muted/30">
+      <div className="relative flex-1 min-h-0 overflow-hidden bg-muted/30">
         {resolved.kind === "pdf" ? (
           <PdfViewer
             src={resolved.src}
