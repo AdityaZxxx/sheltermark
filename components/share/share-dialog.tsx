@@ -1,11 +1,13 @@
 "use client";
 
 import { CaretUpDownIcon, GlobeIcon, LinkIcon } from "@phosphor-icons/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
+import { useUser } from "~/components/providers/user-context";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -24,6 +26,8 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useBookmarkMutations } from "~/hooks/use-bookmark-mutations";
+import { bookmarkKeys } from "~/lib/query-keys";
+import { normalizeUrl } from "~/lib/utils";
 import { getPastelColor } from "~/lib/utils";
 
 interface ShareDialogProps {
@@ -46,6 +50,8 @@ export function ShareDialog({
   onSuccess,
 }: ShareDialogProps) {
   const { addBookmark } = useBookmarkMutations();
+  const queryClient = useQueryClient();
+  const user = useUser();
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
     currentWorkspaceId || workspaces[0]?.id || null,
   );
@@ -54,6 +60,19 @@ export function ShareDialog({
   const handleSave = () => {
     if (!selectedWorkspaceId) {
       toast.error("Please select a workspace");
+      return;
+    }
+    const normalized = normalizeUrl(url);
+    const existing =
+      queryClient.getQueryData<any[]>(bookmarkKeys.all(user.id)) ?? [];
+    if (
+      existing.some(
+        (b) =>
+          normalizeUrl(b.url) === normalized &&
+          b.workspace_id === selectedWorkspaceId,
+      )
+    ) {
+      toast.error("Bookmark already exists in this workspace");
       return;
     }
 

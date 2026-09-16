@@ -18,7 +18,7 @@ import { useViewPreference } from "~/hooks/use-view-preference";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { useRestoreBookmarks } from "~/lib/mutations/trash.mutations";
 import { PREVIEW_PANEL_ATTR } from "~/lib/preview/reader-prefs";
-import { isUrlLike } from "~/lib/utils";
+import { isUrlLike, normalizeUrl } from "~/lib/utils";
 
 function copyUrlToClipboard(url: string) {
   navigator.clipboard.writeText(url);
@@ -639,16 +639,26 @@ export function useBookmarkListManager(
       toast.error("Please create a workspace first");
       return false;
     }
-    const normalizedUrl = trimmed.startsWith("http")
+    const urlWithProtocol = trimmed.startsWith("http")
       ? trimmed
       : `https://${trimmed}`;
-    mutations.addBookmark(
-      { url: normalizedUrl, workspaceId: targetWorkspace.id },
-      {
-        onSuccess: () => invalidate(),
-        onError: () => toast.error("Failed to add bookmark"),
-      },
-    );
+    const normalizedUrl = normalizeUrl(urlWithProtocol);
+    if (
+      bookmarks.some(
+        (b) =>
+          normalizeUrl(b.url) === normalizedUrl &&
+          b.workspace_id === targetWorkspace.id,
+      )
+    ) {
+      toast.error("Bookmark already exists in this workspace");
+      return false;
+    }
+    const clientId = crypto.randomUUID();
+    mutations.addBookmark({
+      url: urlWithProtocol,
+      workspaceId: targetWorkspace.id,
+      clientId,
+    });
     return true;
   };
 

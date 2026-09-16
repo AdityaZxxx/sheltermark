@@ -13,7 +13,7 @@ interface VirtualListProps<T> {
   scrollRef: RefObject<HTMLDivElement | null>;
 }
 
-export function VirtualList<T extends { id: string }>({
+export function VirtualList<T extends { id: string; url?: string }>({
   items,
   estimateSize,
   renderItem,

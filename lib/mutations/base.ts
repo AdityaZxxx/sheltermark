@@ -106,7 +106,8 @@ interface OptimisticMutationOptions<TVariables, TData, TQueryData> {
     variables: TVariables,
   ) => TQueryData;
   /** Success-only hook. Failure toasts are always owned by this module. */
-  onSuccessData?: (data: TData) => void;
+  onSuccessData?: (data: TData, client: QueryClient) => void;
+  invalidateOnSettled?: boolean;
 }
 
 interface MutationContext {
@@ -130,6 +131,7 @@ export function useOptimisticMutation<TVariables, TData, TQueryData>(
     errorMessage = GENERIC_ERROR,
     prepareOptimisticData,
     onSuccessData,
+    invalidateOnSettled = true,
   } = options;
 
   return useMutation<ActionResult<TData>, Error, TVariables, MutationContext>({
@@ -199,17 +201,25 @@ export function useOptimisticMutation<TVariables, TData, TQueryData>(
       }
       toast.error(errorMessage);
     },
-    onSuccess: (result: ActionResult<TData>) => {
+    onSuccess: (
+      result: ActionResult<TData>,
+      _variables: TVariables,
+      context: MutationContext | undefined,
+    ) => {
       const spec = resolveResultToast(result, {
         errorMessage,
         successMessage: successMessageOnMutate ? null : successMessage,
       });
       if (spec.type === "error") {
+        if (context?.successToastId !== undefined) {
+          toast.dismiss(context.successToastId);
+        }
+        context?.rollback();
         toast.error(spec.message);
         return;
       }
       if (spec.message !== null) toast.success(spec.message);
-      onSuccessData?.(spec.data);
+      onSuccessData?.(spec.data, queryClient);
     },
     onSettled: (
       _data: ActionResult<TData> | undefined,
@@ -217,6 +227,7 @@ export function useOptimisticMutation<TVariables, TData, TQueryData>(
       _variables: TVariables,
       context: MutationContext | undefined,
     ) => {
+      if (!invalidateOnSettled) return;
       queryClient.invalidateQueries({ queryKey });
       if (context?.additionalKeys) {
         for (const key of context.additionalKeys) {

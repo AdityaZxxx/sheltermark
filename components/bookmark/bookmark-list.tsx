@@ -141,17 +141,18 @@ export function BookmarkList({
       <div>
         {exiting.length > 0 && (
           <div className="flex flex-col gap-1 mb-1">
-            {exiting.map((bookmark) =>
-              IsList ? (
-                <div key={bookmark.id} className={exitClass}>
+            {exiting.map((bookmark) => {
+              const stableKey = bookmark.id;
+              return IsList ? (
+                <div key={stableKey} className={exitClass}>
                   <BookmarkListItem {...getCommonProps(bookmark, 0)} />
                 </div>
               ) : (
-                <div key={bookmark.id} className={exitClass}>
+                <div key={stableKey} className={exitClass}>
                   <BookmarkComfortItem {...getCommonProps(bookmark, 0)} />
                 </div>
-              ),
-            )}
+              );
+            })}
           </div>
         )}
         {/* key forces a fresh virtualizer per view — stale measurements from
@@ -176,15 +177,19 @@ export function BookmarkList({
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {exiting.map((bookmark) => (
-        <div key={bookmark.id} className={exitClass}>
-          <BookmarkCardItem {...getCommonProps(bookmark, 0)} />
-        </div>
-      ))}
+      {exiting.map((bookmark) => {
+        const stableKey = bookmark.id;
+        return (
+          <div key={stableKey} className={exitClass}>
+            <BookmarkCardItem {...getCommonProps(bookmark, 0)} />
+          </div>
+        );
+      })}
       {filteredBookmarks.map((bookmark, index) => {
         const props = getCommonProps(bookmark, index);
+        const stableKey = bookmark.id;
         return (
-          <div key={bookmark.id} style={{ contentVisibility: "auto" }}>
+          <div key={stableKey} style={{ contentVisibility: "auto" }}>
             <BookmarkCardItem {...props} />
           </div>
         );
