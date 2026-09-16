@@ -2,8 +2,9 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
+import { useContext } from "react";
 
-import { useUser } from "~/components/providers/user-context";
+import { UserContext } from "~/components/providers/user-context";
 import {
   useCreateWorkspace,
   useDeleteWorkspace,
@@ -20,12 +21,14 @@ export function useWorkspaces() {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const serverUser = useUser();
-  const userId = serverUser.id;
+  const serverUser = useContext(UserContext);
+  const userId = serverUser?.id ?? "";
+  const isAuthed = Boolean(serverUser);
 
-  const { data: workspaces = [], isLoading: isWsLoading } = useQuery(
-    workspacesQueryOptions(userId),
-  );
+  const { data: workspaces = [], isLoading: isWsLoading } = useQuery({
+    ...workspacesQueryOptions(userId),
+    enabled: isAuthed,
+  });
 
   const routeWorkspaceId =
     pathname.match(/^\/workspace\/([^/]+)$/)?.[1] ?? null;

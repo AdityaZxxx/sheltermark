@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 
 import { createContext, use } from "react";
 
-const UserContext = createContext<User | null | undefined>(undefined);
+export const UserContext = createContext<User | null | undefined>(undefined);
 
 interface UserProviderProps {
   user: User;
