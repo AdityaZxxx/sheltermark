@@ -3,22 +3,23 @@
 import { TagIcon } from "@phosphor-icons/react";
 
 import { useWorkspaceTagsWithCount } from "~/hooks/use-tags";
+import { useWorkspaces } from "~/hooks/use-workspaces";
 import { cn } from "~/lib/utils";
 
 interface BookmarkTagFilterProps {
   selectedTagIds: string[];
   onChange: (tagIds: string[]) => void;
   onManageTags?: () => void;
-  workspaceId?: string;
 }
 
 export function BookmarkTagFilter({
   selectedTagIds,
   onChange,
   onManageTags,
-  workspaceId,
 }: BookmarkTagFilterProps) {
-  const { tags, isLoading } = useWorkspaceTagsWithCount(workspaceId);
+  const { currentWorkspace } = useWorkspaces();
+  const currentWorkspaceId = currentWorkspace?.id;
+  const { tags, isLoading } = useWorkspaceTagsWithCount(currentWorkspaceId);
 
   if (isLoading) return null;
   if (tags.length === 0) return null;

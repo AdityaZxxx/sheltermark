@@ -1,7 +1,5 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
-
 import { GearIcon, UserIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -41,17 +39,15 @@ interface SettingsFooterState {
   onSubmit: () => void;
 }
 
+import { useUser } from "~/components/providers/user-context";
+
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User;
 }
 
-export function SettingsDialog({
-  open,
-  onOpenChange,
-  user,
-}: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+  const user = useUser();
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -118,7 +114,6 @@ export function SettingsDialog({
 
           <TabsContent value="general" className="flex flex-1 min-h-0 flex-col">
             <SettingsGeneralTab
-              user={user}
               onCancel={() => onOpenChange(false)}
               onOpenExportDialog={() => setExportDialogOpen(true)}
               onOpenImportDialog={() => setImportDialogOpen(true)}

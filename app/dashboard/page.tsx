@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <UserProvider user={user}>
         <main className="flex h-dvh flex-col overflow-hidden bg-background">
-          <Header user={user} />
+          <Header />
           <BookmarkView scope={{ type: "global" }} />
           <Suspense>
             <ShareDialogManager />

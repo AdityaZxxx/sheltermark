@@ -7,7 +7,6 @@ import { BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
-import type { Workspace } from "~/lib/schemas/workspace.schema";
 
 import { useExitAnimation } from "~/hooks/use-exit-animation";
 import { safeDomain } from "~/lib/utils";
@@ -23,8 +22,6 @@ interface BookmarkListProps {
   isLoading: boolean;
   searchQuery: string;
   filteredBookmarks: Bookmark[];
-  workspaces: Workspace[];
-  currentWorkspaceId?: string;
   selectedIds: string[];
   isSelectionMode: boolean;
   focusedIndex: number;
@@ -51,8 +48,6 @@ export function BookmarkList({
   isLoading,
   searchQuery,
   filteredBookmarks,
-  workspaces,
-  currentWorkspaceId,
   selectedIds,
   isSelectionMode,
   focusedIndex,
@@ -122,8 +117,6 @@ export function BookmarkList({
       isSelected,
       isSelectionMode,
       bookmarkWorkspaceId: bookmark.workspace_id,
-      workspaces,
-      currentWorkspaceId,
       onSelect,
       onOpen,
       onDelete,

@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowClockwiseIcon,
   ArrowSquareOutIcon,
@@ -19,17 +21,14 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu";
+import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
-
-const EMPTY_WORKSPACES: { id: string; name: string }[] = [];
 
 interface BookmarkContextMenuProps {
   children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
   id: string;
   url: string;
   isSelectionMode?: boolean;
-  workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onEdit?: (id: string) => void;
   onMove?: (id: string) => void;
@@ -45,8 +44,6 @@ export function BookmarkContextMenu({
   id,
   url,
   isSelectionMode,
-  workspaces = EMPTY_WORKSPACES,
-  currentWorkspaceId,
   onSelect,
   onEdit,
   onMove,
@@ -56,6 +53,8 @@ export function BookmarkContextMenu({
   onRefetch,
   onSelectionModeToggle,
 }: BookmarkContextMenuProps) {
+  const { workspaces, currentWorkspace } = useWorkspaces();
+  const currentWorkspaceId = currentWorkspace?.id;
   const handleSelectionModeToggle = () => {
     if (!isSelectionMode) {
       onSelect?.(id);

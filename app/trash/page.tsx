@@ -39,7 +39,7 @@ export default async function TrashPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <UserProvider user={user}>
         <main className="min-h-dvh bg-background">
-          <Header user={user} />
+          <Header />
           <TrashView />
         </main>
       </UserProvider>

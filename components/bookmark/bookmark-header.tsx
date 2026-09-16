@@ -20,7 +20,6 @@ interface BookmarkHeaderProps {
   selectedTagIds: string[];
   count?: number;
   title?: string;
-  workspaceId?: string;
   aiSearchTerms?: string[] | null;
   onAskAi?: () => void;
   isAskingAi?: boolean;
@@ -40,7 +39,6 @@ export function BookmarkHeader({
   selectedTagIds,
   count,
   title = "All Bookmarks",
-  workspaceId,
   aiSearchTerms,
   onAskAi,
   isAskingAi,
@@ -75,7 +73,6 @@ export function BookmarkHeader({
         selectedTagIds={selectedTagIds}
         onChange={onTagFilterChange}
         onManageTags={onManageTags}
-        workspaceId={workspaceId}
       />
 
       <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
