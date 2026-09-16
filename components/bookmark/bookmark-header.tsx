@@ -4,6 +4,8 @@ import type { RefObject } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
+import { isUrlLike } from "~/lib/utils";
+
 import type { BookmarkSort } from "../../lib/schemas/bookmark.schema";
 
 import { BookmarkInput } from "./bookmark-input";
@@ -49,16 +51,27 @@ export function BookmarkHeader({
   onTagFilterChange,
   onManageTags,
 }: BookmarkHeaderProps) {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const value = inputRef.current?.value.trim() ?? "";
+    if (!value) return;
+    onSubmit(value);
+    if (isUrlLike(value)) {
+      onSearchChange("");
+    }
+  };
+
   return (
     <div className="space-y-3 mx-auto sm:space-y-4">
-      <BookmarkInput
-        ref={inputRef}
-        value={searchQuery}
-        onChange={onSearchChange}
-        onSubmit={onSubmit}
-        onAskAi={onAskAi}
-        isAskingAi={isAskingAi}
-      />
+      <form onSubmit={handleSubmit} className="contents">
+        <BookmarkInput
+          ref={inputRef}
+          value={searchQuery}
+          onChange={onSearchChange}
+          onAskAi={onAskAi}
+          isAskingAi={isAskingAi}
+        />
+      </form>
 
       {aiSearchTerms && aiSearchTerms.length > 0 && (
         <output className="flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -125,7 +125,7 @@ export function StoryDemo() {
   return (
     <div ref={cardRef} className={`${CARD_CLASS} p-3`}>
       <div className="pointer-events-none">
-        <BookmarkInput value={query} onChange={setQuery} onSubmit={() => {}} />
+        <BookmarkInput value={query} onChange={setQuery} />
       </div>
       <div className="relative mt-2 rounded-xl">
         {/* Invisible sizer: all rows at max content pin the height, so
