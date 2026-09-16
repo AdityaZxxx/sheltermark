@@ -59,7 +59,9 @@ export function SignupForm({
     setIsLoadingGoogle(false);
   };
 
-  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailSignup = async (
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault();
     setError(null);
     setIsLoadingEmail(true);

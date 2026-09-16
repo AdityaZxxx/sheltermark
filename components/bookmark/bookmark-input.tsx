@@ -30,7 +30,6 @@ function subscribeMotionPref(onChange: () => void) {
 interface BookmarkInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (value: string) => void;
   onAskAi?: () => void;
   isAskingAi?: boolean;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -40,7 +39,6 @@ interface BookmarkInputProps {
 export function BookmarkInput({
   value,
   onChange,
-  onSubmit,
   onAskAi,
   isAskingAi = false,
   onKeyDown,
@@ -94,15 +92,6 @@ export function BookmarkInput({
       if (!isAskingAi) onAskAi?.();
       return;
     }
-    if (e.key === "Enter" && value.trim()) {
-      e.preventDefault();
-      e.stopPropagation();
-      onSubmit(value.trim());
-      if (isUrlLike(value)) {
-        onChange("");
-      }
-      return;
-    }
     if (e.key === "Escape") {
       if (ref && "current" in ref && ref.current) {
         ref.current.blur();
@@ -113,10 +102,13 @@ export function BookmarkInput({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pastedText = e.clipboardData.getData("text");
-    if (pastedText.includes("\n")) {
-      e.preventDefault();
-      onSubmit(pastedText);
+    if (!pastedText.includes("\n")) return;
+    e.preventDefault();
+    onChange(pastedText);
+    if (ref && "current" in ref && ref.current) {
+      ref.current.value = pastedText;
     }
+    e.currentTarget.form?.requestSubmit();
   };
 
   return (

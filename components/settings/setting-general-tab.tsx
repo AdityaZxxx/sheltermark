@@ -1,7 +1,5 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
-
 import {
   DownloadSimpleIcon,
   EnvelopeIcon,
@@ -14,6 +12,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { deleteAvatar, uploadAvatar } from "~/app/action/setting.action";
+import { useUser } from "~/components/providers/user-context";
 import { AvatarUpload } from "~/components/settings/avatar-upload";
 import { CloudBackupSection } from "~/components/settings/cloud-backup-section";
 import { Button } from "~/components/ui/button";
@@ -45,7 +44,6 @@ import {
 import { getPastelColor } from "~/lib/utils";
 
 interface SettingsGeneralTabProps {
-  user: User;
   onCancel: () => void;
   onOpenExportDialog: () => void;
   onOpenImportDialog: () => void;
@@ -58,13 +56,13 @@ interface SettingsGeneralTabProps {
 }
 
 export function SettingsGeneralTab({
-  user,
   onCancel,
   onOpenExportDialog,
   onOpenImportDialog,
   onOpenDeleteAlert,
   onRegisterFooter,
 }: SettingsGeneralTabProps) {
+  const user = useUser();
   const { profile, updateProfile } = useProfile();
   const { workspaces, setDefaultWorkspace, isSettingDefault } = useWorkspaces();
   const defaultName = profile?.name || "";

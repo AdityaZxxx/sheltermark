@@ -55,7 +55,6 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
             count={vm.bookmarks.length}
             title={vm.currentWorkspace?.name ?? "All Bookmarks"}
             selectedTagIds={vm.selectedTagIds}
-            workspaceId={vm.currentWorkspace?.id}
             aiSearchTerms={vm.aiSearchTerms}
             onAskAi={vm.handleAskAi}
             isAskingAi={vm.isAiSearching}
@@ -80,8 +79,6 @@ export function BookmarkView({ scope }: { scope: BookmarkScope }) {
             isLoading={vm.isLoading}
             searchQuery={vm.searchQuery}
             filteredBookmarks={vm.bookmarks}
-            workspaces={vm.workspaces}
-            currentWorkspaceId={vm.currentWorkspace?.id}
             selectedIds={vm.selection.selectedIds}
             isSelectionMode={vm.selection.isSelectionMode}
             focusedIndex={vm.focusedIndex}

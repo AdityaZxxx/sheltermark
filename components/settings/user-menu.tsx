@@ -1,7 +1,5 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
-
 import {
   ArchiveIcon,
   CaretUpDownIcon,
@@ -32,10 +30,6 @@ import { Button } from "../ui/button";
 import { ShortcutButton } from "./keyboard-shortcuts-dialog";
 import { SettingsDialog } from "./setting-dialog";
 
-interface UserMenuProps {
-  user: User;
-}
-
 type BackupOutcome = "ok" | "denied" | "failed" | "invalid" | "unconfigured";
 
 /**
@@ -61,7 +55,7 @@ function readBackupOutcome(): BackupOutcome | null {
   return "ok";
 }
 
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu() {
   const [isPending, startTransition] = useTransition();
   const [backupOutcome] = useState(readBackupOutcome);
   // Open Settings automatically only when the OAuth round-trip returns.
@@ -219,11 +213,7 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        user={user}
-      />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       <FeedManager open={feedsOpen} onOpenChange={setFeedsOpen} />
     </>

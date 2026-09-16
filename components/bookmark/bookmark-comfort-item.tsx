@@ -1,3 +1,5 @@
+"use client";
+
 import { GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 
@@ -7,6 +9,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import { useWorkspaces } from "~/hooks/use-workspaces";
 import { cn } from "~/lib/utils";
 import { formatRelativeTime } from "~/lib/utils/format";
 
@@ -31,8 +34,6 @@ interface BookmarkItemProps {
   isSelected?: boolean | undefined;
   isSelectionMode?: boolean | undefined;
   bookmarkWorkspaceId?: string | null;
-  workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string | undefined;
   onSelect?: ((id: string) => void) | undefined;
   onOpen?: ((id: string) => void) | undefined;
   onDelete?: ((id: string) => void) | undefined;
@@ -68,8 +69,6 @@ export function BookmarkComfortItem({
   isSelected,
   isSelectionMode,
   bookmarkWorkspaceId,
-  workspaces = [],
-  currentWorkspaceId,
   onSelect,
   onOpen,
   onDelete,
@@ -84,6 +83,8 @@ export function BookmarkComfortItem({
   disableContextMenu = false,
   refetchingId,
 }: BookmarkComfortItemProps) {
+  const { workspaces, currentWorkspace } = useWorkspaces();
+  const currentWorkspaceId = currentWorkspace?.id;
   const safeTags = tags ?? [];
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
   const workspaceName = showWorkspaceBadge
@@ -271,8 +272,6 @@ export function BookmarkComfortItem({
       id={id}
       url={url}
       isSelectionMode={isSelectionMode}
-      workspaces={workspaces}
-      currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
       onEdit={onEdit}

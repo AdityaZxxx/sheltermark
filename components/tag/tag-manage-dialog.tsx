@@ -86,7 +86,7 @@ export function TagManageDialog({
     setInlineError(null);
   }
 
-  function commitRename(e?: React.FormEvent<HTMLFormElement>) {
+  function commitRename(e?: React.SyntheticEvent<HTMLFormElement>) {
     e?.preventDefault();
     if (!editingId) return;
     const trimmed = editingName.trim();

@@ -1,3 +1,5 @@
+"use client";
+
 import { GlobeIcon } from "@phosphor-icons/react";
 import React from "react";
 
@@ -6,6 +8,7 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import { useWorkspaces } from "~/hooks/use-workspaces";
 import { cn } from "~/lib/utils";
 import { formatRelativeTime } from "~/lib/utils/format";
 
@@ -29,8 +32,6 @@ interface BookmarkItemProps {
   isSelected?: boolean;
   isSelectionMode?: boolean;
   bookmarkWorkspaceId?: string | null;
-  workspaces?: { id: string; name: string }[];
-  currentWorkspaceId?: string;
   onSelect?: (id: string) => void;
   onOpen?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -64,8 +65,6 @@ export function BookmarkListItem({
   isSelected,
   isSelectionMode,
   bookmarkWorkspaceId,
-  workspaces = [],
-  currentWorkspaceId,
   onSelect,
   onOpen,
   onDelete,
@@ -80,9 +79,11 @@ export function BookmarkListItem({
   showKbdHint = true,
   refetchingId,
 }: BookmarkListItemProps) {
+  const { workspaces: allWorkspaces, currentWorkspace } = useWorkspaces();
+  const currentWorkspaceId = currentWorkspace?.id;
   const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
   const workspaceName = showWorkspaceBadge
-    ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
+    ? allWorkspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
     : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -207,8 +208,6 @@ export function BookmarkListItem({
       id={id}
       url={url}
       isSelectionMode={isSelectionMode}
-      workspaces={workspaces}
-      currentWorkspaceId={currentWorkspaceId}
       onSelect={onSelect}
       onDelete={onDelete}
       onEdit={onEdit}

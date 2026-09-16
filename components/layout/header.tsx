@@ -1,20 +1,10 @@
-import type { User } from "@supabase/supabase-js";
-
-import { redirect } from "next/navigation";
+"use client";
 
 import { UserMenu } from "../settings/user-menu";
 import { WorkspaceMenu } from "../workspace/workspace-menu";
 import Logo from "./logo";
 
-interface HeaderProps {
-  user: User;
-}
-
-export async function Header({ user }: HeaderProps) {
-  if (!user) {
-    redirect("/login");
-  }
-
+export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full shrink-0 bg-background">
       <div className="mx-auto flex items-center justify-between px-4 md:px-6 py-3">
@@ -23,7 +13,7 @@ export async function Header({ user }: HeaderProps) {
           <WorkspaceMenu />
         </div>
         <div className="flex items-center gap-2">
-          <UserMenu user={user} />
+          <UserMenu />
         </div>
       </div>
     </header>
