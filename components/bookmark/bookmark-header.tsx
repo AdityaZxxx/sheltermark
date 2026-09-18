@@ -3,6 +3,7 @@
 import type { RefObject } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
 import { isUrlLike } from "~/lib/utils";
 
@@ -20,6 +21,7 @@ interface BookmarkHeaderProps {
   searchQuery: string;
   sort: BookmarkSort;
   selectedTagIds: string[];
+  filterTags: TagWithCount[];
   count?: number;
   title?: string;
   aiSearchTerms?: string[] | null;
@@ -39,6 +41,7 @@ export function BookmarkHeader({
   searchQuery,
   sort,
   selectedTagIds,
+  filterTags,
   count,
   title = "All Bookmarks",
   aiSearchTerms,
@@ -62,7 +65,7 @@ export function BookmarkHeader({
   };
 
   return (
-    <div className="space-y-3 mx-auto sm:space-y-4">
+    <div className="flex flex-col gap-3 sm:gap-4">
       <form onSubmit={handleSubmit} className="contents">
         <BookmarkInput
           ref={inputRef}
@@ -82,13 +85,7 @@ export function BookmarkHeader({
         </output>
       )}
 
-      <BookmarkTagFilter
-        selectedTagIds={selectedTagIds}
-        onChange={onTagFilterChange}
-        onManageTags={onManageTags}
-      />
-
-      <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
+      <div className="flex min-h-8 items-center justify-between gap-2">
         <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance tracking-wider">
           {searchQuery ? "Search Results" : title}
           {count !== undefined && count > 0 && (
@@ -114,6 +111,13 @@ export function BookmarkHeader({
           </div>
         </div>
       </div>
+
+      <BookmarkTagFilter
+        tags={filterTags}
+        selectedTagIds={selectedTagIds}
+        onChange={onTagFilterChange}
+        onManageTags={onManageTags}
+      />
     </div>
   );
 }

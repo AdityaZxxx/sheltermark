@@ -25,26 +25,38 @@ import {
 } from "~/lib/mutations/tag.invalidation";
 import { bookmarkKeys, trashKeys, workspaceKeys } from "~/lib/query-keys";
 
-const generateTempId = () =>
-  `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-
 export function useAddBookmark(userId: string) {
   return useOptimisticMutation<
-    { url: string; workspaceId: string },
+    { url: string; workspaceId: string; clientId?: string },
     Bookmark,
     Bookmark[]
   >({
-    mutationFn: ({ url, workspaceId }) => addBookmark({ url, workspaceId }),
+    mutationFn: ({ url, workspaceId, clientId }) =>
+      addBookmark({
+        url,
+        workspaceId,
+        clientId: clientId ?? crypto.randomUUID(),
+      }),
     mutationKey: ["addBookmark"],
     queryKey: bookmarkKeys.all(userId),
     dependentQueryKeys: userId ? [workspaceKeys.all(userId)] : [],
     successMessage: "Bookmark added",
+    successMessageOnMutate: true,
     errorMessage: "Failed to add bookmark",
-    prepareOptimisticData: (oldData, { url, workspaceId }) => {
+    invalidateOnSettled: false,
+    prepareOptimisticData: (oldData, { url, workspaceId, clientId }) => {
+      const id = clientId ?? crypto.randomUUID();
+      const title = (() => {
+        try {
+          return new URL(url).hostname;
+        } catch {
+          return url;
+        }
+      })();
       const optimistic: Bookmark = {
-        id: generateTempId(),
+        id,
         url,
-        title: url,
+        title,
         http_status: null,
         last_checked_at: null,
         is_broken: false,
@@ -60,6 +72,13 @@ export function useAddBookmark(userId: string) {
         deleted_at: null,
       };
       return optimisticPrepend(oldData, optimistic);
+    },
+    onSuccessData: (data, client) => {
+      const key = bookmarkKeys.all(userId);
+      client.setQueryData<Bookmark[]>(key, (old) => {
+        if (!old) return [data];
+        return old.map((b) => (b.id === data.id ? { ...b, ...data } : b));
+      });
     },
   });
 }

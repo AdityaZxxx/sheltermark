@@ -51,6 +51,7 @@ type InsertBookmarkParams = {
   url: string;
   workspaceId?: string | null;
   clientTitle?: string | null;
+  clientId?: string | null;
   /**
    * Tag *names* to create-and-link atomically at insert time. Empty/absent is
    * a no-op so fast flows (action shortcut, context menu, X capture) behave
@@ -94,7 +95,7 @@ function toBookmark(row: BookmarkRow): Bookmark {
 export async function insertBookmark(
   db: DrizzleDb,
   userId: string,
-  { url, workspaceId, clientTitle, tagNames }: InsertBookmarkParams,
+  { url, workspaceId, clientTitle, clientId, tagNames }: InsertBookmarkParams,
   fetchMetadataFn: MetadataFetcher = fetchMetadata,
 ): Promise<InsertBookmarkResult> {
   const normalizedUrl = normalizeUrl(url);
@@ -136,6 +137,8 @@ export async function insertBookmark(
     const inserted = await db
       .insert(bookmarks)
       .values({
+        // Client-generated UUID enables stable optimistic identity for UI reconciliation
+        id: clientId ?? undefined,
         user_id: userId,
         url: normalizedUrl,
         workspace_id: workspaceId ?? null,

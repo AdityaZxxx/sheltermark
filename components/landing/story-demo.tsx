@@ -142,7 +142,6 @@ export function StoryDemo() {
               favicon_url={HERO.favicon}
               brokenStatus="alive"
               httpStatus={null}
-              disableContextMenu
               tabIndex={-1}
               showKbdHint={false}
             />
@@ -158,7 +157,6 @@ export function StoryDemo() {
                 favicon_url={c.favicon}
                 brokenStatus="alive"
                 httpStatus={null}
-                disableContextMenu
                 tabIndex={-1}
                 showKbdHint={false}
               />
@@ -201,7 +199,6 @@ export function StoryDemo() {
                       refetchingId={heroRefetching ? HERO.id : null}
                       brokenStatus="alive"
                       httpStatus={null}
-                      disableContextMenu
                       tabIndex={-1}
                       showKbdHint={false}
                     />
@@ -226,7 +223,6 @@ export function StoryDemo() {
                           ? r.context!.id
                           : null
                       }
-                      disableContextMenu
                       tabIndex={-1}
                       showKbdHint={false}
                     />

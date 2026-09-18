@@ -7,6 +7,7 @@ import { uuidSchema } from "~/lib/schemas/common";
 const bookmarkCreateSchema = z.object({
   url: z.url("Invalid URL format"),
   workspaceId: uuidSchema,
+  clientId: z.string().optional(),
 });
 
 export const bookmarkDeleteSchema = z.object({

@@ -103,59 +103,65 @@ export function BookmarkViewReadOnly({
         </div>
       ) : view === "comfort" ? (
         <div className="flex flex-col gap-1">
-          {filteredBookmarks.map((bookmark, index) => (
-            <BookmarkComfortItem
-              key={bookmark.id}
-              id={bookmark.id}
-              title={bookmark.title || ""}
-              url={bookmark.url}
-              og_image_url={bookmark.og_image_url || undefined}
-              favicon_url={bookmark.favicon_url || undefined}
-              domain={safeDomain(bookmark.url)}
-              created_at={bookmark.created_at}
-              isSelected={false}
-              isSelectionMode={false}
-              tabIndex={index === 0 ? 0 : -1}
-              disableContextMenu={true}
-            />
-          ))}
+          {filteredBookmarks.map((bookmark, index) => {
+            const stableKey = bookmark.id;
+            return (
+              <BookmarkComfortItem
+                key={stableKey}
+                id={bookmark.id}
+                title={bookmark.title || ""}
+                url={bookmark.url}
+                og_image_url={bookmark.og_image_url || undefined}
+                favicon_url={bookmark.favicon_url || undefined}
+                domain={safeDomain(bookmark.url)}
+                created_at={bookmark.created_at}
+                isSelected={false}
+                isSelectionMode={false}
+                tabIndex={index === 0 ? 0 : -1}
+              />
+            );
+          })}
         </div>
       ) : view === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredBookmarks.map((bookmark, index) => (
-            <BookmarkCardItem
-              key={bookmark.id}
-              id={bookmark.id}
-              title={bookmark.title || ""}
-              url={bookmark.url}
-              og_image_url={bookmark.og_image_url || undefined}
-              favicon_url={bookmark.favicon_url || undefined}
-              domain={safeDomain(bookmark.url)}
-              created_at={bookmark.created_at}
-              isSelected={false}
-              isSelectionMode={false}
-              tabIndex={index === 0 ? 0 : -1}
-              disableContextMenu={true}
-            />
-          ))}
+          {filteredBookmarks.map((bookmark, index) => {
+            const stableKey = bookmark.id;
+            return (
+              <BookmarkCardItem
+                key={stableKey}
+                id={bookmark.id}
+                title={bookmark.title || ""}
+                url={bookmark.url}
+                og_image_url={bookmark.og_image_url || undefined}
+                favicon_url={bookmark.favicon_url || undefined}
+                domain={safeDomain(bookmark.url)}
+                created_at={bookmark.created_at}
+                isSelected={false}
+                isSelectionMode={false}
+                tabIndex={index === 0 ? 0 : -1}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filteredBookmarks.map((bookmark, index) => (
-            <BookmarkListItem
-              key={bookmark.id}
-              id={bookmark.id}
-              title={bookmark.title || ""}
-              url={bookmark.url}
-              favicon_url={bookmark.favicon_url || undefined}
-              domain={safeDomain(bookmark.url)}
-              created_at={bookmark.created_at}
-              isSelected={false}
-              isSelectionMode={false}
-              tabIndex={index === 0 ? 0 : -1}
-              disableContextMenu={true}
-            />
-          ))}
+          {filteredBookmarks.map((bookmark, index) => {
+            const stableKey = bookmark.id;
+            return (
+              <BookmarkListItem
+                key={stableKey}
+                id={bookmark.id}
+                title={bookmark.title || ""}
+                url={bookmark.url}
+                favicon_url={bookmark.favicon_url || undefined}
+                domain={safeDomain(bookmark.url)}
+                created_at={bookmark.created_at}
+                isSelected={false}
+                isSelectionMode={false}
+                tabIndex={index === 0 ? 0 : -1}
+              />
+            );
+          })}
         </div>
       )}
     </div>

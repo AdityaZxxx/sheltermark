@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { createParser, useQueryState } from "nuqs";
 import { useContext } from "react";
 
 import { UserContext } from "~/components/providers/user-context";
@@ -15,47 +15,50 @@ import {
   useTouchWorkspaceLastUsed,
 } from "~/lib/mutations/workspace.mutations";
 import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
-import { workspaceKeys } from "~/lib/query-keys";
+import { uuidSchema } from "~/lib/schemas/common";
+
+// Last-used tracking is non-critical, but still needs to run if the tab
+// never reaches an idle state before the user leaves.
+const LAST_USED_IDLE_TIMEOUT_MS = 2_000;
+
+const workspaceIdParamParser = createParser({
+  parse: (value) => (uuidSchema.safeParse(value).success ? value : null),
+  serialize: (value) => value,
+}).withOptions({ shallow: true });
+
+export function useWorkspaceIdParam() {
+  return useQueryState("workspaceId", workspaceIdParamParser);
+}
 
 export function useWorkspaces() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const serverUser = useContext(UserContext);
   const userId = serverUser?.id ?? "";
   const isAuthed = Boolean(serverUser);
+  const [workspaceIdParam, setWorkspaceIdParam] = useWorkspaceIdParam();
 
   const { data: workspaces = [], isLoading: isWsLoading } = useQuery({
     ...workspacesQueryOptions(userId),
     enabled: isAuthed,
   });
 
-  const routeWorkspaceId =
-    pathname.match(/^\/workspace\/([^/]+)$/)?.[1] ?? null;
-
   const currentWorkspace =
-    workspaces.length === 0 || !routeWorkspaceId
+    workspaces.length === 0 || !workspaceIdParam
       ? null
-      : workspaces.find((ws) => ws.id === routeWorkspaceId) ||
+      : workspaces.find((ws) => ws.id === workspaceIdParam) ||
         workspaces.find((ws) => ws.is_default) ||
         workspaces[0];
 
   const touch = useTouchWorkspaceLastUsed(userId);
 
-  const refetchWorkspaces = () => {
-    void queryClient.refetchQueries({
-      queryKey: workspaceKeys.all(userId),
-      type: "active",
+  const setActiveWorkspace = (id: string) => {
+    setWorkspaceIdParam(id);
+    requestIdleCallback(() => touch.mutate(id), {
+      timeout: LAST_USED_IDLE_TIMEOUT_MS,
     });
   };
 
-  const setActiveWorkspace = (id: string) => {
-    touch.mutate(id);
-    router.push(`/workspace/${id}`);
-  };
-
   const clearActiveWorkspace = () => {
-    router.push("/dashboard");
+    setWorkspaceIdParam(null);
   };
 
   const create = useCreateWorkspace(userId);
@@ -66,14 +69,14 @@ export function useWorkspaces() {
   const toggleAutoCheck = useToggleAutoCheckWorkspace(userId);
 
   const deleteWorkspace = (id: string) => {
-    const wasActive = id === routeWorkspaceId;
+    const wasActive = id === workspaceIdParam;
     del.mutate(id, {
       onSuccess: () => {
         if (!wasActive) return;
         const fallback =
           workspaces.find((w) => w.is_default && w.id !== id) ??
           workspaces.find((w) => w.id !== id);
-        router.push(fallback ? `/workspace/${fallback.id}` : "/dashboard");
+        setWorkspaceIdParam(fallback?.id ?? null);
       },
     });
   };
@@ -84,7 +87,6 @@ export function useWorkspaces() {
     isLoading: isWsLoading,
     setActiveWorkspace,
     clearActiveWorkspace,
-    refetchWorkspaces,
     createWorkspace: create.mutate,
     isCreating: create.isPending,
     deleteWorkspace,

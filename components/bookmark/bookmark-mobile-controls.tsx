@@ -56,6 +56,7 @@ export function BookmarkMobileControls({
         render={
           <Button
             variant="secondary"
+            size="icon-lg"
             aria-label="Display & sort options"
             className="active:scale-[0.96] transition-transform"
           />

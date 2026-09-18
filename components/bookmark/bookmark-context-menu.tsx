@@ -10,8 +10,10 @@ import {
   TrashIcon,
 } from "@phosphor-icons/react";
 
+import type { Bookmark } from "~/lib/schemas/bookmark.schema";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
+
 import {
-  ContextMenu,
   ContextMenuContent,
   ContextMenuGroup,
   ContextMenuItem,
@@ -19,15 +21,12 @@ import {
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-  ContextMenuTrigger,
 } from "~/components/ui/context-menu";
-import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
 
 interface BookmarkContextMenuProps {
-  children: (props: React.HTMLAttributes<HTMLElement>) => React.ReactElement;
-  id: string;
-  url: string;
+  activeBookmark: Bookmark | null;
+  availableWorkspaces: WorkspaceWithCount[];
   isSelectionMode?: boolean;
   onSelect?: (id: string) => void;
   onEdit?: (id: string) => void;
@@ -40,9 +39,8 @@ interface BookmarkContextMenuProps {
 }
 
 export function BookmarkContextMenu({
-  children,
-  id,
-  url,
+  activeBookmark,
+  availableWorkspaces,
   isSelectionMode,
   onSelect,
   onEdit,
@@ -53,8 +51,10 @@ export function BookmarkContextMenu({
   onRefetch,
   onSelectionModeToggle,
 }: BookmarkContextMenuProps) {
-  const { workspaces, currentWorkspace } = useWorkspaces();
-  const currentWorkspaceId = currentWorkspace?.id;
+  if (!activeBookmark) return null;
+
+  const { id, url } = activeBookmark;
+
   const handleSelectionModeToggle = () => {
     if (!isSelectionMode) {
       onSelect?.(id);
@@ -62,81 +62,74 @@ export function BookmarkContextMenu({
     }
   };
 
-  const availableWorkspaces = workspaces.filter(
-    (ws) => ws.id !== currentWorkspaceId,
-  );
-
   return (
-    <ContextMenu>
-      <ContextMenuTrigger render={children} />
-      <ContextMenuContent>
-        <ContextMenuItem onClick={() => onEdit?.(id)}>
-          <PencilIcon />
-          Edit
-        </ContextMenuItem>
+    <ContextMenuContent>
+      <ContextMenuItem onClick={() => onEdit?.(id)}>
+        <PencilIcon />
+        Edit
+      </ContextMenuItem>
 
-        <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
-          <CopyIcon />
-          Copy URL
-        </ContextMenuItem>
+      <ContextMenuItem onClick={() => onCopyUrl?.(url)}>
+        <CopyIcon />
+        Copy URL
+      </ContextMenuItem>
 
-        <ContextMenuItem
-          onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
-        >
-          <ArrowSquareOutIcon />
-          Open in new tab
-        </ContextMenuItem>
+      <ContextMenuItem
+        onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
+      >
+        <ArrowSquareOutIcon />
+        Open in new tab
+      </ContextMenuItem>
 
-        <ContextMenuItem onClick={() => onRefetch?.(id)}>
-          <ArrowClockwiseIcon />
-          Refresh Metadata
-        </ContextMenuItem>
+      <ContextMenuItem onClick={() => onRefetch?.(id)}>
+        <ArrowClockwiseIcon />
+        Refresh Metadata
+      </ContextMenuItem>
 
-        {availableWorkspaces.length > 0 && (
-          <ContextMenuSub>
-            <ContextMenuSubTrigger className="flex items-center gap-2.5">
-              <FolderOpenIcon />
-              Move to...
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              <ContextMenuGroup className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
-                {availableWorkspaces.map((ws) => (
-                  <ContextMenuItem
-                    key={ws.id}
-                    onClick={() => onMoveToWorkspace?.(id, ws.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: getPastelColor(ws.id) }}
-                      />
-                      <span className="truncate">{ws.name}</span>
-                    </div>
-                  </ContextMenuItem>
-                ))}
-              </ContextMenuGroup>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => onMove?.(id)}>
-                More...
-              </ContextMenuItem>
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-        )}
+      {availableWorkspaces.length > 0 && (
+        <ContextMenuSub>
+          <ContextMenuSubTrigger className="flex items-center gap-2.5">
+            <FolderOpenIcon />
+            Move to...
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            <ContextMenuGroup className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
+              {availableWorkspaces.map((ws) => (
+                <ContextMenuItem
+                  key={ws.id}
+                  onClick={() => onMoveToWorkspace?.(id, ws.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: getPastelColor(ws.id) }}
+                    />
+                    <span className="truncate">{ws.name}</span>
+                  </div>
+                </ContextMenuItem>
+              ))}
+            </ContextMenuGroup>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={() => onMove?.(id)}>
+              More...
+            </ContextMenuItem>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+      )}
 
-        <ContextMenuSeparator />
+      <ContextMenuSeparator />
 
-        <ContextMenuItem onClick={handleSelectionModeToggle}>
-          <SelectionPlusIcon />
-          Select Multiple
-        </ContextMenuItem>
+      <ContextMenuItem onClick={handleSelectionModeToggle}>
+        <SelectionPlusIcon />
+        Select Multiple
+      </ContextMenuItem>
 
-        <ContextMenuSeparator />
+      <ContextMenuSeparator />
 
-        <ContextMenuItem variant="destructive" onClick={() => onDelete?.(id)}>
-          <TrashIcon />
-          Delete
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+      <ContextMenuItem variant="destructive" onClick={() => onDelete?.(id)}>
+        <TrashIcon />
+        Delete
+      </ContextMenuItem>
+    </ContextMenuContent>
   );
 }

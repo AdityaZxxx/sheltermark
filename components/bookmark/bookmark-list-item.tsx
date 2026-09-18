@@ -8,11 +8,9 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
-import { useWorkspaces } from "~/hooks/use-workspaces";
 import { cn } from "~/lib/utils";
 import { formatRelativeTime } from "~/lib/utils/format";
 
-import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BrokenLinkWarning } from "./broken-link-warning";
 import { Orb } from "./orb";
 
@@ -31,19 +29,11 @@ interface BookmarkItemProps {
   autoCheckBroken?: boolean;
   isSelected?: boolean;
   isSelectionMode?: boolean;
-  bookmarkWorkspaceId?: string | null;
+  workspaceName?: string | null;
   onSelect?: (id: string) => void;
   onOpen?: (id: string) => void;
-  onDelete?: (id: string) => void;
-  onEdit?: (id: string) => void;
   onTagClick?: (tagId: string) => void;
-  onMove?: (id: string) => void;
-  onMoveToWorkspace?: (id: string, workspaceId: string) => void;
-  onCopyUrl?: (url: string) => void;
-  onRefetch?: (id: string) => void;
-  onSelectionModeToggle?: () => void;
   tabIndex?: number;
-  disableContextMenu?: boolean;
   showKbdHint?: boolean;
   refetchingId?: string | null;
 }
@@ -64,27 +54,13 @@ export function BookmarkListItem({
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
-  bookmarkWorkspaceId,
+  workspaceName,
   onSelect,
   onOpen,
-  onDelete,
-  onEdit,
-  onMove,
-  onMoveToWorkspace,
-  onCopyUrl,
-  onRefetch,
-  onSelectionModeToggle,
   tabIndex,
-  disableContextMenu = false,
   showKbdHint = true,
   refetchingId,
 }: BookmarkListItemProps) {
-  const { workspaces: allWorkspaces, currentWorkspace } = useWorkspaces();
-  const currentWorkspaceId = currentWorkspace?.id;
-  const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
-  const workspaceName = showWorkspaceBadge
-    ? allWorkspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
-    : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -199,25 +175,5 @@ export function BookmarkListItem({
     </button>
   );
 
-  if (disableContextMenu) {
-    return buttonContent;
-  }
-
-  return (
-    <BookmarkContextMenu
-      id={id}
-      url={url}
-      isSelectionMode={isSelectionMode}
-      onSelect={onSelect}
-      onDelete={onDelete}
-      onEdit={onEdit}
-      onMove={onMove}
-      onMoveToWorkspace={onMoveToWorkspace}
-      onCopyUrl={onCopyUrl}
-      onRefetch={onRefetch}
-      onSelectionModeToggle={onSelectionModeToggle}
-    >
-      {(triggerProps) => <div {...triggerProps}>{buttonContent}</div>}
-    </BookmarkContextMenu>
-  );
+  return buttonContent;
 }

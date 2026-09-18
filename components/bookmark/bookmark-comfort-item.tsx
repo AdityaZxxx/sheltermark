@@ -9,11 +9,9 @@ import type { Tag } from "~/lib/schemas/tag.schema";
 import { ProgressiveImage } from "~/components/progressive-image";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
-import { useWorkspaces } from "~/hooks/use-workspaces";
 import { cn } from "~/lib/utils";
 import { formatRelativeTime } from "~/lib/utils/format";
 
-import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BookmarkNoteText } from "./bookmark-note-text";
 import { BrokenLinkWarning } from "./broken-link-warning";
 import { Orb } from "./orb";
@@ -33,19 +31,11 @@ interface BookmarkItemProps {
   autoCheckBroken?: boolean | undefined;
   isSelected?: boolean | undefined;
   isSelectionMode?: boolean | undefined;
-  bookmarkWorkspaceId?: string | null;
+  workspaceName?: string | null;
   onSelect?: ((id: string) => void) | undefined;
   onOpen?: ((id: string) => void) | undefined;
-  onDelete?: ((id: string) => void) | undefined;
-  onEdit?: ((id: string) => void) | undefined;
   onTagClick?: ((tagId: string) => void) | undefined;
-  onMove?: ((id: string) => void) | undefined;
-  onMoveToWorkspace?: ((id: string, workspaceId: string) => void) | undefined;
-  onCopyUrl?: ((url: string) => void) | undefined;
-  onRefetch?: ((id: string) => void) | undefined;
-  onSelectionModeToggle?: (() => void) | undefined;
   tabIndex?: number | undefined;
-  disableContextMenu?: boolean | undefined;
   refetchingId?: string | null;
 }
 
@@ -68,28 +58,14 @@ export function BookmarkComfortItem({
   autoCheckBroken = true,
   isSelected,
   isSelectionMode,
-  bookmarkWorkspaceId,
+  workspaceName,
   onSelect,
   onOpen,
-  onDelete,
-  onEdit,
   onTagClick,
-  onMove,
-  onMoveToWorkspace,
-  onCopyUrl,
-  onRefetch,
-  onSelectionModeToggle,
   tabIndex,
-  disableContextMenu = false,
   refetchingId,
 }: BookmarkComfortItemProps) {
-  const { workspaces, currentWorkspace } = useWorkspaces();
-  const currentWorkspaceId = currentWorkspace?.id;
   const safeTags = tags ?? [];
-  const showWorkspaceBadge = !currentWorkspaceId && bookmarkWorkspaceId;
-  const workspaceName = showWorkspaceBadge
-    ? workspaces.find((ws) => ws.id === bookmarkWorkspaceId)?.name
-    : null;
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -263,29 +239,5 @@ export function BookmarkComfortItem({
     </button>
   );
 
-  if (disableContextMenu) {
-    return buttonContent;
-  }
-
-  return (
-    <BookmarkContextMenu
-      id={id}
-      url={url}
-      isSelectionMode={isSelectionMode}
-      onSelect={onSelect}
-      onDelete={onDelete}
-      onEdit={onEdit}
-      onMove={onMove}
-      onMoveToWorkspace={onMoveToWorkspace}
-      onCopyUrl={onCopyUrl}
-      onRefetch={onRefetch}
-      onSelectionModeToggle={onSelectionModeToggle}
-    >
-      {(triggerProps) => (
-        <div {...triggerProps} className="h-full">
-          {buttonContent}
-        </div>
-      )}
-    </BookmarkContextMenu>
-  );
+  return buttonContent;
 }
