@@ -62,7 +62,7 @@ export function BookmarkHeader({
   };
 
   return (
-    <div className="space-y-3 mx-auto sm:space-y-4">
+    <div className="flex flex-col gap-3 sm:gap-4">
       <form onSubmit={handleSubmit} className="contents">
         <BookmarkInput
           ref={inputRef}
@@ -82,13 +82,7 @@ export function BookmarkHeader({
         </output>
       )}
 
-      <BookmarkTagFilter
-        selectedTagIds={selectedTagIds}
-        onChange={onTagFilterChange}
-        onManageTags={onManageTags}
-      />
-
-      <div className="flex items-center justify-between gap-2 pt-1 sm:pt-2">
+      <div className="flex min-h-8 items-center justify-between gap-2">
         <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance tracking-wider">
           {searchQuery ? "Search Results" : title}
           {count !== undefined && count > 0 && (
@@ -114,6 +108,12 @@ export function BookmarkHeader({
           </div>
         </div>
       </div>
+
+      <BookmarkTagFilter
+        selectedTagIds={selectedTagIds}
+        onChange={onTagFilterChange}
+        onManageTags={onManageTags}
+      />
     </div>
   );
 }
