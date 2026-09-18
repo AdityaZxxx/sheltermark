@@ -144,18 +144,18 @@ export function WorkspaceMenu() {
                     key={ws.id}
                     className="data-checked:bg-accent data-checked:text-accent-foreground **:data-checked:text-accent-foreground"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                       <div
-                        className="w-2.5 h-2.5 rounded-full"
+                        className="w-2.5 h-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: getPastelColor(ws.id) }}
                       />
                       <span className="truncate">{ws.name}</span>
                       {ws.is_public && (
-                        <GlobeIcon className="h-4 w-4 text-muted-foreground" />
+                        <GlobeIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
                     </div>
                     {currentWorkspace?.id !== ws.id && (
-                      <span className="absolute right-2 text-xs text-muted-foreground">
+                      <span className="absolute right-2 flex items-center text-xs text-muted-foreground tabular-nums">
                         {ws.bookmarks_count}
                       </span>
                     )}

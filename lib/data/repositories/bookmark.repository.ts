@@ -265,6 +265,43 @@ type BatchInsertOptions = {
   linkTags?: boolean;
 };
 
+/**
+ * Duplicate-check seam for the import preview. Uses the same scope rules as
+ * `batchInsertBookmarks`, and parameterized `inArray` rather than a
+ * PostgREST `.in(...)` filter because large URL lists overflow the
+ * request URL and fail silently.
+ */
+export async function findExistingUrls(
+  db: DrizzleDb,
+  userId: string,
+  urls: string[],
+  workspaceId: string | null,
+): Promise<ActionResult<Set<string>>> {
+  try {
+    const normalized = [...new Set(urls.map((url) => normalizeUrl(url)))];
+    if (normalized.length === 0) {
+      return { success: true, data: new Set() };
+    }
+
+    const rows = await db
+      .select({ url: bookmarks.url })
+      .from(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.user_id, userId),
+          isNull(bookmarks.deleted_at),
+          inArray(bookmarks.url, normalized),
+          workspaceId
+            ? eq(bookmarks.workspace_id, workspaceId)
+            : isNull(bookmarks.workspace_id),
+        ),
+      );
+    return { success: true, data: new Set(rows.map((b) => b.url)) };
+  } catch (cause) {
+    return dbError("Bookmark", cause);
+  }
+}
+
 export async function batchInsertBookmarks(
   db: DrizzleDb,
   userId: string,

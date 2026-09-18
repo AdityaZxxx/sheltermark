@@ -1,13 +1,26 @@
 "use client";
 
-import { SpinnerIcon } from "@phosphor-icons/react";
+import {
+  ArrowsLeftRightIcon,
+  CopySimpleIcon,
+  FilesIcon,
+  FolderSimpleIcon,
+  SkipForwardIcon,
+  SpinnerIcon,
+} from "@phosphor-icons/react";
 
 import type { PreviewData } from "~/hooks/use-import-dialog";
 import type { FolderNode } from "~/lib/import/folder-filter";
 
+import {
+  Field,
+  FieldError,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
+import { RadioGroup } from "~/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -16,12 +29,14 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { cn, getPastelColor } from "~/lib/utils";
+import { getPastelColor } from "~/lib/utils";
 
 import { FolderTree } from "./folder-tree";
+import { RadioCard } from "./radio-card";
 
 interface PreviewStepProps {
   preview: PreviewData;
+  fileTotal: number;
   isCheckingDuplicates: boolean;
   targetWorkspaceId: string | "new";
   newWorkspaceName: string;
@@ -39,6 +54,7 @@ interface PreviewStepProps {
 
 export function PreviewStep({
   preview,
+  fileTotal,
   isCheckingDuplicates,
   targetWorkspaceId,
   newWorkspaceName,
@@ -54,67 +70,78 @@ export function PreviewStep({
   onToggleFolder,
 }: PreviewStepProps) {
   const { workspaces } = useWorkspaces();
-
-  const totalCount = isNetscape
-    ? folderTree.reduce(
-        (sum, f) => sum + (f.path.length === 0 ? f.directCount : 0),
-        0,
-      )
-    : preview.totalBookmarks;
+  const nameInvalid = isNewWorkspace && !newWorkspaceName.trim();
+  // New workspaces start empty — no duplicate check runs, so derive 0
+  // instead of showing a stale count from a previously selected workspace.
+  const duplicates = isNewWorkspace ? 0 : preview.duplicates;
 
   return (
-    <div className="flex flex-col gap-4 py-4">
-      <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Total bookmarks</span>
-          <span className="font-medium">{preview.totalBookmarks}</span>
+    <div className="flex flex-col gap-5 py-2">
+      <dl className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-border bg-muted/40 p-3 text-center">
+          <dt className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <FilesIcon className="size-3.5" aria-hidden="true" />
+            Found
+          </dt>
+          <dd className="mt-0.5 text-lg font-semibold tabular-nums">
+            {fileTotal}
+          </dd>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">After folder filter</span>
-          <span className="font-medium">{preview.validBookmarks}</span>
+        <div className="rounded-lg border border-border bg-muted/40 p-3 text-center">
+          <dt className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <FolderSimpleIcon className="size-3.5" aria-hidden="true" />
+            Selected
+          </dt>
+          <dd className="mt-0.5 text-lg font-semibold tabular-nums">
+            {isNetscape ? selectedCount : preview.validBookmarks}
+          </dd>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Potential duplicates</span>
-          <span className="font-medium">
+        <div className="rounded-lg border border-border bg-muted/40 p-3 text-center">
+          <dt className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <CopySimpleIcon className="size-3.5" aria-hidden="true" />
+            Duplicates
+          </dt>
+          <dd className="mt-0.5 text-lg font-semibold tabular-nums">
             {isCheckingDuplicates ? (
-              <SpinnerIcon className="animate-spin" />
+              <SpinnerIcon
+                className="mx-auto size-5 motion-safe:animate-spin"
+                aria-label="Checking duplicates"
+              />
             ) : (
-              preview.duplicates
+              duplicates
             )}
-          </span>
+          </dd>
         </div>
-        {!isNetscape && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Workspaces in file</span>
-            <span className="font-medium">{preview.workspaces.length}</span>
-          </div>
-        )}
-      </div>
+      </dl>
 
       {isNetscape && folderTree.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Folders</Label>
+        <FieldSet className="gap-3">
+          <FieldLegend variant="label">Folders to import</FieldLegend>
           <FolderTree
             folders={folderTree}
             selectedFolders={selectedFolders}
             selectedCount={selectedCount}
-            totalCount={totalCount || preview.totalBookmarks}
+            totalCount={fileTotal}
             onToggle={onToggleFolder}
           />
-        </div>
+        </FieldSet>
       )}
 
-      <div className="space-y-3">
-        <Label className="text-xs font-medium">Import to workspace</Label>
-        <Select value={targetWorkspaceId} onValueChange={onWorkspaceChange}>
-          <SelectTrigger className="w-full">
+      <FieldSet className="gap-3">
+        <FieldLegend variant="label">Import to workspace</FieldLegend>
+        <Select
+          id="import-workspace-select"
+          value={targetWorkspaceId}
+          onValueChange={onWorkspaceChange}
+        >
+          <SelectTrigger aria-label="Import to workspace" className="w-full">
             <SelectValue>
               {isNewWorkspace ? (
-                "+  New workspace"
+                "+ New workspace"
               ) : (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full"
+                <span className="flex items-center gap-2">
+                  <span
+                    className="size-2 shrink-0 rounded-full"
                     style={{
                       backgroundColor: getPastelColor(targetWorkspaceId),
                     }}
@@ -122,7 +149,7 @@ export function PreviewStep({
                   <span className="truncate">
                     {workspaces.find((ws) => ws.id === targetWorkspaceId)?.name}
                   </span>
-                </div>
+                </span>
               )}
             </SelectValue>
           </SelectTrigger>
@@ -130,57 +157,78 @@ export function PreviewStep({
             <SelectItem value="new">+ New workspace</SelectItem>
             {workspaces.map((ws) => (
               <SelectItem key={ws.id} value={ws.id}>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full"
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span
+                    className="size-2 shrink-0 rounded-full"
                     style={{ backgroundColor: getPastelColor(ws.id) }}
                   />
                   <span className="truncate">{ws.name}</span>
-                </div>
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {isNewWorkspace && (
-          <>
-            <Label className="text-xs font-medium">Workspace name</Label>
+          <Field>
+            <FieldLabel htmlFor="import-workspace-name">
+              Workspace name
+            </FieldLabel>
             <Input
+              id="import-workspace-name"
               type="text"
-              placeholder="Workspace name"
+              placeholder="Imported bookmarks"
               value={newWorkspaceName}
               onChange={(e) => onWorkspaceNameChange(e.target.value)}
-              className="mt-2"
+              aria-invalid={nameInvalid}
+              aria-describedby={
+                nameInvalid ? "import-workspace-name-error" : undefined
+              }
+              maxLength={35}
             />
-          </>
+            <FieldError
+              id="import-workspace-name-error"
+              errors={
+                nameInvalid
+                  ? [{ message: "Workspace name is required." }]
+                  : undefined
+              }
+            />
+          </Field>
         )}
-      </div>
+      </FieldSet>
 
-      <div className={cn("space-y-3 block", isNewWorkspace && "hidden")}>
-        <Label className="text-xs font-medium">Duplicate handling</Label>
-        <RadioGroup
-          value={duplicateStrategy}
-          onValueChange={(value) => {
-            if (value === "skip" || value === "replace") {
-              onDuplicateStrategyChange(value);
-            }
-          }}
-          className="flex flex-col gap-2"
-        >
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="skip" id="dup-skip" />
-            <Label htmlFor="dup-skip" className="font-normal cursor-pointer">
-              Skip duplicates
-            </Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="replace" id="dup-replace" />
-            <Label htmlFor="dup-replace" className="font-normal cursor-pointer">
-              Replace duplicates
-            </Label>
-          </div>
-        </RadioGroup>
-      </div>
+      {!isNewWorkspace && duplicates > 0 ? (
+        <FieldSet className="gap-3">
+          <FieldLegend variant="label">Duplicate handling</FieldLegend>
+          <RadioGroup
+            value={duplicateStrategy}
+            onValueChange={(value) => {
+              if (value === "skip" || value === "replace") {
+                onDuplicateStrategyChange(value);
+              }
+            }}
+            className="grid gap-2"
+          >
+            <RadioCard
+              id="dup-skip"
+              value="skip"
+              title="Skip duplicates"
+              description="Keep existing bookmarks, import only new URLs."
+              icon={<SkipForwardIcon className="size-4" aria-hidden="true" />}
+            />
+            <RadioCard
+              id="dup-replace"
+              value="replace"
+              title="Replace duplicates"
+              description="Overwrite matching URLs with the imported version."
+              icon={
+                <ArrowsLeftRightIcon className="size-4" aria-hidden="true" />
+              }
+            />
+          </RadioGroup>
+        </FieldSet>
+      ) : null}
     </div>
   );
 }
