@@ -1,18 +1,25 @@
 "use client";
 
-import type { RefObject } from "react";
-
 import { BookmarkIcon } from "@phosphor-icons/react";
+import {
+  useState,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 import type { Tag } from "~/lib/schemas/tag.schema";
+import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
+import { ContextMenu, ContextMenuTrigger } from "~/components/ui/context-menu";
 import { useExitAnimation } from "~/hooks/use-exit-animation";
 import { safeDomain } from "~/lib/utils";
 
 import { BookmarkCardItem } from "./bookmark-card-item";
 import { BookmarkComfortItem } from "./bookmark-comfort-item";
+import { BookmarkContextMenu } from "./bookmark-context-menu";
 import { BookmarkListItem } from "./bookmark-list-item";
 import { BookmarkSkeleton } from "./bookmark-skeleton";
 import { VirtualList } from "./virtual-list";
@@ -40,6 +47,9 @@ interface BookmarkListProps {
   allTags: Tag[];
   refetchingId?: string | null;
   filterKey?: string;
+  currentWorkspaceId: string | null;
+  workspaceNameById: Map<string, string>;
+  availableWorkspaces: WorkspaceWithCount[];
   scrollRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -66,9 +76,14 @@ export function BookmarkList({
   allTags,
   refetchingId,
   filterKey,
+  currentWorkspaceId,
+  workspaceNameById,
+  availableWorkspaces,
   scrollRef,
 }: BookmarkListProps) {
   const { exiting } = useExitAnimation(filteredBookmarks, 150, filterKey);
+  const [activeBookmark, setActiveBookmark] = useState<Bookmark | null>(null);
+  const tagsById = new Map(allTags.map((tag) => [tag.id, tag] as const));
   const isEmpty = filteredBookmarks.length === 0 && exiting.length === 0;
 
   if (isLoading) {
@@ -98,8 +113,12 @@ export function BookmarkList({
 
     const bookmarkTagIds = tagsByBookmarkId.get(bookmark.id) ?? [];
     const bookmarkTags = bookmarkTagIds
-      .map((tagId) => allTags.find((t) => t.id === tagId))
+      .map((tagId) => tagsById.get(tagId))
       .filter((t): t is Tag => t !== undefined);
+    const workspaceName =
+      !currentWorkspaceId && bookmark.workspace_id
+        ? (workspaceNameById.get(bookmark.workspace_id) ?? null)
+        : null;
 
     return {
       id: bookmark.id,
@@ -116,29 +135,77 @@ export function BookmarkList({
       autoCheckBroken,
       isSelected,
       isSelectionMode,
-      bookmarkWorkspaceId: bookmark.workspace_id,
+      workspaceName,
       onSelect,
       onOpen,
-      onDelete,
-      onEdit,
       onTagClick,
-      onMove,
-      onMoveToWorkspace,
-      onCopyUrl,
-      onRefetch,
-      onSelectionModeToggle,
       tabIndex,
       refetchingId,
     };
   }
 
+  function handleContextMenuCapture(event: MouseEvent<HTMLDivElement>) {
+    const row =
+      event.target instanceof HTMLElement
+        ? event.target.closest<HTMLElement>("[data-bookmark-id]")
+        : null;
+    const bookmarkId = row?.getAttribute("data-bookmark-id");
+    const bookmark =
+      filteredBookmarks.find((item) => item.id === bookmarkId) ?? null;
+
+    if (!bookmark) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    setActiveBookmark(bookmark);
+  }
+
+  const contextMenu = (
+    <BookmarkContextMenu
+      activeBookmark={activeBookmark}
+      availableWorkspaces={availableWorkspaces}
+      isSelectionMode={isSelectionMode}
+      onSelect={onSelect}
+      onEdit={onEdit}
+      onMove={onMove}
+      onMoveToWorkspace={onMoveToWorkspace}
+      onCopyUrl={onCopyUrl}
+      onDelete={onDelete}
+      onRefetch={onRefetch}
+      onSelectionModeToggle={onSelectionModeToggle}
+    />
+  );
+
   const exitClass =
     "animate-out fade-out slide-out-to-top-2 duration-150 ease-out";
 
+  const withContextMenu = (
+    className: string | undefined,
+    children: ReactNode,
+  ) => (
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={(props) => (
+          <div
+            {...props}
+            className={className}
+            onContextMenuCapture={handleContextMenuCapture}
+          >
+            {children}
+          </div>
+        )}
+      />
+      {contextMenu}
+    </ContextMenu>
+  );
+
   if (view === "list" || view === "comfort") {
     const IsList = view === "list";
-    return (
-      <div>
+    return withContextMenu(
+      undefined,
+      <>
         {exiting.length > 0 && (
           <div className="flex flex-col gap-1 mb-1">
             {exiting.map((bookmark) => {
@@ -171,12 +238,13 @@ export function BookmarkList({
             )
           }
         />
-      </div>
+      </>,
     );
   }
 
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+  return withContextMenu(
+    "grid grid-cols-2 md:grid-cols-3 gap-4",
+    <>
       {exiting.map((bookmark) => {
         const stableKey = bookmark.id;
         return (
@@ -186,14 +254,14 @@ export function BookmarkList({
         );
       })}
       {filteredBookmarks.map((bookmark, index) => {
-        const props = getCommonProps(bookmark, index);
+        const common = getCommonProps(bookmark, index);
         const stableKey = bookmark.id;
         return (
           <div key={stableKey} style={{ contentVisibility: "auto" }}>
-            <BookmarkCardItem {...props} />
+            <BookmarkCardItem {...common} />
           </div>
         );
       })}
-    </div>
+    </>,
   );
 }

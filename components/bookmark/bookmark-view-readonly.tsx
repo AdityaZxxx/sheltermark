@@ -118,7 +118,6 @@ export function BookmarkViewReadOnly({
                 isSelected={false}
                 isSelectionMode={false}
                 tabIndex={index === 0 ? 0 : -1}
-                disableContextMenu={true}
               />
             );
           })}
@@ -140,7 +139,6 @@ export function BookmarkViewReadOnly({
                 isSelected={false}
                 isSelectionMode={false}
                 tabIndex={index === 0 ? 0 : -1}
-                disableContextMenu={true}
               />
             );
           })}
@@ -161,7 +159,6 @@ export function BookmarkViewReadOnly({
                 isSelected={false}
                 isSelectionMode={false}
                 tabIndex={index === 0 ? 0 : -1}
-                disableContextMenu={true}
               />
             );
           })}

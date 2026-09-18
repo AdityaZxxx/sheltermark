@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useSyncExternalStore } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 
 import type { BookmarkScope } from "~/lib/schemas/common";
 
@@ -44,12 +44,25 @@ export function BookmarkView() {
     : { type: "global" };
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // The virtualizer reads scrollRef during layout effects that run before this
+  // ref is populated, and only re-checks the element on a re-render. A
+  // desktop ↔ mobile flip can swap the scroll element without re-rendering
+  // VirtualList, leaving it observing a detached node — rows vanish until some
+  // unrelated re-render (or a manual refresh). Bumping state on every element
+  // identity change guarantees the re-render happens.
+  const [, setScrollVersion] = useState(0);
+  const setScrollRef = useCallback((el: HTMLDivElement | null) => {
+    if (scrollRef.current !== el) {
+      scrollRef.current = el;
+      setScrollVersion((v) => v + 1);
+    }
+  }, []);
   const vm = useBookmarkListManager(effectiveScope, sectionRef);
   const { tags: allTags } = useUserTagsWithCount();
   const isMobile = useIsMobile();
 
   const listColumn = (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-3xl flex-1 min-h-0 flex-col px-4 pt-8 md:px-6">
         <div className="shrink-0">
           <BookmarkHeader
@@ -73,7 +86,7 @@ export function BookmarkView() {
         </div>
 
         <div
-          ref={scrollRef}
+          ref={setScrollRef}
           data-virtual-scroll
           className="scroll-fade mt-6 min-h-0 flex-1 overflow-y-auto pb-8"
           style={{ contain: "layout paint style" }}
@@ -102,6 +115,9 @@ export function BookmarkView() {
             allTags={vm.allTags}
             refetchingId={vm.refetchingId}
             filterKey={vm.filterKey}
+            currentWorkspaceId={vm.workspaceContext.currentWorkspaceId}
+            workspaceNameById={vm.workspaceContext.workspaceNameById}
+            availableWorkspaces={vm.workspaceContext.availableWorkspaces}
           />
         </div>
 
@@ -163,26 +179,10 @@ export function BookmarkView() {
   const sectionClass =
     "relative flex min-h-0 flex-1 flex-col outline-none md:flex-row";
 
-  if (isMobile) {
-    return (
-      <section ref={sectionRef} aria-label="Bookmarks" className={sectionClass}>
-        {listColumn}
-        {vm.previewBookmark && (
-          <BookmarkPreview
-            key={vm.previewBookmark.id}
-            bookmark={vm.previewBookmark}
-            onClose={vm.closePreview}
-          />
-        )}
-        {dialogs}
-      </section>
-    );
-  }
-
-  // Desktop: the list panel stays mounted in the same PanelGroup whether the
-  // preview is open or not — reparenting the list between layouts leaves
-  // @tanstack/react-virtual observing a detached scroll element and the
-  // rows vanish until a full page reload.
+  // The list panel stays mounted in the same PanelGroup in both branches —
+  // reparenting listColumn between layouts (desktop ↔ mobile) remounts
+  // VirtualList and leaves @tanstack/react-virtual observing a detached
+  // scroll element, so the rows vanish until a full page reload.
   return (
     <section ref={sectionRef} aria-label="Bookmarks" className={sectionClass}>
       <ResizablePanelGroup
@@ -192,7 +192,7 @@ export function BookmarkView() {
         <ResizablePanel defaultSize="100%" minSize="25%">
           {listColumn}
         </ResizablePanel>
-        {vm.previewBookmark && (
+        {vm.previewBookmark && !isMobile && (
           <>
             <ResizableHandle />
             <ResizablePanel defaultSize="42%" minSize="20%">
@@ -205,6 +205,13 @@ export function BookmarkView() {
           </>
         )}
       </ResizablePanelGroup>
+      {vm.previewBookmark && isMobile && (
+        <BookmarkPreview
+          key={vm.previewBookmark.id}
+          bookmark={vm.previewBookmark}
+          onClose={vm.closePreview}
+        />
+      )}
       {dialogs}
     </section>
   );

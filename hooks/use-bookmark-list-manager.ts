@@ -57,6 +57,11 @@ interface BookmarkListManager {
   inputRef: React.RefObject<HTMLInputElement | null>;
   workspaces: WorkspaceWithCount[];
   currentWorkspace: WorkspaceWithCount | null | undefined;
+  workspaceContext: {
+    currentWorkspaceId: string | null;
+    workspaceNameById: Map<string, string>;
+    availableWorkspaces: WorkspaceWithCount[];
+  };
   focusedIndex: number;
   previewBookmark: Bookmark | null;
   openPreview: (id: string) => void;
@@ -111,6 +116,18 @@ export function useBookmarkListManager(
 ): BookmarkListManager {
   const { view, setView } = useViewPreference();
   const { workspaces, currentWorkspace } = useWorkspaces();
+  const currentWorkspaceId = currentWorkspace?.id ?? null;
+  const workspaceNameById = new Map(
+    workspaces.map((ws) => [ws.id, ws.name] as const),
+  );
+  const availableWorkspaces = workspaces.filter(
+    (ws) => ws.id !== currentWorkspaceId,
+  );
+  const workspaceContext = {
+    currentWorkspaceId,
+    workspaceNameById,
+    availableWorkspaces,
+  };
   const {
     bookmarks,
     isLoading,
@@ -726,6 +743,7 @@ export function useBookmarkListManager(
     inputRef,
     workspaces,
     currentWorkspace,
+    workspaceContext,
     focusedIndex,
     previewBookmark,
     openPreview,
