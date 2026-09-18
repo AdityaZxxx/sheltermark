@@ -196,11 +196,19 @@ export function BookmarkView() {
         {vm.previewBookmark && !isMobile && (
           <>
             <ResizableHandle />
-            <ResizablePanel defaultSize="42%" minSize="20%">
+            <ResizablePanel defaultSize="50%" minSize="30%">
               <BookmarkPreview
                 key={vm.previewBookmark.id}
                 bookmark={vm.previewBookmark}
                 onClose={vm.closePreview}
+                nav={{
+                  onPrev: () => vm.stepPreview(-1),
+                  onNext: () => vm.stepPreview(1),
+                  hasPrev: vm.hasPrevPreview,
+                  hasNext: vm.hasNextPreview,
+                }}
+                mode={vm.previewMode}
+                onModeChange={vm.setPreviewMode}
               />
             </ResizablePanel>
           </>
@@ -211,6 +219,14 @@ export function BookmarkView() {
           key={vm.previewBookmark.id}
           bookmark={vm.previewBookmark}
           onClose={vm.closePreview}
+          nav={{
+            onPrev: () => vm.stepPreview(-1),
+            onNext: () => vm.stepPreview(1),
+            hasPrev: vm.hasPrevPreview,
+            hasNext: vm.hasNextPreview,
+          }}
+          mode={vm.previewMode}
+          onModeChange={vm.setPreviewMode}
         />
       )}
       {dialogs}

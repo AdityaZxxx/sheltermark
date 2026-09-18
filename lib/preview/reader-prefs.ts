@@ -20,6 +20,11 @@ export const READER_DEFAULT: ReaderPrefs = {
 
 export const READER_KEY = "sheltermark.reader";
 
+// Set once the beta notice has been shown, so it auto-opens only on first reader use.
+export const READER_BETA_KEY = "sheltermark.reader-beta-seen";
+
+export type PreviewMode = "original" | "reader";
+
 const storedReaderSchema = z.object({
   theme: z.enum(["light", "dark"]).catch(READER_DEFAULT.theme),
   font: z.enum(["sans", "serif"]).catch(READER_DEFAULT.font),
@@ -34,10 +39,6 @@ export function parseStoredReaderPrefs(raw: string | null): ReaderPrefs {
   } catch {
     return READER_DEFAULT;
   }
-}
-
-export function cycleTextSize(size: ReaderPrefs["size"]): ReaderPrefs["size"] {
-  return size === "sm" ? "md" : size === "md" ? "lg" : "sm";
 }
 
 // Shared DOM marker for the preview panel. The global keydown handler uses
