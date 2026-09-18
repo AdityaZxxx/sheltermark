@@ -4,9 +4,13 @@ import type { ActionResult } from "~/lib/action-result";
 import type { ImportFileType } from "~/lib/import/parsers";
 import type { ImportOptionsInput } from "~/lib/schemas/profile.schema";
 
+import { dbError } from "~/lib/action-result";
 import { requireAuth } from "~/lib/auth";
 import { getDb } from "~/lib/data/db";
-import { batchInsertBookmarks } from "~/lib/data/repositories/bookmark.repository";
+import {
+  batchInsertBookmarks,
+  findExistingUrls,
+} from "~/lib/data/repositories/bookmark.repository";
 import {
   createWorkspaceRaw,
   getDefaultWorkspace,
@@ -14,6 +18,7 @@ import {
 import { filterByFolders } from "~/lib/import/folder-filter";
 import { parseImportFile } from "~/lib/import/parsers";
 import { importOptionsSchema } from "~/lib/schemas/profile.schema";
+import { normalizeUrl } from "~/lib/utils";
 
 export async function previewImport(
   fileContent: string,
@@ -49,26 +54,30 @@ export async function previewImport(
       ? filterByFolders(rawBookmarks, folderSet)
       : rawBookmarks;
 
-    const { user, supabase } = await requireAuth();
-
-    const urls = bookmarksFromParse.map((b) => b.url);
-
-    let query = supabase
-      .from("bookmarks")
-      .select("url, workspace_id, workspaces(name)")
-      .eq("user_id", user.id)
-      .in("url", urls);
+    const { user } = await requireAuth();
 
     const isNewWorkspace =
       options?.createWorkspace || !options?.targetWorkspaceId;
 
-    if (!isNewWorkspace && options?.targetWorkspaceId) {
-      query = query.eq("workspace_id", options.targetWorkspaceId);
+    // Duplicate rules must match batchInsertBookmarks' skip/replace
+    // decision exactly: new workspaces start empty (skip the lookup
+    // entirely); otherwise count normalized URLs already in the target
+    // scope.
+    let duplicates = 0;
+    if (!isNewWorkspace) {
+      const existing = await findExistingUrls(
+        getDb(),
+        user.id,
+        bookmarksFromParse.map((b) => b.url),
+        options?.targetWorkspaceId ?? null,
+      );
+      if (!existing.success) {
+        return existing;
+      }
+      duplicates = bookmarksFromParse.filter((b) =>
+        existing.data.has(normalizeUrl(b.url)),
+      ).length;
     }
-
-    const { data: existing } = await query;
-
-    const duplicateCount = isNewWorkspace ? 0 : (existing?.length ?? 0);
 
     const workspaceCounts: Record<string, number> = {};
     for (const bookmark of bookmarksFromParse) {
@@ -81,7 +90,7 @@ export async function previewImport(
       data: {
         totalBookmarks: bookmarksFromParse.length,
         validBookmarks: bookmarksFromParse.length,
-        duplicates: duplicateCount,
+        duplicates,
         workspaces: Object.entries(workspaceCounts).map(([name, count]) => ({
           name,
           count,
@@ -89,7 +98,7 @@ export async function previewImport(
       },
     };
   } catch (error) {
-    return { success: false, error: String(error) };
+    return dbError("Import preview", error);
   }
 }
 
