@@ -5,7 +5,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import type { Bookmark, BookmarkSort } from "~/lib/schemas/bookmark.schema";
-import type { Tag } from "~/lib/schemas/tag.schema";
+import type { Tag, TagWithCount } from "~/lib/schemas/tag.schema";
 
 import { useSupabase } from "~/components/providers/supabase-provider";
 import { useUser } from "~/components/providers/user-context";
@@ -108,6 +108,24 @@ export function useBookmarks(workspaceId?: string) {
 
   const effectiveQuery = aiTerms ? aiTerms.join(" ") : searchQuery;
 
+  let workspaceTags: TagWithCount[] = [];
+  if (workspaceId) {
+    const scopedBookmarkIds = new Set(
+      filterBookmarksByWorkspace(allBookmarks, workspaceId).map((b) => b.id),
+    );
+    const countByTagId = new Map<string, number>();
+    for (const [bookmarkId, tagIds] of tagsByBookmarkId) {
+      if (!scopedBookmarkIds.has(bookmarkId)) continue;
+      for (const tagId of tagIds) {
+        countByTagId.set(tagId, (countByTagId.get(tagId) ?? 0) + 1);
+      }
+    }
+    workspaceTags = allTags
+      .filter((t) => countByTagId.has(t.id))
+      .map((t) => ({ ...t, count: countByTagId.get(t.id) ?? 0 }))
+      .toSorted((a, b) => b.count - a.count);
+  }
+
   const bookmarks = sortBookmarksFn(
     filterBookmarksBySearch(
       filterBookmarksByTags(
@@ -138,6 +156,7 @@ export function useBookmarks(workspaceId?: string) {
     bookmarks,
     allTags,
     tagsByBookmarkId,
+    workspaceTags,
     selectedTagIds,
     setSelectedTagIds,
     isLoading: isLoading,

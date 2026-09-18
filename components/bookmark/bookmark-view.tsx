@@ -73,6 +73,7 @@ export function BookmarkView() {
             count={vm.bookmarks.length}
             title={vm.currentWorkspace?.name ?? "All Bookmarks"}
             selectedTagIds={vm.selectedTagIds}
+            filterTags={vm.workspaceTags}
             aiSearchTerms={vm.aiSearchTerms}
             onAskAi={vm.handleAskAi}
             isAskingAi={vm.isAiSearching}

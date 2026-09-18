@@ -3,6 +3,7 @@
 import type { RefObject } from "react";
 
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
+import type { TagWithCount } from "~/lib/schemas/tag.schema";
 
 import { isUrlLike } from "~/lib/utils";
 
@@ -20,6 +21,7 @@ interface BookmarkHeaderProps {
   searchQuery: string;
   sort: BookmarkSort;
   selectedTagIds: string[];
+  filterTags: TagWithCount[];
   count?: number;
   title?: string;
   aiSearchTerms?: string[] | null;
@@ -39,6 +41,7 @@ export function BookmarkHeader({
   searchQuery,
   sort,
   selectedTagIds,
+  filterTags,
   count,
   title = "All Bookmarks",
   aiSearchTerms,
@@ -110,6 +113,7 @@ export function BookmarkHeader({
       </div>
 
       <BookmarkTagFilter
+        tags={filterTags}
         selectedTagIds={selectedTagIds}
         onChange={onTagFilterChange}
         onManageTags={onManageTags}

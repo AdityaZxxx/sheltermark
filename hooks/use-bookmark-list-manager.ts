@@ -8,7 +8,7 @@ import type {
   BookmarkEditInput,
 } from "~/lib/schemas/bookmark.schema";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
-import type { Tag } from "~/lib/schemas/tag.schema";
+import type { Tag, TagWithCount } from "~/lib/schemas/tag.schema";
 import type { WorkspaceWithCount } from "~/lib/schemas/workspace.schema";
 
 import { interpretSearchQuery } from "~/app/action/bookmark.action";
@@ -54,6 +54,7 @@ interface BookmarkListManager {
   filterKey: string;
   allTags: Tag[];
   tagsByBookmarkId: Map<string, string[]>;
+  workspaceTags: TagWithCount[];
   inputRef: React.RefObject<HTMLInputElement | null>;
   workspaces: WorkspaceWithCount[];
   currentWorkspace: WorkspaceWithCount | null | undefined;
@@ -138,6 +139,7 @@ export function useBookmarkListManager(
     invalidate,
     allTags,
     tagsByBookmarkId,
+    workspaceTags,
     selectedTagIds,
     setSelectedTagIds,
     filterKey,
@@ -740,6 +742,7 @@ export function useBookmarkListManager(
     filterKey,
     allTags,
     tagsByBookmarkId,
+    workspaceTags,
     inputRef,
     workspaces,
     currentWorkspace,
