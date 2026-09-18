@@ -12,6 +12,11 @@ import {
   writeCached,
 } from "~/lib/preview/cache";
 import {
+  readerFontFamily,
+  readerPalette,
+  readerSizes,
+} from "~/lib/preview/reader-palette";
+import {
   readerPrefsSchema,
   type ReaderPrefs,
 } from "~/lib/preview/reader-prefs";
@@ -210,39 +215,27 @@ function htmlResponse(html: string): Response {
 // Reader styling, Raindrop parity. Rendered server-side inside the cached
 // HTML so the iframe document is fully self-contained (no JS in the frame).
 function readerCss(prefs: ReaderPrefs): string {
-  const dark = prefs.theme === "dark";
-  const fg = dark ? "#e6e6e6" : "#1a1a1a";
-  const bg = dark ? "#111214" : "#ffffff";
-  const muted = dark ? "#9a9a9a" : "#666";
-  const quote = dark ? "#6a6a6a" : "rgba(127,127,127,0.4)";
-  const preBg = dark ? "rgba(255,255,255,0.08)" : "rgba(127,127,127,0.12)";
-  const link = dark ? "#8ab4f8" : "#1a73e8";
-  const family =
-    prefs.font === "serif"
-      ? "Georgia, 'Iowan Old Style', 'Times New Roman', serif"
-      : "system-ui, sans-serif";
-  const baseSize =
-    prefs.size === "sm" ? "14px" : prefs.size === "lg" ? "19px" : "16px";
-  const h1Size =
-    prefs.size === "sm" ? "1.4em" : prefs.size === "lg" ? "1.8em" : "1.6em";
+  const pal = readerPalette(prefs.theme);
+  const family = readerFontFamily(prefs.font);
+  const { base: baseSize, h1: h1Size } = readerSizes(prefs.size);
   return `:root { color-scheme: ${prefs.theme}; }
-body { max-width: 40rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; font: ${baseSize}/1.7 ${family}; color: ${fg}; background: ${bg}; }
+body { max-width: 40rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; font: ${baseSize}/1.7 ${family}; color: ${pal.fg}; background: ${pal.bg}; }
 h1 { font-size: ${h1Size}; line-height: 1.3; }
 h2,h3,h4 { line-height: 1.3; }
-.byline { color: ${muted}; font-size: 0.9em; margin-top: -0.5em; }
+.byline { color: ${pal.muted}; font-size: 0.9em; margin-top: -0.5em; }
 img { max-width: 100%; height: auto; border-radius: 4px; }
-pre { overflow-x: auto; background: ${preBg}; padding: 0.75rem; border-radius: 6px; }
+pre { overflow-x: auto; background: ${pal.preBg}; padding: 0.75rem; border-radius: 6px; }
 code { font: 0.9em ui-monospace, monospace; }
-blockquote { border-left: 3px solid ${quote}; margin-left: 0; padding-left: 1rem; color: ${muted}; }
-a { color: ${link}; }
-hr { border: 0; border-top: 1px solid ${quote}; margin: 2rem 0; }
+blockquote { border-left: 3px solid ${pal.quote}; margin-left: 0; padding-left: 1rem; color: ${pal.muted}; }
+a { color: ${pal.link}; }
+hr { border: 0; border-top: 1px solid ${pal.quote}; margin: 2rem 0; }
 table { border-collapse: collapse; }
-th, td { border: 1px solid ${quote}; padding: 0.4em 0.6em; }
-small { color: ${muted}; }
-details { border: 1px solid ${quote}; border-radius: 6px; padding: 0.6rem 1rem; margin: 1rem 0; }
+th, td { border: 1px solid ${pal.quote}; padding: 0.4em 0.6em; }
+small { color: ${pal.muted}; }
+details { border: 1px solid ${pal.quote}; border-radius: 6px; padding: 0.6rem 1rem; margin: 1rem 0; }
 details > summary { cursor: pointer; font-weight: 600; }
 h1 + a[href^="#"], h2 + a[href^="#"], h3 + a[href^="#"], h4 + a[href^="#"] { display: none; }
-${githubTokenCss(dark)}`;
+${githubTokenCss(prefs.theme === "dark")}`;
 }
 
 // GitHub pl-* syntax tokens (README code), matched to the reader theme.
@@ -308,11 +301,7 @@ ${content.html}
 
 function fallbackHtml(url: string, prefs: ReaderPrefs): string {
   const escaped = escapeHtml(url);
-  const dark = prefs.theme === "dark";
-  const fg = dark ? "#e6e6e6" : "#1a1a1a";
-  const bg = dark ? "#111214" : "#ffffff";
-  const muted = dark ? "#9a9a9a" : "#666";
-  const link = dark ? "#8ab4f8" : "#1a73e8";
+  const pal = readerPalette(prefs.theme);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -321,10 +310,10 @@ function fallbackHtml(url: string, prefs: ReaderPrefs): string {
 <title>Preview unavailable</title>
 <style>
 :root { color-scheme: ${prefs.theme}; }
-body { display: flex; min-height: 100vh; margin: 0; align-items: center; justify-content: center; font: 16px/1.6 system-ui, sans-serif; color: ${fg}; background: ${bg}; }
+body { display: flex; min-height: 100vh; margin: 0; align-items: center; justify-content: center; font: 16px/1.6 system-ui, sans-serif; color: ${pal.fg}; background: ${pal.bg}; }
 .card { text-align: center; padding: 2rem; max-width: 24rem; }
-p { color: ${muted}; }
-a { color: ${link}; }
+p { color: ${pal.muted}; }
+a { color: ${pal.link}; }
 </style>
 </head>
 <body>

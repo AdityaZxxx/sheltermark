@@ -2,11 +2,17 @@
 
 import type React from "react";
 
+import { GlobeIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import type { ReaderPrefs } from "~/lib/preview/reader-prefs";
 import type { PreviewDoc } from "~/lib/schemas/preview.schema";
 
+import {
+  readerFontFamily,
+  readerPalette,
+  readerSizes,
+} from "~/lib/preview/reader-palette";
 import { previewDocSchema } from "~/lib/schemas/preview.schema";
 
 import { Orb } from "./orb";
@@ -21,8 +27,15 @@ import { Orb } from "./orb";
 // the sanitizer is the security boundary and re-parsing into blocks would
 // be a second, worse parser. Revisit only if per-block features appear.
 
+interface ReadableSource {
+  title: string;
+  domain: string;
+  faviconUrl?: string | null;
+}
+
 interface ReadableDocumentProps {
   url: string;
+  source: ReadableSource;
   api: string;
   // Reader appearance (ADR-0007): the native render honors the same prefs
   // the iframe path receives as query params.
@@ -52,33 +65,21 @@ function readerStyle(p: {
   font: ReaderPrefs["font"];
   size: ReaderPrefs["size"];
 }): ReaderStyle {
-  const dark = p.theme === "dark";
-  const fg = dark ? "#e6e6e6" : "#1a1a1a";
-  const bg = dark ? "#111214" : "#ffffff";
-  const muted = dark ? "#9a9a9a" : "#666";
-  const quote = dark ? "#6a6a6a" : "rgba(127,127,127,0.4)";
-  const preBg = dark ? "rgba(255,255,255,0.08)" : "rgba(127,127,127,0.12)";
-  const link = dark ? "#8ab4f8" : "#1a73e8";
-  const family =
-    p.font === "serif"
-      ? "Georgia, 'Iowan Old Style', 'Times New Roman', serif"
-      : "system-ui, sans-serif";
-  const baseSize = p.size === "sm" ? "14px" : p.size === "lg" ? "19px" : "16px";
-  const h1Size =
-    p.size === "sm" ? "1.4em" : p.size === "lg" ? "1.8em" : "1.6em";
+  const pal = readerPalette(p.theme);
+  const { base: baseSize, h1: h1Size } = readerSizes(p.size);
   return {
     colorScheme: p.theme,
-    background: bg,
-    color: fg,
-    fontFamily: family,
+    background: pal.bg,
+    color: pal.fg,
+    fontFamily: readerFontFamily(p.font),
     fontSize: baseSize,
     lineHeight: 1.7,
     // Consumed by the article's Tailwind arbitrary-value classes
     // ([&_a]:text-[var(--link)] etc.) — fixed literals only.
-    "--muted": muted,
-    "--quote": quote,
-    "--pre-bg": preBg,
-    "--link": link,
+    "--muted": pal.muted,
+    "--quote": pal.quote,
+    "--pre-bg": pal.preBg,
+    "--link": pal.link,
     "--h1-size": h1Size,
   } satisfies ReaderStyle;
 }
@@ -88,8 +89,17 @@ type DocState =
   | { phase: "failed" }
   | { phase: "done"; doc: PreviewDoc };
 
+function normTitle(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/\s*[|–—:»-]\s*[^|–—:»-]+$/, "");
+}
+
 export function ReadableDocument({
   url,
+  source,
   api,
   theme,
   font,
@@ -145,20 +155,51 @@ export function ReadableDocument({
     doc.publishedTime ? new Date(doc.publishedTime).toLocaleDateString() : null,
   ].filter(Boolean);
 
+  // Collapse the source title when it duplicates the extracted h1; compare
+  // loosely so site suffixes ("Title – Site") don't count as a difference.
+  const showSourceTitle =
+    !doc.title.trim() || normTitle(doc.title) !== normTitle(source.title);
+
   return (
     <div
       className="h-full min-h-0 overflow-auto overscroll-contain"
       style={readerStyle({ theme, font, size })}
     >
+      <div className="mx-auto max-w-2xl px-6 pt-6">
+        <div className="flex items-center gap-1.5">
+          <div className="flex size-3.5 shrink-0 items-center justify-center overflow-hidden rounded-xs">
+            {source.faviconUrl ? (
+              // oxlint-disable-next-line next/no-img-element -- nothing to optimize
+              <img
+                src={source.faviconUrl}
+                alt=""
+                className="size-full object-contain"
+              />
+            ) : (
+              <GlobeIcon className="size-full text-[var(--muted)]" />
+            )}
+          </div>
+          <p className="truncate text-xs text-[var(--muted)]">
+            {source.domain}
+          </p>
+        </div>
+        {showSourceTitle && (
+          <p className="mt-1 truncate text-base font-semibold tracking-tight">
+            {source.title}
+          </p>
+        )}
+      </div>
       <article
         // Reader typography — the same stylesheet the iframe path serves
         // (route.ts readerCss), via the CSS vars set on the wrapper above.
-        className="reader-doc mx-auto max-w-2xl p-6 [&_a]:underline [&_a]:underline-offset-2 [&_a]:text-[var(--link)] [&_blockquote]:border-l [&_blockquote]:border-[var(--quote)] [&_blockquote]:pl-4 [&_blockquote]:text-[var(--muted)] [&_code]:font-mono [&_code]:text-[0.9em] [&_figure]:my-6 [&_h1]:mb-3 [&_h1]:text-[length:var(--h1-size)] [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_hr]:my-8 [&_hr]:border-[var(--quote)] [&_img]:my-6 [&_img]:rounded-md [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-[var(--pre-bg)] [&_pre]:p-3 [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[var(--quote)] [&_td]:p-2 [&_th]:border [&_th]:border-[var(--quote)] [&_th]:p-2 [&_ul]:list-disc [&_ul]:pl-6"
+        className="reader-doc mx-auto max-w-2xl px-6 pb-6 pt-3 [&_a]:underline [&_a]:underline-offset-2 [&_a]:text-[var(--link)] [&_blockquote]:border-l [&_blockquote]:border-[var(--quote)] [&_blockquote]:pl-4 [&_blockquote]:text-[var(--muted)] [&_code]:font-mono [&_code]:text-[0.9em] [&_figure]:my-6 [&_h1]:mb-3 [&_h1]:text-[length:var(--h1-size)] [&_h1]:font-semibold [&_h1]:tracking-tight [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_hr]:my-8 [&_hr]:border-[var(--quote)] [&_img]:my-6 [&_img]:rounded-md [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-[var(--pre-bg)] [&_pre]:p-3 [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[var(--quote)] [&_td]:p-2 [&_th]:border [&_th]:border-[var(--quote)] [&_th]:p-2 [&_ul]:list-disc [&_ul]:pl-6"
         aria-label={doc.title}
       >
-        <h1 className="mb-1 text-2xl font-semibold tracking-tight">
-          {doc.title}
-        </h1>
+        {doc.title.trim() !== "" && (
+          <h1 className="mb-1 text-2xl font-semibold tracking-tight">
+            {doc.title}
+          </h1>
+        )}
         {meta.length > 0 && (
           <p className="text-sm text-muted-foreground">{meta.join(" · ")}</p>
         )}

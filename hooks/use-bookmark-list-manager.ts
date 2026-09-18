@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import type { PreviewMode } from "~/lib/preview/reader-prefs";
 import type {
   Bookmark,
   BookmarkEditInput,
@@ -67,6 +68,11 @@ interface BookmarkListManager {
   previewBookmark: Bookmark | null;
   openPreview: (id: string) => void;
   closePreview: () => void;
+  stepPreview: (delta: -1 | 1) => void;
+  hasPrevPreview: boolean;
+  hasNextPreview: boolean;
+  previewMode: PreviewMode;
+  setPreviewMode: (mode: PreviewMode) => void;
   selection: {
     selectedIds: string[];
     isSelectionMode: boolean;
@@ -190,6 +196,11 @@ export function useBookmarkListManager(
 
   const [previewBookmark, setPreviewBookmark] = useState<Bookmark | null>(null);
   const previewTriggerRef = useRef<HTMLElement | null>(null);
+  // Anchor for ghost-reconcile below; focusedIndex roams independently.
+  const [previewIndex, setPreviewIndex] = useState(-1);
+  // Above the keyed preview remounts so the mode survives steps and reopen.
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("original");
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const openPreview = (id: string) => {
     const bookmark = bookmarks.find((b) => b.id === id);
@@ -198,15 +209,54 @@ export function useBookmarkListManager(
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    // Pin the row highlight so the list keeps identifying what's open.
+    setFocusedIndex(bookmarks.indexOf(bookmark));
+    setPreviewIndex(bookmarks.indexOf(bookmark));
     setPreviewBookmark(bookmark);
   };
 
   const closePreview = () => {
     setPreviewBookmark(null);
+    setPreviewIndex(-1);
     const trigger = previewTriggerRef.current;
     if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     previewTriggerRef.current = null;
   };
+
+  // Header arrows step the list order, clamped at the ends (no wrap).
+  const previewNavIndex = previewBookmark
+    ? bookmarks.findIndex((b) => b.id === previewBookmark.id)
+    : -1;
+  const hasPrevPreview = previewNavIndex > 0;
+  const hasNextPreview =
+    previewNavIndex >= 0 && previewNavIndex < bookmarks.length - 1;
+  const stepPreview = (delta: -1 | 1) => {
+    const target = bookmarks[previewNavIndex + delta];
+    if (previewNavIndex < 0 || !target) return;
+    setFocusedIndex(previewNavIndex + delta);
+    setPreviewIndex(previewNavIndex + delta);
+    setPreviewBookmark(target);
+  };
+
+  // Ghost-reconcile during render: a previewed bookmark that leaves the
+  // list advances to the neighbor at its spot (next, new tail if last,
+  // close when empty). Converges immediately, so no stale frame paints.
+  if (
+    !isLoading &&
+    previewBookmark &&
+    previewIndex >= 0 &&
+    !bookmarks.some((b) => b.id === previewBookmark.id)
+  ) {
+    const at = Math.min(previewIndex, bookmarks.length - 1);
+    const target = at >= 0 ? bookmarks[at] : undefined;
+    if (target) {
+      setFocusedIndex(at);
+      setPreviewIndex(at);
+      setPreviewBookmark(target);
+    } else {
+      setPreviewBookmark(null);
+    }
+  }
 
   const executeDelete = (ids: string[]) => {
     mutations.deleteBookmarks({ ids });
@@ -270,7 +320,6 @@ export function useBookmarkListManager(
     setMoveDialogOpen(false);
   };
 
-  const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const editDialogOpenRef = useRef(editDialogOpen);
@@ -539,7 +588,8 @@ export function useBookmarkListManager(
       window.removeEventListener("keydown", handleGlobalKeyDown);
       window.removeEventListener("keydown", handleSelectionEscape);
     };
-  }, [sectionRef]);
+    // Stable setter, so mount-once semantics hold.
+  }, [sectionRef, setFocusedIndex]);
 
   // Roving tabindex: arrow keys move real DOM focus to the focused item so
   // screen readers follow and :focus-visible rings appear. Virtualized rows
@@ -751,6 +801,11 @@ export function useBookmarkListManager(
     previewBookmark,
     openPreview,
     closePreview,
+    stepPreview,
+    hasPrevPreview,
+    hasNextPreview,
+    previewMode,
+    setPreviewMode,
     selection: {
       selectedIds,
       isSelectionMode,

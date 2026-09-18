@@ -239,7 +239,7 @@ export function PdfViewer({ src, onUnavailable }: PdfViewerProps) {
   const pct = Math.round(state.phase === "ready" ? state.scale * 100 : 100);
 
   return (
-    <div className="flex h-full flex-col bg-muted/30">
+    <div className="flex h-full flex-col bg-transparent">
       <div className="flex shrink-0 items-center justify-center gap-2 border-b border-border/60 py-1.5">
         {state.phase === "ready" && (
           <>

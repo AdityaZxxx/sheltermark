@@ -7,11 +7,11 @@ import {
   ArrowSquareOutIcon,
   ArrowsInSimpleIcon,
   ArrowsOutSimpleIcon,
+  CaretDownIcon,
+  CaretUpIcon,
   GlobeIcon,
-  MoonIcon,
-  SunIcon,
+  InfoIcon,
   TextAaIcon,
-  TextBIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
@@ -20,13 +20,19 @@ import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 
 import { checkEmbeddable } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { classifyUrl } from "~/lib/preview/classify";
 import {
-  cycleTextSize,
   parseStoredReaderPrefs,
+  READER_BETA_KEY,
   READER_DEFAULT,
   READER_KEY,
+  type PreviewMode,
   type ReaderPrefs,
 } from "~/lib/preview/reader-prefs";
 import {
@@ -39,6 +45,7 @@ import { cn } from "~/lib/utils";
 
 import { Orb } from "./orb";
 import { PdfViewer } from "./pdf-viewer";
+import { PreviewStage } from "./preview-stage";
 import { ReadableDocument } from "./readable-document";
 
 // Sites that refuse embedding (X-Frame-Options / CSP) still fire load in some
@@ -83,11 +90,25 @@ function referrerPolicyFor(
 interface BookmarkPreviewProps {
   bookmark: Bookmark;
   onClose: () => void;
+  nav: PreviewNav;
+  mode: PreviewMode;
+  onModeChange: (mode: PreviewMode) => void;
 }
 
-type PreviewMode = "original" | "reader";
+interface PreviewNav {
+  onPrev: () => void;
+  onNext: () => void;
+  hasPrev: boolean;
+  hasNext: boolean;
+}
 
-export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
+export function BookmarkPreview({
+  bookmark,
+  onClose,
+  nav,
+  mode,
+  onModeChange,
+}: BookmarkPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const loadedRef = useRef(false);
@@ -96,8 +117,20 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
   const [closing, setClosing] = useState(false);
   const [maximized, setMaximized] = useState(false);
   const [reader, setReader] = useState<ReaderPrefs>(READER_DEFAULT);
-  const [mode, setMode] = useState<PreviewMode>("original");
-  const [betaDismissed, setBetaDismissed] = useState(false);
+  const [betaOpen, setBetaOpen] = useState(false);
+
+  // One-time hint: auto-open on first reader use; any close marks it seen.
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- canonical mounted guard: localStorage is unknowable during SSR/render; hydrating post-mount prevents a server/client mismatch
+    if (mode === "reader" && !window.localStorage.getItem(READER_BETA_KEY)) {
+      setBetaOpen(true);
+    }
+  }, [mode]);
+
+  const handleBetaOpenChange = (open: boolean) => {
+    setBetaOpen(open);
+    if (!open) window.localStorage.setItem(READER_BETA_KEY, "1");
+  };
 
   useEffect(() => {
     // oxlint-disable-next-line react/set-state-in-effect -- canonical mounted guard: reader prefs live in localStorage, unknowable during SSR/render; hydrating post-mount prevents a server/client mismatch
@@ -219,6 +252,12 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
   // If the extraction route (or the direct iframe) never signals load, give up
   // and offer the fallback.
   const blocked = timedOut && !loaded;
+  // Overlays track the iframe load gate, which exists only when a frame
+  // mounts. Reader mode renders natively, so without this the orb — then
+  // the blocked fallback — would paint over rendered content.
+  const frameOverlays =
+    resolved.kind === "iframe" ||
+    (resolved.kind === "server" && mode !== "reader");
 
   return (
     <dialog
@@ -238,102 +277,185 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
         maximized
           ? "fixed inset-0 z-50 h-dvh max-w-none"
           : "fixed inset-0 z-50 h-dvh md:static md:inset-auto md:z-auto md:h-full md:w-full md:max-w-none md:border-0",
-        closing
-          ? "animate-out fade-out slide-out-to-right-4 duration-150 ease-out"
-          : "animate-in fade-in slide-in-from-right-4 duration-200 ease-out",
+        // No entry animation: the dialog remounts per bookmark (keyed), so
+        // a slide-in would replay on every prev/next step. The exit
+        // animation runs once on close via the closing flag.
+        closing &&
+          "animate-out fade-out slide-out-to-right-4 duration-150 ease-out",
       )}
     >
-      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border/60 px-2 md:px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
-          <div className="flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-xs">
-            {bookmark.favicon_url ? (
-              // oxlint-disable-next-line next/no-img-element -- nothing to optimize
-              <img
-                src={bookmark.favicon_url}
-                alt=""
-                className="size-full object-contain"
-              />
-            ) : (
-              <GlobeIcon className="size-full text-muted-foreground" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium leading-tight tracking-tight">
-              {bookmark.title || domain}
-            </p>
-            <p className="truncate text-[11px] leading-tight text-muted-foreground">
-              {domain}
-            </p>
-          </div>
+      <div className="flex h-12 shrink-0 items-center justify-between gap-1 border-b border-border/60 px-2 md:px-3">
+        <div className="flex min-w-0 items-center gap-1">
+          <Tabs
+            value={mode}
+            onValueChange={(v) => {
+              // SAFETY: both TabsTrigger values map 1:1 to PreviewMode; the
+              // cast only re-narrows the string union BaseUI hands back.
+              onModeChange(v as PreviewMode);
+            }}
+            className="shrink-0"
+          >
+            <TabsList className="h-8">
+              <TabsTrigger value="reader">Reader</TabsTrigger>
+              <TabsTrigger value="original">Original</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {mode === "reader" && (
+            <>
+              <Popover>
+                <PopoverTrigger
+                  aria-label="Reader options"
+                  title="Reader options"
+                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <TextAaIcon className="size-4" aria-hidden="true" />
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-2">
+                  <div className="flex flex-col gap-1 p-1">
+                    <div className="flex items-center gap-2">
+                      <p className="w-12 shrink-0 text-xs text-muted-foreground">
+                        Size
+                      </p>
+                      <Tabs
+                        value={reader.size}
+                        onValueChange={(v) => {
+                          if (v === "sm" || v === "md" || v === "lg") {
+                            setReader((r) => ({ ...r, size: v }));
+                          }
+                        }}
+                        className="min-w-0 flex-1"
+                      >
+                        <TabsList className="grid w-full grid-cols-3 bg-muted/60">
+                          <TabsTrigger value="sm" aria-label="Text size: Small">
+                            <span className="text-[11px]">A</span>
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="md"
+                            aria-label="Text size: Medium"
+                          >
+                            <span className="text-sm">A</span>
+                          </TabsTrigger>
+                          <TabsTrigger value="lg" aria-label="Text size: Large">
+                            <span className="text-base">A</span>
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="w-12 shrink-0 text-xs text-muted-foreground">
+                        Font
+                      </p>
+                      <Tabs
+                        value={reader.font}
+                        onValueChange={(v) => {
+                          if (v === "sans" || v === "serif") {
+                            setReader((r) => ({ ...r, font: v }));
+                          }
+                        }}
+                        className="min-w-0 flex-1"
+                      >
+                        <TabsList className="grid w-full grid-cols-2 bg-muted/60">
+                          <TabsTrigger value="sans" aria-label="Font: Sans">
+                            <span className="font-sans">Ag</span>
+                          </TabsTrigger>
+                          <TabsTrigger value="serif" aria-label="Font: Serif">
+                            <span className="font-serif">Ag</span>
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="w-12 shrink-0 text-xs text-muted-foreground">
+                        Theme
+                      </p>
+                      <Tabs
+                        value={reader.theme}
+                        onValueChange={(v) => {
+                          if (v === "light" || v === "dark") {
+                            setReader((r) => ({ ...r, theme: v }));
+                          }
+                        }}
+                        className="min-w-0 flex-1"
+                      >
+                        <TabsList className="grid w-full grid-cols-2 bg-muted/60">
+                          <TabsTrigger value="light" aria-label="Theme: Light">
+                            <span
+                              aria-hidden="true"
+                              className="size-3 rounded-full border"
+                              style={{
+                                backgroundColor: "#ffffff",
+                                borderColor: "rgba(127,127,127,0.4)",
+                              }}
+                            />
+                            Light
+                          </TabsTrigger>
+                          <TabsTrigger value="dark" aria-label="Theme: Dark">
+                            <span
+                              aria-hidden="true"
+                              className="size-3 rounded-full border"
+                              style={{
+                                backgroundColor: "#141518",
+                                borderColor: "rgba(255,255,255,0.25)",
+                              }}
+                            />
+                            Dark
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Popover open={betaOpen} onOpenChange={handleBetaOpenChange}>
+                <PopoverTrigger
+                  aria-label="About the reader"
+                  title="About the reader"
+                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <InfoIcon className="size-4" aria-hidden="true" />
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64">
+                  <p className="text-xs text-muted-foreground">
+                    Reader is still new — some pages may not come through quite
+                    right.{" "}
+                    <a
+                      href="mailto:adityaofficial714@gmail.com"
+                      className="font-medium text-foreground underline underline-offset-2 hover:text-muted-foreground"
+                    >
+                      Send feedback
+                    </a>
+                  </p>
+                </PopoverContent>
+              </Popover>
+            </>
+          )}
         </div>
-
-        <Tabs
-          value={mode}
-          onValueChange={(v) => {
-            // SAFETY: both TabsTrigger values map 1:1 to PreviewMode; the
-            // cast only re-narrows the string union BaseUI hands back.
-            setMode(v as PreviewMode);
-          }}
-          className="shrink-0"
-        >
-          <TabsList className="h-7">
-            <TabsTrigger value="reader">Reader</TabsTrigger>
-            <TabsTrigger value="original">Original</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {mode === "reader" && (
-          <div className="flex shrink-0 items-center gap-0.5 text-muted-foreground">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() =>
-                setReader((r) => ({ ...r, size: cycleTextSize(r.size) }))
-              }
-              aria-label="Cycle text size"
-              title="Text size"
-            >
-              <TextAaIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() =>
-                setReader((r) => ({
-                  ...r,
-                  font: r.font === "sans" ? "serif" : "sans",
-                }))
-              }
-              aria-label="Toggle font family"
-              title={
-                reader.font === "sans"
-                  ? "Switch to serif"
-                  : "Switch to sans-serif"
-              }
-            >
-              <TextBIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() =>
-                setReader((r) => ({
-                  ...r,
-                  theme: r.theme === "light" ? "dark" : "light",
-                }))
-              }
-              aria-label="Toggle reader theme"
-              title={reader.theme === "light" ? "Dark reader" : "Light reader"}
-            >
-              {reader.theme === "light" ? <MoonIcon /> : <SunIcon />}
-            </Button>
-          </div>
-        )}
 
         <div className="flex shrink-0 items-center gap-0.5">
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
+            onClick={nav.onPrev}
+            disabled={!nav.hasPrev}
+            aria-label="Previous bookmark"
+            title="Previous bookmark"
+          >
+            <CaretUpIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nav.onNext}
+            disabled={!nav.hasNext}
+            aria-label="Next bookmark"
+            title="Next bookmark"
+          >
+            <CaretDownIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={refreshPreview}
             aria-label="Refresh preview"
             title="Refresh preview (re-extracts this page)"
@@ -342,7 +464,7 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           </Button>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => setMaximized((m) => !m)}
             aria-label={maximized ? "Exit fullscreen" : "Fullscreen"}
             title={maximized ? "Exit fullscreen (Esc)" : "Fullscreen"}
@@ -352,7 +474,7 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           </Button>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={openExternal}
             aria-label="Open in new tab"
             title="Open in new tab"
@@ -362,7 +484,7 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           <Button
             ref={closeRef}
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={close}
             aria-label="Close preview"
             title="Close (Esc)"
@@ -372,29 +494,7 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
         </div>
       </div>
 
-      {mode === "reader" && !betaDismissed && (
-        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-border/60 bg-muted/60 px-3 py-1.5 text-[11px] text-muted-foreground">
-          <span>
-            Reader is still new — some pages may not come through quite right.
-          </span>
-          <a
-            href="mailto:adityaofficial714@gmail.com"
-            className="shrink-0 font-medium text-foreground underline underline-offset-2 hover:text-muted-foreground"
-          >
-            Send feedback
-          </a>
-          <button
-            type="button"
-            onClick={() => setBetaDismissed(true)}
-            aria-label="Dismiss notice"
-            className="shrink-0 rounded-xs p-0.5 hover:bg-foreground/10"
-          >
-            <XIcon className="size-3" />
-          </button>
-        </div>
-      )}
-
-      <div className="relative flex-1 min-h-0 overflow-hidden bg-muted/30">
+      <PreviewStage>
         {resolved.kind === "pdf" ? (
           <PdfViewer
             src={resolved.src}
@@ -405,6 +505,11 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
           // sanitizer, rendered as React DOM instead of a sandboxed iframe.
           <ReadableDocument
             url={bookmark.url}
+            source={{
+              title: bookmark.title || domain,
+              domain,
+              faviconUrl: bookmark.favicon_url,
+            }}
             api={`/api/preview?format=json&${previewNonce ? "refresh=1&" : ""}url=${encodeURIComponent(bookmark.url)}`}
             theme={reader.theme}
             font={reader.font}
@@ -445,46 +550,43 @@ export function BookmarkPreview({ bookmark, onClose }: BookmarkPreviewProps) {
             }}
             sandbox={sandboxFor(resolved.kind)}
             referrerPolicy={referrerPolicyFor(resolved.kind)}
-            className="absolute inset-0 size-full border-0 bg-white"
+            className="absolute inset-0 size-full border-0 bg-background"
           />
         )}
 
         {/* Loading/blocked overlays only make sense for iframe-rendered
             kinds — native viewers handle their own states. */}
-        {(resolved.kind === "iframe" || resolved.kind === "server") &&
-          !loaded &&
-          !blocked && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <Orb
-                size={24}
-                label="Loading preview…"
-                className="text-muted-foreground"
-              />
-            </div>
-          )}
+        {frameOverlays && !loaded && !blocked && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <Orb
+              size={24}
+              label="Loading preview…"
+              className="text-muted-foreground"
+            />
+          </div>
+        )}
 
-        {(resolved.kind === "iframe" || resolved.kind === "server") &&
-          blocked && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
-              <GlobeIcon className="size-8 text-muted-foreground/50" />
-              <div>
-                <p className="text-sm font-medium">
-                  This site can&apos;t be previewed here
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {domain} may block embedding. You can still open it in a new
-                  tab.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button onClick={openExternal}>Open in new tab</Button>
-                <Button variant="ghost" onClick={() => setTimedOut(false)}>
-                  Try again
-                </Button>
-              </div>
+        {frameOverlays && blocked && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+            <GlobeIcon className="size-8 text-muted-foreground/50" />
+            <div>
+              <p className="text-sm font-medium">
+                This site can&apos;t be previewed here
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {domain} may block embedding. You can still open it in a new
+                tab.
+              </p>
             </div>
-          )}
-      </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={openExternal}>Open in new tab</Button>
+              <Button variant="ghost" onClick={() => setTimedOut(false)}>
+                Try again
+              </Button>
+            </div>
+          </div>
+        )}
+      </PreviewStage>
     </dialog>
   );
 }
