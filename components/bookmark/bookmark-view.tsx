@@ -13,6 +13,7 @@ import {
 } from "~/components/ui/resizable";
 import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
 import { useUserTagsWithCount } from "~/hooks/use-tags";
+import { useWorkspaceIdParam } from "~/hooks/use-workspaces";
 
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
@@ -36,10 +37,14 @@ function useIsMobile(): boolean {
   );
 }
 
-export function BookmarkView({ scope }: { scope: BookmarkScope }) {
+export function BookmarkView() {
+  const [workspaceIdParam] = useWorkspaceIdParam();
+  const effectiveScope: BookmarkScope = workspaceIdParam
+    ? { type: "workspace", id: workspaceIdParam }
+    : { type: "global" };
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const vm = useBookmarkListManager(scope, sectionRef);
+  const vm = useBookmarkListManager(effectiveScope, sectionRef);
   const { tags: allTags } = useUserTagsWithCount();
   const isMobile = useIsMobile();
 

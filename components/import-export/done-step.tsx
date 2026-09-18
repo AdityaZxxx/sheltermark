@@ -24,7 +24,7 @@ export function DoneStep({ result }: DoneStepProps) {
       </div>
       {hasWorkspace && (
         <Link
-          href={`/workspace/${result.workspaceId}`}
+          href={`/dashboard?workspaceId=${result.workspaceId}`}
           className={cn(buttonVariants({ variant: "outline" }), "w-full")}
         >
           View imported bookmarks

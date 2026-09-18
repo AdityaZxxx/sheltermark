@@ -40,7 +40,6 @@ export function WorkspaceMenu() {
     currentWorkspace,
     setActiveWorkspace,
     clearActiveWorkspace,
-    refetchWorkspaces,
     createWorkspace,
     deleteWorkspace,
     isDeleting,
@@ -86,9 +85,6 @@ export function WorkspaceMenu() {
       <DropdownMenu
         open={isMenuOpen}
         onOpenChange={(open) => setIsMenuOpen(open)}
-        onOpenChangeComplete={(open) => {
-          if (!open) refetchWorkspaces();
-        }}
       >
         <DropdownMenuTrigger
           render={

@@ -49,7 +49,7 @@ export default async function DashboardPage() {
       <UserProvider user={user}>
         <main className="flex h-dvh flex-col overflow-hidden bg-background">
           <Header />
-          <BookmarkView scope={{ type: "global" }} />
+          <BookmarkView />
           <Suspense>
             <ShareDialogManager />
           </Suspense>
