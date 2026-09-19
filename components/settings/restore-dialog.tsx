@@ -1,10 +1,17 @@
 "use client";
 
-import { FileIcon, SpinnerIcon, WarningIcon } from "@phosphor-icons/react";
+import {
+  ArrowsLeftRightIcon,
+  FileIcon,
+  SkipForwardIcon,
+  SpinnerIcon,
+  WarningIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { BackupFileMeta } from "~/lib/backup/service";
 
+import { RadioCard } from "~/components/import-export/radio-card";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -14,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { Field, FieldLabel } from "~/components/ui/field";
-import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
+import { FieldLegend, FieldSet } from "~/components/ui/field";
+import { RadioGroup } from "~/components/ui/radio-group";
 import {
   usePreviewRestore,
   useRestoreBackup,
@@ -86,28 +93,39 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
       open={open}
       onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}
     >
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] min-h-80 flex-col gap-0 overflow-hidden p-0 sm:min-w-md sm:max-w-md">
+        <DialogHeader className="border-b border-border px-5 pt-5 pb-4">
           <DialogTitle>Restore from backup</DialogTitle>
           <DialogDescription>
-            Restore bookmarks from a file in your Sheltermark/Backups folder.
+            {step === "list" &&
+              "Restore bookmarks from a file in your Sheltermark/Backups folder."}
+            {step === "confirm" &&
+              "Review what's in this backup, then choose how duplicates are handled."}
+            {step === "restoring" && "Writing bookmarks to your workspaces…"}
           </DialogDescription>
         </DialogHeader>
 
-        {step === "list" && (
-          <div className="max-h-72 overflow-y-auto">
-            {isLoadingFiles ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                <SpinnerIcon className="mr-1 inline size-4 animate-spin" />
-                Loading backups…
-              </p>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          {step === "list" &&
+            (isLoadingFiles ? (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <SpinnerIcon
+                    className="size-6 motion-safe:animate-spin"
+                    aria-label="Loading backups"
+                  />
+                </span>
+                <p className="text-sm text-muted-foreground">
+                  Loading backups…
+                </p>
+              </div>
             ) : isFilesError ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 Unable to load backups. Reconnect the provider in Settings, then
                 try again.
               </p>
             ) : backups.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 No backups yet. Back up first, then restore here.
               </p>
             ) : (
@@ -117,117 +135,171 @@ export function RestoreDialog({ open, onOpenChange }: RestoreDialogProps) {
                     <button
                       type="button"
                       onClick={() => handleSelectFile(file)}
-                      className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-muted"
+                      className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/50"
                     >
-                      <FileIcon className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="min-w-0 flex-1 truncate text-sm">
-                        {file.name}
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                        <FileIcon className="size-4" aria-hidden="true" />
                       </span>
-                      {file.modifiedTime && (
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {new Date(file.modifiedTime).toLocaleDateString()}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">
+                          {file.name}
                         </span>
-                      )}
+                        {file.modifiedTime && (
+                          <span className="mt-0.5 block text-xs text-muted-foreground tabular-nums">
+                            {new Date(file.modifiedTime).toLocaleDateString()}
+                          </span>
+                        )}
+                      </span>
                     </button>
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
-        )}
+            ))}
 
-        {step === "confirm" && selectedFile && (
-          <div className="flex flex-col gap-4">
-            <div className="rounded-md border p-3">
-              <p className="text-sm font-medium">{selectedFile.name}</p>
-              {previewMutation.isPending ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  <SpinnerIcon className="mr-1 inline size-4 animate-spin" />
-                  Reading backup…
-                </p>
-              ) : previewMutation.data ? (
-                <div className="mt-1 flex flex-col gap-1 text-sm text-muted-foreground">
-                  <p>
-                    {previewMutation.data.totalBookmarks} bookmarks across{" "}
-                    {previewMutation.data.workspaces.length}{" "}
-                    {previewMutation.data.workspaces.length === 1
-                      ? "workspace"
-                      : "workspaces"}
-                  </p>
-                  <ul className="list-inside list-disc">
+          {step === "confirm" && selectedFile && (
+            <div className="flex flex-col gap-5 py-2">
+              <div className="flex flex-col gap-2.5 rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <FileIcon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-sm font-medium"
+                      title={selectedFile.name}
+                    >
+                      {selectedFile.name}
+                    </p>
+                    {previewMutation.isPending ? (
+                      <p
+                        aria-live="polite"
+                        className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground"
+                      >
+                        <SpinnerIcon
+                          className="size-3.5 motion-safe:animate-spin"
+                          aria-label="Reading backup"
+                        />
+                        Reading backup…
+                      </p>
+                    ) : previewMutation.data ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                        {previewMutation.data.totalBookmarks} bookmarks across{" "}
+                        {previewMutation.data.workspaces.length}{" "}
+                        {previewMutation.data.workspaces.length === 1
+                          ? "workspace"
+                          : "workspaces"}
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Unable to read this backup. Choose another file.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {previewMutation.data && (
+                  <ul className="flex flex-col gap-1 border-t border-border pt-2.5">
                     {previewMutation.data.workspaces.map((ws) => (
-                      <li key={ws.name}>
-                        {ws.name}: {ws.count}
+                      <li
+                        key={ws.name}
+                        className="flex min-w-0 items-center justify-between gap-3"
+                      >
+                        <span
+                          className="min-w-0 truncate text-xs text-muted-foreground"
+                          title={ws.name}
+                        >
+                          {ws.name}
+                        </span>
+                        <span className="shrink-0 pl-2 text-xs text-muted-foreground tabular-nums">
+                          {ws.count}
+                        </span>
                       </li>
                     ))}
                   </ul>
-                </div>
-              ) : (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Unable to read this backup. Choose another file.
+                )}
+              </div>
+
+              <FieldSet className="gap-3">
+                <FieldLegend variant="label">Duplicate handling</FieldLegend>
+                <RadioGroup
+                  value={duplicateStrategy}
+                  onValueChange={handleDuplicateStrategyChange}
+                  className="grid gap-2"
+                >
+                  <RadioCard
+                    id="restore-dup-skip"
+                    value="skip"
+                    title="Skip duplicates"
+                    description="Keep existing bookmarks, restore only new URLs."
+                    icon={
+                      <SkipForwardIcon className="size-4" aria-hidden="true" />
+                    }
+                  />
+                  <RadioCard
+                    id="restore-dup-replace"
+                    value="replace"
+                    title="Replace duplicates"
+                    description="Overwrite matching URLs with the backup's version."
+                    icon={
+                      <ArrowsLeftRightIcon
+                        className="size-4"
+                        aria-hidden="true"
+                      />
+                    }
+                  />
+                </RadioGroup>
+              </FieldSet>
+
+              {duplicateStrategy === "replace" && (
+                <p className="flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                  <WarningIcon
+                    className="mt-0.5 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  Restoring with replace deletes a current bookmark when the
+                  backup holds the same URL, then inserts the backup's version.
                 </p>
               )}
             </div>
+          )}
 
-            <Field>
-              <FieldLabel>Restore duplicates</FieldLabel>
-              <RadioGroup
-                value={duplicateStrategy}
-                onValueChange={handleDuplicateStrategyChange}
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="skip" id="restore-skip" />
-                  <label htmlFor="restore-skip" className="text-sm">
-                    Keep existing bookmarks
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="replace" id="restore-replace" />
-                  <label htmlFor="restore-replace" className="text-sm">
-                    Replace with backup
-                  </label>
-                </div>
-              </RadioGroup>
-            </Field>
-
-            {duplicateStrategy === "replace" && (
-              <p className="flex items-start gap-2 rounded-md bg-muted p-3 text-xs text-muted-foreground">
-                <WarningIcon className="mt-0.5 size-4 shrink-0" />
-                Restoring with replace deletes a current bookmark when the
-                backup holds the same URL, then inserts the backup&apos;s
-                version.
+          {step === "restoring" && (
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
+              <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <SpinnerIcon
+                  className="size-6 motion-safe:animate-spin"
+                  aria-hidden="true"
+                />
+              </span>
+              <p aria-live="polite" className="text-sm font-medium">
+                Restoring bookmarks…
               </p>
+            </div>
+          )}
+        </div>
+
+        {step !== "restoring" && (
+          <DialogFooter className="flex-row justify-end border-t border-border px-5 py-4">
+            {step === "list" && (
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
             )}
-          </div>
+            {step === "confirm" && (
+              <>
+                <Button variant="outline" onClick={() => setStep("list")}>
+                  Back
+                </Button>
+                <Button
+                  onClick={handleRestore}
+                  disabled={previewMutation.isPending}
+                >
+                  Restore
+                </Button>
+              </>
+            )}
+          </DialogFooter>
         )}
-
-        {step === "restoring" && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            <SpinnerIcon className="mr-1 inline size-4 animate-spin" />
-            Restoring bookmarks…
-          </p>
-        )}
-
-        <DialogFooter>
-          {step === "list" && (
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-          )}
-          {step === "confirm" && (
-            <>
-              <Button variant="outline" onClick={() => setStep("list")}>
-                Back
-              </Button>
-              <Button
-                onClick={handleRestore}
-                disabled={previewMutation.isPending}
-              >
-                Restore
-              </Button>
-            </>
-          )}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

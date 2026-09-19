@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ImageIcon,
   PencilSimpleIcon,
   SpinnerIcon,
   TrashIcon,
@@ -107,48 +108,57 @@ export function AvatarUpload({
 
   return (
     <div className="flex flex-col items-center pt-2 gap-3">
-      <Avatar className={`h-24 w-24 ${error ? "ring-2 ring-destructive" : ""}`}>
-        <AvatarImage src={displayUrl || undefined} alt={fullName} />
-        <AvatarFallback className="text-2xl bg-muted">
-          {fullName?.charAt(0)?.toUpperCase() || "U"}
-        </AvatarFallback>
-      </Avatar>
-
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="xs"
-          onClick={openFilePicker}
-          disabled={isBusy}
-          aria-label={!hasAvatar ? "Upload avatar" : "Change avatar"}
+      <div className="relative">
+        <Avatar
+          className={`h-24 w-24 ${error ? "ring-2 ring-destructive" : ""}`}
         >
-          {isUploading ? (
-            <SpinnerIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <PencilSimpleIcon className="h-4 w-4" />
-          )}
-          <span className="ml-1.5">{!hasAvatar ? "Upload" : "Change"}</span>
-        </Button>
+          <AvatarImage src={displayUrl || undefined} alt={fullName} />
+          <AvatarFallback className="text-2xl bg-muted">
+            {fullName?.charAt(0)?.toUpperCase() || "U"}
+          </AvatarFallback>
+        </Avatar>
 
-        {hasAvatar && (
-          <Button
-            type="button"
-            variant="destructive"
-            size="xs"
-            onClick={handleRemove}
-            disabled={isBusy}
-            aria-label="Remove avatar"
-          >
-            {isRemoving ? (
-              <SpinnerIcon className="h-4 w-4 animate-spin" />
-            ) : (
-              <TrashIcon className="h-4 w-4" />
-            )}
-            <span className="ml-1.5">Remove</span>
-          </Button>
+        {isBusy && (
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/60">
+            <SpinnerIcon
+              className="size-6 text-primary motion-safe:animate-spin"
+              aria-label={isUploading ? "Uploading avatar" : "Removing avatar"}
+            />
+          </span>
         )}
       </div>
+
+      {!isBusy && (
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={openFilePicker}
+            aria-label={!hasAvatar ? "Upload avatar" : "Change avatar"}
+          >
+            {!hasAvatar ? (
+              <ImageIcon className="h-4 w-4" />
+            ) : (
+              <PencilSimpleIcon className="h-4 w-4" />
+            )}
+            <span className="ml-1.5">{!hasAvatar ? "Upload" : "Change"}</span>
+          </Button>
+
+          {hasAvatar && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="xs"
+              onClick={handleRemove}
+              aria-label="Remove avatar"
+            >
+              <TrashIcon className="h-4 w-4" />
+              <span className="ml-1.5">Remove</span>
+            </Button>
+          )}
+        </div>
+      )}
 
       <Input
         ref={fileInputRef}

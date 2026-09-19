@@ -79,8 +79,8 @@ export function PreviewStep({
     <div className="flex flex-col gap-5 py-2">
       <dl className="grid grid-cols-3 gap-2">
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-center">
-          <dt className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-            <FilesIcon className="size-3.5" aria-hidden="true" />
+          <dt className="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <FilesIcon className="size-3.5 shrink-0" aria-hidden="true" />
             Found
           </dt>
           <dd className="mt-0.5 text-lg font-semibold tabular-nums">
@@ -88,8 +88,11 @@ export function PreviewStep({
           </dd>
         </div>
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-center">
-          <dt className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-            <FolderSimpleIcon className="size-3.5" aria-hidden="true" />
+          <dt className="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <FolderSimpleIcon
+              className="size-3.5 shrink-0"
+              aria-hidden="true"
+            />
             Selected
           </dt>
           <dd className="mt-0.5 text-lg font-semibold tabular-nums">
@@ -97,14 +100,14 @@ export function PreviewStep({
           </dd>
         </div>
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-center">
-          <dt className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-            <CopySimpleIcon className="size-3.5" aria-hidden="true" />
+          <dt className="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <CopySimpleIcon className="size-3.5 shrink-0" aria-hidden="true" />
             Duplicates
           </dt>
           <dd className="mt-0.5 text-lg font-semibold tabular-nums">
             {isCheckingDuplicates ? (
               <SpinnerIcon
-                className="mx-auto size-5 motion-safe:animate-spin"
+                className="mx-auto size-4.5 motion-safe:animate-spin"
                 aria-label="Checking duplicates"
               />
             ) : (
