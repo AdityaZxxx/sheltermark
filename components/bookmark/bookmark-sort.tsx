@@ -52,7 +52,7 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
         value={sort.sortBy}
         onValueChange={handleSortByChange}
       >
-        <SelectTrigger className="[&[data-size=default]]:h-8">
+        <SelectTrigger className="border-transparent bg-input/50 shadow-none transition-[border-color,box-shadow,background-color] hover:border-transparent hover:bg-input [&[data-size=default]]:h-8">
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
         <SelectContent className="min-w-0">
