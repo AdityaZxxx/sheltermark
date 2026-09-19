@@ -86,10 +86,12 @@ export function BookmarkHeader({
       )}
 
       <div className="flex min-h-8 items-center justify-between gap-2">
-        <h2 className="text-xs font-medium text-muted-foreground uppercase text-balance tracking-wider">
-          {searchQuery ? "Search Results" : title}
+        <h2 className="flex min-w-0 items-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <span className="truncate">
+            {searchQuery ? "Search Results" : title}
+          </span>
           {count !== undefined && count > 0 && (
-            <span className="ml-1.5 tabular-nums text-muted-foreground">
+            <span className="ml-1.5 shrink-0 tabular-nums text-muted-foreground">
               · <span>{count}</span>
             </span>
           )}
