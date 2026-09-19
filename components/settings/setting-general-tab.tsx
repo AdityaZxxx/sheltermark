@@ -47,6 +47,7 @@ interface SettingsGeneralTabProps {
   onCancel: () => void;
   onOpenExportDialog: () => void;
   onOpenImportDialog: () => void;
+  onOpenRestoreDialog: () => void;
   onOpenDeleteAlert?: () => void;
   onRegisterFooter: (state: {
     isSubmitting: boolean;
@@ -59,6 +60,7 @@ export function SettingsGeneralTab({
   onCancel,
   onOpenExportDialog,
   onOpenImportDialog,
+  onOpenRestoreDialog,
   onOpenDeleteAlert,
   onRegisterFooter,
 }: SettingsGeneralTabProps) {
@@ -303,7 +305,7 @@ export function SettingsGeneralTab({
 
         <FieldSeparator />
 
-        <CloudBackupSection />
+        <CloudBackupSection onOpenRestoreDialog={onOpenRestoreDialog} />
 
         <FieldSeparator />
 

@@ -6,7 +6,6 @@ import {
   PlugsIcon,
   SpinnerIcon,
 } from "@phosphor-icons/react";
-import { useState } from "react";
 
 import type { BackupProvider } from "~/lib/schemas/backup.schema";
 
@@ -25,8 +24,6 @@ import {
 } from "~/lib/mutations/backup.mutations";
 import { useCloudBackupStatus } from "~/lib/queries/backup.queries";
 import { formatRelativeTime } from "~/lib/utils/format";
-
-import { RestoreDialog } from "./restore-dialog";
 
 // OneDrive is hidden until MS_CLIENT_ID/SECRET credentials exist; the
 // backend (schema, adapter, authorize route) stays wired so re-enabling
@@ -52,9 +49,14 @@ function ProviderLabel({ provider }: { provider: BackupProvider }) {
   );
 }
 
-export function CloudBackupSection() {
+interface CloudBackupSectionProps {
+  onOpenRestoreDialog: () => void;
+}
+
+export function CloudBackupSection({
+  onOpenRestoreDialog,
+}: CloudBackupSectionProps) {
   const { data: statuses, isLoading, isError } = useCloudBackupStatus();
-  const [restoreOpen, setRestoreOpen] = useState(false);
   const backupNowMutation = useBackupNow();
   const disconnectMutation = useDisconnectProvider();
 
@@ -111,7 +113,7 @@ export function CloudBackupSection() {
               variant="outline"
               size="sm"
               className="min-w-28 flex-1 gap-2"
-              onClick={() => setRestoreOpen(true)}
+              onClick={onOpenRestoreDialog}
             >
               <CloudArrowDownIcon className="size-4 shrink-0" />
               Restore
@@ -150,8 +152,6 @@ export function CloudBackupSection() {
           </div>
         </Field>
       )}
-
-      <RestoreDialog open={restoreOpen} onOpenChange={setRestoreOpen} />
     </FieldSet>
   );
 }

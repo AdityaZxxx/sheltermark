@@ -28,6 +28,7 @@ import { Input } from "~/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { GENERIC_ERROR } from "~/lib/action-result";
 
+import { RestoreDialog } from "./restore-dialog";
 import { SettingsDialogFooter } from "./setting-dialog-footer";
 import { SettingsGeneralTab } from "./setting-general-tab";
 import { SettingsProfileTab } from "./setting-profile-tab";
@@ -50,6 +51,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const user = useUser();
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -57,7 +59,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     null,
   );
   const isChildDialogOpen =
-    exportDialogOpen || importDialogOpen || deleteAlertOpen;
+    exportDialogOpen ||
+    importDialogOpen ||
+    restoreDialogOpen ||
+    deleteAlertOpen;
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText.toLowerCase() !== user.email?.toLowerCase()) {
@@ -117,6 +122,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               onCancel={() => onOpenChange(false)}
               onOpenExportDialog={() => setExportDialogOpen(true)}
               onOpenImportDialog={() => setImportDialogOpen(true)}
+              onOpenRestoreDialog={() => setRestoreDialogOpen(true)}
               onOpenDeleteAlert={() => {
                 setDeleteAlertOpen(true);
               }}
@@ -150,6 +156,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <ImportDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
+      />
+      <RestoreDialog
+        open={restoreDialogOpen}
+        onOpenChange={setRestoreDialogOpen}
       />
       <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
         <AlertDialogContent className="max-w-md">
