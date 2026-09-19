@@ -140,7 +140,7 @@ export function BookmarkListItem({
                 <span className="text-xs text-muted-foreground/60 shrink-0">
                   ·
                 </span>
-                <span className="text-xs text-muted-foreground/60 truncate shrink-0">
+                <span className="text-xs text-muted-foreground/60 truncate">
                   {workspaceName}
                 </span>
               </>
