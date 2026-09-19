@@ -101,9 +101,9 @@ export function UserMenu() {
           render={
             <Button
               variant="ghost"
-              className="gap-2 rounded-md h-auto px-2 py-1.5"
+              className="gap-2 max-md:rounded-full max-md:px-0 max-md:hover:bg-transparent"
             >
-              <Avatar>
+              <Avatar className="size-7">
                 <AvatarImage
                   src={profile.avatar_url ?? undefined}
                   alt={profile.name ?? ""}
@@ -112,8 +112,10 @@ export function UserMenu() {
                   {profile.name?.charAt(0).toUpperCase() ?? "?"}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm hidden md:block">{profile.name}</span>
-              <CaretUpDownIcon className="h-4 w-4 hidden md:block" />
+              <span className="hidden max-w-32 truncate text-sm md:block">
+                {profile.name}
+              </span>
+              <CaretUpDownIcon className="hidden h-4 w-4 md:block" />
             </Button>
           }
         />
