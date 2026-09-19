@@ -80,7 +80,10 @@ export function SettingsGeneralTab({
   const [localAvatarUrl, setLocalAvatarUrl] = useState<
     string | null | undefined
   >(undefined);
-  const avatarUrl = localAvatarUrl ?? (profile?.avatar_url || null);
+  // null pins the avatar empty after a local remove; only undefined falls
+  // through to the server profile, whose cache may still hold the old URL.
+  const avatarUrl =
+    localAvatarUrl === undefined ? profile?.avatar_url || null : localAvatarUrl;
 
   const handleAvatarUpload = async (file: File) => {
     setIsUploading(true);
@@ -105,7 +108,6 @@ export function SettingsGeneralTab({
   };
 
   const handleAvatarRemove = async () => {
-    setIsUploading(true);
     try {
       const result = await deleteAvatar();
       if (!result.success) {
@@ -117,7 +119,6 @@ export function SettingsGeneralTab({
     } catch {
       toast.error(GENERIC_ERROR);
     }
-    setIsUploading(false);
   };
 
   const form = useForm({
