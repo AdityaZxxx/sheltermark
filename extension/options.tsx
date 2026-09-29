@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { DEFAULT_BASE_URL } from "./constants.js";
+import { DEFAULT_BASE_URL, DEFAULT_X_CAPTURE_ENABLED } from "./constants.js";
+import { isXCaptureEnabled, setXCaptureEnabled } from "./settings.js";
 import { getBaseUrl, setBaseUrl } from "./storage.js";
 import { Button } from "./ui/button.js";
 import { cn } from "./ui/cn.js";
 import { Input } from "./ui/input.js";
 import { Logo } from "./ui/logo.js";
+import { Switch } from "./ui/switch.js";
 
 function OptionsApp() {
   const [url, setUrl] = useState("");
+  const [xCapture, setXCapture] = useState(DEFAULT_X_CAPTURE_ENABLED);
   const [status, setStatus] = useState<{
     msg: string;
     error: boolean;
@@ -18,6 +21,9 @@ function OptionsApp() {
 
   useEffect(() => {
     void getBaseUrl().then(setUrl);
+    // A failed read leaves the switch at its default instead of raising an
+    // unhandled rejection.
+    void isXCaptureEnabled().then(setXCapture, () => undefined);
   }, []);
 
   function showStatus(msg: string, error = false) {
@@ -54,6 +60,18 @@ function OptionsApp() {
     setUrl(DEFAULT_BASE_URL);
     await setBaseUrl(DEFAULT_BASE_URL);
     showStatus("Reset to default");
+  }
+
+  // Persisted immediately, unlike the URL field above: a switch that visibly
+  // flips is its own feedback, and it has to reach already-open X tabs without
+  // a Save click.
+  function toggleXCapture(next: boolean) {
+    const previous = xCapture;
+    setXCapture(next);
+    void setXCaptureEnabled(next).catch(() => {
+      setXCapture(previous);
+      showStatus("Couldn't save that change", true);
+    });
   }
 
   return (
@@ -106,6 +124,38 @@ function OptionsApp() {
           {status?.msg ?? ""}
         </output>
       </div>
+
+      {/* All three labelling mechanisms are load-bearing: the wrapper gives the
+          row a click target, htmlFor ties it to the button, and the ids keep
+          the switch's name off the description. */}
+      <label
+        htmlFor="x-capture"
+        className="mt-7 flex cursor-pointer items-start justify-between gap-6 border-t border-border pt-6"
+      >
+        <span>
+          <span
+            id="x-capture-label"
+            className="block text-xs font-medium tracking-wider text-muted-foreground uppercase"
+          >
+            X bookmark capture
+          </span>
+          <span
+            id="x-capture-description"
+            className="mt-1.5 block text-xs text-muted-foreground"
+          >
+            Save a tweet to Sheltermark when you click Bookmark on x.com or
+            Twitter. Turn this off if you don't use it.
+          </span>
+        </span>
+        <Switch
+          id="x-capture"
+          className="mt-0.5"
+          checked={xCapture}
+          onCheckedChange={toggleXCapture}
+          aria-labelledby="x-capture-label"
+          aria-describedby="x-capture-description"
+        />
+      </label>
     </div>
   );
 }

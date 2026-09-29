@@ -20,6 +20,10 @@ export default defineConfig({
     "dist/**",
     "build/**",
     "components/ui/**",
+    // Same category as components/ui: shadcn ports adapted to the extension's
+    // tokens and no BaseUI Field wrapper, so repo lint heuristics misread them
+    // (jsx-a11y cannot see an accessible name passed as a prop).
+    "extension/ui/**",
     "**/tests/fixtures/**",
     ".agent/**",
     ".agents/**",

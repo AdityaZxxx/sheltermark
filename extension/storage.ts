@@ -1,5 +1,6 @@
 import {
   DEFAULT_BASE_URL,
+  STORAGE_KEYS,
   type TagWithCount,
   type Workspace,
 } from "./constants.js";
@@ -9,11 +10,6 @@ import {
   cachedWorkspacesSchema,
   lastWorkspaceStorageSchema,
 } from "./schema.js";
-
-export const STORAGE_KEYS = {
-  BASE_URL: "baseUrl",
-  LAST_WORKSPACE: "lastWorkspace",
-} as const;
 
 export async function getBaseUrl(): Promise<string> {
   const parsed = baseUrlStorageSchema.safeParse(

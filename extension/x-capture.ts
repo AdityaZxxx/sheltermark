@@ -1,4 +1,38 @@
+import { STORAGE_KEYS } from "./constants.js";
+import { isXCaptureEnabled } from "./settings.js";
+
 (() => {
+  // Cached because the click handler must stay synchronous: a capture-phase
+  // listener that awaits defers past X's own state flip, and the button has
+  // already changed by then.
+  //
+  // Starts closed rather than at DEFAULT_X_CAPTURE_ENABLED — the read below
+  // lands a tick later, and dropping a click in that window is invisible
+  // whereas capturing one for an opted-out user is the bug this prevents.
+  let enabled = false;
+
+  // Registered before the read, so a change landing between the two is not
+  // missed.
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "sync") return;
+    if (!(STORAGE_KEYS.X_CAPTURE_ENABLED in changes)) return;
+    // Re-read rather than trust newValue: one decode path, at the cost of a
+    // local read on a toggle the user just made.
+    void isXCaptureEnabled().then((value) => {
+      enabled = value;
+    });
+  });
+
+  void isXCaptureEnabled().then(
+    (value) => {
+      enabled = value;
+    },
+    () => {
+      // Storage unreachable (dead extension context). Staying closed matches
+      // the initial value.
+    },
+  );
+
   const TWEET_URL_PATTERN =
     /^https?:\/\/(x\.com|twitter\.com)\/([^/]+)\/status\/(\d+)/;
 
@@ -116,6 +150,8 @@
   document.addEventListener(
     "click",
     (event) => {
+      if (!enabled) return;
+
       const target = event.target;
       if (!(target instanceof Element)) return;
 

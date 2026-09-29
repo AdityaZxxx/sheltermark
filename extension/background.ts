@@ -7,6 +7,7 @@ import {
   type PopupInfo,
   type SaveEntrySource,
   type SaveResult,
+  STORAGE_KEYS,
   type TabInfo,
   type TagsResult,
   type TagWithCount,
@@ -41,7 +42,6 @@ import {
   setCachedTags,
   setCachedWorkspaces,
   setLastWorkspace,
-  STORAGE_KEYS,
 } from "./storage.js";
 
 type NotificationType = "success" | "error" | "info";

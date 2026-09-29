@@ -1,6 +1,18 @@
 export const DEFAULT_BASE_URL = "https://sheltermark.vercel.app";
 export const NOTIFICATION_DURATION = 3000;
 
+// Opt-out, not opt-in: an absent value means enabled, so every install that
+// predates this setting keeps capturing.
+export const DEFAULT_X_CAPTURE_ENABLED = true;
+
+// Not in storage.ts: the x-capture content script needs these keys, and
+// importing storage.ts from there would inline zod into the page.
+export const STORAGE_KEYS = {
+  BASE_URL: "baseUrl",
+  LAST_WORKSPACE: "lastWorkspace",
+  X_CAPTURE_ENABLED: "xCaptureEnabled",
+} as const;
+
 export const MESSAGE_TYPES = {
   SAVE_BOOKMARK: "SAVE_BOOKMARK",
   GET_TAB_INFO: "GET_TAB_INFO",
