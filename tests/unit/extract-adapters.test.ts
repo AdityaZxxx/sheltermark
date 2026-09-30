@@ -13,7 +13,6 @@ import { renderTweet, type FxTweet } from "~/lib/extract/adapters/x";
 // DOM-adapter fixtures are minimal synthetic HTML matching each site's SSR
 // layout — enough to prove selector behavior without network access in CI.
 // GitHub is served by the native proxy, not an adapter (ADR-0007).
-// against the live API in the browser smoke test.
 
 const HN_HTML = `
 <html><body>

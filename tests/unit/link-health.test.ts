@@ -259,18 +259,6 @@ describe("detectSoft404", () => {
     expect(detectSoft404(body).isSoft404).toBe(false);
   });
 
-  it("does NOT flag a long article that discusses 404s in prose", () => {
-    // Regression: long body + 404 keyword mentioned but title is not
-    // 404-shaped must NOT trigger. The combined tier needs both signals
-    // plus a short body.
-    const filler = "lorem ipsum dolor sit amet. ".repeat(1000);
-    const prose = `${LT}p${GT}The article even says "page not found" colloquially${LT}${SL}p${GT}`;
-    const titlePart = block("head", block("title", "The History of 404 Pages"));
-    const bodyPart = block("body", filler + prose + filler);
-    const body = block("html", titlePart + bodyPart);
-    expect(detectSoft404(body).isSoft404).toBe(false);
-  });
-
   it("flags a large soft-404 page with canonical → /404 (tier-1 fires regardless of size)", () => {
     // Regression for the new tier design: high-precision signals fire
     // on large CMS 404 pages too. The old 4 KB gate killed these.

@@ -16,10 +16,7 @@ function getTodayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/**
- * Checks and increments rate limit for a user.
- * Returns true if under limit, false if rate limited.
- */
+/** Also increments the caller's daily count, a check, not a peek. */
 export function checkRateLimit(userId: string): RateLimitCheckResult {
   const today = getTodayKey();
   const entry = store.get(userId);

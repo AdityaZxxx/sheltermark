@@ -1,3 +1,8 @@
+/**
+ * SECURITY: Drizzle connects with the service-role credential and BYPASSES ROW
+ * LEVEL SECURITY. Every query here enforces `user_id` ownership explicitly
+ * (same posture as the other repositories).
+ */
 import "server-only";
 import { and, desc, eq, sql } from "drizzle-orm";
 
@@ -22,12 +27,6 @@ export interface CloudConnectionRow {
   created_at: string;
   updated_at: string;
 }
-
-/**
- * SECURITY: Drizzle connects with the service-role credential and BYPASSES
- * ROW LEVEL SECURITY. Every query here enforces `user_id` ownership
- * explicitly (same posture as the other repositories).
- */
 
 function toRow(row: typeof cloudConnections.$inferSelect): CloudConnectionRow {
   // SAFETY: provider/status values are CHECK-constrained at the database

@@ -72,7 +72,7 @@ BEGIN
   IF v_base ~ '^[a-z0-9_]{3,30}$' IS NOT TRUE THEN
     v_base := 'user';
   END IF;
-  -- Cap at 29 so the collision suffix (up to 2 digits) always fits within
+  -- Cap at 28 so the collision suffix (up to 2 digits) always fits within
   -- the 30-char limit; left(base||suffix, 30) would otherwise truncate the
   -- suffix away and spin the loop.
   v_base := left(v_base, 28);

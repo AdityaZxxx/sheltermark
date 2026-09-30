@@ -35,7 +35,7 @@ function siteUrl(origin: string): string {
   return base.replace(/\/$/, "");
 }
 
-/** Provider-scoped redirect URI for the OAuth dance. */
+/** Every provider shares this callback; the provider is carried in `state`. */
 function backupRedirectUri(origin: string): string {
   return `${siteUrl(origin)}/api/backup/callback`;
 }

@@ -36,9 +36,8 @@ export async function generateMetadata({
     };
   }
 
-  // Data is guaranteed to exist here; narrow profile to non-nullable
   const data = result.data;
-  const profile = data?.profile;
+  const profile = data.profile;
   if (!profile) {
     return {
       title: "Profile not found — Sheltermark",
@@ -48,7 +47,7 @@ export async function generateMetadata({
       },
     };
   }
-  const workspaces = data?.workspaces ?? [];
+  const workspaces = data.workspaces ?? [];
   const displayName = profile.name;
   let title: string;
   let description: string;

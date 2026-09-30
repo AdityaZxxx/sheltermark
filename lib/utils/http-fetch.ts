@@ -1,12 +1,7 @@
 /**
  * Shared HTTP fetching module for Sheltermark.
  *
- * Consolidates duplicated fetch logic previously scattered across:
- * - lib/metadata/utils.ts (fetchWithTimeout)
- * - lib/metadata/fetch.ts   (fetchWithRetry)
- * - .github/scripts/check-urls.js (fetchWithTimeout)
- *
- * Design decisions (see docs/adr/):
+ * Normative design decisions, with no ADR to defer to:
  * - Retry happens inside the helper (not at caller)
  * - Timeouts are retried (not fast-fail)
  * - Single User-Agent ("Sheltermark/1.0") for all requests
@@ -29,9 +24,12 @@ type HttpFetchOptions = {
   timeout?: number;
   /** Max retry attempts (default: 2). Applies per redirect hop. */
   retries?: number;
-  /** HTTP status codes that trigger a retry (default: [429, 500, 502, 503]). */
+  /** Defaults to DEFAULT_RETRY_STATUSES. */
   retryOnStatus?: number[];
-  /** Additional request headers. User-Agent is set automatically. */
+  /**
+   * Additional request headers, spread after and therefore overriding the
+   * default User-Agent — prefer the `userAgent` option for that.
+   */
   headers?: Record<string, string>;
   /** Override default User-Agent (default: "Sheltermark/1.0"). */
   userAgent?: string;
@@ -409,8 +407,10 @@ export async function readArrayBufferWithLimit(
 }
 
 /**
- * Returns true for errors that are likely transient and worth retrying.
- * Permanent errors (invalid URL, bad TLS, unreachable host) return false.
+ * Every network-level failure arrives as a bare `TypeError` with no
+ * `cause.code`, so invalid URL, DNS failure, refused connection and TLS error
+ * are indistinguishable — and all retry, because a DNS blip and a dead host
+ * look identical. The cost is bounded: `retries` attempts, no redirect chain.
  */
 function isRetryableError(cause: unknown): boolean {
   // Network-level failures from fetch() surface as TypeError in most runtimes

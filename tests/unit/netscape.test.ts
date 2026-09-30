@@ -188,15 +188,27 @@ describe("parseNetscapeHTML", () => {
       }
     });
 
-    it("handles HTML entities in titles", () => {
+    it("decodes entities in titles, which parse5 resolves at parse time", () => {
       const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <DL><p>
-  <DT><A HREF="https://entities.example.com/">Tom & Jerry "Cartoon"</A>
+  <DT><A HREF="https://entities.example.com/">Tom &amp; Jerry &quot;Cartoon&quot; &lt;3 &eacute;</A>
 </DL><p>`;
       const result = parseNetscapeHTML(html);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.bookmarks[0]?.title).toBe('Tom & Jerry "Cartoon"');
+        expect(result.bookmarks[0]?.title).toBe('Tom & Jerry "Cartoon" <3 é');
+      }
+    });
+
+    it("does not double-decode an escaped entity", () => {
+      const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<DL><p>
+  <DT><A HREF="https://double.example.com/">Tom &amp;amp; Jerry</A>
+</DL><p>`;
+      const result = parseNetscapeHTML(html);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.bookmarks[0]?.title).toBe("Tom &amp; Jerry");
       }
     });
 

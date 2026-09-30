@@ -49,7 +49,10 @@ const REJECTED_SCHEMES = new Set([
  */
 const MAX_FAVICON_DATA_URL_LENGTH = 64 * 1024;
 
-/** Strip HTML entities that show up in titles (`&`, `"`, etc.). */
+/**
+ * Inert by design: parse5 resolves character references at parse time, so
+ * repairing the named-entity patterns below would double-decode.
+ */
 function decodeEntities(text: string): string {
   return text
     .replace(/&/g, "&")
