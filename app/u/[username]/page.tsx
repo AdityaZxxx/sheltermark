@@ -36,8 +36,7 @@ export async function generateMetadata({
     };
   }
 
-  const data = result.data;
-  const profile = data.profile;
+  const { profile, workspaces } = result.data;
   if (!profile) {
     return {
       title: "Profile not found — Sheltermark",
@@ -47,7 +46,6 @@ export async function generateMetadata({
       },
     };
   }
-  const workspaces = data.workspaces ?? [];
   const displayName = profile.name;
   let title: string;
   let description: string;
@@ -114,12 +112,7 @@ export default async function PublicProfilePage({
     return <ProfileNotFound />;
   }
 
-  const data = result.data;
-  const profile = data?.profile;
-  if (!profile) {
-    return <ProfileNotFound />;
-  }
-  const workspaces = data?.workspaces ?? [];
+  const { profile, workspaces } = result.data;
 
   return (
     <div className="min-h-screen flex flex-col">
