@@ -3,7 +3,6 @@
 import {
   DownloadSimpleIcon,
   EnvelopeIcon,
-  TrashIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import { useForm, useStore } from "@tanstack/react-form";
@@ -48,7 +47,6 @@ interface SettingsGeneralTabProps {
   onOpenExportDialog: () => void;
   onOpenImportDialog: () => void;
   onOpenRestoreDialog: () => void;
-  onOpenDeleteAlert?: () => void;
   onRegisterFooter: (state: {
     isSubmitting: boolean;
     isDirty: boolean;
@@ -61,7 +59,6 @@ export function SettingsGeneralTab({
   onOpenExportDialog,
   onOpenImportDialog,
   onOpenRestoreDialog,
-  onOpenDeleteAlert,
   onRegisterFooter,
 }: SettingsGeneralTabProps) {
   const user = useUser();
@@ -344,25 +341,6 @@ export function SettingsGeneralTab({
               Manage trash
             </Link>
           </div>
-        </FieldSet>
-
-        <FieldSeparator />
-
-        <FieldSet>
-          <FieldLegend variant="label">Danger Zone</FieldLegend>
-          <FieldDescription>
-            Permanently delete your account and all associated data. This action
-            cannot be undone.
-          </FieldDescription>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="mt-2"
-            onClick={onOpenDeleteAlert}
-          >
-            <TrashIcon className="size-4" />
-            Delete Account
-          </Button>
         </FieldSet>
       </FieldGroup>
     </form>
