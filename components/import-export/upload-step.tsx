@@ -11,6 +11,11 @@ import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { FieldError } from "~/components/ui/field";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { formatDisplayName, type DetectedFormat } from "~/lib/import/detect";
 import { cn } from "~/lib/utils";
 
@@ -68,26 +73,40 @@ export function UploadStep({
                 : ""}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isParsing}
-            aria-label="Replace file"
-          >
-            <ArrowClockwiseIcon aria-hidden="true" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onClearFile}
-            disabled={isParsing}
-            aria-label="Remove file"
-          >
-            <XIcon aria-hidden="true" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isParsing}
+                  aria-label="Replace file"
+                />
+              }
+            >
+              <ArrowClockwiseIcon aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>Replace file</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onClearFile}
+                  disabled={isParsing}
+                  aria-label="Remove file"
+                />
+              }
+            >
+              <XIcon aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>Remove file</TooltipContent>
+          </Tooltip>
         </div>
         <input
           ref={fileInputRef}

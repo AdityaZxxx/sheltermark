@@ -8,6 +8,7 @@ import { QueryProvider } from "~/components/providers/query-provider";
 import { SupabaseProvider } from "~/components/providers/supabase-provider";
 import { ThemeProvider } from "~/components/providers/theme-provider";
 import { Toaster } from "~/components/ui/sonner";
+import { TooltipProvider } from "~/components/ui/tooltip";
 import { getBaseUrl } from "~/lib/utils";
 
 import "./globals.css";
@@ -83,9 +84,11 @@ export default function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                {children}
-                <Analytics />
-                <Toaster />
+                <TooltipProvider>
+                  {children}
+                  <Analytics />
+                  <Toaster />
+                </TooltipProvider>
               </ThemeProvider>
             </SupabaseProvider>
           </QueryProvider>

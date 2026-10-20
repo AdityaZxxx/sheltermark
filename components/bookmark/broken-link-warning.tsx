@@ -42,9 +42,16 @@ export function BrokenLinkWarning({
     <Tooltip>
       <TooltipTrigger
         render={
-          <span className="cursor-help shrink-0" title={state.message}>
+          // The tooltip is the visual affordance; the message itself has to
+          // reach assistive tech, so the icon carries it as an accessible
+          // name rather than relying on a native title.
+          <span className="cursor-help shrink-0">
             {isWarning ? (
-              <WarningIcon className="w-3 h-3 text-red-500" weight="fill" />
+              <WarningIcon
+                className="w-3 h-3 text-red-500"
+                weight="fill"
+                aria-label={state.message}
+              />
             ) : (
               <WarningIcon
                 className={cn(
@@ -54,6 +61,7 @@ export function BrokenLinkWarning({
                     : "text-muted-foreground",
                 )}
                 weight="fill"
+                aria-label={state.message}
               />
             )}
           </span>

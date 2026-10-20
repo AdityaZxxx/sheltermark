@@ -15,6 +15,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { getPastelColor } from "~/lib/utils";
 import { formatRelativeTime } from "~/lib/utils/format";
 
@@ -66,12 +71,14 @@ export function WorkspaceCard({
               ? formatRelativeTime(workspace.deleted_at)
               : "recently"}
           </span>
+          {/* Mobile-only: touch devices have no hover, so a tooltip would
+              never surface. The aria-label carries the accessible name. */}
           <div className="flex sm:hidden items-center gap-1">
             <Button
               variant="outline"
               size="icon-xs"
               onClick={() => onRestore(workspace.id)}
-              title="Restore workspace"
+              aria-label="Restore workspace"
             >
               <ArrowBendUpLeftIcon className="size-2.5" />
             </Button>
@@ -80,7 +87,7 @@ export function WorkspaceCard({
               size="icon-xs"
               onClick={() => onPermanentDelete(workspace.id)}
               className="text-destructive hover:text-destructive"
-              title="Delete forever"
+              aria-label="Delete workspace forever"
             >
               <TrashIcon className="size-2.5" />
             </Button>
@@ -94,15 +101,22 @@ export function WorkspaceCard({
               <ArrowBendUpLeftIcon className="size-3 sm:mr-1.5" />
               <span>Restore</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onPermanentDelete(workspace.id)}
-              className="text-destructive hover:text-destructive"
-              title="Delete forever"
-            >
-              <TrashIcon className="size-3" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => onPermanentDelete(workspace.id)}
+                    className="text-destructive hover:text-destructive"
+                    aria-label="Delete workspace forever"
+                  />
+                }
+              >
+                <TrashIcon className="size-3" />
+              </TooltipTrigger>
+              <TooltipContent>Delete forever</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

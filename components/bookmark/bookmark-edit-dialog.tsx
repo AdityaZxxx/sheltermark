@@ -294,12 +294,22 @@ function EditFormInner({
                     className="pr-10"
                   />
                   <Popover>
-                    <PopoverTrigger
-                      aria-label="Markdown formatting supported"
-                      className="absolute right-2 bottom-0.5 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:bg-muted"
-                    >
-                      <MarkdownIcon className="h-4 w-auto" aria-hidden="true" />
-                    </PopoverTrigger>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <PopoverTrigger
+                            aria-label="Markdown formatting supported"
+                            className="absolute right-2 bottom-0.5 inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-[color,background-color,scale] duration-150 ease-out hover:bg-muted hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:bg-muted"
+                          />
+                        }
+                      >
+                        <MarkdownIcon
+                          className="h-4 w-auto"
+                          aria-hidden="true"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>Markdown formatting</TooltipContent>
+                    </Tooltip>
                     <PopoverContent align="end" side="top" className="w-72 p-3">
                       <PopoverHeader>
                         <PopoverTitle>Markdown</PopoverTitle>

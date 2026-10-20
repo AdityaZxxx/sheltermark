@@ -5,6 +5,11 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 type Theme = "light" | "dark" | "system";
@@ -55,30 +60,36 @@ export function ThemeMode({
         )}
       >
         {THEMES.map(({ value, icon: Icon, label }) => (
-          <button
-            key={value}
-            type="button"
-            title={label}
-            onClick={() => setTheme(value)}
-            className={cn(
-              "relative flex items-center justify-center rounded-full transition-all duration-200",
-              padding,
-              "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
-              theme === value && [
-                "bg-white dark:bg-neutral-700",
-                "text-neutral-900 dark:text-neutral-100",
-                "shadow-sm shadow-black/10 dark:shadow-black/30",
-              ],
-            )}
-          >
-            <Icon
-              className={cn(
-                iconSize,
-                "transition-transform duration-200",
-                theme === value && "scale-110",
-              )}
-            />
-          </button>
+          <Tooltip key={value}>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={`${label} theme`}
+                  onClick={() => setTheme(value)}
+                  className={cn(
+                    "relative flex items-center justify-center rounded-full transition-all duration-200",
+                    padding,
+                    "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100",
+                    theme === value && [
+                      "bg-white dark:bg-neutral-700",
+                      "text-neutral-900 dark:text-neutral-100",
+                      "shadow-sm shadow-black/10 dark:shadow-black/30",
+                    ],
+                  )}
+                />
+              }
+            >
+              <Icon
+                className={cn(
+                  iconSize,
+                  "transition-transform duration-200",
+                  theme === value && "scale-110",
+                )}
+              />
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
         ))}
       </div>
     );
@@ -88,27 +99,34 @@ export function ThemeMode({
     <div className={cn("p-1.5", className)}>
       <Tabs value={theme} onValueChange={(v) => setTheme(v)} className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
-          {THEMES.map(({ value, icon: Icon }) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className={cn(
-                "rounded-md transition-all duration-200",
-                "text-neutral-500 dark:text-neutral-400",
-                "hover:text-neutral-900 dark:hover:text-neutral-100",
-                "data-active:bg-white! dark:data-active:bg-neutral-700!",
-                "data-active:text-neutral-900! dark:data-active:text-neutral-100!",
-                "data-active:shadow-sm! data-active:shadow-black/10! dark:data-active:shadow-black/30!",
-              )}
-            >
-              <Icon
-                className={cn(
-                  iconSize,
-                  "transition-transform duration-200",
-                  theme === value && "scale-110",
-                )}
-              />
-            </TabsTrigger>
+          {THEMES.map(({ value, icon: Icon, label }) => (
+            <Tooltip key={value}>
+              <TooltipTrigger
+                render={
+                  <TabsTrigger
+                    value={value}
+                    aria-label={`${label} theme`}
+                    className={cn(
+                      "rounded-md transition-all duration-200",
+                      "text-neutral-500 dark:text-neutral-400",
+                      "hover:text-neutral-900 dark:hover:text-neutral-100",
+                      "data-active:bg-white! dark:data-active:bg-neutral-700!",
+                      "data-active:text-neutral-900! dark:data-active:text-neutral-100!",
+                      "data-active:shadow-sm! data-active:shadow-black/10! dark:data-active:shadow-black/30!",
+                    )}
+                  />
+                }
+              >
+                <Icon
+                  className={cn(
+                    iconSize,
+                    "transition-transform duration-200",
+                    theme === value && "scale-110",
+                  )}
+                />
+              </TooltipTrigger>
+              <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
           ))}
         </TabsList>
       </Tabs>

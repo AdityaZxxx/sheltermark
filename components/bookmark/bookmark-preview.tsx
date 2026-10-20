@@ -20,12 +20,18 @@ import type { Bookmark } from "~/lib/schemas/bookmark.schema";
 
 import { checkEmbeddable } from "~/app/action/bookmark.action";
 import { Button } from "~/components/ui/button";
+import { Kbd } from "~/components/ui/kbd";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { classifyUrl } from "~/lib/preview/classify";
 import {
   parseStoredReaderPrefs,
@@ -304,13 +310,19 @@ export function BookmarkPreview({
           {mode === "reader" && (
             <>
               <Popover>
-                <PopoverTrigger
-                  aria-label="Reader options"
-                  title="Reader options"
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <TextAaIcon className="size-4" aria-hidden="true" />
-                </PopoverTrigger>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <PopoverTrigger
+                        aria-label="Reader options"
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      />
+                    }
+                  >
+                    <TextAaIcon className="size-4" aria-hidden="true" />
+                  </TooltipTrigger>
+                  <TooltipContent>Reader options</TooltipContent>
+                </Tooltip>
                 <PopoverContent align="end" className="w-56 p-2">
                   <div className="flex flex-col gap-1 p-1">
                     <div className="flex items-center gap-2">
@@ -327,18 +339,45 @@ export function BookmarkPreview({
                         className="min-w-0 flex-1"
                       >
                         <TabsList className="grid w-full grid-cols-3 bg-muted/60">
-                          <TabsTrigger value="sm" aria-label="Text size: Small">
-                            <span className="text-[11px]">A</span>
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="md"
-                            aria-label="Text size: Medium"
-                          >
-                            <span className="text-sm">A</span>
-                          </TabsTrigger>
-                          <TabsTrigger value="lg" aria-label="Text size: Large">
-                            <span className="text-base">A</span>
-                          </TabsTrigger>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <TabsTrigger
+                                  value="sm"
+                                  aria-label="Text size: Small"
+                                />
+                              }
+                            >
+                              <span className="text-[11px]">A</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Small</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <TabsTrigger
+                                  value="md"
+                                  aria-label="Text size: Medium"
+                                />
+                              }
+                            >
+                              <span className="text-sm">A</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Medium</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <TabsTrigger
+                                  value="lg"
+                                  aria-label="Text size: Large"
+                                />
+                              }
+                            >
+                              <span className="text-base">A</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Large</TooltipContent>
+                          </Tooltip>
                         </TabsList>
                       </Tabs>
                     </div>
@@ -356,12 +395,32 @@ export function BookmarkPreview({
                         className="min-w-0 flex-1"
                       >
                         <TabsList className="grid w-full grid-cols-2 bg-muted/60">
-                          <TabsTrigger value="sans" aria-label="Font: Sans">
-                            <span className="font-sans">Ag</span>
-                          </TabsTrigger>
-                          <TabsTrigger value="serif" aria-label="Font: Serif">
-                            <span className="font-serif">Ag</span>
-                          </TabsTrigger>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <TabsTrigger
+                                  value="sans"
+                                  aria-label="Font: Sans"
+                                />
+                              }
+                            >
+                              <span className="font-sans">Ag</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Sans</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <TabsTrigger
+                                  value="serif"
+                                  aria-label="Font: Serif"
+                                />
+                              }
+                            >
+                              <span className="font-serif">Ag</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Serif</TooltipContent>
+                          </Tooltip>
                         </TabsList>
                       </Tabs>
                     </div>
@@ -408,13 +467,19 @@ export function BookmarkPreview({
                 </PopoverContent>
               </Popover>
               <Popover open={betaOpen} onOpenChange={handleBetaOpenChange}>
-                <PopoverTrigger
-                  aria-label="About the reader"
-                  title="About the reader"
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <InfoIcon className="size-4" aria-hidden="true" />
-                </PopoverTrigger>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <PopoverTrigger
+                        aria-label="About the reader"
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      />
+                    }
+                  >
+                    <InfoIcon className="size-4" aria-hidden="true" />
+                  </TooltipTrigger>
+                  <TooltipContent>About the reader</TooltipContent>
+                </Tooltip>
                 <PopoverContent align="end" className="w-64">
                   <p className="text-xs text-muted-foreground">
                     Reader is still new — some pages may not come through quite
@@ -433,64 +498,117 @@ export function BookmarkPreview({
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={nav.onPrev}
-            disabled={!nav.hasPrev}
-            aria-label="Previous bookmark"
-            title="Previous bookmark"
-          >
-            <CaretUpIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={nav.onNext}
-            disabled={!nav.hasNext}
-            aria-label="Next bookmark"
-            title="Next bookmark"
-          >
-            <CaretDownIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={refreshPreview}
-            aria-label="Refresh preview"
-            title="Refresh preview (re-extracts this page)"
-          >
-            <ArrowClockwiseIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMaximized((m) => !m)}
-            aria-label={maximized ? "Exit fullscreen" : "Fullscreen"}
-            title={maximized ? "Exit fullscreen (Esc)" : "Fullscreen"}
-            className="hidden md:inline-flex"
-          >
-            {maximized ? <ArrowsInSimpleIcon /> : <ArrowsOutSimpleIcon />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={openExternal}
-            aria-label="Open in new tab"
-            title="Open in new tab"
-          >
-            <ArrowSquareOutIcon />
-          </Button>
-          <Button
-            ref={closeRef}
-            variant="ghost"
-            size="icon"
-            onClick={close}
-            aria-label="Close preview"
-            title="Close (Esc)"
-          >
-            <XIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={nav.onPrev}
+                  disabled={!nav.hasPrev}
+                  aria-label="Previous bookmark"
+                />
+              }
+            >
+              <CaretUpIcon />
+            </TooltipTrigger>
+            <TooltipContent>Previous bookmark</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={nav.onNext}
+                  disabled={!nav.hasNext}
+                  aria-label="Next bookmark"
+                />
+              }
+            >
+              <CaretDownIcon />
+            </TooltipTrigger>
+            <TooltipContent>Next bookmark</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={refreshPreview}
+                  aria-label="Refresh preview"
+                />
+              }
+            >
+              <ArrowClockwiseIcon />
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="flex items-center gap-1.5">
+                Refresh preview
+                <span className="text-background/70">
+                  re-extracts this page
+                </span>
+              </span>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMaximized((m) => !m)}
+                  aria-label={maximized ? "Exit fullscreen" : "Fullscreen"}
+                  className="hidden md:inline-flex"
+                />
+              }
+            >
+              {maximized ? <ArrowsInSimpleIcon /> : <ArrowsOutSimpleIcon />}
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="flex items-center gap-1.5">
+                {maximized ? "Exit fullscreen" : "Fullscreen"}
+                {maximized ? <Kbd>Esc</Kbd> : null}
+              </span>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={openExternal}
+                  aria-label="Open in new tab"
+                />
+              }
+            >
+              <ArrowSquareOutIcon />
+            </TooltipTrigger>
+            <TooltipContent>Open in new tab</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  ref={closeRef}
+                  variant="ghost"
+                  size="icon"
+                  onClick={close}
+                  aria-label="Close preview"
+                />
+              }
+            >
+              <XIcon />
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="flex items-center gap-1.5">
+                Close
+                <Kbd>Esc</Kbd>
+              </span>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 

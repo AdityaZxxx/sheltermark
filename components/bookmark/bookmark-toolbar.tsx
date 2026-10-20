@@ -10,6 +10,11 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 interface BookmarkToolbarProps {
@@ -114,15 +119,22 @@ export function BookmarkToolbar({
               {pendingAction === "deleting" ? "Deleting…" : "Delete"}
             </span>
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="size-9 rounded-md"
-            onClick={onClear}
-            aria-label="Clear selection"
-          >
-            <XIcon className="size-4.5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="size-9 rounded-md"
+                  onClick={onClear}
+                  aria-label="Clear selection"
+                />
+              }
+            >
+              <XIcon className="size-4.5" />
+            </TooltipTrigger>
+            <TooltipContent>Clear selection</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

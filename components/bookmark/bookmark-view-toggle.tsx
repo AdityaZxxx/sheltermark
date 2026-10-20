@@ -3,6 +3,11 @@ import { ListIcon, RowsIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import type { BookmarkViewVariant } from "~/lib/schemas/common";
 
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 interface BookmarkViewToggleProps {
@@ -36,26 +41,51 @@ export function BookmarkViewToggle({
       <TabsList
         className={cn("grid grid-cols-3 bg-muted/60 rounded-lg", className)}
       >
-        <TabsTrigger value="list" className="rounded-md" aria-label="List view">
-          <ListIcon className="h-4 w-4" />{" "}
-          {showLabels && <span className="md:hidden">List</span>}
-        </TabsTrigger>
-        <TabsTrigger
-          value="comfort"
-          className="rounded-md"
-          aria-label="Comfort view"
-        >
-          <RowsIcon className="size-4" />{" "}
-          {showLabels && <span className="md:hidden">Comfort</span>}
-        </TabsTrigger>
-        <TabsTrigger
-          value="card"
-          className="rounded-md"
-          aria-label="Gallery view"
-        >
-          <SquaresFourIcon className="h-4 w-4" />{" "}
-          {showLabels && <span className="md:hidden">Gallery</span>}
-        </TabsTrigger>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <TabsTrigger
+                value="list"
+                className="rounded-md"
+                aria-label="List view"
+              />
+            }
+          >
+            <ListIcon className="h-4 w-4" />{" "}
+            {showLabels && <span className="md:hidden">List</span>}
+          </TooltipTrigger>
+          <TooltipContent>List view</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <TabsTrigger
+                value="comfort"
+                className="rounded-md"
+                aria-label="Comfort view"
+              />
+            }
+          >
+            <RowsIcon className="size-4" />{" "}
+            {showLabels && <span className="md:hidden">Comfort</span>}
+          </TooltipTrigger>
+          <TooltipContent>Comfort view</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <TabsTrigger
+                value="card"
+                className="rounded-md"
+                aria-label="Gallery view"
+              />
+            }
+          >
+            <SquaresFourIcon className="h-4 w-4" />{" "}
+            {showLabels && <span className="md:hidden">Gallery</span>}
+          </TooltipTrigger>
+          <TooltipContent>Gallery view</TooltipContent>
+        </Tooltip>
       </TabsList>
     </Tabs>
   );

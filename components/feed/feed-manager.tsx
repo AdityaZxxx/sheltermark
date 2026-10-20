@@ -20,6 +20,11 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { useFeeds } from "~/hooks/use-feeds";
 import { useWorkspaces } from "~/hooks/use-workspaces";
 import { getPastelColor } from "~/lib/utils";
@@ -176,22 +181,36 @@ export function FeedManager({ open, onOpenChange }: FeedManagerProps) {
                   </div>
 
                   <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Sync feed"
-                      onClick={() => refreshFeed(feed.id)}
-                    >
-                      <ArrowsClockwiseIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Unsubscribe"
-                      onClick={() => deleteFeed(feed.id)}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Sync ${feed.title || "feed"}`}
+                            onClick={() => refreshFeed(feed.id)}
+                          />
+                        }
+                      >
+                        <ArrowsClockwiseIcon className="h-4 w-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>Sync feed</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Unsubscribe from ${feed.title || "feed"}`}
+                            onClick={() => deleteFeed(feed.id)}
+                          />
+                        }
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>Unsubscribe</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               ))}

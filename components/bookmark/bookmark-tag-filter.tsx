@@ -4,6 +4,11 @@ import { TagIcon } from "@phosphor-icons/react";
 
 import type { Tag } from "~/lib/schemas/tag.schema";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 interface BookmarkTagFilterProps {
@@ -32,14 +37,21 @@ export function BookmarkTagFilter({
   return (
     <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden max-sm:scroll-fade-x">
       {onManageTags && (
-        <button
-          type="button"
-          onClick={onManageTags}
-          aria-label="Manage tags"
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.97]"
-        >
-          <TagIcon className="size-3.5" aria-hidden="true" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                onClick={onManageTags}
+                aria-label="Manage tags"
+                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.97]"
+              />
+            }
+          >
+            <TagIcon className="size-3.5" aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent>Manage tags</TooltipContent>
+        </Tooltip>
       )}
       {tags.map((tag) => {
         const isActive = selectedTagIds.includes(tag.id);

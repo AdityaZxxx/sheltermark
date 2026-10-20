@@ -52,6 +52,8 @@ export function BookmarkMobileControls({
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
+      {/* Mobile-only trigger: touch devices have no hover, so a tooltip would
+          never surface. The aria-label carries the accessible name. */}
       <DrawerTrigger
         render={
           <Button

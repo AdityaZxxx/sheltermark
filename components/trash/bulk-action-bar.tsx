@@ -11,6 +11,11 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
 export function BulkActionBar({
@@ -91,14 +96,21 @@ export function BulkActionBar({
           </Button>
 
           <div className="h-4 w-px bg-border" />
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={onExitSelectionMode}
-            aria-label="Exit selection mode"
-          >
-            <XIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={onExitSelectionMode}
+                  aria-label="Exit selection mode"
+                />
+              }
+            >
+              <XIcon />
+            </TooltipTrigger>
+            <TooltipContent>Exit selection mode</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

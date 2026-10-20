@@ -14,6 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 import { Button } from "../ui/button";
 
@@ -63,26 +68,35 @@ export function BookmarkSortSelect({ sort, onSortChange }: BookmarkSortProps) {
           ))}
         </SelectContent>
       </Select>
-      <Button
-        variant="secondary"
-        className="h-8 bg-input/50 hover:bg-input"
-        onClick={toggleSortOrder}
-        aria-label={
-          sort.sortOrder === "asc" ? "Sort ascending" : "Sort descending"
-        }
-      >
-        {sort.sortOrder === "asc" ? (
-          <>
-            <ArrowUpIcon className="size-3.5" />{" "}
-            <span className="md:hidden">Asc</span>
-          </>
-        ) : (
-          <>
-            <ArrowDownIcon className="size-3.5" />{" "}
-            <span className="md:hidden">Desc</span>
-          </>
-        )}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="secondary"
+              className="h-8 bg-input/50 hover:bg-input"
+              onClick={toggleSortOrder}
+              aria-label={
+                sort.sortOrder === "asc" ? "Sort ascending" : "Sort descending"
+              }
+            />
+          }
+        >
+          {sort.sortOrder === "asc" ? (
+            <>
+              <ArrowUpIcon className="size-3.5" />{" "}
+              <span className="md:hidden">Asc</span>
+            </>
+          ) : (
+            <>
+              <ArrowDownIcon className="size-3.5" />{" "}
+              <span className="md:hidden">Desc</span>
+            </>
+          )}
+        </TooltipTrigger>
+        <TooltipContent>
+          {sort.sortOrder === "asc" ? "Sort ascending" : "Sort descending"}
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }

@@ -28,6 +28,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn, safeDomain } from "~/lib/utils";
 import { formatRelativeTime } from "~/lib/utils/format";
 
@@ -108,32 +113,46 @@ export function BookmarkRow({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          title="Restore"
-          aria-label={`Restore ${bookmark.title || "bookmark"}`}
-          className="hidden sm:inline-flex"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRestore(bookmark.id);
-          }}
-        >
-          <ArrowBendUpLeftIcon className="size-4" />
-        </Button>
-        <Button
-          variant="destructive"
-          size="icon"
-          title="Delete forever"
-          aria-label={`Delete ${bookmark.title || "bookmark"} forever`}
-          className="hidden sm:inline-flex"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPermanentDelete(bookmark.id);
-          }}
-        >
-          <TrashIcon className="size-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Restore ${bookmark.title || "bookmark"}`}
+                className="hidden sm:inline-flex"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRestore(bookmark.id);
+                }}
+              />
+            }
+          >
+            <ArrowBendUpLeftIcon className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>Restore</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="destructive"
+                size="icon"
+                aria-label={`Delete ${bookmark.title || "bookmark"} forever`}
+                className="hidden sm:inline-flex"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPermanentDelete(bookmark.id);
+                }}
+              />
+            }
+          >
+            <TrashIcon className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>Delete forever</TooltipContent>
+        </Tooltip>
+        {/* Mobile-only action menu: touch devices have no hover, so the
+            aria-label carries the accessible name instead of a tooltip. */}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={

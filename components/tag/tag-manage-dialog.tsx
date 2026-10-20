@@ -24,6 +24,11 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { useWorkspaceTagsWithCount } from "~/hooks/use-tags";
 import { useDeleteTag, useRenameTag } from "~/lib/mutations/tag.mutations";
 import { formatCount } from "~/lib/utils";
@@ -255,25 +260,39 @@ export function TagManageDialog({
                           </p>
                         )}
                       </div>
-                      <Button
-                        type="submit"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Save rename"
-                        className="hover:bg-muted/50"
-                      >
-                        <CheckIcon aria-hidden="true" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={cancelRename}
-                        aria-label="Cancel rename"
-                        className="hover:bg-muted/50"
-                      >
-                        <XIcon aria-hidden="true" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Save rename"
+                              className="hover:bg-muted/50"
+                            />
+                          }
+                        >
+                          <CheckIcon aria-hidden="true" />
+                        </TooltipTrigger>
+                        <TooltipContent>Save rename</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={cancelRename}
+                              aria-label="Cancel rename"
+                              className="hover:bg-muted/50"
+                            />
+                          }
+                        >
+                          <XIcon aria-hidden="true" />
+                        </TooltipTrigger>
+                        <TooltipContent>Cancel rename</TooltipContent>
+                      </Tooltip>
                     </form>
                   );
                 }
@@ -295,16 +314,23 @@ export function TagManageDialog({
                         {tag.count}
                       </Badge>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => startRename(tag)}
-                      aria-label={`Rename ${tag.name}`}
-                      className="text-muted-foreground/50 hover:bg-muted/50 hover:text-foreground"
-                    >
-                      <PencilSimpleIcon aria-hidden="true" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => startRename(tag)}
+                            aria-label={`Rename ${tag.name}`}
+                            className="text-muted-foreground/50 hover:bg-muted/50 hover:text-foreground"
+                          />
+                        }
+                      >
+                        <PencilSimpleIcon aria-hidden="true" />
+                      </TooltipTrigger>
+                      <TooltipContent>Rename</TooltipContent>
+                    </Tooltip>
                     <Button
                       type="button"
                       variant="ghost"

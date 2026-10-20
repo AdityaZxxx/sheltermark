@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import { Kbd, KbdGroup } from "~/components/ui/kbd";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 import { Orb } from "./orb";
 
@@ -36,6 +42,12 @@ interface PdfViewerProps {
 const MIN_SCALE = 0.3;
 const MAX_SCALE = 3;
 const ZOOM_STEP = 1.2;
+
+// The zoom shortcuts accept both Ctrl and Cmd, so the hint follows the
+// platform modifier the rest of the app uses.
+const isMac =
+  "navigator" in globalThis && /Mac|iPhone|iPad/.test(navigator.userAgent);
+const mod = isMac ? "⌘" : "Ctrl";
 
 export function PdfViewer({ src, onUnavailable }: PdfViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -269,43 +281,85 @@ export function PdfViewer({ src, onUnavailable }: PdfViewerProps) {
               →
             </Button>
             <div className="ml-2 flex items-center gap-0.5">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={state.scale <= MIN_SCALE}
-                onClick={() => zoomBy(1 / ZOOM_STEP)}
-                aria-label="Zoom out"
-                title="Zoom out (Ctrl−)"
-              >
-                −
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={state.scale <= MIN_SCALE}
+                      onClick={() => zoomBy(1 / ZOOM_STEP)}
+                      aria-label="Zoom out"
+                    />
+                  }
+                >
+                  −
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span className="flex items-center gap-1.5">
+                    Zoom out
+                    <KbdGroup>
+                      <Kbd>{mod}</Kbd>
+                      <Kbd>−</Kbd>
+                    </KbdGroup>
+                  </span>
+                </TooltipContent>
+              </Tooltip>
               <span className="w-9 text-center text-[11px] tabular-nums text-muted-foreground/70">
                 {pct}%
               </span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={state.scale >= MAX_SCALE}
-                onClick={() => zoomBy(ZOOM_STEP)}
-                aria-label="Zoom in"
-                title="Zoom in (Ctrl+)"
-              >
-                +
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={userScale === null}
-                onClick={() => {
-                  setUserScale(null);
-                  renderPage(state.page, "fit");
-                }}
-                aria-label="Fit width"
-                title="Fit width (Ctrl+0)"
-                className="px-1.5 text-[11px]"
-              >
-                Fit
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={state.scale >= MAX_SCALE}
+                      onClick={() => zoomBy(ZOOM_STEP)}
+                      aria-label="Zoom in"
+                    />
+                  }
+                >
+                  +
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span className="flex items-center gap-1.5">
+                    Zoom in
+                    <KbdGroup>
+                      <Kbd>{mod}</Kbd>
+                      <Kbd>+</Kbd>
+                    </KbdGroup>
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={userScale === null}
+                      onClick={() => {
+                        setUserScale(null);
+                        renderPage(state.page, "fit");
+                      }}
+                      aria-label="Fit width"
+                      className="px-1.5 text-[11px]"
+                    />
+                  }
+                >
+                  Fit
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span className="flex items-center gap-1.5">
+                    Fit width
+                    <KbdGroup>
+                      <Kbd>{mod}</Kbd>
+                      <Kbd>0</Kbd>
+                    </KbdGroup>
+                  </span>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </>
         )}
