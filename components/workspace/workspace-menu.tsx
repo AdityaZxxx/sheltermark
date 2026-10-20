@@ -27,7 +27,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Switch } from "~/components/ui/switch";
 import { useWorkspaces } from "~/hooks/use-workspaces";
-import { getPastelColor } from "~/lib/utils";
+import { cn, getPastelColor } from "~/lib/utils";
 
 import { WorkspaceAddDialog } from "./workspace-add-dialog";
 import { WorkspaceDeleteDialog } from "./workspace-delete-dialog";
@@ -38,6 +38,7 @@ export function WorkspaceMenu() {
   const {
     workspaces,
     currentWorkspace,
+    isWorkspaceRoute,
     setActiveWorkspace,
     clearActiveWorkspace,
     createWorkspace,
@@ -110,25 +111,25 @@ export function WorkspaceMenu() {
           }
         />
         <DropdownMenuContent align="start" sideOffset={8} className="w-56">
-          {!isGlobalView && (
-            <>
-              <DropdownMenuItem
-                nativeButton
-                className="w-full gap-1.5"
-                render={(props) => (
-                  <button
-                    {...props}
-                    type="button"
-                    onClick={clearActiveWorkspace}
-                  >
-                    <LayoutIcon className="h-4 w-4" />
-                    All Bookmarks
-                  </button>
-                )}
-              />
-              <DropdownMenuSeparator />
-            </>
-          )}
+          <DropdownMenuItem
+            nativeButton
+            className={cn(
+              "w-full gap-1.5",
+              // Mirrors the selected-workspace radio item: the All Bookmarks
+              // view is the active one on the dashboard with no workspace
+              // selected. Background only, no check indicator.
+              isWorkspaceRoute &&
+                isGlobalView &&
+                "bg-accent text-accent-foreground",
+            )}
+            render={(props) => (
+              <button {...props} type="button" onClick={clearActiveWorkspace}>
+                <LayoutIcon className="h-4 w-4" />
+                All Bookmarks
+              </button>
+            )}
+          />
+          <DropdownMenuSeparator />
           <div className="max-h-[50vh] overflow-y-auto overscroll-contain scroll-fade">
             <DropdownMenuGroup>
               <DropdownMenuLabel className="sr-only">
@@ -184,87 +185,93 @@ export function WorkspaceMenu() {
             )}
           />
 
-          <DropdownMenuItem
-            nativeButton
-            className="w-full gap-1.5"
-            render={(props) => (
-              <button {...props} type="button" onClick={handleTogglePublic}>
-                {currentWorkspace?.is_public ? (
-                  <>
-                    <GlobeXIcon className="h-4 w-4" />
-                    Make Private
-                  </>
-                ) : (
-                  <>
-                    <GlobeIcon className="h-4 w-4" />
-                    Make Public
-                  </>
+          {/* These act on the current workspace, so they are only meaningful
+              on the dashboard route with a workspace selected. */}
+          {isWorkspaceRoute && !isGlobalView && (
+            <>
+              <DropdownMenuItem
+                nativeButton
+                className="w-full gap-1.5"
+                render={(props) => (
+                  <button {...props} type="button" onClick={handleTogglePublic}>
+                    {currentWorkspace?.is_public ? (
+                      <>
+                        <GlobeXIcon className="h-4 w-4" />
+                        Make Private
+                      </>
+                    ) : (
+                      <>
+                        <GlobeIcon className="h-4 w-4" />
+                        Make Public
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
-            )}
-          />
+              />
 
-          <DropdownMenuItem
-            nativeButton
-            className="w-full gap-1.5"
-            render={(props) => (
-              <button
-                {...props}
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsRenameDialogOpen(true);
-                }}
-              >
-                <PencilSimpleIcon className="h-4 w-4" />
-                Rename
-              </button>
-            )}
-          />
+              <DropdownMenuItem
+                nativeButton
+                className="w-full gap-1.5"
+                render={(props) => (
+                  <button
+                    {...props}
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsRenameDialogOpen(true);
+                    }}
+                  >
+                    <PencilSimpleIcon className="h-4 w-4" />
+                    Rename
+                  </button>
+                )}
+              />
 
-          <DropdownMenuItem
-            nativeButton
-            className="w-full gap-1.5"
-            render={(props) => (
-              <button {...props} type="button">
-                <div className="flex items-center gap-2">
-                  <LinkBreakIcon className="h-4 w-4" />
-                  Weekly URL Check
-                </div>
-                <Switch
-                  size="sm"
-                  className="left-10"
-                  checked={currentWorkspace?.auto_check_broken !== false}
-                  onCheckedChange={(checked) => {
-                    if (currentWorkspace) {
-                      toggleAutoCheckBroken({
-                        id: currentWorkspace.id,
-                        enabled: checked,
-                      });
-                    }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
+              <DropdownMenuItem
+                nativeButton
+                className="w-full gap-1.5"
+                render={(props) => (
+                  <button {...props} type="button">
+                    <div className="flex items-center gap-2">
+                      <LinkBreakIcon className="h-4 w-4" />
+                      Weekly URL Check
+                    </div>
+                    <Switch
+                      size="sm"
+                      className="left-10"
+                      checked={currentWorkspace?.auto_check_broken !== false}
+                      onCheckedChange={(checked) => {
+                        if (currentWorkspace) {
+                          toggleAutoCheckBroken({
+                            id: currentWorkspace.id,
+                            enabled: checked,
+                          });
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </button>
+                )}
+              />
+
+              {workspaces.length > 1 && (
+                <DropdownMenuItem
+                  nativeButton
+                  className="w-full gap-1.5"
+                  variant="destructive"
+                  render={(props) => (
+                    <button
+                      {...props}
+                      type="button"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                      Delete Workspace
+                    </button>
+                  )}
                 />
-              </button>
-            )}
-          />
-
-          {workspaces.length > 1 && (
-            <DropdownMenuItem
-              nativeButton
-              className="w-full gap-1.5"
-              variant="destructive"
-              render={(props) => (
-                <button
-                  {...props}
-                  type="button"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <TrashIcon className="h-4 w-4" />
-                  Delete Workspace
-                </button>
               )}
-            />
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

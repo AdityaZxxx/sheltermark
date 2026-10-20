@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createParser, useQueryState } from "nuqs";
 import { useContext } from "react";
 
 import { UserContext } from "~/components/providers/user-context";
+import { useWorkspaceNavigation } from "~/hooks/use-workspace-navigation";
 import {
   useCreateWorkspace,
   useDeleteWorkspace,
@@ -15,26 +15,17 @@ import {
   useTouchWorkspaceLastUsed,
 } from "~/lib/mutations/workspace.mutations";
 import { workspacesQueryOptions } from "~/lib/queries/workspace.queries";
-import { uuidSchema } from "~/lib/schemas/common";
 
 // Last-used tracking is non-critical, but still needs to run if the tab
 // never reaches an idle state before the user leaves.
 const LAST_USED_IDLE_TIMEOUT_MS = 2_000;
 
-const workspaceIdParamParser = createParser({
-  parse: (value) => (uuidSchema.safeParse(value).success ? value : null),
-  serialize: (value) => value,
-}).withOptions({ shallow: true });
-
-export function useWorkspaceIdParam() {
-  return useQueryState("workspaceId", workspaceIdParamParser);
-}
-
 export function useWorkspaces() {
   const serverUser = useContext(UserContext);
   const userId = serverUser?.id ?? "";
   const isAuthed = Boolean(serverUser);
-  const [workspaceIdParam, setWorkspaceIdParam] = useWorkspaceIdParam();
+  const { isWorkspaceRoute, workspaceIdParam, goToWorkspace } =
+    useWorkspaceNavigation();
 
   const { data: workspaces = [], isLoading: isWsLoading } = useQuery({
     ...workspacesQueryOptions(userId),
@@ -51,14 +42,14 @@ export function useWorkspaces() {
   const touch = useTouchWorkspaceLastUsed(userId);
 
   const setActiveWorkspace = (id: string) => {
-    setWorkspaceIdParam(id);
+    goToWorkspace(id);
     requestIdleCallback(() => touch.mutate(id), {
       timeout: LAST_USED_IDLE_TIMEOUT_MS,
     });
   };
 
   const clearActiveWorkspace = () => {
-    setWorkspaceIdParam(null);
+    goToWorkspace(null);
   };
 
   const create = useCreateWorkspace(userId);
@@ -76,7 +67,7 @@ export function useWorkspaces() {
         const fallback =
           workspaces.find((w) => w.is_default && w.id !== id) ??
           workspaces.find((w) => w.id !== id);
-        setWorkspaceIdParam(fallback?.id ?? null);
+        goToWorkspace(fallback?.id ?? null);
       },
     });
   };
@@ -85,6 +76,7 @@ export function useWorkspaces() {
     workspaces,
     currentWorkspace,
     isLoading: isWsLoading,
+    isWorkspaceRoute,
     setActiveWorkspace,
     clearActiveWorkspace,
     createWorkspace: create.mutate,

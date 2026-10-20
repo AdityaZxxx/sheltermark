@@ -13,7 +13,7 @@ import {
 } from "~/components/ui/resizable";
 import { useBookmarkListManager } from "~/hooks/use-bookmark-list-manager";
 import { useUserTagsWithCount } from "~/hooks/use-tags";
-import { useWorkspaceIdParam } from "~/hooks/use-workspaces";
+import { useWorkspaceIdParam } from "~/hooks/use-workspace-navigation";
 
 import { BookmarkEditDialog } from "./bookmark-edit-dialog";
 import { BookmarkHeader } from "./bookmark-header";
